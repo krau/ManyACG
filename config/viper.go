@@ -5,7 +5,8 @@ import "github.com/spf13/viper"
 type Config struct {
 	Log      logConfig      `toml:"log" mapstructure:"log" json:"log" yaml:"log"`
 	Source   sourceConfigs  `toml:"source" mapstructure:"source" json:"source" yaml:"source"`
-	Telegram TelegramConfig `toml:"telegram" mapstructure:"telegram" json:"telegram" yaml:"telegram"`
+	Telegram telegramConfig `toml:"telegram" mapstructure:"telegram" json:"telegram" yaml:"telegram"`
+	Database databaseConfig `toml:"database" mapstructure:"database" json:"database" yaml:"database"`
 }
 
 type logConfig struct {
@@ -24,10 +25,18 @@ type SourcePixivConfig struct {
 	Intervel uint     `toml:"intervel" mapstructure:"intervel" json:"intervel" yaml:"intervel"`
 }
 
-type TelegramConfig struct {
+type telegramConfig struct {
 	Token    string `toml:"token" mapstructure:"token" json:"token" yaml:"token"`
 	ChatID   int64  `toml:"chat_id" mapstructure:"chat_id" json:"chat_id" yaml:"chat_id"`
 	Username string `toml:"username" mapstructure:"username" json:"username" yaml:"username"`
+}
+
+type databaseConfig struct {
+	Host     string `toml:"host" mapstructure:"host" json:"host" yaml:"host"`
+	Port     int    `toml:"port" mapstructure:"port" json:"port" yaml:"port"`
+	User     string `toml:"user" mapstructure:"user" json:"user" yaml:"user"`
+	Password string `toml:"password" mapstructure:"password" json:"password" yaml:"password"`
+	DBName   string `toml:"db_name" mapstructure:"db_name" json:"db_name" yaml:"db_name"`
 }
 
 var Cfg *Config
