@@ -21,6 +21,7 @@ type sourceConfigs struct {
 
 type SourcePixivConfig struct {
 	Enable   bool     `toml:"enable" mapstructure:"enable" json:"enable" yaml:"enable"`
+	Proxy    string   `toml:"proxy" mapstructure:"proxy" json:"proxy" yaml:"proxy"`
 	URLs     []string `toml:"urls" mapstructure:"urls" json:"urls" yaml:"urls"`
 	Intervel uint     `toml:"intervel" mapstructure:"intervel" json:"intervel" yaml:"intervel"`
 }
@@ -36,7 +37,7 @@ type databaseConfig struct {
 	Port     int    `toml:"port" mapstructure:"port" json:"port" yaml:"port"`
 	User     string `toml:"user" mapstructure:"user" json:"user" yaml:"user"`
 	Password string `toml:"password" mapstructure:"password" json:"password" yaml:"password"`
-	DBName   string `toml:"db_name" mapstructure:"db_name" json:"db_name" yaml:"db_name"`
+	Database string `toml:"database"`
 }
 
 var Cfg *Config
@@ -49,6 +50,8 @@ func init() {
 	viper.SetDefault("log.level", "TRACE")
 	viper.SetDefault("log.file_path", "logs/ManyACG-Bot.log")
 	viper.SetDefault("log.backup_num", 7)
+
+	viper.SetDefault("Database.databse", "manyacg")
 
 	if err := viper.ReadInConfig(); err != nil {
 		panic(err)

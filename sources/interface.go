@@ -2,11 +2,12 @@ package sources
 
 import (
 	"ManyACG-Bot/config"
-	"ManyACG-Bot/model"
+	"ManyACG-Bot/types"
 )
 
 type Source interface {
-	GetNewArtworks(limit int) ([]model.Artwork, error)
-	// GetArtworkByURL(url string) (model.Artwork, error)
+	FetchNewArtworks(limit int) ([]types.Artwork, error)
+	GetArtworkInfo(sourceURL string) (*types.Artwork, error)
+	GetPictureInfo(sourceURL string, index uint) (*types.Picture, error)
 	Config() *config.SourceCommonConfig
 }

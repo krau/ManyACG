@@ -1,25 +1,22 @@
 package dao
 
 import (
-	"ManyACG-Bot/model/entity"
+	"ManyACG-Bot/dao/collections"
+	"ManyACG-Bot/types"
+	"context"
 
-	"gorm.io/gorm/clause"
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
 )
 
-func CreateArtwork(artwork *entity.Artwork) error {
-	return db.Preload("Tags").Preload("Pictures").Where("source_url = ?", artwork.SourceURL).FirstOrCreate(artwork).Error
+var artworkCollection *mongo.Collection = DB.Collection(collections.Artworks)
+
+func CreateArtwork(ctx context.Context, artwork *types.Artwork) (*mongo.InsertOneResult, error) {
+	return artworkCollection.InsertOne(ctx, artwork)
 }
 
-func UpdateArtwork(artwork *entity.Artwork) error {
-	return db.Preload(clause.Associations).Save(artwork).Error
-}
-
-func GetArtworkByURL(url string) (*entity.Artwork, error) {
-	var artwork *entity.Artwork
-	err := db.Preload(clause.Associations).Where("source_url = ?", url).First(artwork).Error
-	return artwork, err
-}
-
-func DeleteArtworkByURL(url string) error {
-	return db.Where("source_url = ?", url).Delete(&entity.Artwork{}).Error
+func GetArtworkByURL(ctx context.Context, url string) (*types.Artwork, error) {
+	var artwork types.Artwork
+	err := artworkCollection.FindOne(ctx, bson.M{"source.url": url}).Decode(&artwork)
+	return &artwork, err
 }

@@ -2,35 +2,35 @@ package dao
 
 import (
 	"ManyACG-Bot/config"
-	"ManyACG-Bot/model/entity"
-	"fmt"
-	"os"
-
+	"ManyACG-Bot/dao/collections"
 	. "ManyACG-Bot/logger"
+	"context"
+	"fmt"
 
-	"gorm.io/driver/mysql"
-	"gorm.io/gorm"
-	"gorm.io/gorm/logger"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
+	"go.mongodb.org/mongo-driver/mongo/readpref"
 )
 
-var db *gorm.DB
+var Client *mongo.Client
+var DB *mongo.Database
 
-func init() {
-	dsn := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?charset=utf8mb4&parseTime=True&loc=Local",
+func InitDB(ctx context.Context) {
+	uri := fmt.Sprintf(
+		"mongodb://%s:%s@%s:%d",
 		config.Cfg.Database.User,
 		config.Cfg.Database.Password,
 		config.Cfg.Database.Host,
 		config.Cfg.Database.Port,
-		config.Cfg.Database.DBName,
 	)
-	var err error
-	db, err = gorm.Open(mysql.Open(dsn), &gorm.Config{
-		TranslateError: true,
-		Logger:         logger.Default.LogMode(logger.Silent),
-	})
+	client, err := mongo.Connect(ctx, options.Client().ApplyURI(uri))
 	if err != nil {
-		Logger.Fatalf("Error when connecting to database: %s", err)
-		os.Exit(1)
+		Logger.Panic(err)
 	}
-	db.AutoMigrate(&entity.Artwork{}, &entity.Picture{}, &entity.Tag{})
+	if err = client.Ping(ctx, readpref.Primary()); err != nil {
+		Logger.Panic(err)
+	}
+	Client = client
+	DB = Client.Database(config.Cfg.Database.Database)
+	DB.CreateCollection(ctx, collections.Artworks)
 }

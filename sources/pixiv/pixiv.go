@@ -2,22 +2,23 @@ package pixiv
 
 import (
 	"ManyACG-Bot/config"
-	"ManyACG-Bot/model"
+	"ManyACG-Bot/types"
+	"errors"
 	"sync"
 )
 
 type Pixiv struct{}
 
-func (p *Pixiv) GetNewArtworks(limit int) ([]model.Artwork, error) {
-	artworks := make([]model.Artwork, 0)
+func (p *Pixiv) FetchNewArtworks(limit int) ([]types.Artwork, error) {
+	artworks := make([]types.Artwork, 0)
 
 	var wg sync.WaitGroup
 
-	artworkChan := make(chan *model.Artwork, len(config.Cfg.Source.Pixiv.URLs)*limit)
+	artworkChan := make(chan *types.Artwork, len(config.Cfg.Source.Pixiv.URLs)*limit)
 
 	for _, url := range config.Cfg.Source.Pixiv.URLs {
 		wg.Add(1)
-		go getNewArtworksForURL(url, limit, &wg, artworkChan)
+		go fetchNewArtworksForRSSURL(url, limit, &wg, artworkChan)
 	}
 
 	go func() {
@@ -30,6 +31,21 @@ func (p *Pixiv) GetNewArtworks(limit int) ([]model.Artwork, error) {
 	}
 
 	return artworks, nil
+}
+
+func (p *Pixiv) GetArtworkInfo(sourceURL string) (*types.Artwork, error) {
+	ajaxResp, err := reqAjaxResp(sourceURL)
+	if err != nil {
+		return nil, err
+	}
+	if ajaxResp.Err {
+		return nil, errors.New(ajaxResp.Message)
+	}
+	return ajaxResp.ToArtwork()
+}
+
+func (p *Pixiv) GetPictureInfo(sourceURL string, index uint) (*types.Picture, error) {
+	return nil, nil
 }
 
 func (p *Pixiv) Config() *config.SourceCommonConfig {
