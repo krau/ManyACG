@@ -3,10 +3,15 @@ package config
 import "github.com/spf13/viper"
 
 type Config struct {
+	App      appConfig      `toml:"app" mapstructure:"app" json:"app" yaml:"app"`
 	Log      logConfig      `toml:"log" mapstructure:"log" json:"log" yaml:"log"`
 	Source   sourceConfigs  `toml:"source" mapstructure:"source" json:"source" yaml:"source"`
 	Telegram telegramConfig `toml:"telegram" mapstructure:"telegram" json:"telegram" yaml:"telegram"`
 	Database databaseConfig `toml:"database" mapstructure:"database" json:"database" yaml:"database"`
+}
+
+type appConfig struct {
+	MaxConcurrent int `toml:"max_concurrent" mapstructure:"max_concurrent" json:"max_concurrent" yaml:"max_concurrent"`
 }
 
 type logConfig struct {
@@ -30,6 +35,7 @@ type telegramConfig struct {
 	Token    string `toml:"token" mapstructure:"token" json:"token" yaml:"token"`
 	ChatID   int64  `toml:"chat_id" mapstructure:"chat_id" json:"chat_id" yaml:"chat_id"`
 	Username string `toml:"username" mapstructure:"username" json:"username" yaml:"username"`
+	Sleep    uint   `toml:"sleep" mapstructure:"sleep" json:"sleep" yaml:"sleep"`
 }
 
 type databaseConfig struct {
@@ -46,6 +52,8 @@ func init() {
 	viper.SetConfigName("config")
 	viper.AddConfigPath(".")
 	viper.SetConfigType("toml")
+
+	viper.SetDefault("app.max_concurrent", 5)
 
 	viper.SetDefault("log.level", "TRACE")
 	viper.SetDefault("log.file_path", "logs/ManyACG-Bot.log")

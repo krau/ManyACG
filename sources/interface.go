@@ -6,7 +6,7 @@ import (
 )
 
 type Source interface {
-	FetchNewArtworks(limit int) ([]types.Artwork, error)
+	FetchNewArtworks(artworkCh chan *types.Artwork, limit int) error
 	GetArtworkInfo(sourceURL string) (*types.Artwork, error)
 	GetPictureInfo(sourceURL string, index uint) (*types.Picture, error)
 	Config() *config.SourceCommonConfig

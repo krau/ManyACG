@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"ManyACG-Bot/config"
 	"ManyACG-Bot/dao"
 	. "ManyACG-Bot/logger"
 	"ManyACG-Bot/sources"
@@ -25,26 +26,19 @@ func Run() {
 		}
 	}()
 
-	artworkCh := make(chan types.Artwork, 10)
+	artworkCh := make(chan *types.Artwork, config.Cfg.App.MaxConcurrent)
 	for name, source := range sources.Sources {
 		Logger.Infof("Start fetching from %s", name)
-		go func(source sources.Source, limit int, ch chan types.Artwork, interval uint) {
+		go func(source sources.Source, limit int, artworkCh chan *types.Artwork, interval uint) {
 			ticker := time.NewTicker(time.Duration(interval) * time.Minute)
 			for {
-				artworks, err := source.FetchNewArtworks(limit)
+				err := source.FetchNewArtworks(artworkCh, limit)
 				if err != nil {
 					Logger.Errorf("Error when fetching from %s: %s", name, err)
-					// 在 go 1.22 之后, 循环变量不会再共用, 所以上面的警告应忽视
-				}
-				if len(artworks) > 0 {
-					Logger.Infof("Fetched %d artworks from %s", len(artworks), name)
-					for _, artwork := range artworks {
-						ch <- artwork
-					}
 				}
 				<-ticker.C
 			}
-		}(source, 10, artworkCh, source.Config().Intervel)
+		}(source, 30, artworkCh, source.Config().Intervel)
 	}
 
 	for artwork := range artworkCh {
@@ -54,7 +48,7 @@ func Run() {
 			continue
 		}
 		if errors.Is(err, mongo.ErrNoDocuments) {
-			messages, err := telegram.PostArtwork(telegram.Bot, &artwork)
+			messages, err := telegram.PostArtwork(telegram.Bot, artwork)
 			if err != nil {
 				Logger.Errorf("Error when posting artwork %s: %s", artwork.Title, err)
 				continue
@@ -75,7 +69,7 @@ func Run() {
 				}
 			}
 
-			_, err = dao.CreateArtwork(context.TODO(), &artwork)
+			_, err = dao.CreateArtwork(context.TODO(), artwork)
 			if err != nil {
 				Logger.Errorf("Error when creating artwork %s: %s", artwork.Source.URL, err)
 				messageIDs := make([]int, 0)
@@ -87,7 +81,7 @@ func Run() {
 					MessageIDs: messageIDs,
 				})
 			}
-			time.Sleep(5 * time.Second)
+			time.Sleep(time.Duration(config.Cfg.Telegram.Sleep) * time.Second)
 		} else {
 			Logger.Infof("Artwork %s already exists", artwork.Source.URL)
 		}
