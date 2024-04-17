@@ -44,13 +44,13 @@ func Run() {
 	for artwork := range artworkCh {
 		_, err := dao.GetArtworkByURL(context.TODO(), artwork.Source.URL)
 		if err != nil && !errors.Is(err, mongo.ErrNoDocuments) {
-			Logger.Errorf("Error when getting artwork %s: %s", artwork.Source.URL, err)
+			Logger.Errorf("Error when getting artwork %s: %s", artwork.Title, err)
 			continue
 		}
 		if errors.Is(err, mongo.ErrNoDocuments) {
 			messages, err := telegram.PostArtwork(telegram.Bot, artwork)
 			if err != nil {
-				Logger.Errorf("Error when posting artwork %s: %s", artwork.Title, err)
+				Logger.Errorf("Error when posting artwork [%s](%s): %s", artwork.Title, artwork.Source.URL, err)
 				continue
 			}
 			Logger.Infof("Posted artwork %s", artwork.Title)
@@ -83,7 +83,7 @@ func Run() {
 			}
 			time.Sleep(time.Duration(config.Cfg.Telegram.Sleep) * time.Second)
 		} else {
-			Logger.Infof("Artwork %s already exists", artwork.Source.URL)
+			Logger.Infof("Artwork %s already exists", artwork.Title)
 		}
 
 	}
