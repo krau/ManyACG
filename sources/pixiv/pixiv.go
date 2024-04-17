@@ -14,7 +14,7 @@ func (p *Pixiv) FetchNewArtworks(limit int) ([]types.Artwork, error) {
 
 	var wg sync.WaitGroup
 
-	artworkChan := make(chan *types.Artwork, len(config.Cfg.Source.Pixiv.URLs)*limit)
+	artworkChan := make(chan *types.Artwork, 5)
 
 	for _, url := range config.Cfg.Source.Pixiv.URLs {
 		wg.Add(1)

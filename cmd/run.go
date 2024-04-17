@@ -25,7 +25,7 @@ func Run() {
 		}
 	}()
 
-	artworkCh := make(chan types.Artwork, 30)
+	artworkCh := make(chan types.Artwork, 10)
 	for name, source := range sources.Sources {
 		Logger.Infof("Start fetching from %s", name)
 		go func(source sources.Source, limit int, ch chan types.Artwork, interval uint) {

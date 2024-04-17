@@ -32,5 +32,9 @@ func InitDB(ctx context.Context) {
 	}
 	Client = client
 	DB = Client.Database(config.Cfg.Database.Database)
+	if DB == nil {
+		Logger.Panic("Failed to get database")
+	}
 	DB.CreateCollection(ctx, collections.Artworks)
+	artworkCollection = DB.Collection(collections.Artworks)
 }

@@ -1,7 +1,6 @@
 package dao
 
 import (
-	"ManyACG-Bot/dao/collections"
 	"ManyACG-Bot/types"
 	"context"
 
@@ -9,7 +8,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
-var artworkCollection *mongo.Collection = DB.Collection(collections.Artworks)
+var artworkCollection *mongo.Collection
 
 func CreateArtwork(ctx context.Context, artwork *types.Artwork) (*mongo.InsertOneResult, error) {
 	return artworkCollection.InsertOne(ctx, artwork)

@@ -2,13 +2,15 @@ package pixiv
 
 import (
 	"ManyACG-Bot/common"
+	. "ManyACG-Bot/logger"
 	"ManyACG-Bot/types"
+	"context"
 	"encoding/json"
 	"encoding/xml"
 	"strings"
 	"sync"
 
-	. "ManyACG-Bot/logger"
+	"golang.org/x/sync/semaphore"
 )
 
 func getPid(url string) string {
@@ -65,6 +67,9 @@ func fetchNewArtworksForRSSURL(rssURL string, limit int, wg *sync.WaitGroup, art
 
 	Logger.Debugf("Got %d items", len(pixivRss.Channel.Items))
 
+	// Create a semaphore with a maximum number of concurrent requests
+	sem := semaphore.NewWeighted(10) // Set the maximum number of concurrent requests to 10
+
 	for i, item := range pixivRss.Channel.Items {
 		if i >= limit {
 			break
@@ -72,6 +77,17 @@ func fetchNewArtworksForRSSURL(rssURL string, limit int, wg *sync.WaitGroup, art
 		wg.Add(1)
 		go func(item Item) {
 			defer wg.Done()
+
+			// Acquire a semaphore token before making the request
+			err := sem.Acquire(context.TODO(), 1)
+			if err != nil {
+				Logger.Errorf("Error acquiring semaphore token: %v", err)
+				return
+			}
+
+			// Release the semaphore token after the request is done
+			defer sem.Release(1)
+
 			ajaxResp, err := reqAjaxResp(item.Link)
 			if err != nil {
 				Logger.Errorf("Error fetching artwork info: %v", err)
