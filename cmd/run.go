@@ -5,6 +5,7 @@ import (
 	"ManyACG-Bot/dao"
 	. "ManyACG-Bot/logger"
 	"ManyACG-Bot/sources"
+	"ManyACG-Bot/storage"
 	"ManyACG-Bot/telegram"
 	"ManyACG-Bot/types"
 	"context"
@@ -16,7 +17,7 @@ import (
 )
 
 func Run() {
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 	Logger.Info("Start running")
 	dao.InitDB(ctx)
@@ -40,6 +41,8 @@ func Run() {
 			}
 		}(source, 30, artworkCh, source.Config().Intervel)
 	}
+
+	storage := storage.GetStorage()
 
 	for artwork := range artworkCh {
 		_, err := dao.GetArtworkByURL(context.TODO(), artwork.Source.URL)
@@ -69,22 +72,42 @@ func Run() {
 				}
 			}
 
+			var storageErr error
+			for i, picture := range artwork.Pictures {
+				var info *types.StorageInfo
+				info, storageErr = storage.SavePicture(artwork, picture)
+				if storageErr != nil {
+					Logger.Errorf("Error when saving picture %s: %s", picture.Original, storageErr)
+					break
+				}
+				artwork.Pictures[i].StorageInfo = info
+			}
+
+			if storageErr != nil {
+				Logger.Errorf("Error when saving pictures of artwork %s: %s", artwork.Title, storageErr)
+				if telegram.Bot.DeleteMessages(&telego.DeleteMessagesParams{
+					ChatID:     telegram.ChatID,
+					MessageIDs: telegram.GetMessageIDs(messages),
+				}) != nil {
+					Logger.Errorf("Error when deleting messages: %s", err)
+				}
+				continue
+			}
+
 			_, err = dao.CreateArtwork(context.TODO(), artwork)
 			if err != nil {
 				Logger.Errorf("Error when creating artwork %s: %s", artwork.Source.URL, err)
-				messageIDs := make([]int, 0)
-				for _, message := range messages {
-					messageIDs = append(messageIDs, message.MessageID)
-				}
-				telegram.Bot.DeleteMessages(&telego.DeleteMessagesParams{
+				if telegram.Bot.DeleteMessages(&telego.DeleteMessagesParams{
 					ChatID:     telegram.ChatID,
-					MessageIDs: messageIDs,
-				})
+					MessageIDs: telegram.GetMessageIDs(messages),
+				}) != nil {
+					Logger.Errorf("Error when deleting messages: %s", err)
+				}
+				continue
 			}
 			time.Sleep(time.Duration(config.Cfg.Telegram.Sleep) * time.Second)
 		} else {
 			Logger.Infof("Artwork %s already exists", artwork.Title)
 		}
-
 	}
 }

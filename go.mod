@@ -5,6 +5,7 @@ go 1.22.2
 require (
 	github.com/gookit/slog v0.5.5
 	github.com/spf13/viper v1.18.2
+	github.com/studio-b12/gowebdav v0.9.0
 	go.mongodb.org/mongo-driver v1.15.0
 )
 

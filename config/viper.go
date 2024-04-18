@@ -6,6 +6,7 @@ type Config struct {
 	App      appConfig      `toml:"app" mapstructure:"app" json:"app" yaml:"app"`
 	Log      logConfig      `toml:"log" mapstructure:"log" json:"log" yaml:"log"`
 	Source   sourceConfigs  `toml:"source" mapstructure:"source" json:"source" yaml:"source"`
+	Storage  storageConfigs `toml:"storage" mapstructure:"storage" json:"storage" yaml:"storage"`
 	Telegram telegramConfig `toml:"telegram" mapstructure:"telegram" json:"telegram" yaml:"telegram"`
 	Database databaseConfig `toml:"database" mapstructure:"database" json:"database" yaml:"database"`
 }
@@ -29,6 +30,18 @@ type SourcePixivConfig struct {
 	Proxy    string   `toml:"proxy" mapstructure:"proxy" json:"proxy" yaml:"proxy"`
 	URLs     []string `toml:"urls" mapstructure:"urls" json:"urls" yaml:"urls"`
 	Intervel uint     `toml:"intervel" mapstructure:"intervel" json:"intervel" yaml:"intervel"`
+}
+
+type storageConfigs struct {
+	Type   string              `toml:"type" mapstructure:"type" json:"type" yaml:"type"`
+	Webdav StorageWebdavConfig `toml:"webdav" mapstructure:"webdav" json:"webdav" yaml:"webdav"`
+}
+
+type StorageWebdavConfig struct {
+	URL      string `toml:"url" mapstructure:"url" json:"url" yaml:"url"`
+	Username string `toml:"username" mapstructure:"username" json:"username" yaml:"username"`
+	Password string `toml:"password" mapstructure:"password" json:"password" yaml:"password"`
+	Path     string `toml:"path" mapstructure:"path" json:"path" yaml:"path"`
 }
 
 type telegramConfig struct {

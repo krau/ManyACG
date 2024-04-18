@@ -43,6 +43,7 @@ type Picture struct {
 
 	Format       string
 	TelegramInfo *TelegramInfo
+	StorageInfo  *StorageInfo
 }
 
 type TelegramInfo struct {
@@ -50,4 +51,9 @@ type TelegramInfo struct {
 	DocumentFileID string
 	MessageID      int
 	MediaGroupID   string
+}
+
+type StorageInfo struct {
+	Type StorageType
+	Path string
 }

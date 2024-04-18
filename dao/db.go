@@ -48,5 +48,9 @@ func InitDB(ctx context.Context) {
 			Keys:    bson.D{{Key: "source.url", Value: 1}},
 			Options: options.Index().SetName("source.url"),
 		},
+		{
+			Keys:    bson.D{{Key: "pictures.original", Value: "text"}},
+			Options: options.Index().SetName("pictures.original"),
+		},
 	})
 }

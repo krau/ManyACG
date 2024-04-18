@@ -3,6 +3,8 @@ package telegram
 import (
 	"regexp"
 	"strings"
+
+	"github.com/mymmrac/telego"
 )
 
 func escapeMarkdown(text string) string {
@@ -16,4 +18,12 @@ func replaceChars(input string, oldChars []string, newChar string) string {
 		input = strings.ReplaceAll(input, char, newChar)
 	}
 	return input
+}
+
+func GetMessageIDs(messages []telego.Message) []int {
+	ids := make([]int, len(messages))
+	for i, message := range messages {
+		ids[i] = message.MessageID
+	}
+	return ids
 }
