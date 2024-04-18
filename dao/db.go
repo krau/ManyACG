@@ -41,7 +41,7 @@ func InitDB(ctx context.Context) {
 
 	artworkCollection.Indexes().CreateMany(ctx, []mongo.IndexModel{
 		{
-			Keys:    bson.D{{Key: "tags.name", Value: 1}},
+			Keys:    bson.D{{Key: "tags.name", Value: "text"}},
 			Options: options.Index().SetName("tags.name"),
 		},
 		{
@@ -49,7 +49,7 @@ func InitDB(ctx context.Context) {
 			Options: options.Index().SetName("source.url"),
 		},
 		{
-			Keys:    bson.D{{Key: "pictures.original", Value: "text"}},
+			Keys:    bson.D{{Key: "pictures.original", Value: 1}},
 			Options: options.Index().SetName("pictures.original"),
 		},
 	})
