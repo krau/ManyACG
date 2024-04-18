@@ -113,9 +113,9 @@ func (resp *PixivAjaxResp) ToArtwork() (*types.Artwork, error) {
 		})
 	}
 
-	tags := make([]types.ArtworkTag, 0)
+	tags := make([]*types.ArtworkTag, 0)
 	for _, tag := range resp.Body.Tags.Tags {
-		tags = append(tags, types.ArtworkTag{Name: tag.Tag})
+		tags = append(tags, &types.ArtworkTag{Name: tag.Tag})
 	}
 	r18 := false
 	for _, tag := range tags {

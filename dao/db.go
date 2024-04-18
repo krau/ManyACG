@@ -7,6 +7,7 @@ import (
 	"context"
 	"fmt"
 
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.mongodb.org/mongo-driver/mongo/readpref"
@@ -37,4 +38,15 @@ func InitDB(ctx context.Context) {
 	}
 	DB.CreateCollection(ctx, collections.Artworks)
 	artworkCollection = DB.Collection(collections.Artworks)
+
+	artworkCollection.Indexes().CreateMany(ctx, []mongo.IndexModel{
+		{
+			Keys:    bson.D{{Key: "tags.name", Value: 1}},
+			Options: options.Index().SetName("tags.name"),
+		},
+		{
+			Keys:    bson.D{{Key: "source.url", Value: 1}},
+			Options: options.Index().SetName("source.url"),
+		},
+	})
 }

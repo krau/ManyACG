@@ -1,12 +1,17 @@
 package types
 
+import (
+	"time"
+)
+
 type Artwork struct {
 	Title       string
 	Description string
 	R18         bool
+	CreatedAt   time.Time
 	Source      ArtworkSource
 	Artist      Artist
-	Tags        []ArtworkTag
+	Tags        []*ArtworkTag
 	Pictures    []*Picture
 }
 
