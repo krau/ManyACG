@@ -30,6 +30,7 @@ type SourcePixivConfig struct {
 	Proxy    string   `toml:"proxy" mapstructure:"proxy" json:"proxy" yaml:"proxy"`
 	URLs     []string `toml:"urls" mapstructure:"urls" json:"urls" yaml:"urls"`
 	Intervel uint     `toml:"intervel" mapstructure:"intervel" json:"intervel" yaml:"intervel"`
+	Cookies  string   `toml:"cookies" mapstructure:"cookies" json:"cookies" yaml:"cookies"`
 }
 
 type storageConfigs struct {

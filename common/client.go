@@ -1,6 +1,8 @@
 package common
 
 import (
+	"ManyACG-Bot/config"
+	"net/http"
 	"time"
 
 	"github.com/imroc/req/v3"
@@ -9,10 +11,13 @@ import (
 var Cilent *req.Client
 
 func init() {
-	c := req.C().ImpersonateChrome()
-	c.SetCommonRetryCount(2)
-	c.TLSHandshakeTimeout = time.Second * 3
-	c.SetTimeout(time.Second * 5)
-	c.SetMaxConnsPerHost(10)
+	c := req.C().ImpersonateChrome().SetCommonRetryCount(2).SetTimeout(time.Second * 10)
+	c.TLSHandshakeTimeout = time.Second * 10
+	if config.Cfg.Source.Pixiv.Cookies != "" {
+		c = c.SetCommonCookies(&http.Cookie{
+			Name:  "PHPSESSID",
+			Value: config.Cfg.Source.Pixiv.Cookies,
+		})
+	}
 	Cilent = c
 }
