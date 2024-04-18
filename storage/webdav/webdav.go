@@ -28,6 +28,7 @@ func (w *Webdav) SavePicture(artwork *types.Artwork, picture *types.Picture) (*t
 	if err := Client.Write(filePath, fileBytes, os.ModePerm); err != nil {
 		return nil, err
 	}
+	Logger.Infof("picture %d of artwork %s saved to %s", picture.Index, artwork.Title, filePath)
 	return &types.StorageInfo{
 		Type: types.StorageTypeWebdav,
 		Path: filePath,

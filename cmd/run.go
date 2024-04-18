@@ -10,6 +10,7 @@ import (
 	"ManyACG-Bot/types"
 	"context"
 	"errors"
+	"sync"
 	"time"
 
 	"github.com/mymmrac/telego"
@@ -72,37 +73,48 @@ func Run() {
 				}
 			}
 
-			var storageErr error
+			var wg sync.WaitGroup
+			var storageErrs []error
 			for i, picture := range artwork.Pictures {
-				var info *types.StorageInfo
-				info, storageErr = storage.SavePicture(artwork, picture)
-				if storageErr != nil {
-					Logger.Errorf("Error when saving picture %s: %s", picture.Original, storageErr)
-					break
-				}
-				artwork.Pictures[i].StorageInfo = info
+				wg.Add(1)
+				go func(i int, picture *types.Picture) {
+					defer wg.Done()
+					info, err := storage.SavePicture(artwork, picture)
+					if err != nil {
+						Logger.Errorf("Error when saving picture %s: %s", picture.Original, err)
+						storageErrs = append(storageErrs, err)
+						return
+					}
+					artwork.Pictures[i].StorageInfo = info
+				}(i, picture)
 			}
 
-			if storageErr != nil {
-				Logger.Errorf("Error when saving pictures of artwork %s: %s", artwork.Title, storageErr)
-				if telegram.Bot.DeleteMessages(&telego.DeleteMessagesParams{
-					ChatID:     telegram.ChatID,
-					MessageIDs: telegram.GetMessageIDs(messages),
-				}) != nil {
-					Logger.Errorf("Error when deleting messages: %s", err)
-				}
+			wg.Wait()
+
+			if len(storageErrs) > 0 {
+				Logger.Errorf("Error when saving pictures of artwork %s: %s", artwork.Title, storageErrs)
+				go func() {
+					if telegram.Bot.DeleteMessages(&telego.DeleteMessagesParams{
+						ChatID:     telegram.ChatID,
+						MessageIDs: telegram.GetMessageIDs(messages),
+					}) != nil {
+						Logger.Errorf("Error when deleting messages: %s", err)
+					}
+				}()
 				continue
 			}
 
 			_, err = dao.CreateArtwork(context.TODO(), artwork)
 			if err != nil {
 				Logger.Errorf("Error when creating artwork %s: %s", artwork.Source.URL, err)
-				if telegram.Bot.DeleteMessages(&telego.DeleteMessagesParams{
-					ChatID:     telegram.ChatID,
-					MessageIDs: telegram.GetMessageIDs(messages),
-				}) != nil {
-					Logger.Errorf("Error when deleting messages: %s", err)
-				}
+				go func() {
+					if telegram.Bot.DeleteMessages(&telego.DeleteMessagesParams{
+						ChatID:     telegram.ChatID,
+						MessageIDs: telegram.GetMessageIDs(messages),
+					}) != nil {
+						Logger.Errorf("Error when deleting messages: %s", err)
+					}
+				}()
 				continue
 			}
 			time.Sleep(time.Duration(config.Cfg.Telegram.Sleep) * time.Second)
