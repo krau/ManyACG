@@ -31,16 +31,16 @@ func PostArtwork(bot *telego.Bot, artwork *types.Artwork) (messages []telego.Mes
 
 		photo := telegoutil.MediaPhoto(telegoutil.FileFromURL(regularURL))
 		if i == 0 {
-			caption := fmt.Sprintf("[*%s*](%s)", escapeMarkdown(artwork.Title), artwork.Source.URL)
+			caption := fmt.Sprintf("[*%s*](%s)", escapeMarkdown(artwork.Title), artwork.SourceURL)
 			caption += "\n\n" + "*Author:* " + escapeMarkdown(artwork.Artist.Name)
-			caption += "\n\n" + "*Source:* " + escapeMarkdown(string(artwork.Source.Type))
+			caption += "\n\n" + "*Source:* " + escapeMarkdown(string(artwork.SourceType))
 			if artwork.Description != "" {
 				caption += "\n\n" + escapeMarkdown(artwork.Description)
 			}
 			tags := ""
 			for _, tag := range artwork.Tags {
-				tag.Name = replaceChars(tag.Name, []string{":", "：", "-", "（", "）", "「", "」", "*"}, "_")
-				tags += "\\#" + strings.Join(strings.Split(escapeMarkdown(tag.Name), " "), "") + " "
+				tag = replaceChars(tag, []string{":", "：", "-", "（", "）", "「", "」", "*"}, "_")
+				tags += "\\#" + strings.Join(strings.Split(escapeMarkdown(tag), " "), "") + " "
 			}
 			caption += "\n\n" + tags
 			photo = photo.WithCaption(caption).WithParseMode(telego.ModeMarkdownV2)

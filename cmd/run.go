@@ -4,6 +4,7 @@ import (
 	"ManyACG-Bot/config"
 	"ManyACG-Bot/dao"
 	. "ManyACG-Bot/logger"
+	"ManyACG-Bot/service"
 	"ManyACG-Bot/sources"
 	"ManyACG-Bot/storage"
 	"ManyACG-Bot/telegram"
@@ -46,7 +47,7 @@ func Run() {
 	storage := storage.GetStorage()
 
 	for artwork := range artworkCh {
-		_, err := dao.GetArtworkByURL(context.TODO(), artwork.Source.URL)
+		_, err := dao.GetArtworkByURL(context.TODO(), artwork.SourceURL)
 		if err != nil && !errors.Is(err, mongo.ErrNoDocuments) {
 			Logger.Errorf("Error when getting artwork %s: %s", artwork.Title, err)
 			continue
@@ -54,7 +55,7 @@ func Run() {
 		if errors.Is(err, mongo.ErrNoDocuments) {
 			messages, err := telegram.PostArtwork(telegram.Bot, artwork)
 			if err != nil {
-				Logger.Errorf("Error when posting artwork [%s](%s): %s", artwork.Title, artwork.Source.URL, err)
+				Logger.Errorf("Error when posting artwork [%s](%s): %s", artwork.Title, artwork.SourceURL, err)
 				continue
 			}
 			Logger.Infof("Posted artwork %s", artwork.Title)
@@ -104,9 +105,9 @@ func Run() {
 				continue
 			}
 
-			_, err = dao.CreateArtwork(context.TODO(), artwork)
+			_, err = service.CreateArtwork(context.TODO(), artwork)
 			if err != nil {
-				Logger.Errorf("Error when creating artwork %s: %s", artwork.Source.URL, err)
+				Logger.Errorf("Error when creating artwork %s: %s", artwork.SourceURL, err)
 				go func() {
 					if telegram.Bot.DeleteMessages(&telego.DeleteMessagesParams{
 						ChatID:     telegram.ChatID,

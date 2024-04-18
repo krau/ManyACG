@@ -9,15 +9,11 @@ type Artwork struct {
 	Description string
 	R18         bool
 	CreatedAt   time.Time
-	Source      ArtworkSource
+	SourceType  SourceType
+	SourceURL   string
 	Artist      Artist
-	Tags        []*ArtworkTag
+	Tags        []string
 	Pictures    []*Picture
-}
-
-type ArtworkSource struct {
-	Type SourceType
-	URL  string
 }
 
 type Artist struct {
@@ -25,10 +21,6 @@ type Artist struct {
 	Type     SourceType
 	UID      int
 	Username string
-}
-
-type ArtworkTag struct {
-	Name string
 }
 
 type Picture struct {
@@ -41,7 +33,6 @@ type Picture struct {
 	Hash      string
 	BlurScore float64
 
-	Format       string
 	TelegramInfo *TelegramInfo
 	StorageInfo  *StorageInfo
 }

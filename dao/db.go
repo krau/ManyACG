@@ -36,21 +36,43 @@ func InitDB(ctx context.Context) {
 	if DB == nil {
 		Logger.Panic("Failed to get database")
 	}
+
 	DB.CreateCollection(ctx, collections.Artworks)
 	artworkCollection = DB.Collection(collections.Artworks)
-
 	artworkCollection.Indexes().CreateMany(ctx, []mongo.IndexModel{
 		{
-			Keys:    bson.D{{Key: "tags.name", Value: "text"}},
-			Options: options.Index().SetName("tags.name"),
-		},
-		{
-			Keys:    bson.D{{Key: "source.url", Value: 1}},
-			Options: options.Index().SetName("source.url"),
-		},
-		{
-			Keys:    bson.D{{Key: "pictures.original", Value: 1}},
-			Options: options.Index().SetName("pictures.original"),
+			Keys:    bson.D{{Key: "source_url", Value: 1}},
+			Options: options.Index().SetName("source_url"),
 		},
 	})
+
+	DB.CreateCollection(ctx, collections.Tags)
+	tagCollection = DB.Collection(collections.Tags)
+	tagCollection.Indexes().CreateMany(ctx, []mongo.IndexModel{
+		{
+			Keys:    bson.D{{Key: "name", Value: 1}},
+			Options: options.Index().SetName("name"),
+		},
+	})
+
+	DB.CreateCollection(ctx, collections.Pictures)
+	pictureCollection = DB.Collection(collections.Pictures)
+	pictureCollection.Indexes().CreateMany(ctx, []mongo.IndexModel{
+		{
+			Keys:    bson.D{{Key: "original", Value: 1}},
+			Options: options.Index().SetName("original"),
+		},
+	})
+
+	DB.CreateCollection(ctx, collections.Artists)
+	artistCollection = DB.Collection(collections.Artists)
+	artistCollection.Indexes().CreateMany(ctx, []mongo.IndexModel{
+		{
+			Keys:    bson.D{{Key: "name", Value: 1}},
+			Options: options.Index().SetName("name"),
+		},
+	})
+
+	Logger.Info("Database initialized")
+
 }

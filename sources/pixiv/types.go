@@ -113,13 +113,13 @@ func (resp *PixivAjaxResp) ToArtwork() (*types.Artwork, error) {
 		})
 	}
 
-	tags := make([]*types.ArtworkTag, 0)
+	tags := make([]string, 0)
 	for _, tag := range resp.Body.Tags.Tags {
-		tags = append(tags, &types.ArtworkTag{Name: tag.Tag})
+		tags = append(tags, tag.Tag)
 	}
 	r18 := false
 	for _, tag := range tags {
-		if tagsSet[tag.Name] {
+		if tagsSet[tag] {
 			r18 = true
 		}
 	}
@@ -131,10 +131,8 @@ func (resp *PixivAjaxResp) ToArtwork() (*types.Artwork, error) {
 		Title:       resp.Body.IlustTitle,
 		Description: htmlRe.ReplaceAllString(resp.Body.Description, ""),
 		R18:         r18,
-		Source: types.ArtworkSource{
-			Type: types.SourceTypePixiv,
-			URL:  "https://www.pixiv.net/artworks/" + resp.Body.IllustId,
-		},
+		SourceType:  types.SourceTypePixiv,
+		SourceURL:   "https://www.pixiv.net/artworks/" + resp.Body.IllustId,
 		Artist: types.Artist{
 			Name:     resp.Body.Username,
 			Type:     types.SourceTypePixiv,
