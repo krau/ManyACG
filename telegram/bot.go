@@ -7,7 +7,8 @@ import (
 	. "ManyACG-Bot/logger"
 
 	"github.com/mymmrac/telego"
-	tu "github.com/mymmrac/telego/telegoutil"
+	"github.com/mymmrac/telego/telegohandler"
+	"github.com/mymmrac/telego/telegoutil"
 )
 
 var (
@@ -20,22 +21,47 @@ func init() {
 	Bot, err = telego.NewBot(
 		config.Cfg.Telegram.Token,
 		telego.WithDefaultLogger(false, true),
-		// telego.WithAPICaller(
-		// 	&telegoapi.RetryCaller{
-		// 		Caller:       telegoapi.DefaultFastHTTPCaller,
-		// 		MaxAttempts:  3,
-		// 		ExponentBase: 2,
-		// 		StartDelay:   10,
-		// 	},
-		// ),
 	)
 	if err != nil {
 		Logger.Fatalf("Error when creating bot: %s", err)
 		os.Exit(1)
 	}
 	if config.Cfg.Telegram.Username != "" {
-		ChatID = tu.Username(config.Cfg.Telegram.Username)
+		ChatID = telegoutil.Username(config.Cfg.Telegram.Username)
 	} else {
-		ChatID = tu.ID(config.Cfg.Telegram.ChatID)
+		ChatID = telegoutil.ID(config.Cfg.Telegram.ChatID)
 	}
+
+	go RunPolling()
+}
+
+func RunPolling() {
+	Logger.Info("Start polling")
+	updates, err := Bot.UpdatesViaLongPolling(&telego.GetUpdatesParams{
+		Offset: -1,
+		AllowedUpdates: []string{
+			telego.MessageUpdates,
+			telego.ChannelPostUpdates,
+			telego.CallbackQueryUpdates,
+		},
+	})
+	if err != nil {
+		Logger.Fatalf("Error when getting updates: %s", err)
+		os.Exit(1)
+	}
+
+	botHandler, err := telegohandler.NewBotHandler(Bot, updates)
+	if err != nil {
+		Logger.Fatalf("Error when creating bot handler: %s", err)
+		os.Exit(1)
+	}
+	defer botHandler.Stop()
+	defer Bot.StopLongPolling()
+
+	botHandler.Use(messageLogger)
+
+	botHandler.HandleMessageCtx(start, telegohandler.CommandEqual("start"))
+	botHandler.HandleMessageCtx(getPictureFile, telegohandler.CommandEqual("file"))
+
+	botHandler.Start()
 }

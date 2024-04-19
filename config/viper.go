@@ -13,6 +13,7 @@ type Config struct {
 
 type appConfig struct {
 	MaxConcurrent int `toml:"max_concurrent" mapstructure:"max_concurrent" json:"max_concurrent" yaml:"max_concurrent"`
+	FetchLimit    int `toml:"fetch_limit" mapstructure:"fetch_limit" json:"fetch_limit" yaml:"fetch_limit"`
 }
 
 type logConfig struct {
@@ -43,6 +44,8 @@ type StorageWebdavConfig struct {
 	Username string `toml:"username" mapstructure:"username" json:"username" yaml:"username"`
 	Password string `toml:"password" mapstructure:"password" json:"password" yaml:"password"`
 	Path     string `toml:"path" mapstructure:"path" json:"path" yaml:"path"`
+	CacheDir string `toml:"cache_dir" mapstructure:"cache_dir" json:"cache_dir" yaml:"cache_dir"`
+	CacheTTL uint   `toml:"cache_ttl" mapstructure:"cache_ttl" json:"cache_ttl" yaml:"cache_ttl"`
 }
 
 type telegramConfig struct {
@@ -53,6 +56,7 @@ type telegramConfig struct {
 }
 
 type databaseConfig struct {
+	URI      string `toml:"uri" mapstructure:"uri" json:"uri" yaml:"uri"`
 	Host     string `toml:"host" mapstructure:"host" json:"host" yaml:"host"`
 	Port     int    `toml:"port" mapstructure:"port" json:"port" yaml:"port"`
 	User     string `toml:"user" mapstructure:"user" json:"user" yaml:"user"`
@@ -68,6 +72,7 @@ func init() {
 	viper.SetConfigType("toml")
 
 	viper.SetDefault("app.max_concurrent", 5)
+	viper.SetDefault("app.fetch_limit", 30)
 
 	viper.SetDefault("log.level", "TRACE")
 	viper.SetDefault("log.file_path", "logs/ManyACG-Bot.log")

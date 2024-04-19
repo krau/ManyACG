@@ -17,13 +17,16 @@ var Client *mongo.Client
 var DB *mongo.Database
 
 func InitDB(ctx context.Context) {
-	uri := fmt.Sprintf(
-		"mongodb://%s:%s@%s:%d",
-		config.Cfg.Database.User,
-		config.Cfg.Database.Password,
-		config.Cfg.Database.Host,
-		config.Cfg.Database.Port,
-	)
+	uri := config.Cfg.Database.URI
+	if uri == "" {
+		uri = fmt.Sprintf(
+			"mongodb://%s:%s@%s:%d",
+			config.Cfg.Database.User,
+			config.Cfg.Database.Password,
+			config.Cfg.Database.Host,
+			config.Cfg.Database.Port,
+		)
+	}
 	client, err := mongo.Connect(ctx, options.Client().ApplyURI(uri))
 	if err != nil {
 		Logger.Panic(err)

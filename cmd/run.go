@@ -41,7 +41,7 @@ func Run() {
 				}
 				<-ticker.C
 			}
-		}(source, 30, artworkCh, source.Config().Intervel)
+		}(source, config.Cfg.App.FetchLimit, artworkCh, source.Config().Intervel)
 	}
 
 	storage := storage.GetStorage()

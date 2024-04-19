@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 )
 
 type Webdav struct{}
@@ -37,5 +38,27 @@ func (w *Webdav) SavePicture(artwork *types.Artwork, picture *types.Picture) (*t
 }
 
 func (w *Webdav) GetFile(info *types.StorageInfo) ([]byte, error) {
+	if config.Cfg.Storage.Webdav.CacheDir != "" {
+		return w.GetFileWithCache(info)
+	}
 	return Client.Read(info.Path)
+}
+
+func (w *Webdav) GetFileWithCache(info *types.StorageInfo) ([]byte, error) {
+	cacheDir := config.Cfg.Storage.Webdav.CacheDir
+	cachePath := strings.TrimSuffix(cacheDir, "/") + "/" + filepath.Base(info.Path)
+	data, err := os.ReadFile(cachePath)
+	if err == nil {
+		return data, nil
+	}
+	data, err = Client.Read(info.Path)
+	if err != nil {
+		return nil, err
+	}
+	if err := common.MkFile(cachePath, data); err != nil {
+		Logger.Errorf("failed to save cache file: %s", err)
+	} else {
+		go common.PurgeFileAfter(cachePath, time.Duration(config.Cfg.Storage.Webdav.CacheTTL)*time.Second)
+	}
+	return data, nil
 }

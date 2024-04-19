@@ -22,5 +22,9 @@ func initClient() {
 func init() {
 	if config.Cfg.Storage.Type == "webdav" {
 		initClient()
+		if Client == nil {
+			Logger.Panic("webdav client is nil")
+			os.Exit(1)
+		}
 	}
 }
