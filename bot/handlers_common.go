@@ -1,7 +1,8 @@
-package telegram
+package bot
 
 import (
 	"ManyACG-Bot/service"
+	"ManyACG-Bot/telegram"
 	"ManyACG-Bot/types"
 	"context"
 	"fmt"
@@ -29,7 +30,7 @@ func start(ctx context.Context, bot *telego.Bot, message telego.Message) {
 				))
 				return
 			}
-			_, err = sendPictureFileByMessageID(ctx, bot, message, messageID)
+			_, err = telegram.SendPictureFileByMessageID(ctx, bot, message, messageID)
 			if err != nil {
 				bot.SendMessage(telegoutil.Messagef(message.Chat.ChatID(), "获取失败: %s", err).WithReplyParameters(
 					&telego.ReplyParameters{
@@ -48,6 +49,26 @@ func start(ctx context.Context, bot *telego.Bot, message telego.Message) {
 			WithReplyParameters(&telego.ReplyParameters{
 				MessageID: message.MessageID,
 			}))
+}
+
+func help(ctx context.Context, bot *telego.Bot, message telego.Message) {
+	helpText := `使用方法:
+/start - 喵喵喵
+/file - 回复一条频道的消息获取原图文件
+/setu - 来点涩图 <tag1> <tag2> ...
+/random - 随机1张全年龄图片 <tag1> <tag2> ...
+`
+	isAdmin, _ := service.IsAdmin(ctx, message.From.ID)
+	if isAdmin {
+		helpText += `/set_admin - 设置|删除管理员
+/del - 删除图片
+/fetch - 手动开始一次抓取
+`
+	}
+	bot.SendMessage(telegoutil.Message(message.Chat.ChatID(), helpText).
+		WithReplyParameters(&telego.ReplyParameters{
+			MessageID: message.MessageID,
+		}))
 }
 
 func getPictureFile(ctx context.Context, bot *telego.Bot, message telego.Message) {
@@ -85,7 +106,7 @@ func getPictureFile(ctx context.Context, bot *telego.Bot, message telego.Message
 		return
 	}
 
-	_, err := sendPictureFileByMessageID(ctx, bot, message, messageOriginChannel.MessageID)
+	_, err := telegram.SendPictureFileByMessageID(ctx, bot, message, messageOriginChannel.MessageID)
 	if err != nil {
 		bot.SendMessage(telegoutil.Messagef(message.Chat.ChatID(), "获取失败: %s", err).WithReplyParameters(
 			&telego.ReplyParameters{
@@ -135,8 +156,8 @@ func randomPicture(ctx context.Context, bot *telego.Bot, message telego.Message)
 			MessageID: message.MessageID,
 		}).WithCaption(artwork[0].Title).WithReplyMarkup(
 		telegoutil.InlineKeyboard([]telego.InlineKeyboardButton{
-			telegoutil.InlineKeyboardButton("来源").WithURL(fmt.Sprintf("https://t.me/%s/%d", strings.ReplaceAll(ChannelChatID.String(), "@", ""), picture.TelegramInfo.MessageID)),
-			telegoutil.InlineKeyboardButton("原图").WithURL(fmt.Sprintf("https://t.me/%s/?start=file_%d", BotUsername, picture.TelegramInfo.MessageID)),
+			telegoutil.InlineKeyboardButton("来源").WithURL(fmt.Sprintf("https://t.me/%s/%d", strings.ReplaceAll(telegram.ChannelChatID.String(), "@", ""), picture.TelegramInfo.MessageID)),
+			telegoutil.InlineKeyboardButton("原图").WithURL(fmt.Sprintf("https://t.me/%s/?start=file_%d", telegram.BotUsername, picture.TelegramInfo.MessageID)),
 		}),
 	))
 	if err != nil {
@@ -151,5 +172,4 @@ func randomPicture(ctx context.Context, bot *telego.Bot, message telego.Message)
 			Logger.Warnf("更新图片信息失败: %s", err)
 		}
 	}
-
 }

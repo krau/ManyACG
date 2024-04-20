@@ -11,7 +11,7 @@ import (
 
 type Pixiv struct{}
 
-func (p *Pixiv) FetchNewArtworks(artworkCh chan *types.Artwork, limit int) error {
+func (p *Pixiv) FetchNewArtworksWithCh(artworkCh chan *types.Artwork, limit int) error {
 	var wg sync.WaitGroup
 	errs := make(chan error, len(config.Cfg.Source.Pixiv.URLs))
 
@@ -19,7 +19,7 @@ func (p *Pixiv) FetchNewArtworks(artworkCh chan *types.Artwork, limit int) error
 		wg.Add(1)
 		go func(url string) {
 			defer wg.Done()
-			err := fetchNewArtworksForRSSURL(url, limit, artworkCh)
+			err := fetchNewArtworksForRSSURLWithCh(url, limit, artworkCh)
 			if err != nil {
 				errs <- err
 			}
@@ -41,6 +41,22 @@ func (p *Pixiv) FetchNewArtworks(artworkCh chan *types.Artwork, limit int) error
 	}
 
 	return nil
+}
+
+func (p *Pixiv) FetchNewArtworks(limit int) ([]*types.Artwork, error) {
+	artworks := make([]*types.Artwork, 0)
+	errs := make([]error, 0)
+	for _, url := range config.Cfg.Source.Pixiv.URLs {
+		artworksForURL, err := fetchNewArtworksForRSSURL(url, limit)
+		if err != nil {
+			errs = append(errs, err)
+		}
+		artworks = append(artworks, artworksForURL...)
+	}
+	if len(errs) > 0 {
+		return artworks, fmt.Errorf("encountered %d errors: %v", len(errs), errs)
+	}
+	return artworks, nil
 }
 
 func (p *Pixiv) GetArtworkInfo(sourceURL string) (*types.Artwork, error) {

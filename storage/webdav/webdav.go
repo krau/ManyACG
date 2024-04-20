@@ -62,3 +62,8 @@ func (w *Webdav) GetFileWithCache(info *types.StorageInfo) ([]byte, error) {
 	}
 	return data, nil
 }
+
+func (w *Webdav) DeletePicture(info *types.StorageInfo) error {
+	Logger.Debugf("deleting file %s", info.Path)
+	return Client.Remove(info.Path)
+}

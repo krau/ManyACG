@@ -7,7 +7,6 @@ import (
 	. "ManyACG-Bot/logger"
 
 	"github.com/mymmrac/telego"
-	"github.com/mymmrac/telego/telegohandler"
 	"github.com/mymmrac/telego/telegoutil"
 )
 
@@ -52,46 +51,16 @@ func init() {
 			},
 			{
 				Command:     "setu",
-				Description: "来点涩图",
+				Description: "来点涩图 <tag1> <tag2> ...",
 			},
 			{
 				Command:     "random",
-				Description: "随机1张全年龄图片",
+				Description: "随机1张全年龄图片 <tag1> <tag2> ...",
+			},
+			{
+				Command:     "help",
+				Description: "食用指南",
 			},
 		},
 	})
-
-	go RunPolling()
-}
-
-func RunPolling() {
-	Logger.Info("Start polling")
-	updates, err := Bot.UpdatesViaLongPolling(&telego.GetUpdatesParams{
-		Offset: -1,
-		AllowedUpdates: []string{
-			telego.MessageUpdates,
-			telego.ChannelPostUpdates,
-			telego.CallbackQueryUpdates,
-		},
-	})
-	if err != nil {
-		Logger.Fatalf("Error when getting updates: %s", err)
-		os.Exit(1)
-	}
-
-	botHandler, err := telegohandler.NewBotHandler(Bot, updates)
-	if err != nil {
-		Logger.Fatalf("Error when creating bot handler: %s", err)
-		os.Exit(1)
-	}
-	defer botHandler.Stop()
-	defer Bot.StopLongPolling()
-
-	botHandler.Use(messageLogger)
-
-	botHandler.HandleMessageCtx(start, telegohandler.CommandEqual("start"))
-	botHandler.HandleMessageCtx(getPictureFile, telegohandler.CommandEqual("file"))
-	botHandler.HandleMessageCtx(randomPicture, telegohandler.Or(telegohandler.CommandEqual("setu"), telegohandler.CommandEqual("random")))
-
-	botHandler.Start()
 }

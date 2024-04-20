@@ -17,6 +17,7 @@ var Client *mongo.Client
 var DB *mongo.Database
 
 func InitDB(ctx context.Context) {
+	Logger.Info("Initializing database...")
 	uri := config.Cfg.Database.URI
 	if uri == "" {
 		uri = fmt.Sprintf(
@@ -76,6 +77,19 @@ func InitDB(ctx context.Context) {
 		},
 	})
 
-	Logger.Info("Database initialized")
+	DB.CreateCollection(ctx, collections.Admins)
+	adminCollection = DB.Collection(collections.Admins)
+	adminCollection.Indexes().CreateMany(ctx, []mongo.IndexModel{
+		{
+			Keys:    bson.D{{Key: "user_id", Value: 1}},
+			Options: options.Index().SetName("user_id").SetUnique(true),
+		},
+	})
+	for _, admin := range config.Cfg.Telegram.Admins {
+		if err := CreateAdminIfNotExist(ctx, admin); err != nil {
+			Logger.Warnf("Failed to create admin %d: %s", admin, err)
+		}
+	}
 
+	Logger.Info("Database initialized")
 }

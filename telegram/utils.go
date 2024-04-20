@@ -15,13 +15,13 @@ import (
 	"github.com/mymmrac/telego/telegoutil"
 )
 
-func escapeMarkdown(text string) string {
+func EscapeMarkdown(text string) string {
 	escapeChars := `\_*[]()~` + "`" + ">#+-=|{}.!"
 	re := regexp.MustCompile("([" + regexp.QuoteMeta(escapeChars) + "])")
 	return re.ReplaceAllString(text, "\\$1")
 }
 
-func replaceChars(input string, oldChars []string, newChar string) string {
+func ReplaceChars(input string, oldChars []string, newChar string) string {
 	for _, char := range oldChars {
 		input = strings.ReplaceAll(input, char, newChar)
 	}
@@ -36,7 +36,7 @@ func GetMessageIDs(messages []telego.Message) []int {
 	return ids
 }
 
-func sendPictureFileByMessageID(ctx context.Context, bot *telego.Bot, message telego.Message, pictureMessageID int) (*telego.Message, error) {
+func SendPictureFileByMessageID(ctx context.Context, bot *telego.Bot, message telego.Message, pictureMessageID int) (*telego.Message, error) {
 	picture, err := service.GetPictureByMessageID(ctx, pictureMessageID)
 	if err != nil {
 		return nil, err
@@ -68,4 +68,29 @@ func sendPictureFileByMessageID(ctx context.Context, bot *telego.Bot, message te
 		}
 	}
 	return documentMessage, nil
+}
+
+func GetMssageOriginChannel(_ context.Context, _ *telego.Bot, message telego.Message) *telego.MessageOriginChannel {
+	if message.ForwardOrigin == nil {
+		return nil
+	}
+	if message.ForwardOrigin.OriginType() == telego.OriginTypeChannel {
+		return message.ForwardOrigin.(*telego.MessageOriginChannel)
+	} else {
+		return nil
+	}
+}
+
+func CheckTargetMessageIsChannelArtworkPost(ctx context.Context, bot *telego.Bot, message telego.Message) (*telego.MessageOriginChannel, bool) {
+	if message.ReplyToMessage == nil {
+		return nil, false
+	}
+	if !message.ReplyToMessage.IsAutomaticForward || message.ReplyToMessage.Photo == nil || message.ReplyToMessage.ForwardOrigin == nil {
+		return nil, false
+	}
+	messageOriginChannel := GetMssageOriginChannel(ctx, bot, *message.ReplyToMessage)
+	if messageOriginChannel == nil {
+		return nil, false
+	}
+	return messageOriginChannel, true
 }

@@ -43,7 +43,7 @@ func reqIllustPages(sourceURL string) (*PixivIllustPages, error) {
 	return &pixivIllustPages, nil
 }
 
-func fetchNewArtworksForRSSURL(rssURL string, limit int, artworkCh chan *types.Artwork) error {
+func fetchNewArtworksForRSSURLWithCh(rssURL string, limit int, artworkCh chan *types.Artwork) error {
 	Logger.Infof("Fetching %s", rssURL)
 	resp, err := common.Cilent.R().Get(rssURL)
 
@@ -79,4 +79,40 @@ func fetchNewArtworksForRSSURL(rssURL string, limit int, artworkCh chan *types.A
 		artworkCh <- artwork
 	}
 	return nil
+}
+
+func fetchNewArtworksForRSSURL(rssURL string, limit int) ([]*types.Artwork, error) {
+	Logger.Infof("Fetching %s", rssURL)
+	resp, err := common.Cilent.R().Get(rssURL)
+	if err != nil {
+		Logger.Errorf("Error fetching %s: %v", rssURL, err)
+		return nil, err
+	}
+
+	var pixivRss *PixivRss
+	err = xml.NewDecoder(strings.NewReader(resp.String())).Decode(&pixivRss)
+	if err != nil {
+		Logger.Errorf("Error decoding %s: %v", rssURL, err)
+		return nil, err
+	}
+
+	Logger.Debugf("Got %d items", len(pixivRss.Channel.Items))
+	artworks := make([]*types.Artwork, 0)
+	for i, item := range pixivRss.Channel.Items {
+		if i >= limit {
+			break
+		}
+		ajaxResp, err := reqAjaxResp(item.Link)
+		if err != nil {
+			Logger.Errorf("Error fetching artwork info: %v", err)
+			continue
+		}
+		artwork, err := ajaxResp.ToArtwork()
+		if err != nil {
+			Logger.Errorf("Error converting item to artwork: %v", err)
+			continue
+		}
+		artworks = append(artworks, artwork)
+	}
+	return artworks, nil
 }

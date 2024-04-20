@@ -3,7 +3,7 @@ package config
 import "github.com/spf13/viper"
 
 type Config struct {
-	App      appConfig      `toml:"app" mapstructure:"app" json:"app" yaml:"app"`
+	Fetcher  fetcherConfig  `toml:"fetcher" mapstructure:"fetcher" json:"fetcher" yaml:"fetcher"`
 	Log      logConfig      `toml:"log" mapstructure:"log" json:"log" yaml:"log"`
 	Source   sourceConfigs  `toml:"source" mapstructure:"source" json:"source" yaml:"source"`
 	Storage  storageConfigs `toml:"storage" mapstructure:"storage" json:"storage" yaml:"storage"`
@@ -11,9 +11,9 @@ type Config struct {
 	Database databaseConfig `toml:"database" mapstructure:"database" json:"database" yaml:"database"`
 }
 
-type appConfig struct {
+type fetcherConfig struct {
 	MaxConcurrent int `toml:"max_concurrent" mapstructure:"max_concurrent" json:"max_concurrent" yaml:"max_concurrent"`
-	FetchLimit    int `toml:"fetch_limit" mapstructure:"fetch_limit" json:"fetch_limit" yaml:"fetch_limit"`
+	Limit         int `toml:"limit" mapstructure:"limit" json:"limit" yaml:"limit"`
 }
 
 type logConfig struct {
@@ -49,10 +49,11 @@ type StorageWebdavConfig struct {
 }
 
 type telegramConfig struct {
-	Token    string `toml:"token" mapstructure:"token" json:"token" yaml:"token"`
-	ChatID   int64  `toml:"chat_id" mapstructure:"chat_id" json:"chat_id" yaml:"chat_id"`
-	Username string `toml:"username" mapstructure:"username" json:"username" yaml:"username"`
-	Sleep    uint   `toml:"sleep" mapstructure:"sleep" json:"sleep" yaml:"sleep"`
+	Token    string  `toml:"token" mapstructure:"token" json:"token" yaml:"token"`
+	ChatID   int64   `toml:"chat_id" mapstructure:"chat_id" json:"chat_id" yaml:"chat_id"`
+	Username string  `toml:"username" mapstructure:"username" json:"username" yaml:"username"`
+	Sleep    uint    `toml:"sleep" mapstructure:"sleep" json:"sleep" yaml:"sleep"`
+	Admins   []int64 `toml:"admins" mapstructure:"admins" json:"admins" yaml:"admins"`
 }
 
 type databaseConfig struct {
@@ -71,8 +72,8 @@ func init() {
 	viper.AddConfigPath(".")
 	viper.SetConfigType("toml")
 
-	viper.SetDefault("app.max_concurrent", 5)
-	viper.SetDefault("app.fetch_limit", 30)
+	viper.SetDefault("fetcher.max_concurrent", 5)
+	viper.SetDefault("fetcher.limit", 30)
 
 	viper.SetDefault("log.level", "TRACE")
 	viper.SetDefault("log.file_path", "logs/ManyACG-Bot.log")

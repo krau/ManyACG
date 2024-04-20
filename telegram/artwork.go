@@ -32,21 +32,21 @@ func PostArtwork(bot *telego.Bot, artwork *types.Artwork) (messages []telego.Mes
 		}
 		photo := telegoutil.MediaPhoto(telegoutil.FileFromURL(photoURL))
 		if i == 0 {
-			caption := fmt.Sprintf("[*%s*](%s)", escapeMarkdown(artwork.Title), artwork.SourceURL)
-			caption += "\n\n" + "*Author:* " + escapeMarkdown(artwork.Artist.Name)
+			caption := fmt.Sprintf("[*%s*](%s)", (artwork.Title), artwork.SourceURL)
+			caption += "\n\n" + "*Author:* " + EscapeMarkdown(artwork.Artist.Name)
 			if artwork.Description != "" {
 				if len(artwork.Description) > 233 {
-					caption += "\n\n" + "_" + escapeMarkdown(artwork.Description[:233]) + "\\.\\.\\._"
+					caption += "\n\n" + "_" + EscapeMarkdown(artwork.Description[:233]) + "\\.\\.\\._"
 				} else {
-					caption += "\n\n" + "_" + escapeMarkdown(artwork.Description) + "_"
+					caption += "\n\n" + "_" + EscapeMarkdown(artwork.Description) + "_"
 				}
 			}
 			tags := ""
 			for _, tag := range artwork.Tags {
-				tag = replaceChars(tag, []string{":", "：", "-", "（", "）", "「", "」", "*"}, "_")
-				tag = replaceChars(tag, []string{"?"}, "")
-				tag = replaceChars(tag, []string{"/"}, " "+"#")
-				tags += "\\#" + strings.Join(strings.Split(escapeMarkdown(tag), " "), "") + " "
+				tag = ReplaceChars(tag, []string{":", "：", "-", "（", "）", "「", "」", "*"}, "_")
+				tag = ReplaceChars(tag, []string{"?"}, "")
+				tag = ReplaceChars(tag, []string{"/"}, " "+"#")
+				tags += "\\#" + strings.Join(strings.Split(EscapeMarkdown(tag), " "), "") + " "
 			}
 			caption += "\n\n" + tags
 			photo = photo.WithCaption(caption).WithParseMode(telego.ModeMarkdownV2)

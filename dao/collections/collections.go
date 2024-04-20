@@ -5,4 +5,5 @@ const (
 	Pictures string = "Pictures"
 	Artists  string = "Artists"
 	Tags     string = "Tags"
+	Admins   string = "Admins"
 )

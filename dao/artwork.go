@@ -106,3 +106,7 @@ func UpdateArtworkPicturesByID(ctx context.Context, id primitive.ObjectID, pictu
 func DeleteArtworkByID(ctx context.Context, id primitive.ObjectID) (*mongo.DeleteResult, error) {
 	return artworkCollection.DeleteOne(ctx, bson.M{"_id": id})
 }
+
+func DeleteArtworkPicturesByID(ctx context.Context, artworkID primitive.ObjectID, pictureIDs []primitive.ObjectID) (*mongo.UpdateResult, error) {
+	return artworkCollection.UpdateOne(ctx, bson.M{"_id": artworkID}, bson.M{"$pull": bson.M{"pictures": bson.M{"$in": pictureIDs}}})
+}
