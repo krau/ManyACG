@@ -55,7 +55,7 @@ func sendPictureFileByMessageID(ctx context.Context, bot *telego.Bot, message te
 	documentMessage, err := bot.SendDocument(telegoutil.Document(message.Chat.ChatID(), file).
 		WithReplyParameters(&telego.ReplyParameters{
 			MessageID: message.MessageID,
-		}))
+		}).WithCaption("这是你要的原图~"))
 	if err != nil {
 		return nil, err
 	}

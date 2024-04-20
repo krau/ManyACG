@@ -115,14 +115,22 @@ func (resp *PixivAjaxResp) ToArtwork() (*types.Artwork, error) {
 
 	tags := make([]string, 0)
 	for _, tag := range resp.Body.Tags.Tags {
-		tags = append(tags, tag.Tag)
+		if tag.Translation != nil && tag.Translation.En != "" {
+			tags = append(tags, tag.Translation.En)
+		} else {
+			tags = append(tags, tag.Tag)
+		}
 	}
 	r18 := false
-	for _, tag := range tags {
+	for i, tag := range tags {
 		if tagsSet[tag] {
 			r18 = true
 		}
+		if tag == "" {
+			tags = append(tags[:i], tags[i+1:]...)
+		}
 	}
+
 	uid, err := strconv.Atoi(resp.Body.UserId)
 	if err != nil {
 		return nil, err

@@ -130,7 +130,7 @@ func randomPicture(ctx context.Context, bot *telego.Bot, message telego.Message)
 		}
 		file = telegoutil.FileFromURL(photoURL)
 	}
-	_, err = bot.SendPhoto(telegoutil.Photo(message.Chat.ChatID(), file).
+	photoMessage, err := bot.SendPhoto(telegoutil.Photo(message.Chat.ChatID(), file).
 		WithReplyParameters(&telego.ReplyParameters{
 			MessageID: message.MessageID,
 		}).WithCaption(artwork[0].Title).WithReplyMarkup(
@@ -144,6 +144,12 @@ func randomPicture(ctx context.Context, bot *telego.Bot, message telego.Message)
 			WithReplyParameters(&telego.ReplyParameters{
 				MessageID: message.MessageID,
 			}))
+	}
+	if photoMessage != nil {
+		picture.TelegramInfo.PhotoFileID = photoMessage.Photo[len(photoMessage.Photo)-1].FileID
+		if service.UpdatePictureTelegramInfo(ctx, picture, picture.TelegramInfo) != nil {
+			Logger.Warnf("更新图片信息失败: %s", err)
+		}
 	}
 
 }

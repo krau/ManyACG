@@ -45,7 +45,7 @@ func PostArtwork(bot *telego.Bot, artwork *types.Artwork) (messages []telego.Mes
 			for _, tag := range artwork.Tags {
 				tag = replaceChars(tag, []string{":", "：", "-", "（", "）", "「", "」", "*"}, "_")
 				tag = replaceChars(tag, []string{"?"}, "")
-				tag = replaceChars(tag, []string{"/"}, " #")
+				tag = replaceChars(tag, []string{"/"}, " "+"#")
 				tags += "\\#" + strings.Join(strings.Split(escapeMarkdown(tag), " "), "") + " "
 			}
 			caption += "\n\n" + tags
