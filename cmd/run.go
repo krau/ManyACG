@@ -1,7 +1,9 @@
 package cmd
 
 import (
+	"ManyACG-Bot/api/restful"
 	"ManyACG-Bot/bot"
+	"ManyACG-Bot/config"
 	"ManyACG-Bot/dao"
 	"ManyACG-Bot/fetcher"
 	. "ManyACG-Bot/logger"
@@ -20,5 +22,9 @@ func Run() {
 		}
 	}()
 	go bot.RunPolling()
-	fetcher.StartScheduler(context.TODO())
+	go fetcher.StartScheduler(context.TODO())
+	if config.Cfg.API.Enable {
+		go restful.Run()
+	}
+	select {}
 }

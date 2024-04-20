@@ -3,12 +3,20 @@ package config
 import "github.com/spf13/viper"
 
 type Config struct {
+	API      apiConfig      `toml:"api" mapstructure:"api" json:"api" yaml:"api"`
 	Fetcher  fetcherConfig  `toml:"fetcher" mapstructure:"fetcher" json:"fetcher" yaml:"fetcher"`
 	Log      logConfig      `toml:"log" mapstructure:"log" json:"log" yaml:"log"`
 	Source   sourceConfigs  `toml:"source" mapstructure:"source" json:"source" yaml:"source"`
 	Storage  storageConfigs `toml:"storage" mapstructure:"storage" json:"storage" yaml:"storage"`
 	Telegram telegramConfig `toml:"telegram" mapstructure:"telegram" json:"telegram" yaml:"telegram"`
 	Database databaseConfig `toml:"database" mapstructure:"database" json:"database" yaml:"database"`
+}
+
+type apiConfig struct {
+	Enable  bool   `toml:"enable" mapstructure:"enable" json:"enable" yaml:"enable"`
+	Address string `toml:"address" mapstructure:"address" json:"address" yaml:"address"`
+	Auth    bool   `toml:"auth" mapstructure:"auth" json:"auth" yaml:"auth"`
+	Token   string `toml:"token" mapstructure:"token" json:"token" yaml:"token"`
 }
 
 type fetcherConfig struct {

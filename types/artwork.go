@@ -5,46 +5,46 @@ import (
 )
 
 type Artwork struct {
-	Title       string
-	Description string
-	R18         bool
-	CreatedAt   time.Time
-	SourceType  SourceType
-	SourceURL   string
-	Artist      *Artist
-	Tags        []string
-	Pictures    []*Picture
+	Title       string     `json:"title" bson:"title"`
+	Description string     `json:"description" bson:"description"`
+	R18         bool       `json:"r18" bson:"r18"`
+	CreatedAt   time.Time  `json:"created_at" bson:"created_at"`
+	SourceType  SourceType `json:"source_type" bson:"source_type"`
+	SourceURL   string     `json:"source_url" bson:"source_url"`
+	Artist      *Artist    `json:"artist" bson:"artist"`
+	Tags        []string   `json:"tags" bson:"tags"`
+	Pictures    []*Picture `json:"pictures" bson:"pictures"`
 }
 
 type Artist struct {
-	Name     string
-	Type     SourceType
-	UID      int
-	Username string
+	Name     string     `json:"name" bson:"name"`
+	Type     SourceType `json:"type" bson:"type"`
+	UID      int        `json:"uid" bson:"uid"`
+	Username string     `json:"username" bson:"username"`
 }
 
 type Picture struct {
-	Index     uint   // 图片在作品中的顺序
-	Thumbnail string // 缩略图 URL
-	Original  string // 原图 URL
+	Index     uint   `json:"index" bson:"index"`
+	Thumbnail string `json:"thumbnail" bson:"thumbnail"`
+	Original  string `json:"original" bson:"original"`
 
-	Width     uint
-	Height    uint
-	Hash      string
-	BlurScore float64
+	Width     uint    `json:"width" bson:"width"`
+	Height    uint    `json:"height" bson:"height"`
+	Hash      string  `json:"hash" bson:"hash"`
+	BlurScore float64 `json:"blur_score" bson:"blur_score"`
 
-	TelegramInfo *TelegramInfo
-	StorageInfo  *StorageInfo
+	TelegramInfo *TelegramInfo `json:"telegram_info" bson:"telegram_info"`
+	StorageInfo  *StorageInfo  `json:"storage_info" bson:"storage_info"`
 }
 
 type TelegramInfo struct {
-	PhotoFileID    string
-	DocumentFileID string
-	MessageID      int
-	MediaGroupID   string
+	PhotoFileID    string `json:"photo_file_id" bson:"photo_file_id"`
+	DocumentFileID string `json:"document_file_id" bson:"document_file_id"`
+	MessageID      int    `json:"message_id" bson:"message_id"`
+	MediaGroupID   string `json:"media_group_id" bson:"media_group_id"`
 }
 
 type StorageInfo struct {
-	Type StorageType
-	Path string
+	Type StorageType `json:"type" bson:"type"`
+	Path string      `json:"path" bson:"path"`
 }
