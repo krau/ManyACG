@@ -58,6 +58,9 @@ func CreateArtwork(ctx context.Context, artwork *types.Artwork) (*types.Artwork,
 		}
 		if artistModel != nil {
 			artist_id = artistModel.ID
+			artistModel.Name = artwork.Artist.Name
+			artistModel.Username = artwork.Artist.Username
+			dao.UpdateArtistByUID(ctx, artistModel.UID, artistModel)
 		} else {
 			artistModel = &model.ArtistModel{
 				Type:     artwork.Artist.Type,
@@ -196,4 +199,43 @@ func GetRandomArtworksByTagsR18(ctx context.Context, tags []string, r18 bool, li
 		}
 	}
 	return artworks, nil
+}
+
+func GetArtworkByURL(ctx context.Context, sourceURL string) (*types.Artwork, error) {
+	artworkModel, err := dao.GetArtworkByURL(ctx, sourceURL)
+	if err != nil {
+		return nil, err
+	}
+	artistModel, err := dao.GetArtistByID(ctx, artworkModel.ArtistID)
+	if err != nil {
+		return nil, err
+	}
+	tags := make([]string, len(artworkModel.Tags))
+	for i, tagID := range artworkModel.Tags {
+		tagModel, err := dao.GetTagByID(ctx, tagID)
+		if err != nil {
+			return nil, err
+		}
+		tags[i] = tagModel.Name
+	}
+	pictures := make([]*types.Picture, len(artworkModel.Pictures))
+	for i, pictureID := range artworkModel.Pictures {
+		pictureModel, err := dao.GetPictureByID(ctx, pictureID)
+		if err != nil {
+			return nil, err
+		}
+		pictures[i] = pictureModel.ToPicture()
+	}
+
+	return &types.Artwork{
+		Title:       artworkModel.Title,
+		Description: artworkModel.Description,
+		R18:         artworkModel.R18,
+		CreatedAt:   artworkModel.CreatedAt.Time(),
+		SourceType:  artworkModel.SourceType,
+		SourceURL:   artworkModel.SourceURL,
+		Artist:      artistModel.ToArtist(),
+		Tags:        tags,
+		Pictures:    pictures,
+	}, nil
 }

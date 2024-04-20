@@ -2,7 +2,6 @@ package fetcher
 
 import (
 	"ManyACG-Bot/config"
-	"ManyACG-Bot/dao"
 	. "ManyACG-Bot/logger"
 	"ManyACG-Bot/service"
 	"ManyACG-Bot/sources"
@@ -37,7 +36,7 @@ func StartScheduler(ctx context.Context) {
 	storage := storage.GetStorage()
 
 	for artwork := range artworkCh {
-		_, err := dao.GetArtworkByURL(ctx, artwork.SourceURL)
+		_, err := service.GetArtworkByURL(ctx, artwork.SourceURL)
 		if err != nil && !errors.Is(err, mongo.ErrNoDocuments) {
 			Logger.Errorf("Error when getting artwork %s: %s", artwork.Title, err)
 			continue
@@ -141,7 +140,7 @@ func FetchOnce(ctx context.Context, limit int) {
 	storage := storage.GetStorage()
 
 	for _, artwork := range artworks {
-		_, err := dao.GetArtworkByURL(ctx, artwork.SourceURL)
+		_, err := service.GetArtworkByURL(ctx, artwork.SourceURL)
 		if err != nil && !errors.Is(err, mongo.ErrNoDocuments) {
 			Logger.Errorf("Error when getting artwork %s: %s", artwork.Title, err)
 			continue
