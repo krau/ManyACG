@@ -42,6 +42,15 @@ func GetPictureByOriginal(ctx context.Context, original string) (*model.PictureM
 	return &picture, nil
 }
 
+func GetPictureByID(ctx context.Context, id primitive.ObjectID) (*model.PictureModel, error) {
+	var picture model.PictureModel
+	err := pictureCollection.FindOne(ctx, bson.M{"_id": id}).Decode(&picture)
+	if err != nil {
+		return nil, err
+	}
+	return &picture, nil
+}
+
 func UpdatePictureTelegramInfoByID(ctx context.Context, id primitive.ObjectID, telegramInfo *model.TelegramInfo) (*mongo.UpdateResult, error) {
 	return pictureCollection.UpdateOne(ctx, bson.M{"_id": id}, bson.M{"$set": bson.M{"telegram_info": telegramInfo}})
 }

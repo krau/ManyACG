@@ -96,7 +96,7 @@ func Run() {
 				Logger.Errorf("Error when saving pictures of artwork %s: %s", artwork.Title, storageErrs)
 				go func() {
 					if telegram.Bot.DeleteMessages(&telego.DeleteMessagesParams{
-						ChatID:     telegram.ChatID,
+						ChatID:     telegram.ChannelChatID,
 						MessageIDs: telegram.GetMessageIDs(messages),
 					}) != nil {
 						Logger.Errorf("Error when deleting messages: %s", err)
@@ -110,7 +110,7 @@ func Run() {
 				Logger.Errorf("Error when creating artwork %s: %s", artwork.SourceURL, err)
 				go func() {
 					if telegram.Bot.DeleteMessages(&telego.DeleteMessagesParams{
-						ChatID:     telegram.ChatID,
+						ChatID:     telegram.ChannelChatID,
 						MessageIDs: telegram.GetMessageIDs(messages),
 					}) != nil {
 						Logger.Errorf("Error when deleting messages: %s", err)

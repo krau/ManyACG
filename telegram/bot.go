@@ -12,8 +12,9 @@ import (
 )
 
 var (
-	Bot    *telego.Bot
-	ChatID telego.ChatID
+	Bot           *telego.Bot
+	BotUsername   string // 没有 @
+	ChannelChatID telego.ChatID
 )
 
 func init() {
@@ -27,10 +28,38 @@ func init() {
 		os.Exit(1)
 	}
 	if config.Cfg.Telegram.Username != "" {
-		ChatID = telegoutil.Username(config.Cfg.Telegram.Username)
+		ChannelChatID = telegoutil.Username(config.Cfg.Telegram.Username)
 	} else {
-		ChatID = telegoutil.ID(config.Cfg.Telegram.ChatID)
+		ChannelChatID = telegoutil.ID(config.Cfg.Telegram.ChatID)
 	}
+
+	me, err := Bot.GetMe()
+	if err != nil {
+		Logger.Errorf("Error when getting bot info: %s", err)
+		os.Exit(1)
+	}
+	BotUsername = me.Username
+
+	Bot.SetMyCommands(&telego.SetMyCommandsParams{
+		Commands: []telego.BotCommand{
+			{
+				Command:     "start",
+				Description: "开始涩涩",
+			},
+			{
+				Command:     "file",
+				Description: "获取原图文件",
+			},
+			{
+				Command:     "setu",
+				Description: "来点涩图",
+			},
+			{
+				Command:     "random",
+				Description: "随机1张全年龄图片",
+			},
+		},
+	})
 
 	go RunPolling()
 }
@@ -62,6 +91,7 @@ func RunPolling() {
 
 	botHandler.HandleMessageCtx(start, telegohandler.CommandEqual("start"))
 	botHandler.HandleMessageCtx(getPictureFile, telegohandler.CommandEqual("file"))
+	botHandler.HandleMessageCtx(randomPicture, telegohandler.Or(telegohandler.CommandEqual("setu"), telegohandler.CommandEqual("random")))
 
 	botHandler.Start()
 }

@@ -34,10 +34,10 @@ func (w *Webdav) SavePicture(artwork *types.Artwork, picture *types.Picture) (*t
 		Type: types.StorageTypeWebdav,
 		Path: filePath,
 	}, nil
-
 }
 
 func (w *Webdav) GetFile(info *types.StorageInfo) ([]byte, error) {
+	Logger.Debugf("Getting file %s", info.Path)
 	if config.Cfg.Storage.Webdav.CacheDir != "" {
 		return w.GetFileWithCache(info)
 	}

@@ -5,6 +5,7 @@ import (
 	"context"
 
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
@@ -22,7 +23,7 @@ func CreateTags(ctx context.Context, tags []*model.TagModel) (*mongo.InsertManyR
 	return tagCollection.InsertMany(ctx, docs)
 }
 
-func GetTagByID(ctx context.Context, id int) (*model.TagModel, error) {
+func GetTagByID(ctx context.Context, id primitive.ObjectID) (*model.TagModel, error) {
 	var tag model.TagModel
 	if err := tagCollection.FindOne(ctx, bson.M{"_id": id}).Decode(&tag); err != nil {
 		return nil, err

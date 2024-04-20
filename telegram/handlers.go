@@ -2,10 +2,11 @@ package telegram
 
 import (
 	"ManyACG-Bot/service"
-	"ManyACG-Bot/storage"
-	"bytes"
+	"ManyACG-Bot/types"
 	"context"
-	"path/filepath"
+	"fmt"
+	"strconv"
+	"strings"
 
 	"github.com/mymmrac/telego"
 	"github.com/mymmrac/telego/telegoutil"
@@ -13,7 +14,34 @@ import (
 	. "ManyACG-Bot/logger"
 )
 
-func start(_ context.Context, bot *telego.Bot, message telego.Message) {
+func start(ctx context.Context, bot *telego.Bot, message telego.Message) {
+	_, _, args := telegoutil.ParseCommand(message.Text)
+	if len(args) > 0 {
+		Logger.Debugf("start: args=%v", args)
+		if strings.HasPrefix(args[0], "file_") {
+			messageIDStr := args[0][5:]
+			messageID, err := strconv.Atoi(messageIDStr)
+			if err != nil {
+				bot.SendMessage(telegoutil.Messagef(message.Chat.ChatID(), "获取失败: %s", err).WithReplyParameters(
+					&telego.ReplyParameters{
+						MessageID: message.MessageID,
+					},
+				))
+				return
+			}
+			_, err = sendPictureFileByMessageID(ctx, bot, message, messageID)
+			if err != nil {
+				bot.SendMessage(telegoutil.Messagef(message.Chat.ChatID(), "获取失败: %s", err).WithReplyParameters(
+					&telego.ReplyParameters{
+						MessageID: message.MessageID,
+					},
+				))
+				return
+			}
+		}
+		return
+	}
+
 	bot.SendMessage(
 		telegoutil.Message(message.Chat.ChatID(),
 			"Hi~").
@@ -57,43 +85,65 @@ func getPictureFile(ctx context.Context, bot *telego.Bot, message telego.Message
 		return
 	}
 
-	picture, err := service.GetPictureByMessageID(ctx, messageOriginChannel.MessageID)
+	_, err := sendPictureFileByMessageID(ctx, bot, message, messageOriginChannel.MessageID)
 	if err != nil {
-		bot.SendMessage(telegoutil.Messagef(message.Chat.ChatID(), "查询图片信息失败: %s", err).
+		bot.SendMessage(telegoutil.Messagef(message.Chat.ChatID(), "获取失败: %s", err).WithReplyParameters(
+			&telego.ReplyParameters{
+				MessageID: message.MessageID,
+			},
+		))
+		return
+	}
+}
+
+func randomPicture(ctx context.Context, bot *telego.Bot, message telego.Message) {
+	cmd, _, args := telegoutil.ParseCommand(message.Text)
+	r18 := cmd == "setu"
+	limit := 1
+	Logger.Debugf("randomPicture: r18=%v, args=%v", r18, args)
+	artwork, err := service.GetRandomArtworksByTagsR18(ctx, args, r18, limit)
+	if err != nil {
+		Logger.Warnf("获取图片失败: %s", err)
+		bot.SendMessage(telegoutil.Messagef(message.Chat.ChatID(), "获取图片失败: %s", err).
 			WithReplyParameters(&telego.ReplyParameters{
 				MessageID: message.MessageID,
 			}))
 		return
 	}
-
-	var file telego.InputFile
-	if picture.TelegramInfo.DocumentFileID != "" {
-		file = telegoutil.FileFromID(picture.TelegramInfo.DocumentFileID)
-	} else {
-		data, err := storage.GetStorage().GetFile(picture.StorageInfo)
-		if err != nil {
-			bot.SendMessage(telegoutil.Messagef(message.Chat.ChatID(), "获取图片失败: %s", err).
-				WithReplyParameters(&telego.ReplyParameters{
-					MessageID: message.MessageID,
-				}))
-			return
-		}
-		file = telegoutil.File(telegoutil.NameReader(bytes.NewReader(data), filepath.Base(picture.Original)))
+	if len(artwork) == 0 {
+		bot.SendMessage(telegoutil.Message(message.Chat.ChatID(), "未找到图片").
+			WithReplyParameters(&telego.ReplyParameters{
+				MessageID: message.MessageID,
+			}))
+		return
 	}
-	documentMessage, err := bot.SendDocument(telegoutil.Document(message.Chat.ChatID(), file).
+	picture := artwork[0].Pictures[0]
+	var file telego.InputFile
+	if picture.TelegramInfo.PhotoFileID != "" {
+		file = telegoutil.FileFromID(picture.TelegramInfo.PhotoFileID)
+	} else {
+		photoURL := picture.Original
+		if artwork[0].SourceType == types.SourceTypePixiv {
+			photoURL = strings.Replace(photoURL, "img-original", "img-master", 1)
+			photoURL = strings.Replace(photoURL, ".jpg", "_master1200.jpg", 1)
+			photoURL = strings.Replace(photoURL, ".png", "_master1200.jpg", 1)
+		}
+		file = telegoutil.FileFromURL(photoURL)
+	}
+	_, err = bot.SendPhoto(telegoutil.Photo(message.Chat.ChatID(), file).
 		WithReplyParameters(&telego.ReplyParameters{
 			MessageID: message.MessageID,
-		}))
+		}).WithCaption(artwork[0].Title).WithReplyMarkup(
+		telegoutil.InlineKeyboard([]telego.InlineKeyboardButton{
+			telegoutil.InlineKeyboardButton("来源").WithURL(fmt.Sprintf("https://t.me/%s/%d", strings.ReplaceAll(ChannelChatID.String(), "@", ""), picture.TelegramInfo.MessageID)),
+			telegoutil.InlineKeyboardButton("原图").WithURL(fmt.Sprintf("https://t.me/%s/?start=file_%d", BotUsername, picture.TelegramInfo.MessageID)),
+		}),
+	))
 	if err != nil {
-		bot.SendMessage(telegoutil.Messagef(ChatID, "发送文件失败: %s", err))
-	}
-	if documentMessage != nil {
-		if documentMessage.Document != nil {
-			picture.TelegramInfo.DocumentFileID = documentMessage.Document.FileID
-			if service.UpdatePictureTelegramInfo(ctx, picture, picture.TelegramInfo) != nil {
-				Logger.Warnf("更新图片信息失败: %s", err)
-			}
-		}
+		bot.SendMessage(telegoutil.Messagef(message.Chat.ChatID(), "发送图片失败: %s", err).
+			WithReplyParameters(&telego.ReplyParameters{
+				MessageID: message.MessageID,
+			}))
 	}
 
 }

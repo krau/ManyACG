@@ -133,7 +133,7 @@ func (resp *PixivAjaxResp) ToArtwork() (*types.Artwork, error) {
 		R18:         r18,
 		SourceType:  types.SourceTypePixiv,
 		SourceURL:   "https://www.pixiv.net/artworks/" + resp.Body.IllustId,
-		Artist: types.Artist{
+		Artist: &types.Artist{
 			Name:     resp.Body.Username,
 			Type:     types.SourceTypePixiv,
 			UID:      uid,

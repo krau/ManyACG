@@ -35,6 +35,70 @@ func GetArtworkByURL(ctx context.Context, url string) (*model.ArtworkModel, erro
 	return &artwork, err
 }
 
+func GetRandomArtworks(ctx context.Context, limit int) ([]*model.ArtworkModel, error) {
+	var artworks []*model.ArtworkModel
+	cursor, err := artworkCollection.Aggregate(ctx, mongo.Pipeline{
+		bson.D{{Key: "$sample", Value: bson.M{"size": limit}}},
+	})
+	if err != nil {
+		return nil, err
+	}
+	err = cursor.All(ctx, &artworks)
+	if err != nil {
+		return nil, err
+	}
+	return artworks, nil
+
+}
+
+func GetRandomArtworksR18(ctx context.Context, r18 bool, limit int) ([]*model.ArtworkModel, error) {
+	var artworks []*model.ArtworkModel
+	cursor, err := artworkCollection.Aggregate(ctx, mongo.Pipeline{
+		bson.D{{Key: "$match", Value: bson.M{"r18": r18}}},
+		bson.D{{Key: "$sample", Value: bson.M{"size": limit}}},
+	})
+	if err != nil {
+		return nil, err
+	}
+	err = cursor.All(ctx, &artworks)
+	if err != nil {
+		return nil, err
+	}
+	return artworks, nil
+}
+
+func GetRandomArtworksByTags(ctx context.Context, tags []primitive.ObjectID, limit int) ([]*model.ArtworkModel, error) {
+	var artworks []*model.ArtworkModel
+	cursor, err := artworkCollection.Aggregate(ctx, mongo.Pipeline{
+		bson.D{{Key: "$match", Value: bson.M{"tags": bson.M{"$in": tags}}}},
+		bson.D{{Key: "$sample", Value: bson.M{"size": limit}}},
+	})
+	if err != nil {
+		return nil, err
+	}
+	err = cursor.All(ctx, &artworks)
+	if err != nil {
+		return nil, err
+	}
+	return artworks, nil
+}
+
+func GetRandomArtworksByTagsR18(ctx context.Context, tags []primitive.ObjectID, r18 bool, limit int) ([]*model.ArtworkModel, error) {
+	var artworks []*model.ArtworkModel
+	cursor, err := artworkCollection.Aggregate(ctx, mongo.Pipeline{
+		bson.D{{Key: "$match", Value: bson.M{"tags": bson.M{"$in": tags}, "r18": r18}}},
+		bson.D{{Key: "$sample", Value: bson.M{"size": limit}}},
+	})
+	if err != nil {
+		return nil, err
+	}
+	err = cursor.All(ctx, &artworks)
+	if err != nil {
+		return nil, err
+	}
+	return artworks, nil
+}
+
 func UpdateArtworkPicturesByID(ctx context.Context, id primitive.ObjectID, pictures []primitive.ObjectID) (*mongo.UpdateResult, error) {
 	return artworkCollection.UpdateOne(ctx, bson.M{"_id": id}, bson.M{"$set": bson.M{"pictures": pictures}})
 }

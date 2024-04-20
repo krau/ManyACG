@@ -11,7 +11,7 @@ type Artwork struct {
 	CreatedAt   time.Time
 	SourceType  SourceType
 	SourceURL   string
-	Artist      Artist
+	Artist      *Artist
 	Tags        []string
 	Pictures    []*Picture
 }

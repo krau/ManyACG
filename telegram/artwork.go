@@ -24,10 +24,13 @@ func PostArtwork(bot *telego.Bot, artwork *types.Artwork) (messages []telego.Mes
 
 	inputMediaPhotos := make([]telego.InputMedia, len(artwork.Pictures))
 	for i, picture := range artwork.Pictures {
-		regularURL := strings.Replace(picture.Original, "img-original", "img-master", 1)
-		regularURL = strings.Replace(regularURL, ".jpg", "_master1200.jpg", 1)
-		regularURL = strings.Replace(regularURL, ".png", "_master1200.jpg", 1)
-		photo := telegoutil.MediaPhoto(telegoutil.FileFromURL(regularURL))
+		photoURL := picture.Original
+		if artwork.SourceType == types.SourceTypePixiv {
+			photoURL = strings.Replace(photoURL, "img-original", "img-master", 1)
+			photoURL = strings.Replace(photoURL, ".jpg", "_master1200.jpg", 1)
+			photoURL = strings.Replace(photoURL, ".png", "_master1200.jpg", 1)
+		}
+		photo := telegoutil.MediaPhoto(telegoutil.FileFromURL(photoURL))
 		if i == 0 {
 			caption := fmt.Sprintf("[*%s*](%s)", escapeMarkdown(artwork.Title), artwork.SourceURL)
 			caption += "\n\n" + "*Author:* " + escapeMarkdown(artwork.Artist.Name)
@@ -56,7 +59,7 @@ func PostArtwork(bot *telego.Bot, artwork *types.Artwork) (messages []telego.Mes
 
 	return bot.SendMediaGroup(
 		telegoutil.MediaGroup(
-			ChatID,
+			ChannelChatID,
 			inputMediaPhotos...,
 		),
 	)

@@ -4,6 +4,7 @@ import (
 	"ManyACG-Bot/dao"
 	"ManyACG-Bot/dao/model"
 	es "ManyACG-Bot/errors"
+	. "ManyACG-Bot/logger"
 	"ManyACG-Bot/types"
 	"context"
 	"errors"
@@ -28,17 +29,15 @@ func CreateArtwork(ctx context.Context, artwork *types.Artwork) (*types.Artwork,
 	defer session.EndSession(ctx)
 
 	result, err := session.WithTransaction(ctx, func(ctx mongo.SessionContext) (interface{}, error) {
-
 		// 创建 Tag
 		tagIDs := make([]primitive.ObjectID, len(artwork.Tags))
-		newTagCount := 0
-		for _, tag := range artwork.Tags {
+		for i, tag := range artwork.Tags {
 			tagModel, err := dao.GetTagByName(ctx, tag)
 			if err != nil && !errors.Is(err, mongo.ErrNoDocuments) {
 				return nil, err
 			}
 			if tagModel != nil {
-				tagIDs = append(tagIDs, tagModel.ID)
+				tagIDs[i] = tagModel.ID
 				continue
 			}
 			tagModel = &model.TagModel{
@@ -48,8 +47,7 @@ func CreateArtwork(ctx context.Context, artwork *types.Artwork) (*types.Artwork,
 			if err != nil {
 				return nil, err
 			}
-			tagIDs[newTagCount] = tagRes.InsertedID.(primitive.ObjectID)
-			newTagCount++
+			tagIDs[i] = tagRes.InsertedID.(primitive.ObjectID)
 		}
 
 		// 创建 Artist
@@ -131,4 +129,71 @@ func CreateArtwork(ctx context.Context, artwork *types.Artwork) (*types.Artwork,
 	}
 	artwork.CreatedAt = result.(*model.ArtworkModel).CreatedAt.Time()
 	return artwork, nil
+}
+
+func GetRandomArtworksByTagsR18(ctx context.Context, tags []string, r18 bool, limit int) ([]*types.Artwork, error) {
+	var artworkModels []*model.ArtworkModel
+	if len(tags) == 0 {
+		var err error
+		artworkModels, err = dao.GetRandomArtworksR18(ctx, r18, limit)
+		if err != nil {
+			Logger.Errorf("GetRandomArtworksR18: %v", err)
+			return nil, err
+		}
+	} else {
+		var err error
+		tagsID := make([]primitive.ObjectID, len(tags))
+		for i, tag := range tags {
+			tagModel, err := dao.GetTagByName(ctx, tag)
+			if err != nil {
+				Logger.Errorf("GetTagByName: %v", err)
+				return nil, err
+			}
+			tagsID[i] = tagModel.ID
+		}
+		artworkModels, err = dao.GetRandomArtworksByTagsR18(ctx, tagsID, r18, limit)
+		if err != nil {
+			Logger.Errorf("GetRandomArtworksByTagsR18: %v", err)
+			return nil, err
+		}
+	}
+
+	artworks := make([]*types.Artwork, len(artworkModels))
+	for i, artworkModel := range artworkModels {
+		allTags := make([]string, len(artworkModel.Tags))
+		for j, tagID := range artworkModel.Tags {
+			tagModel, err := dao.GetTagByID(ctx, tagID)
+			if err != nil {
+				Logger.Errorf("GetTagByID: %v", err)
+				return nil, err
+			}
+			allTags[j] = tagModel.Name
+		}
+		pictures := make([]*types.Picture, len(artworkModel.Pictures))
+		for k, pictureID := range artworkModel.Pictures {
+			pictureModel, err := dao.GetPictureByID(ctx, pictureID)
+			if err != nil {
+				Logger.Errorf("GetPictureByID: %v", err)
+				return nil, err
+			}
+			pictures[k] = pictureModel.ToPicture()
+		}
+		artistModel, err := dao.GetArtistByID(ctx, artworkModel.ArtistID)
+		if err != nil {
+			Logger.Errorf("GetArtistByID: %v", err)
+			return nil, err
+		}
+		artworks[i] = &types.Artwork{
+			Title:       artworkModel.Title,
+			Description: artworkModel.Description,
+			R18:         artworkModel.R18,
+			CreatedAt:   artworkModel.CreatedAt.Time(),
+			SourceType:  artworkModel.SourceType,
+			SourceURL:   artworkModel.SourceURL,
+			Artist:      artistModel.ToArtist(),
+			Tags:        allTags,
+			Pictures:    pictures,
+		}
+	}
+	return artworks, nil
 }
