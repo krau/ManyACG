@@ -6,6 +6,7 @@ import (
 	. "ManyACG-Bot/logger"
 	"context"
 	"fmt"
+	"os"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -30,15 +31,18 @@ func InitDB(ctx context.Context) {
 	}
 	client, err := mongo.Connect(ctx, options.Client().ApplyURI(uri))
 	if err != nil {
-		Logger.Panic(err)
+		Logger.Fatal(err)
+		os.Exit(1)
 	}
 	if err = client.Ping(ctx, readpref.Primary()); err != nil {
-		Logger.Panic(err)
+		Logger.Fatal(err)
+		os.Exit(1)
 	}
 	Client = client
 	DB = Client.Database(config.Cfg.Database.Database)
 	if DB == nil {
-		Logger.Panic("Failed to get database")
+		Logger.Fatal("Failed to get database")
+		os.Exit(1)
 	}
 
 	DB.CreateCollection(ctx, collections.Artworks)

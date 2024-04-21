@@ -25,7 +25,16 @@ func messageLogger(bot *telego.Bot, update telego.Update, next telegohandler.Han
 }
 
 func adminCheck(bot *telego.Bot, update telego.Update, next telegohandler.Handler) {
-	userID := update.Message.From.ID
+	if update.Message == nil && update.CallbackQuery == nil {
+		return
+	}
+	var userID int64
+	if update.Message != nil {
+		userID = update.Message.From.ID
+	}
+	if update.CallbackQuery != nil {
+		userID = update.CallbackQuery.From.ID
+	}
 	isAdmin, err := service.IsAdmin(update.Context(), userID)
 	if !isAdmin {
 		Logger.Debugf("User %d is not admin: %s", userID, err)

@@ -8,6 +8,7 @@ import (
 	"ManyACG-Bot/fetcher"
 	. "ManyACG-Bot/logger"
 	"context"
+	"os"
 	"time"
 )
 
@@ -18,7 +19,8 @@ func Run() {
 	dao.InitDB(ctx)
 	defer func() {
 		if err := dao.Client.Disconnect(ctx); err != nil {
-			Logger.Panic(err)
+			Logger.Fatal(err)
+			os.Exit(1)
 		}
 	}()
 	go bot.RunPolling()

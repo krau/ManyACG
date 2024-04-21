@@ -14,7 +14,7 @@ func initClient() {
 	webdavConfig := config.Cfg.Storage.Webdav
 	Client = gowebdav.NewClient(webdavConfig.URL, webdavConfig.Username, webdavConfig.Password)
 	if err := Client.Connect(); err != nil {
-		Logger.Panicf("connect to webdav failed: %v", err)
+		Logger.Fatalf("Failed to connect to webdav server: %v", err)
 		os.Exit(1)
 	}
 }
@@ -23,7 +23,7 @@ func init() {
 	if config.Cfg.Storage.Type == "webdav" {
 		initClient()
 		if Client == nil {
-			Logger.Panic("webdav client is nil")
+			Logger.Fatal("Failed to initialize webdav client")
 			os.Exit(1)
 		}
 	}

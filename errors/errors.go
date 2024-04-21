@@ -8,4 +8,5 @@ var (
 	ErrNilBot              = errors.New("bot is nil")
 	ErrNilArtwork          = errors.New("artwork is nil")
 	ErrArtworkAlreadyExist = errors.New("artwork already exists")
+	ErrSourceNotSupported  = errors.New("source not supported")
 )

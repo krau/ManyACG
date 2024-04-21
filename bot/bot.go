@@ -4,6 +4,7 @@ import (
 	. "ManyACG-Bot/logger"
 	"ManyACG-Bot/telegram"
 	"os"
+	"regexp"
 
 	"github.com/mymmrac/telego"
 	"github.com/mymmrac/telego/telegohandler"
@@ -47,6 +48,8 @@ func RunPolling() {
 			telegohandler.CommandEqual("set_admin"),
 			telegohandler.CommandEqual("del"),
 			telegohandler.CommandEqual("fetch"),
+			telegohandler.CallbackDataPrefix("admin"),
+			telegohandler.And(onlyPrivate, telegohandler.TextMatches(regexp.MustCompile(`https://www.pixiv.net/artworks/(\d+)`))),
 		),
 	)
 	adminHandlerGroup.Use(adminCheck)
@@ -54,6 +57,8 @@ func RunPolling() {
 	adminHandlerGroup.HandleMessageCtx(setAdmin, telegohandler.CommandEqual("set_admin"))
 	adminHandlerGroup.HandleMessageCtx(deletePicture, telegohandler.CommandEqual("del"))
 	adminHandlerGroup.HandleMessageCtx(fetchArtwork, telegohandler.CommandEqual("fetch"))
+	adminHandlerGroup.HandleCallbackQueryCtx(postArtwork, telegohandler.CallbackDataContains("post_artwork"))
+	adminHandlerGroup.HandleMessageCtx(getArtworkInfo, telegohandler.AnyMessageWithText())
 
 	botHandler.Start()
 }

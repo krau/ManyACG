@@ -1,6 +1,7 @@
 package bot
 
 import (
+	"ManyACG-Bot/common"
 	"ManyACG-Bot/service"
 	"ManyACG-Bot/telegram"
 	"ManyACG-Bot/types"
@@ -145,9 +146,7 @@ func randomPicture(ctx context.Context, bot *telego.Bot, message telego.Message)
 	} else {
 		photoURL := picture.Original
 		if artwork[0].SourceType == types.SourceTypePixiv {
-			photoURL = strings.Replace(photoURL, "img-original", "img-master", 1)
-			photoURL = strings.Replace(photoURL, ".jpg", "_master1200.jpg", 1)
-			photoURL = strings.Replace(photoURL, ".png", "_master1200.jpg", 1)
+			photoURL = common.GetPixivRegularURL(photoURL)
 		}
 		file = telegoutil.FileFromURL(photoURL)
 	}
