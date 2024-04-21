@@ -18,7 +18,15 @@ func (w *Webdav) SavePicture(artwork *types.Artwork, picture *types.Picture) (*t
 	fileName := artwork.Title + "_" + filepath.Base(picture.Original)
 	fileDir := strings.TrimSuffix(config.Cfg.Storage.Webdav.Path, "/") + "/" + string(artwork.SourceType) + "/" + artwork.Artist.Name + "/"
 	if err := Client.MkdirAll(fileDir, os.ModePerm); err != nil {
-		return nil, err
+		if strings.Contains(err.Error(), "409") {
+			fileDir = strings.TrimSuffix(config.Cfg.Storage.Webdav.Path, "/") + "/" + string(artwork.SourceType) + "/" + artwork.Artist.Username + "/"
+			if err := Client.MkdirAll(fileDir, os.ModePerm); err != nil {
+				return nil, err
+			}
+			fileName = filepath.Base(picture.Original)
+		} else {
+			return nil, err
+		}
 	}
 	fileBytes, err := common.DownloadFromURL(picture.Original)
 	if err != nil {
