@@ -46,7 +46,7 @@ func start(ctx context.Context, bot *telego.Bot, message telego.Message) {
 
 	bot.SendMessage(
 		telegoutil.Message(message.Chat.ChatID(),
-			"Hi~").
+			"喵喵喵~\n这是 ManyACG-Bot 的一个实例\n\n源码: https://github.com/krau/ManyACG-Bot").
 			WithReplyParameters(&telego.ReplyParameters{
 				MessageID: message.MessageID,
 			}))
