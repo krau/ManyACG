@@ -20,7 +20,7 @@ import (
 func PostAndCreateArtwork(ctx context.Context, artwork *types.Artwork, bot *telego.Bot, storage storage.Storage) error {
 	artworkInDB, err := service.GetArtworkByURL(ctx, artwork.SourceURL)
 	if err == nil && artworkInDB != nil {
-		Logger.Infof("Artwork %s already exists", artwork.Title)
+		Logger.Debugf("Artwork %s already exists", artwork.Title)
 		return errors.ErrArtworkAlreadyExist
 	}
 	if err != nil && !es.Is(err, mongo.ErrNoDocuments) {

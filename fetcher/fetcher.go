@@ -2,12 +2,14 @@ package fetcher
 
 import (
 	"ManyACG-Bot/config"
+	"ManyACG-Bot/errors"
 	. "ManyACG-Bot/logger"
 	"ManyACG-Bot/sources"
 	"ManyACG-Bot/storage"
 	"ManyACG-Bot/telegram"
 	"ManyACG-Bot/types"
 	"context"
+	es "errors"
 	"sync"
 	"time"
 )
@@ -30,7 +32,9 @@ func StartScheduler(ctx context.Context) {
 	for artwork := range artworkCh {
 		err := PostAndCreateArtwork(ctx, artwork, telegram.Bot, storage.GetStorage())
 		if err != nil {
-			Logger.Errorf(err.Error())
+			if !es.Is(err, errors.ErrArtworkAlreadyExist) {
+				Logger.Errorf(err.Error())
+			}
 			continue
 		}
 		time.Sleep(time.Duration(config.Cfg.Telegram.Sleep) * time.Second)
@@ -63,7 +67,9 @@ func FetchOnce(ctx context.Context, limit int) {
 	for _, artwork := range artworks {
 		err := PostAndCreateArtwork(ctx, artwork, telegram.Bot, storage.GetStorage())
 		if err != nil {
-			Logger.Errorf(err.Error())
+			if !es.Is(err, errors.ErrArtworkAlreadyExist) {
+				Logger.Errorf(err.Error())
+			}
 			continue
 		}
 		time.Sleep(time.Duration(config.Cfg.Telegram.Sleep) * time.Second)
