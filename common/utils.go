@@ -5,6 +5,17 @@ import (
 	"strings"
 )
 
+var (
+	PixivSourceURLRegexp *regexp.Regexp = regexp.MustCompile(`https://(?:www\.)?pixiv\.net/(?:artworks|i)/(\d+)`)
+	AllSourceURLRegexp   *regexp.Regexp = regexp.MustCompile(`https://(?:www\.)?pixiv\.net/(?:artworks|i)/(\d+)`)
+)
+
+var (
+	SourceURLRegexps []*regexp.Regexp = []*regexp.Regexp{
+		PixivSourceURLRegexp,
+	}
+)
+
 func DownloadFromURL(url string) ([]byte, error) {
 	resp, err := Cilent.R().Get(url)
 	if err != nil {
@@ -14,7 +25,16 @@ func DownloadFromURL(url string) ([]byte, error) {
 }
 
 func MatchSourceURL(text string) string {
-	return regexp.MustCompile(`https://www.pixiv.net/artworks/(\d+)`).FindString(text)
+	for _, reg := range SourceURLRegexps {
+		if reg.MatchString(text) {
+			if reg == PixivSourceURLRegexp {
+				url := reg.FindString(text)
+				pid := strings.Split(url, "/")[len(strings.Split(url, "/"))-1]
+				return "https://www.pixiv.net/artworks/" + pid
+			}
+		}
+	}
+	return ""
 }
 
 func GetPixivRegularURL(original string) string {

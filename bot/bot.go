@@ -1,10 +1,10 @@
 package bot
 
 import (
+	"ManyACG-Bot/common"
 	. "ManyACG-Bot/logger"
 	"ManyACG-Bot/telegram"
 	"os"
-	"regexp"
 
 	"github.com/mymmrac/telego"
 	"github.com/mymmrac/telego/telegohandler"
@@ -49,7 +49,7 @@ func RunPolling() {
 			telegohandler.CommandEqual("del"),
 			telegohandler.CommandEqual("fetch"),
 			telegohandler.CallbackDataPrefix("admin"),
-			telegohandler.And(onlyPrivate, telegohandler.TextMatches(regexp.MustCompile(`https://www.pixiv.net/artworks/(\d+)`))),
+			telegohandler.And(onlyPrivate, telegohandler.TextMatches(common.AllSourceURLRegexp)),
 		),
 	)
 	adminHandlerGroup.Use(adminCheck)
