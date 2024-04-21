@@ -88,7 +88,6 @@ func setAdmin(ctx context.Context, bot *telego.Bot, message telego.Message) {
 			}))
 		return
 	}
-
 }
 
 func deletePicture(ctx context.Context, bot *telego.Bot, message telego.Message) {

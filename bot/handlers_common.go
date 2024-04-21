@@ -64,6 +64,8 @@ func help(ctx context.Context, bot *telego.Bot, message telego.Message) {
 		helpText += `/set_admin - 设置|删除管理员
 /del - 删除图片
 /fetch - 手动开始一次抓取
+
+发送作品链接可以获取信息或发布到频道
 `
 	}
 	bot.SendMessage(telegoutil.Message(message.Chat.ChatID(), helpText).

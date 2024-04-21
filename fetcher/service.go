@@ -73,7 +73,7 @@ func PostAndCreateArtwork(ctx context.Context, artwork *types.Artwork, bot *tele
 				Logger.Errorf("deleting messages: %s", err)
 			}
 		}()
-		return fmt.Errorf("saving pictures of artwork %s: %w", artwork.Title, storageErrs)
+		return fmt.Errorf("saving pictures of artwork %s: %s", artwork.Title, storageErrs)
 	}
 
 	_, err = service.CreateArtwork(ctx, artwork)
