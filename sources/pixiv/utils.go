@@ -1,11 +1,13 @@
 package pixiv
 
 import (
+	"ManyACG-Bot/config"
 	. "ManyACG-Bot/logger"
 	"ManyACG-Bot/types"
 	"encoding/json"
 	"encoding/xml"
 	"strings"
+	"time"
 )
 
 func getPid(url string) string {
@@ -76,6 +78,9 @@ func fetchNewArtworksForRSSURLWithCh(rssURL string, limit int, artworkCh chan *t
 			continue
 		}
 		artworkCh <- artwork
+		if config.Cfg.Source.Pixiv.Sleep > 0 {
+			time.Sleep(time.Duration(config.Cfg.Source.Pixiv.Sleep) * time.Second)
+		}
 	}
 	return nil
 }
@@ -112,6 +117,9 @@ func fetchNewArtworksForRSSURL(rssURL string, limit int) ([]*types.Artwork, erro
 			continue
 		}
 		artworks = append(artworks, artwork)
+		if config.Cfg.Source.Pixiv.Sleep > 0 {
+			time.Sleep(time.Duration(config.Cfg.Source.Pixiv.Sleep) * time.Second)
+		}
 	}
 	return artworks, nil
 }

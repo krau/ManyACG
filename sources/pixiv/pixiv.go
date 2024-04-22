@@ -6,38 +6,21 @@ import (
 	"errors"
 	"fmt"
 	"strings"
-	"sync"
 )
 
 type Pixiv struct{}
 
 func (p *Pixiv) FetchNewArtworksWithCh(artworkCh chan *types.Artwork, limit int) error {
-	var wg sync.WaitGroup
-	errs := make(chan error, len(config.Cfg.Source.Pixiv.URLs))
+	errs := make([]error, 0)
 
 	for _, url := range config.Cfg.Source.Pixiv.URLs {
-		wg.Add(1)
-		go func(url string) {
-			defer wg.Done()
-			err := fetchNewArtworksForRSSURLWithCh(url, limit, artworkCh)
-			if err != nil {
-				errs <- err
-			}
-		}(url)
+		err := fetchNewArtworksForRSSURLWithCh(url, limit, artworkCh)
+		if err != nil {
+			errs = append(errs, err)
+		}
 	}
-
-	go func() {
-		wg.Wait()
-		close(errs)
-	}()
-
-	var totalErr []error
-	for err := range errs {
-		totalErr = append(totalErr, err)
-	}
-
-	if len(totalErr) > 0 {
-		return fmt.Errorf("encountered %d errors: %v", len(totalErr), totalErr)
+	if len(errs) > 0 {
+		return fmt.Errorf("encountered %d errors: %v", len(errs), errs)
 	}
 
 	return nil
