@@ -6,12 +6,14 @@ import (
 	"ManyACG-Bot/telegram"
 	"ManyACG-Bot/types"
 	"context"
+	"errors"
 	"fmt"
 	"strconv"
 	"strings"
 
 	"github.com/mymmrac/telego"
 	"github.com/mymmrac/telego/telegoutil"
+	"go.mongodb.org/mongo-driver/mongo"
 
 	. "ManyACG-Bot/logger"
 )
@@ -124,11 +126,15 @@ func randomPicture(ctx context.Context, bot *telego.Bot, message telego.Message)
 	cmd, _, args := telegoutil.ParseCommand(message.Text)
 	r18 := cmd == "setu"
 	limit := 1
-	Logger.Debugf("randomPicture: r18=%v, args=%v", r18, args)
+	Logger.Infof("randomPicture: r18=%v, args=%v", r18, args)
 	artwork, err := service.GetRandomArtworksByTagsR18(ctx, args, r18, limit)
 	if err != nil {
 		Logger.Warnf("获取图片失败: %s", err)
-		bot.SendMessage(telegoutil.Messagef(message.Chat.ChatID(), "获取图片失败: %s", err).
+		text := "获取图片失败" + err.Error()
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			text = "未找到图片"
+		}
+		bot.SendMessage(telegoutil.Message(message.Chat.ChatID(), text).
 			WithReplyParameters(&telego.ReplyParameters{
 				MessageID: message.MessageID,
 			}))

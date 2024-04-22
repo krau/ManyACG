@@ -1,6 +1,7 @@
 package common
 
 import (
+	"ManyACG-Bot/types"
 	"regexp"
 	"strings"
 )
@@ -11,8 +12,8 @@ var (
 )
 
 var (
-	SourceURLRegexps []*regexp.Regexp = []*regexp.Regexp{
-		PixivSourceURLRegexp,
+	SourceURLRegexps map[string]*regexp.Regexp = map[string]*regexp.Regexp{
+		string(types.SourceTypePixiv): PixivSourceURLRegexp,
 	}
 )
 
@@ -25,9 +26,9 @@ func DownloadFromURL(url string) ([]byte, error) {
 }
 
 func MatchSourceURL(text string) string {
-	for _, reg := range SourceURLRegexps {
+	for name, reg := range SourceURLRegexps {
 		if reg.MatchString(text) {
-			if reg == PixivSourceURLRegexp {
+			if name == string(types.SourceTypePixiv) {
 				url := reg.FindString(text)
 				pid := strings.Split(url, "/")[len(strings.Split(url, "/"))-1]
 				return "https://www.pixiv.net/artworks/" + pid

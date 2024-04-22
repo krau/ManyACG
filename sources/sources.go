@@ -1,6 +1,7 @@
 package sources
 
 import (
+	"ManyACG-Bot/common"
 	"ManyACG-Bot/config"
 	"ManyACG-Bot/errors"
 	"ManyACG-Bot/sources/pixiv"
@@ -16,10 +17,11 @@ func init() {
 }
 
 func GetArtworkInfo(sourceURL string) (*types.Artwork, error) {
-	for _, source := range Sources {
-		artwork, err := source.GetArtworkInfo(sourceURL)
-		if err == nil {
-			return artwork, nil
+	for k, v := range common.SourceURLRegexps {
+		if v.MatchString(sourceURL) {
+			if Sources[k] != nil {
+				return Sources[k].GetArtworkInfo(sourceURL)
+			}
 		}
 	}
 	return nil, errors.ErrSourceNotSupported

@@ -59,7 +59,7 @@ func fetchNewArtworksForRSSURLWithCh(rssURL string, limit int, artworkCh chan *t
 		return err
 	}
 
-	Logger.Debugf("Got %d items", len(pixivRss.Channel.Items))
+	Logger.Infof("Got %d items", len(pixivRss.Channel.Items))
 
 	for i, item := range pixivRss.Channel.Items {
 		if i >= limit {
