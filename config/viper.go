@@ -36,12 +36,17 @@ type sourceConfigs struct {
 }
 
 type SourcePixivConfig struct {
-	Enable   bool              `toml:"enable" mapstructure:"enable" json:"enable" yaml:"enable"`
-	Proxy    string            `toml:"proxy" mapstructure:"proxy" json:"proxy" yaml:"proxy"`
-	URLs     []string          `toml:"urls" mapstructure:"urls" json:"urls" yaml:"urls"`
-	Intervel uint              `toml:"intervel" mapstructure:"intervel" json:"intervel" yaml:"intervel"`
-	Sleep    uint              `toml:"sleep" mapstructure:"sleep" json:"sleep" yaml:"sleep"`
-	Cookies  map[string]string `toml:"cookies" mapstructure:"cookies" json:"cookies" yaml:"cookies"`
+	Enable   bool           `toml:"enable" mapstructure:"enable" json:"enable" yaml:"enable"`
+	Proxy    string         `toml:"proxy" mapstructure:"proxy" json:"proxy" yaml:"proxy"`
+	URLs     []string       `toml:"urls" mapstructure:"urls" json:"urls" yaml:"urls"`
+	Intervel uint           `toml:"intervel" mapstructure:"intervel" json:"intervel" yaml:"intervel"`
+	Sleep    uint           `toml:"sleep" mapstructure:"sleep" json:"sleep" yaml:"sleep"`
+	Cookies  []cookieConfig `toml:"cookies" mapstructure:"cookies" json:"cookies" yaml:"cookies"`
+}
+
+type cookieConfig struct {
+	Name  string `toml:"name" mapstructure:"name" json:"name" yaml:"name"`
+	Value string `toml:"value" mapstructure:"value" json:"value" yaml:"value"`
 }
 
 type storageConfigs struct {

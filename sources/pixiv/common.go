@@ -12,10 +12,10 @@ var ReqClient *req.Client
 func init() {
 	ReqClient = req.C().ImpersonateChrome()
 	cookies := make([]*http.Cookie, 0)
-	for name, value := range config.Cfg.Source.Pixiv.Cookies {
+	for _, cookie := range config.Cfg.Source.Pixiv.Cookies {
 		cookies = append(cookies, &http.Cookie{
-			Name:  name,
-			Value: value,
+			Name:  cookie.Name,
+			Value: cookie.Value,
 		})
 	}
 	ReqClient.SetCommonCookies(cookies...)
