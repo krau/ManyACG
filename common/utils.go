@@ -17,7 +17,7 @@ var (
 )
 
 func DownloadFromURL(url string) ([]byte, error) {
-	resp, err := Cilent.R().Get(url)
+	resp, err := Client.R().Get(url)
 	if err != nil {
 		return nil, err
 	}
