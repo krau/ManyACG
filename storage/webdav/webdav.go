@@ -16,12 +16,24 @@ type Webdav struct{}
 func (w *Webdav) SavePicture(artwork *types.Artwork, picture *types.Picture) (*types.StorageInfo, error) {
 	Logger.Debugf("saving picture %d of artwork %s", picture.Index, artwork.Title)
 	fileName := artwork.Title + "_" + filepath.Base(picture.Original)
-	fileName = strings.ReplaceAll(fileName, " ", "_")
-	fileName = strings.ReplaceAll(fileName, "/", "_")
-	fileName = strings.ReplaceAll(fileName, "\\", "_")
+	fileName = strings.NewReplacer(
+		" ", "_",
+		"/", "_",
+		"\\", "_",
+		":", "_",
+		"*", "_",
+		"?", "_",
+		"\"", "_",
+		"<", "_",
+		">", "_",
+		"|", "_",
+		"%", "_",
+		"#", "_",
+		"+", "_",
+	).Replace(fileName)
 	fileDir := strings.TrimSuffix(config.Cfg.Storage.Webdav.Path, "/") + "/" + string(artwork.SourceType) + "/" + artwork.Artist.Name + "/"
 	if err := Client.MkdirAll(fileDir, os.ModePerm); err != nil {
-		if strings.Contains(err.Error(), "409") {
+		if strings.Contains(err.Error(), "409") || strings.Contains(err.Error(), "405") {
 			fileDir = strings.TrimSuffix(config.Cfg.Storage.Webdav.Path, "/") + "/" + string(artwork.SourceType) + "/" + artwork.Artist.Username + "/"
 			if err := Client.MkdirAll(fileDir, os.ModePerm); err != nil {
 				return nil, err
