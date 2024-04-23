@@ -117,3 +117,10 @@ func GetArtworkMarkdownCaption(artwork *types.Artwork) string {
 	caption += "\n\n" + tags
 	return caption
 }
+
+func ReplyMessage(bot *telego.Bot, message telego.Message, text string) (*telego.Message, error) {
+	return bot.SendMessage(telegoutil.Message(message.Chat.ChatID(), text).
+		WithReplyParameters(&telego.ReplyParameters{
+			MessageID: message.MessageID,
+		}))
+}

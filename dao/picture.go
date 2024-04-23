@@ -58,3 +58,7 @@ func UpdatePictureTelegramInfoByID(ctx context.Context, id primitive.ObjectID, t
 func DeletePicturesByIDs(ctx context.Context, ids []primitive.ObjectID) (*mongo.DeleteResult, error) {
 	return pictureCollection.DeleteMany(ctx, bson.M{"_id": bson.M{"$in": ids}})
 }
+
+func DeletePicturesByArtworkID(ctx context.Context, artworkID primitive.ObjectID) (*mongo.DeleteResult, error) {
+	return pictureCollection.DeleteMany(ctx, bson.M{"artwork_id": artworkID})
+}

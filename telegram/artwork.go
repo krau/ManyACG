@@ -11,7 +11,7 @@ import (
 	"github.com/mymmrac/telego/telegoutil"
 )
 
-func PostArtwork(bot *telego.Bot, artwork *types.Artwork) (messages []telego.Message, err error) {
+func PostArtwork(bot *telego.Bot, artwork *types.Artwork) ([]telego.Message, error) {
 	if bot == nil {
 		Logger.Fatal("Bot is nil")
 		return nil, errors.ErrNilBot
@@ -37,10 +37,37 @@ func PostArtwork(bot *telego.Bot, artwork *types.Artwork) (messages []telego.Mes
 		inputMediaPhotos[i] = photo
 	}
 
-	return bot.SendMediaGroup(
-		telegoutil.MediaGroup(
+	if len(inputMediaPhotos) <= 10 {
+		return bot.SendMediaGroup(
+			telegoutil.MediaGroup(
+				ChannelChatID,
+				inputMediaPhotos...,
+			),
+		)
+	}
+
+	allMessages := make([]telego.Message, len(inputMediaPhotos))
+	for i := 0; i < len(inputMediaPhotos); i += 10 {
+		end := i + 10
+		if end > len(inputMediaPhotos) {
+			end = len(inputMediaPhotos)
+		}
+		mediaGroup := telegoutil.MediaGroup(
 			ChannelChatID,
-			inputMediaPhotos...,
-		),
-	)
+			inputMediaPhotos[i:end]...,
+		)
+		if i > 0 {
+			mediaGroup = mediaGroup.WithReplyParameters(&telego.ReplyParameters{
+				ChatID:    ChannelChatID,
+				MessageID: allMessages[i-1].MessageID,
+			})
+		}
+		messages, err := bot.SendMediaGroup(mediaGroup)
+		if err != nil {
+			return nil, err
+		}
+		copy(allMessages[i:], messages)
+	}
+	Logger.Info(allMessages)
+	return allMessages, nil
 }

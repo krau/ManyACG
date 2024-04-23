@@ -239,3 +239,78 @@ func GetArtworkByURL(ctx context.Context, sourceURL string) (*types.Artwork, err
 		Pictures:    pictures,
 	}, nil
 }
+
+func GetArtworkByMessageID(ctx context.Context, messageID int) (*types.Artwork, error) {
+	pictureModel, err := dao.GetPictureByMessageID(ctx, messageID)
+	if err != nil {
+		return nil, err
+	}
+	artworkModel, err := dao.GetArtworkByID(ctx, pictureModel.ArtworkID)
+	if err != nil {
+		return nil, err
+	}
+	artistModel, err := dao.GetArtistByID(ctx, artworkModel.ArtistID)
+	if err != nil {
+		return nil, err
+	}
+	tags := make([]string, len(artworkModel.Tags))
+	for i, tagID := range artworkModel.Tags {
+		tagModel, err := dao.GetTagByID(ctx, tagID)
+		if err != nil {
+			return nil, err
+		}
+		tags[i] = tagModel.Name
+	}
+	pictures := make([]*types.Picture, len(artworkModel.Pictures))
+	for i, pictureID := range artworkModel.Pictures {
+		pictureModel, err := dao.GetPictureByID(ctx, pictureID)
+		if err != nil {
+			return nil, err
+		}
+		pictures[i] = pictureModel.ToPicture()
+	}
+	return &types.Artwork{
+		Title:       artworkModel.Title,
+		Description: artworkModel.Description,
+		R18:         artworkModel.R18,
+		CreatedAt:   artworkModel.CreatedAt.Time(),
+		SourceType:  artworkModel.SourceType,
+		SourceURL:   artworkModel.SourceURL,
+		Artist:      artistModel.ToArtist(),
+		Tags:        tags,
+		Pictures:    pictures,
+	}, nil
+}
+
+func DeleteArtworkByURL(ctx context.Context, sourceURL string) error {
+	artworkModel, err := dao.GetArtworkByURL(ctx, sourceURL)
+	if err != nil {
+		return err
+	}
+	session, err := dao.Client.StartSession()
+	if err != nil {
+		return err
+	}
+	defer session.EndSession(ctx)
+	_, err = session.WithTransaction(ctx, func(ctx mongo.SessionContext) (interface{}, error) {
+		artworkResult, err := dao.DeleteArtworkByID(ctx, artworkModel.ID)
+		if err != nil {
+			return nil, err
+		}
+		if artworkResult.DeletedCount == 0 {
+			Logger.Warnf("DeleteArtworkByURL: DeletedCount == 0")
+		}
+		pictureResult, err := dao.DeletePicturesByArtworkID(ctx, artworkModel.ID)
+		if err != nil {
+			return nil, err
+		}
+		if pictureResult.DeletedCount == 0 {
+			Logger.Warnf("DeleteArtworkByURL: DeletedCount == 0")
+		}
+		return nil, nil
+	})
+	if err != nil {
+		return err
+	}
+	return nil
+}

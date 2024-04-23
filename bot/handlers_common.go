@@ -26,32 +26,18 @@ func start(ctx context.Context, bot *telego.Bot, message telego.Message) {
 			messageIDStr := args[0][5:]
 			messageID, err := strconv.Atoi(messageIDStr)
 			if err != nil {
-				bot.SendMessage(telegoutil.Messagef(message.Chat.ChatID(), "获取失败: %s", err).WithReplyParameters(
-					&telego.ReplyParameters{
-						MessageID: message.MessageID,
-					},
-				))
+				telegram.ReplyMessage(bot, message, "获取失败: "+err.Error())
 				return
 			}
 			_, err = telegram.SendPictureFileByMessageID(ctx, bot, message, messageID)
 			if err != nil {
-				bot.SendMessage(telegoutil.Messagef(message.Chat.ChatID(), "获取失败: %s", err).WithReplyParameters(
-					&telego.ReplyParameters{
-						MessageID: message.MessageID,
-					},
-				))
+				telegram.ReplyMessage(bot, message, "获取失败: "+err.Error())
 				return
 			}
 		}
 		return
 	}
-
-	bot.SendMessage(
-		telegoutil.Message(message.Chat.ChatID(),
-			"喵喵喵~\n这是 ManyACG-Bot 的一个实例\n\n源码: https://github.com/krau/ManyACG-Bot").
-			WithReplyParameters(&telego.ReplyParameters{
-				MessageID: message.MessageID,
-			}))
+	help(ctx, bot, message)
 }
 
 func help(ctx context.Context, bot *telego.Bot, message telego.Message) {
@@ -70,33 +56,22 @@ func help(ctx context.Context, bot *telego.Bot, message telego.Message) {
 发送作品链接可以获取信息或发布到频道
 `
 	}
-	bot.SendMessage(telegoutil.Message(message.Chat.ChatID(), helpText).
-		WithReplyParameters(&telego.ReplyParameters{
-			MessageID: message.MessageID,
-		}))
+	helpText += "源码: https://github.com/krau/ManyACG-Bot"
+	telegram.ReplyMessage(bot, message, helpText)
 }
 
 func getPictureFile(ctx context.Context, bot *telego.Bot, message telego.Message) {
 	replyToMessage := message.ReplyToMessage
 	if replyToMessage == nil {
-		bot.SendMessage(telegoutil.Message(message.Chat.ChatID(), "请使用该命令回复一条频道的消息").
-			WithReplyParameters(&telego.ReplyParameters{
-				MessageID: message.MessageID,
-			}))
+		telegram.ReplyMessage(bot, message, "请使用该命令回复一条频道的消息")
 		return
 	}
 	if replyToMessage.Photo == nil {
-		bot.SendMessage(telegoutil.Message(message.Chat.ChatID(), "目标消息不包含图片").
-			WithReplyParameters(&telego.ReplyParameters{
-				MessageID: message.MessageID,
-			}))
+		telegram.ReplyMessage(bot, message, "目标消息不包含图片")
 		return
 	}
 	if replyToMessage.ForwardOrigin == nil {
-		bot.SendMessage(telegoutil.Message(message.Chat.ChatID(), "请使用该命令回复一条频道的消息").
-			WithReplyParameters(&telego.ReplyParameters{
-				MessageID: message.MessageID,
-			}))
+		telegram.ReplyMessage(bot, message, "请使用该命令回复一条频道的消息")
 		return
 	}
 
@@ -104,20 +79,13 @@ func getPictureFile(ctx context.Context, bot *telego.Bot, message telego.Message
 	if replyToMessage.ForwardOrigin.OriginType() == telego.OriginTypeChannel {
 		messageOriginChannel = replyToMessage.ForwardOrigin.(*telego.MessageOriginChannel)
 	} else {
-		bot.SendMessage(telegoutil.Message(message.Chat.ChatID(), "请使用该命令回复一条频道的消息").
-			WithReplyParameters(&telego.ReplyParameters{
-				MessageID: message.MessageID,
-			}))
+		telegram.ReplyMessage(bot, message, "请使用该命令回复一条频道的消息")
 		return
 	}
 
 	_, err := telegram.SendPictureFileByMessageID(ctx, bot, message, messageOriginChannel.MessageID)
 	if err != nil {
-		bot.SendMessage(telegoutil.Messagef(message.Chat.ChatID(), "获取失败: %s", err).WithReplyParameters(
-			&telego.ReplyParameters{
-				MessageID: message.MessageID,
-			},
-		))
+		telegram.ReplyMessage(bot, message, "获取失败: "+err.Error())
 		return
 	}
 }
@@ -134,17 +102,11 @@ func randomPicture(ctx context.Context, bot *telego.Bot, message telego.Message)
 		if errors.Is(err, mongo.ErrNoDocuments) {
 			text = "未找到图片"
 		}
-		bot.SendMessage(telegoutil.Message(message.Chat.ChatID(), text).
-			WithReplyParameters(&telego.ReplyParameters{
-				MessageID: message.MessageID,
-			}))
+		telegram.ReplyMessage(bot, message, text)
 		return
 	}
 	if len(artwork) == 0 {
-		bot.SendMessage(telegoutil.Message(message.Chat.ChatID(), "未找到图片").
-			WithReplyParameters(&telego.ReplyParameters{
-				MessageID: message.MessageID,
-			}))
+		telegram.ReplyMessage(bot, message, "未找到图片")
 		return
 	}
 	picture := artwork[0].Pictures[0]
@@ -168,10 +130,7 @@ func randomPicture(ctx context.Context, bot *telego.Bot, message telego.Message)
 		}),
 	))
 	if err != nil {
-		bot.SendMessage(telegoutil.Messagef(message.Chat.ChatID(), "发送图片失败: %s", err).
-			WithReplyParameters(&telego.ReplyParameters{
-				MessageID: message.MessageID,
-			}))
+		telegram.ReplyMessage(bot, message, "发送图片失败: "+err.Error())
 	}
 	if photoMessage != nil {
 		picture.TelegramInfo.PhotoFileID = photoMessage.Photo[len(photoMessage.Photo)-1].FileID

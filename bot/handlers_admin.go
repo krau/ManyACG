@@ -34,19 +34,13 @@ func setAdmin(ctx context.Context, bot *telego.Bot, message telego.Message) {
 	} else {
 		_, _, args := telegoutil.ParseCommand(message.Text)
 		if len(args) == 0 {
-			bot.SendMessage(telegoutil.Message(message.Chat.ChatID(), "请回复一条消息或提供用户ID").
-				WithReplyParameters(&telego.ReplyParameters{
-					MessageID: message.MessageID,
-				}))
+			telegram.ReplyMessage(bot, message, "请回复一条消息或提供用户ID")
 			return
 		}
 		var err error
 		userID, err = strconv.ParseInt(args[0], 10, 64)
 		if err != nil {
-			bot.SendMessage(telegoutil.Message(message.Chat.ChatID(), "请不要输入奇怪的东西").
-				WithReplyParameters(&telego.ReplyParameters{
-					MessageID: message.MessageID,
-				}))
+			telegram.ReplyMessage(bot, message, "请不要输入奇怪的东西")
 			return
 		}
 	}
@@ -56,107 +50,97 @@ func setAdmin(ctx context.Context, bot *telego.Bot, message telego.Message) {
 		if errors.Is(err, mongo.ErrNoDocuments) {
 			err := service.CreateAdmin(ctx, userID)
 			if err != nil {
-				bot.SendMessage(telegoutil.Messagef(message.Chat.ChatID(), "设置管理员失败: %s", err).
-					WithReplyParameters(&telego.ReplyParameters{
-						MessageID: message.MessageID,
-					}))
+				telegram.ReplyMessage(bot, message, "设置管理员失败: "+err.Error())
 				return
 			}
-			bot.SendMessage(telegoutil.Messagef(message.Chat.ChatID(), "设置管理员成功: %d", userID).
-				WithReplyParameters(&telego.ReplyParameters{
-					MessageID: message.MessageID,
-				}))
+			telegram.ReplyMessage(bot, message, "设置管理员成功")
 			return
 		}
-		bot.SendMessage(telegoutil.Messagef(message.Chat.ChatID(), "获取管理员信息失败: %s", err).
-			WithReplyParameters(&telego.ReplyParameters{
-				MessageID: message.MessageID,
-			}))
+		telegram.ReplyMessage(bot, message, "获取管理员信息失败: "+err.Error())
 		return
 	}
 	if isAdmin {
 		if err := service.DeleteAdmin(ctx, userID); err != nil {
-			bot.SendMessage(telegoutil.Messagef(message.Chat.ChatID(), "删除管理员失败: %s", err).
-				WithReplyParameters(&telego.ReplyParameters{
-					MessageID: message.MessageID,
-				}))
+			telegram.ReplyMessage(bot, message, "删除管理员失败: "+err.Error())
 			return
 		}
-		bot.SendMessage(telegoutil.Messagef(message.Chat.ChatID(), "删除管理员成功: %d", userID).
-			WithReplyParameters(&telego.ReplyParameters{
-				MessageID: message.MessageID,
-			}))
+		telegram.ReplyMessage(bot, message, fmt.Sprintf("删除管理员成功: %d", userID))
 		return
 	}
 }
 
 func deletePicture(ctx context.Context, bot *telego.Bot, message telego.Message) {
 	var channelMessageID int
+	cmd, _, args := telegoutil.ParseCommand(message.Text)
 	if message.ReplyToMessage == nil {
-		_, _, args := telegoutil.ParseCommand(message.Text)
 		if len(args) == 0 {
-			bot.SendMessage(telegoutil.Message(message.Chat.ChatID(), "用法:\n使用 /del 回复一条频道的图片消息, 或者提供频道消息ID").
-				WithReplyParameters(&telego.ReplyParameters{
-					MessageID: message.MessageID,
-				}))
+			telegram.ReplyMessage(bot, message, "用法:\n使用 /del 回复一条频道的图片消息, 或者提供频道消息ID.\n若使用 /delete 则删除整个作品")
 			return
 		}
 		var err error
 		channelMessageID, err = strconv.Atoi(args[0])
 		if err != nil {
-			bot.SendMessage(telegoutil.Message(message.Chat.ChatID(), "请不要输入奇怪的东西").
-				WithReplyParameters(&telego.ReplyParameters{
-					MessageID: message.MessageID,
-				}))
+			telegram.ReplyMessage(bot, message, "请不要输入奇怪的东西")
 			return
 		}
 	} else {
 		originChannel, ok := telegram.CheckTargetMessageIsChannelArtworkPost(ctx, bot, message)
 		if !ok {
-			bot.SendMessage(telegoutil.Message(message.Chat.ChatID(), "用法:\n使用 /del 回复一条频道的图片消息, 或者提供频道消息ID").
-				WithReplyParameters(&telego.ReplyParameters{
-					MessageID: message.MessageID,
-				}))
+			telegram.ReplyMessage(bot, message, "用法:\n使用 /del 回复一条频道的图片消息, 或者提供频道消息ID.\n若使用 /delete 则删除整个作品")
 			return
 		}
 		channelMessageID = originChannel.MessageID
 	}
-	picture, err := service.GetPictureByMessageID(ctx, channelMessageID)
-	if err != nil {
-		bot.SendMessage(telegoutil.Messagef(message.Chat.ChatID(), "获取图片信息失败: %s", err).
-			WithReplyParameters(&telego.ReplyParameters{
-				MessageID: message.MessageID,
-			}))
-		return
-	}
-	if err := service.DeletePictureByMessageID(ctx, channelMessageID); err != nil {
-		bot.SendMessage(telegoutil.Messagef(message.Chat.ChatID(), "从数据库中删除失败: %s", err).
-			WithReplyParameters(&telego.ReplyParameters{
-				MessageID: message.MessageID,
-			}))
-		return
-	}
-	go bot.SendMessage(telegoutil.Messagef(message.Chat.ChatID(), "删除成功: %d", channelMessageID).
-		WithReplyParameters(&telego.ReplyParameters{
-			MessageID: message.MessageID,
-		}))
-	go bot.DeleteMessage(telegoutil.Delete(telegram.ChannelChatID, channelMessageID))
+	if cmd == "del" {
+		picture, err := service.GetPictureByMessageID(ctx, channelMessageID)
+		if err != nil {
+			telegram.ReplyMessage(bot, message, "获取图片信息失败: "+err.Error())
+			return
+		}
+		if err := service.DeletePictureByMessageID(ctx, channelMessageID); err != nil {
+			telegram.ReplyMessage(bot, message, "从数据库中删除失败: "+err.Error())
+			return
+		}
+		go telegram.ReplyMessage(bot, message, fmt.Sprintf("删除成功: %d", channelMessageID))
+		go bot.DeleteMessage(telegoutil.Delete(telegram.ChannelChatID, channelMessageID))
 
-	if err := storage.GetStorage().DeletePicture(picture.StorageInfo); err != nil {
-		Logger.Warnf("删除图片失败: %s", err)
-		bot.SendMessage(telegoutil.Messagef(message.Chat.ChatID(), "从存储中删除失败: %s", err).
-			WithReplyParameters(&telego.ReplyParameters{
-				MessageID: message.MessageID,
-			}))
+		if err := storage.GetStorage().DeletePicture(picture.StorageInfo); err != nil {
+			Logger.Warnf("删除图片失败: %s", err)
+			bot.SendMessage(telegoutil.Message(telegoutil.ID(message.From.ID), "删除图片失败: "+err.Error()))
+		}
+		return
 	}
+	artwork, err := service.GetArtworkByMessageID(ctx, channelMessageID)
+	if err != nil {
+		telegram.ReplyMessage(bot, message, "获取作品信息失败: "+err.Error())
+		return
+	}
+	if err := service.DeleteArtworkByURL(ctx, artwork.SourceURL); err != nil {
+		telegram.ReplyMessage(bot, message, "从数据库中删除失败: "+err.Error())
+		return
+	}
+	go telegram.ReplyMessage(bot, message, fmt.Sprintf("删除成功: %d", channelMessageID))
+	artworkMessageIDs := make([]int, len(artwork.Pictures))
+	for i, picture := range artwork.Pictures {
+		artworkMessageIDs[i] = picture.TelegramInfo.MessageID
+	}
+	go bot.DeleteMessages(&telego.DeleteMessagesParams{
+		ChatID:     telegram.ChannelChatID,
+		MessageIDs: artworkMessageIDs,
+	})
+
+	for _, picture := range artwork.Pictures {
+		if err := storage.GetStorage().DeletePicture(picture.StorageInfo); err != nil {
+			Logger.Warnf("删除图片失败: %s", err)
+			bot.SendMessage(telegoutil.Message(telegoutil.ID(message.From.ID), "删除图片失败: "+err.Error()))
+		}
+	}
+
 }
 
 func fetchArtwork(ctx context.Context, bot *telego.Bot, message telego.Message) {
 	go fetcher.FetchOnce(ctx, config.Cfg.Fetcher.Limit)
-	bot.SendMessage(telegoutil.Message(message.Chat.ChatID(), "开始拉取作品了").
-		WithReplyParameters(&telego.ReplyParameters{
-			MessageID: message.MessageID,
-		}))
+	telegram.ReplyMessage(bot, message, "开始拉取作品了")
 }
 
 func getArtworkInfo(ctx context.Context, bot *telego.Bot, message telego.Message) {
@@ -168,15 +152,12 @@ func getArtworkInfo(ctx context.Context, bot *telego.Bot, message telego.Message
 	var waitMessageID int
 
 	go func() {
-		message, err := bot.SendMessage(telegoutil.Message(message.Chat.ChatID(), "正在获取作品信息...").
-			WithReplyParameters(&telego.ReplyParameters{
-				MessageID: message.MessageID,
-			}))
+		msg, err := telegram.ReplyMessage(bot, message, "正在获取作品信息...")
 		if err != nil {
 			Logger.Warnf("发送消息失败: %s", err)
 			return
 		}
-		waitMessageID = message.MessageID
+		waitMessageID = msg.MessageID
 	}()
 
 	defer func() {
@@ -196,10 +177,7 @@ func getArtworkInfo(ctx context.Context, bot *telego.Bot, message telego.Message
 		artwork, err = sources.GetArtworkInfo(sourceURL)
 	}
 	if err != nil {
-		bot.SendMessage(telegoutil.Messagef(message.Chat.ChatID(), "获取作品信息失败: %s", err).
-			WithReplyParameters(&telego.ReplyParameters{
-				MessageID: message.MessageID,
-			}))
+		telegram.ReplyMessage(bot, message, "获取作品信息失败: "+err.Error())
 		return
 	}
 
