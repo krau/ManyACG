@@ -9,7 +9,6 @@ import (
 	"context"
 	es "errors"
 	"fmt"
-	"sync"
 
 	. "ManyACG-Bot/logger"
 
@@ -46,34 +45,19 @@ func PostAndCreateArtwork(ctx context.Context, artwork *types.Artwork, bot *tele
 		}
 	}
 
-	var wg sync.WaitGroup
-	var storageErrs []error
 	for i, picture := range artwork.Pictures {
-		wg.Add(1)
-		go func(i int, picture *types.Picture) {
-			defer wg.Done()
-			info, err := storage.SavePicture(artwork, picture)
-			if err != nil {
-				Logger.Errorf("saving picture %s: %s", picture.Original, err)
-				storageErrs = append(storageErrs, err)
-				return
-			}
-			artwork.Pictures[i].StorageInfo = info
-		}(i, picture)
-	}
-
-	wg.Wait()
-
-	if len(storageErrs) > 0 {
-		go func() {
+		info, err := storage.SavePicture(artwork, picture)
+		if err != nil {
+			Logger.Errorf("saving picture %s: %s", picture.Original, err)
 			if telegram.Bot.DeleteMessages(&telego.DeleteMessagesParams{
 				ChatID:     telegram.ChannelChatID,
 				MessageIDs: telegram.GetMessageIDs(messages),
 			}) != nil {
 				Logger.Errorf("deleting messages: %s", err)
 			}
-		}()
-		return fmt.Errorf("saving pictures of artwork %s: %s", artwork.Title, storageErrs)
+			return fmt.Errorf("saving picture %s: %w", picture.Original, err)
+		}
+		artwork.Pictures[i].StorageInfo = info
 	}
 
 	_, err = service.CreateArtwork(ctx, artwork)
