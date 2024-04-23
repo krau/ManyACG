@@ -68,6 +68,5 @@ func PostArtwork(bot *telego.Bot, artwork *types.Artwork) ([]telego.Message, err
 		}
 		copy(allMessages[i:], messages)
 	}
-	Logger.Info(allMessages)
 	return allMessages, nil
 }
