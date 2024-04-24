@@ -141,3 +141,40 @@ func randomPicture(ctx context.Context, bot *telego.Bot, message telego.Message)
 		}
 	}
 }
+
+func getArtworkInfo(ctx context.Context, bot *telego.Bot, message telego.Message) {
+	sourceURL := common.MatchSourceURL(message.Text)
+	if sourceURL == "" {
+		return
+	}
+	artwork, err := service.GetArtworkByURL(ctx, sourceURL)
+	if err != nil {
+		Logger.Warnf("获取图片信息失败: %s", err)
+		return
+	}
+	var inputFile telego.InputFile
+	if artwork.Pictures[0].TelegramInfo == nil || artwork.Pictures[0].TelegramInfo.PhotoFileID == "" {
+		photoURL := artwork.Pictures[0].Original
+		if artwork.SourceType == types.SourceTypePixiv {
+			photoURL = common.GetPixivRegularURL(photoURL)
+		}
+		inputFile = telegoutil.FileFromURL(photoURL)
+	} else {
+		inputFile = telegoutil.FileFromID(artwork.Pictures[0].TelegramInfo.PhotoFileID)
+	}
+	photo := telegoutil.Photo(message.Chat.ChatID(), inputFile).
+		WithReplyParameters(&telego.ReplyParameters{MessageID: message.MessageID}).
+		WithParseMode(telego.ModeMarkdownV2).
+		WithCaption(telegram.GetArtworkMarkdownCaption(artwork)).
+		WithReplyMarkup(telegoutil.InlineKeyboard(
+			[]telego.InlineKeyboardButton{
+				telegoutil.InlineKeyboardButton("来源").WithURL(fmt.Sprintf("https://t.me/%s/%d", strings.ReplaceAll(telegram.ChannelChatID.String(), "@", ""), artwork.Pictures[0].TelegramInfo.MessageID)),
+				telegoutil.InlineKeyboardButton("原图").WithURL(fmt.Sprintf("https://t.me/%s/?start=file_%d", telegram.BotUsername, artwork.Pictures[0].TelegramInfo.MessageID)),
+			},
+		))
+
+	if artwork.R18 {
+		photo.WithHasSpoiler()
+	}
+	bot.SendPhoto(photo)
+}

@@ -43,10 +43,11 @@ func RunPolling() {
 	baseGroup.HandleMessageCtx(getPictureFile, telegohandler.CommandEqual("file"))
 	baseGroup.HandleMessageCtx(randomPicture, telegohandler.Or(telegohandler.CommandEqual("setu"), telegohandler.CommandEqual("random")))
 	baseGroup.HandleMessageCtx(help, telegohandler.CommandEqual("help"))
+	baseGroup.HandleMessageCtx(getArtworkInfo, telegohandler.TextMatches(common.AllSourceURLRegexp))
 
 	adminHandlerGroup := botHandler.Group(
 		telegohandler.Or(
-			telegohandler.TextMatches(regexp.MustCompile(`^/(set_admin|del|fetch|delete)`)),
+			telegohandler.TextMatches(regexp.MustCompile(`^/(set_admin|del|delete|fetch)`)),
 			telegohandler.CallbackDataPrefix("admin"),
 			telegohandler.And(onlyPrivate, telegohandler.TextMatches(common.AllSourceURLRegexp)),
 		),
@@ -57,7 +58,7 @@ func RunPolling() {
 	adminHandlerGroup.HandleMessageCtx(deletePicture, telegohandler.Or(telegohandler.CommandEqual("del"), telegohandler.CommandEqual("delete")))
 	adminHandlerGroup.HandleMessageCtx(fetchArtwork, telegohandler.CommandEqual("fetch"))
 	adminHandlerGroup.HandleCallbackQueryCtx(postArtwork, telegohandler.CallbackDataContains("post_artwork"))
-	adminHandlerGroup.HandleMessageCtx(getArtworkInfo, telegohandler.AnyMessageWithText())
+	adminHandlerGroup.HandleMessageCtx(getArtworkInfoForAdmin, telegohandler.AnyMessageWithText())
 
 	botHandler.Start()
 }

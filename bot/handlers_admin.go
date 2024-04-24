@@ -43,20 +43,25 @@ func setAdmin(ctx context.Context, bot *telego.Bot, message telego.Message) {
 			userID = message.ReplyToMessage.From.ID
 		}
 		permissions = make([]types.Permission, len(args))
+		unsupportedPermissions := make([]string, 0)
 		for i, arg := range args {
-			switch arg {
-			case "post_artwork":
-				permissions[i] = types.PostArtwork
-			case "delete_artwork":
-				permissions[i] = types.DeleteArtwork
-			case "delete_picture":
-				permissions[i] = types.DeletePicture
-			case "fetch_artwork":
-				permissions[i] = types.FetchArtwork
-			default:
-				telegram.ReplyMessage(bot, message, "权限不存在: "+arg+"\n支持的权限: post_artwork, delete_artwork, delete_picture, fetch_artwork")
-				return
+			for _, p := range types.AllPermissions {
+				if string(p) == arg {
+					permissions[i] = p
+					break
+				}
 			}
+			if permissions[i] == "" {
+				unsupportedPermissions = append(unsupportedPermissions, arg)
+			}
+		}
+		if len(unsupportedPermissions) > 0 {
+			text := fmt.Sprintf("权限不存在: %v\n支持的权限:\n", unsupportedPermissions)
+			for _, p := range types.AllPermissions {
+				text += string(p) + "\n"
+			}
+			telegram.ReplyMessage(bot, message, text)
+			return
 		}
 	} else {
 		if len(args) == 0 {
@@ -70,27 +75,32 @@ func setAdmin(ctx context.Context, bot *telego.Bot, message telego.Message) {
 			return
 		}
 		permissions = make([]types.Permission, len(args)-1)
+		unsupportedPermissions := make([]string, 0)
 		for i, arg := range args[1:] {
-			switch arg {
-			case "post_artwork":
-				permissions[i] = types.PostArtwork
-			case "delete_artwork":
-				permissions[i] = types.DeleteArtwork
-			case "delete_picture":
-				permissions[i] = types.DeletePicture
-			case "fetch_artwork":
-				permissions[i] = types.FetchArtwork
-			default:
-				telegram.ReplyMessage(bot, message, "权限不存在: "+arg+"\n支持的权限: post_artwork, delete_artwork, delete_picture, fetch_artwork")
-				return
+			for _, p := range types.AllPermissions {
+				if string(p) == arg {
+					permissions[i] = p
+					break
+				}
 			}
+			if permissions[i] == "" {
+				unsupportedPermissions = append(unsupportedPermissions, arg)
+			}
+		}
+		if len(unsupportedPermissions) > 0 {
+			text := fmt.Sprintf("权限不存在: %v\n支持的权限:\n", unsupportedPermissions)
+			for _, p := range types.AllPermissions {
+				text += string(p) + "\n"
+			}
+			telegram.ReplyMessage(bot, message, text)
+			return
 		}
 	}
 
 	isAdmin, err := service.IsAdmin(ctx, userID)
 	if err != nil {
 		if errors.Is(err, mongo.ErrNoDocuments) {
-			err := service.CreateOrUpdateAdmin(ctx, userID, permissions, message.From.ID, len(args) == 0)
+			err := service.CreateOrUpdateAdmin(ctx, userID, permissions, message.From.ID, len(permissions) == 0)
 			if err != nil {
 				telegram.ReplyMessage(bot, message, "设置管理员失败: "+err.Error())
 				return
@@ -102,11 +112,20 @@ func setAdmin(ctx context.Context, bot *telego.Bot, message telego.Message) {
 		return
 	}
 	if isAdmin {
-		if err := service.DeleteAdmin(ctx, userID); err != nil {
-			telegram.ReplyMessage(bot, message, "删除管理员失败: "+err.Error())
+		if (len(args) == 0 && message.ReplyToMessage != nil) || (len(args) == 1 && message.ReplyToMessage == nil) {
+			if err := service.DeleteAdmin(ctx, userID); err != nil {
+				telegram.ReplyMessage(bot, message, "删除管理员失败: "+err.Error())
+				return
+			}
+			telegram.ReplyMessage(bot, message, fmt.Sprintf("删除管理员成功: %d", userID))
 			return
 		}
-		telegram.ReplyMessage(bot, message, fmt.Sprintf("删除管理员成功: %d", userID))
+		err := service.CreateOrUpdateAdmin(ctx, userID, permissions, message.From.ID, false)
+		if err != nil {
+			telegram.ReplyMessage(bot, message, "更新管理员失败: "+err.Error())
+			return
+		}
+		telegram.ReplyMessage(bot, message, "更新管理员成功")
 		return
 	}
 }
@@ -197,7 +216,11 @@ func fetchArtwork(ctx context.Context, bot *telego.Bot, message telego.Message) 
 	telegram.ReplyMessage(bot, message, "开始拉取作品了")
 }
 
-func getArtworkInfo(ctx context.Context, bot *telego.Bot, message telego.Message) {
+func getArtworkInfoForAdmin(ctx context.Context, bot *telego.Bot, message telego.Message) {
+	if service.CheckAdminPermission(ctx, message.From.ID, types.GetArtworkInfo) {
+		getArtworkInfo(ctx, bot, message)
+		return
+	}
 	sourceURL := common.MatchSourceURL(message.Text)
 	if sourceURL == "" {
 		return
