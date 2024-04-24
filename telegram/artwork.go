@@ -2,8 +2,10 @@ package telegram
 
 import (
 	"ManyACG-Bot/common"
+	"ManyACG-Bot/config"
 	"ManyACG-Bot/errors"
 	"ManyACG-Bot/types"
+	"time"
 
 	. "ManyACG-Bot/logger"
 
@@ -67,6 +69,7 @@ func PostArtwork(bot *telego.Bot, artwork *types.Artwork) ([]telego.Message, err
 			return nil, err
 		}
 		copy(allMessages[i:], messages)
+		time.Sleep(time.Duration(int(config.Cfg.Telegram.Sleep)*len(inputMediaPhotos[i:end])) * time.Second)
 	}
 	return allMessages, nil
 }
