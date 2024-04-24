@@ -17,11 +17,11 @@ jobs:
             matrix:
                 goos: [linux, darwin, windows]
                 goarch: [amd64, arm64]
-        
-
         steps:
             - name: Checkout
               uses: actions/checkout@v4
+            - name: Create Release
+              uses: softprops/action-gh-release@v2
             - name: Release Go Binary
               uses: wangyoucao577/go-release-action@v1
               with:
