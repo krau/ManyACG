@@ -90,8 +90,9 @@ func InitDB(ctx context.Context) {
 		},
 	})
 	for _, admin := range config.Cfg.Telegram.Admins {
-		if err := CreateAdminIfNotExist(ctx, admin); err != nil {
-			Logger.Warnf("Failed to create admin %d: %s", admin, err)
+		_, err := CreateSuperAdminByUserID(ctx, admin, 0)
+		if err != nil {
+			Logger.Error(err)
 		}
 	}
 

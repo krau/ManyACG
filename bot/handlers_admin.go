@@ -24,17 +24,43 @@ import (
 )
 
 func setAdmin(ctx context.Context, bot *telego.Bot, message telego.Message) {
+	userAdmin, err := service.GetAdminByUserID(ctx, message.From.ID)
+	if err != nil {
+		telegram.ReplyMessage(bot, message, "获取管理员信息失败: "+err.Error())
+		return
+	}
+	if userAdmin != nil && !userAdmin.SuperAdmin {
+		telegram.ReplyMessage(bot, message, "你没有权限设置管理员")
+		return
+	}
 	var userID int64
+	_, _, args := telegoutil.ParseCommand(message.Text)
+	var permissions []types.Permission
 	if message.ReplyToMessage != nil {
 		if message.ReplyToMessage.SenderChat != nil {
 			userID = message.ReplyToMessage.SenderChat.ID
 		} else {
 			userID = message.ReplyToMessage.From.ID
 		}
+		permissions = make([]types.Permission, len(args))
+		for i, arg := range args {
+			switch arg {
+			case "post_artwork":
+				permissions[i] = types.PostArtwork
+			case "delete_artwork":
+				permissions[i] = types.DeleteArtwork
+			case "delete_picture":
+				permissions[i] = types.DeletePicture
+			case "fetch_artwork":
+				permissions[i] = types.FetchArtwork
+			default:
+				telegram.ReplyMessage(bot, message, "权限不存在: "+arg+"\n支持的权限: post_artwork, delete_artwork, delete_picture, fetch_artwork")
+				return
+			}
+		}
 	} else {
-		_, _, args := telegoutil.ParseCommand(message.Text)
 		if len(args) == 0 {
-			telegram.ReplyMessage(bot, message, "请回复一条消息或提供用户ID")
+			telegram.ReplyMessage(bot, message, "请回复一条消息或提供用户ID, 并指定权限, 以空格分隔.\n若不提供权限则默认为所有权限")
 			return
 		}
 		var err error
@@ -43,12 +69,28 @@ func setAdmin(ctx context.Context, bot *telego.Bot, message telego.Message) {
 			telegram.ReplyMessage(bot, message, "请不要输入奇怪的东西")
 			return
 		}
+		permissions = make([]types.Permission, len(args)-1)
+		for i, arg := range args[1:] {
+			switch arg {
+			case "post_artwork":
+				permissions[i] = types.PostArtwork
+			case "delete_artwork":
+				permissions[i] = types.DeleteArtwork
+			case "delete_picture":
+				permissions[i] = types.DeletePicture
+			case "fetch_artwork":
+				permissions[i] = types.FetchArtwork
+			default:
+				telegram.ReplyMessage(bot, message, "权限不存在: "+arg+"\n支持的权限: post_artwork, delete_artwork, delete_picture, fetch_artwork")
+				return
+			}
+		}
 	}
 
 	isAdmin, err := service.IsAdmin(ctx, userID)
 	if err != nil {
 		if errors.Is(err, mongo.ErrNoDocuments) {
-			err := service.CreateAdmin(ctx, userID)
+			err := service.CreateOrUpdateAdmin(ctx, userID, permissions, message.From.ID, len(args) == 0)
 			if err != nil {
 				telegram.ReplyMessage(bot, message, "设置管理员失败: "+err.Error())
 				return
@@ -92,6 +134,10 @@ func deletePicture(ctx context.Context, bot *telego.Bot, message telego.Message)
 		channelMessageID = originChannel.MessageID
 	}
 	if cmd == "del" {
+		if !service.CheckAdminPermission(ctx, message.From.ID, types.DeletePicture) {
+			telegram.ReplyMessage(bot, message, "你没有删除图片的权限")
+			return
+		}
 		picture, err := service.GetPictureByMessageID(ctx, channelMessageID)
 		if err != nil {
 			telegram.ReplyMessage(bot, message, "获取图片信息失败: "+err.Error())
@@ -108,6 +154,10 @@ func deletePicture(ctx context.Context, bot *telego.Bot, message telego.Message)
 			Logger.Warnf("删除图片失败: %s", err)
 			bot.SendMessage(telegoutil.Message(telegoutil.ID(message.From.ID), "删除图片失败: "+err.Error()))
 		}
+		return
+	}
+	if !service.CheckAdminPermission(ctx, message.From.ID, types.DeleteArtwork) {
+		telegram.ReplyMessage(bot, message, "你没有删除作品的权限")
 		return
 	}
 	artwork, err := service.GetArtworkByMessageID(ctx, channelMessageID)
@@ -135,10 +185,14 @@ func deletePicture(ctx context.Context, bot *telego.Bot, message telego.Message)
 			bot.SendMessage(telegoutil.Message(telegoutil.ID(message.From.ID), "删除图片失败: "+err.Error()))
 		}
 	}
-
 }
 
 func fetchArtwork(ctx context.Context, bot *telego.Bot, message telego.Message) {
+	if !service.CheckAdminPermission(ctx, message.From.ID, types.FetchArtwork) {
+		telegram.ReplyMessage(bot, message, "你没有拉取作品的权限")
+		return
+	}
+
 	go fetcher.FetchOnce(ctx, config.Cfg.Fetcher.Limit)
 	telegram.ReplyMessage(bot, message, "开始拉取作品了")
 }
@@ -219,6 +273,16 @@ func getArtworkInfo(ctx context.Context, bot *telego.Bot, message telego.Message
 }
 
 func postArtwork(ctx context.Context, bot *telego.Bot, query telego.CallbackQuery) {
+	if !service.CheckAdminPermission(ctx, query.From.ID, types.PostArtwork) {
+		bot.AnswerCallbackQuery(&telego.AnswerCallbackQueryParams{
+			CallbackQueryID: query.ID,
+			Text:            "你没有发布作品的权限",
+			ShowAlert:       true,
+			CacheTime:       60,
+		})
+		return
+	}
+
 	Logger.Infof("postArtwork: %s", query.Data)
 	sourceURL := strings.Split(query.Data, " ")[2]
 	artwork, err := sources.GetArtworkInfo(sourceURL)

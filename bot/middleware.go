@@ -3,10 +3,10 @@ package bot
 import (
 	. "ManyACG-Bot/logger"
 	"ManyACG-Bot/service"
+	"ManyACG-Bot/telegram"
 
 	"github.com/mymmrac/telego"
 	"github.com/mymmrac/telego/telegohandler"
-	"github.com/mymmrac/telego/telegoutil"
 )
 
 func messageLogger(bot *telego.Bot, update telego.Update, next telegohandler.Handler) {
@@ -48,10 +48,7 @@ func adminCheck(bot *telego.Bot, update telego.Update, next telegohandler.Handle
 			return
 		}
 		if update.Message != nil {
-			bot.SendMessage(telegoutil.Message(update.Message.Chat.ChatID(), "你没有权限哦").
-				WithReplyParameters(&telego.ReplyParameters{
-					MessageID: update.Message.MessageID,
-				}))
+			telegram.ReplyMessage(bot, *update.Message, "你没有权限哦")
 			return
 		}
 		return
