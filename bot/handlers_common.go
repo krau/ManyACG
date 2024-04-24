@@ -8,6 +8,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"math/rand"
 	"strconv"
 	"strings"
 
@@ -109,7 +110,8 @@ func randomPicture(ctx context.Context, bot *telego.Bot, message telego.Message)
 		telegram.ReplyMessage(bot, message, "未找到图片")
 		return
 	}
-	picture := artwork[0].Pictures[0]
+	pictures := artwork[0].Pictures
+	picture := pictures[rand.Intn(len(pictures))]
 	var file telego.InputFile
 	if picture.TelegramInfo.PhotoFileID != "" {
 		file = telegoutil.FileFromID(picture.TelegramInfo.PhotoFileID)

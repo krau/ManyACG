@@ -12,8 +12,7 @@ var Logger *slog.Logger
 
 func init() {
 	slog.DefaultChannelName = "ManyACG-Bot"
-	newLogger := slog.New()
-	defer newLogger.Flush()
+	Logger = slog.New()
 	logLevel := slog.LevelByName(config.Cfg.Log.Level)
 	logFilePath := config.Cfg.Log.FilePath
 	logBackupNum := config.Cfg.Log.BackupNum
@@ -29,10 +28,10 @@ func init() {
 		rotatefile.EveryDay,
 		handler.WithLogLevels(slog.AllLevels),
 		handler.WithBackupNum(logBackupNum),
+		handler.WithBuffSize(0),
 	)
 	if err != nil {
 		panic(err)
 	}
-	newLogger.AddHandlers(consoleH, fileH)
-	Logger = newLogger
+	Logger.AddHandlers(consoleH, fileH)
 }
