@@ -6,8 +6,6 @@ import (
 	"ManyACG-Bot/types"
 	"context"
 
-	. "ManyACG-Bot/logger"
-
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 )
@@ -71,34 +69,29 @@ func DeletePictureByMessageID(ctx context.Context, messageID int) error {
 	}
 	defer session.EndSession(ctx)
 	_, err = session.WithTransaction(ctx, func(ctx mongo.SessionContext) (interface{}, error) {
-		artworkResult, err := dao.DeleteArtworkPicturesByID(ctx, pictureModel.ArtworkID, []primitive.ObjectID{pictureModel.ID})
+		_, err = dao.DeleteArtworkPicturesByID(ctx, pictureModel.ArtworkID, []primitive.ObjectID{pictureModel.ID})
 		if err != nil {
 			return nil, err
 		}
-		if artworkResult.MatchedCount == 0 {
-			Logger.Warnf("DeletePictureByMessageID: MatchedCount == 0")
-		}
-
-		pictureResult, err := dao.DeletePicturesByIDs(ctx, []primitive.ObjectID{pictureModel.ID})
+		_, err = dao.DeletePicturesByIDs(ctx, []primitive.ObjectID{pictureModel.ID})
 		if err != nil {
 			return nil, err
 		}
-		if pictureResult.DeletedCount == 0 {
-			Logger.Warnf("DeletePictureByMessageID: DeletedCount == 0")
-		}
-
 		artworkModel, err := dao.GetArtworkByID(ctx, pictureModel.ArtworkID)
 		if err != nil {
 			return nil, err
 		}
-
 		if len(artworkModel.Pictures) == 0 {
-			deleteResult, err := dao.DeleteArtworkByID(ctx, pictureModel.ArtworkID)
+			_, err := dao.DeleteArtworkByID(ctx, pictureModel.ArtworkID)
 			if err != nil {
 				return nil, err
 			}
-			if deleteResult.DeletedCount == 0 {
-				Logger.Warnf("DeletePictureByMessageID: DeleteArtworkByID: DeletedCount == 0")
+			_, err = dao.CreateDeleted(ctx, &model.DeletedModel{
+				SourceURL: artworkModel.SourceURL,
+				ArtworkID: artworkModel.ID,
+			})
+			if err != nil {
+				return nil, err
 			}
 		}
 		return nil, nil

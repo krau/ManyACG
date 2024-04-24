@@ -59,3 +59,10 @@ type StorageInfo struct {
 	Type types.StorageType `bson:"type"`
 	Path string            `bson:"path"`
 }
+
+type DeletedModel struct {
+	ID        primitive.ObjectID `bson:"_id,omitempty"`
+	ArtworkID primitive.ObjectID `bson:"artwork_id"`
+	SourceURL string             `bson:"source_url"`
+	DeletedAt primitive.DateTime `bson:"deleted_at"`
+}

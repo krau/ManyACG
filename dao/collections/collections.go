@@ -6,4 +6,5 @@ const (
 	Artists  string = "Artists"
 	Tags     string = "Tags"
 	Admins   string = "Admins"
+	Deleted  string = "Deleted"
 )

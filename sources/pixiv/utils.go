@@ -16,7 +16,7 @@ func getPid(url string) string {
 
 func reqAjaxResp(sourceURL string) (*PixivAjaxResp, error) {
 	ajaxURL := "https://www.pixiv.net/ajax/illust/" + getPid(sourceURL)
-	Logger.Debugf("request artwork info: %s", ajaxURL)
+	Logger.Tracef("request artwork info: %s", ajaxURL)
 	resp, err := ReqClient.R().Get(ajaxURL)
 	if err != nil {
 		return nil, err
@@ -31,7 +31,7 @@ func reqAjaxResp(sourceURL string) (*PixivAjaxResp, error) {
 
 func reqIllustPages(sourceURL string) (*PixivIllustPages, error) {
 	ajaxURL := "https://www.pixiv.net/ajax/illust/" + getPid(sourceURL) + "/pages?lang=zh"
-	Logger.Debugf("request artwork pages: %s", ajaxURL)
+	Logger.Tracef("request artwork pages: %s", ajaxURL)
 	resp, err := ReqClient.R().Get(ajaxURL)
 	if err != nil {
 		return nil, err

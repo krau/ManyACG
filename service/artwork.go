@@ -4,7 +4,6 @@ import (
 	"ManyACG-Bot/dao"
 	"ManyACG-Bot/dao/model"
 	es "ManyACG-Bot/errors"
-	. "ManyACG-Bot/logger"
 	"ManyACG-Bot/types"
 	"context"
 	"errors"
@@ -20,6 +19,9 @@ func CreateArtwork(ctx context.Context, artwork *types.Artwork) (*types.Artwork,
 	}
 	if artworkModel != nil {
 		return nil, es.ErrArtworkAlreadyExist
+	}
+	if dao.CheckDeletedByURL(ctx, artwork.SourceURL) {
+		return nil, es.ErrArtworkDeleted
 	}
 
 	session, err := dao.Client.StartSession()
@@ -140,7 +142,6 @@ func GetRandomArtworksByTagsR18(ctx context.Context, tags []string, r18 bool, li
 		var err error
 		artworkModels, err = dao.GetRandomArtworksR18(ctx, r18, limit)
 		if err != nil {
-			Logger.Errorf("GetRandomArtworksR18: %v", err)
 			return nil, err
 		}
 	} else {
@@ -149,14 +150,12 @@ func GetRandomArtworksByTagsR18(ctx context.Context, tags []string, r18 bool, li
 		for i, tag := range tags {
 			tagModel, err := dao.GetTagByName(ctx, tag)
 			if err != nil {
-				Logger.Errorf("GetTagByName: %v", err)
 				return nil, err
 			}
 			tagsID[i] = tagModel.ID
 		}
 		artworkModels, err = dao.GetRandomArtworksByTagsR18(ctx, tagsID, r18, limit)
 		if err != nil {
-			Logger.Errorf("GetRandomArtworksByTagsR18: %v", err)
 			return nil, err
 		}
 	}
@@ -167,7 +166,6 @@ func GetRandomArtworksByTagsR18(ctx context.Context, tags []string, r18 bool, li
 		for j, tagID := range artworkModel.Tags {
 			tagModel, err := dao.GetTagByID(ctx, tagID)
 			if err != nil {
-				Logger.Errorf("GetTagByID: %v", err)
 				return nil, err
 			}
 			allTags[j] = tagModel.Name
@@ -176,14 +174,12 @@ func GetRandomArtworksByTagsR18(ctx context.Context, tags []string, r18 bool, li
 		for k, pictureID := range artworkModel.Pictures {
 			pictureModel, err := dao.GetPictureByID(ctx, pictureID)
 			if err != nil {
-				Logger.Errorf("GetPictureByID: %v", err)
 				return nil, err
 			}
 			pictures[k] = pictureModel.ToPicture()
 		}
 		artistModel, err := dao.GetArtistByID(ctx, artworkModel.ArtistID)
 		if err != nil {
-			Logger.Errorf("GetArtistByID: %v", err)
 			return nil, err
 		}
 		artworks[i] = &types.Artwork{
@@ -293,19 +289,22 @@ func DeleteArtworkByURL(ctx context.Context, sourceURL string) error {
 	}
 	defer session.EndSession(ctx)
 	_, err = session.WithTransaction(ctx, func(ctx mongo.SessionContext) (interface{}, error) {
-		artworkResult, err := dao.DeleteArtworkByID(ctx, artworkModel.ID)
+		_, err := dao.DeleteArtworkByID(ctx, artworkModel.ID)
 		if err != nil {
 			return nil, err
 		}
-		if artworkResult.DeletedCount == 0 {
-			Logger.Warnf("DeleteArtworkByURL: DeletedCount == 0")
-		}
-		pictureResult, err := dao.DeletePicturesByArtworkID(ctx, artworkModel.ID)
+
+		_, err = dao.DeletePicturesByArtworkID(ctx, artworkModel.ID)
 		if err != nil {
 			return nil, err
 		}
-		if pictureResult.DeletedCount == 0 {
-			Logger.Warnf("DeleteArtworkByURL: DeletedCount == 0")
+
+		_, err = dao.CreateDeleted(ctx, &model.DeletedModel{
+			SourceURL: sourceURL,
+			ArtworkID: artworkModel.ID,
+		})
+		if err != nil {
+			return nil, err
 		}
 		return nil, nil
 	})
@@ -313,4 +312,20 @@ func DeleteArtworkByURL(ctx context.Context, sourceURL string) error {
 		return err
 	}
 	return nil
+}
+
+func DeleteDeletedByURL(ctx context.Context, sourceURL string) error {
+	_, err := dao.DeleteDeletedByURL(ctx, sourceURL)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func CheckDeletedByURL(ctx context.Context, sourceURL string) bool {
+	return dao.CheckDeletedByURL(ctx, sourceURL)
+}
+
+func GetDeletedByURL(ctx context.Context, sourceURL string) (*model.DeletedModel, error) {
+	return dao.GetDeletedByURL(ctx, sourceURL)
 }

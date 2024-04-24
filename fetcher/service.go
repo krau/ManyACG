@@ -25,6 +25,10 @@ func PostAndCreateArtwork(ctx context.Context, artwork *types.Artwork, bot *tele
 	if err != nil && !es.Is(err, mongo.ErrNoDocuments) {
 		return err
 	}
+	if service.CheckDeletedByURL(ctx, artwork.SourceURL) {
+		Logger.Debugf("Artwork %s is deleted", artwork.Title)
+		return errors.ErrArtworkDeleted
+	}
 	messages, err := telegram.PostArtwork(telegram.Bot, artwork)
 	if err != nil {
 		return fmt.Errorf("posting artwork [%s](%s): %w", artwork.Title, artwork.SourceURL, err)

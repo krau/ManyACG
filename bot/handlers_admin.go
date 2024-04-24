@@ -193,7 +193,7 @@ func fetchArtwork(ctx context.Context, bot *telego.Bot, message telego.Message) 
 		return
 	}
 
-	go fetcher.FetchOnce(ctx, config.Cfg.Fetcher.Limit)
+	go fetcher.FetchOnce(context.TODO(), config.Cfg.Fetcher.Limit)
 	telegram.ReplyMessage(bot, message, "开始拉取作品了")
 }
 
@@ -202,7 +202,6 @@ func getArtworkInfo(ctx context.Context, bot *telego.Bot, message telego.Message
 	if sourceURL == "" {
 		return
 	}
-
 	var waitMessageID int
 
 	go func() {
@@ -245,11 +244,19 @@ func getArtworkInfo(ctx context.Context, bot *telego.Bot, message telego.Message
 	} else {
 		inputFile = telegoutil.FileFromID(artwork.Pictures[0].TelegramInfo.PhotoFileID)
 	}
+
 	photo := telegoutil.Photo(message.Chat.ChatID(), inputFile).
 		WithReplyParameters(&telego.ReplyParameters{MessageID: message.MessageID}).
-		WithCaption(telegram.GetArtworkMarkdownCaption(artwork)).
 		WithParseMode(telego.ModeMarkdownV2)
 
+	deletedModel, _ := service.GetDeletedByURL(ctx, sourceURL)
+	artworkInfoCaption := telegram.GetArtworkMarkdownCaption(artwork)
+	if deletedModel != nil {
+		photo.WithCaption(artworkInfoCaption + telegram.EscapeMarkdown(fmt.Sprintf("\n\n这是一个在 %s 删除的作品\n\n"+
+			"如果发布则会取消删除", deletedModel.DeletedAt.Time().Format("2006-01-02 15:04:05"))))
+	} else {
+		photo.WithCaption(telegram.GetArtworkMarkdownCaption(artwork))
+	}
 	if isAlreadyPosted {
 		photo.WithReplyMarkup(telegoutil.InlineKeyboard(
 			[]telego.InlineKeyboardButton{
@@ -264,11 +271,9 @@ func getArtworkInfo(ctx context.Context, bot *telego.Bot, message telego.Message
 			},
 		))
 	}
-
 	if artwork.R18 {
 		photo.WithHasSpoiler()
 	}
-
 	bot.SendPhoto(photo)
 }
 
@@ -298,8 +303,19 @@ func postArtwork(ctx context.Context, bot *telego.Bot, query telego.CallbackQuer
 	go bot.AnswerCallbackQuery(&telego.AnswerCallbackQueryParams{
 		CallbackQueryID: query.ID,
 		Text:            "正在发布, 请不要重复点击...",
-		CacheTime:       60,
+		CacheTime:       120,
 	})
+	if service.CheckDeletedByURL(ctx, sourceURL) {
+		if err := service.DeleteDeletedByURL(ctx, sourceURL); err != nil {
+			Logger.Errorf("删除删除记录失败: %s", err)
+			go bot.EditMessageCaption(&telego.EditMessageCaptionParams{
+				ChatID:    telegoutil.ID(query.Message.GetChat().ID),
+				MessageID: query.Message.GetMessageID(),
+				Caption:   "取消删除记录失败: " + err.Error(),
+			})
+			return
+		}
+	}
 	if err := fetcher.PostAndCreateArtwork(ctx, artwork, bot, storage.GetStorage()); err != nil {
 		Logger.Errorf("发布失败: %s", err)
 		go bot.EditMessageCaption(&telego.EditMessageCaptionParams{

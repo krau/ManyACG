@@ -96,5 +96,14 @@ func InitDB(ctx context.Context) {
 		}
 	}
 
+	DB.CreateCollection(ctx, collections.Deleted)
+	deletedCollection = DB.Collection(collections.Deleted)
+	deletedCollection.Indexes().CreateMany(ctx, []mongo.IndexModel{
+		{
+			Keys:    bson.D{{Key: "source_url", Value: 1}},
+			Options: options.Index().SetName("source_url").SetUnique(true),
+		},
+	})
+
 	Logger.Info("Database initialized")
 }

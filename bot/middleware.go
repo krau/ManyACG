@@ -15,9 +15,9 @@ func messageLogger(bot *telego.Bot, update telego.Update, next telegohandler.Han
 		user := update.Message.From
 		senderChat := update.Message.SenderChat
 		if senderChat != nil {
-			Logger.Debugf("[%s](%d) [%s](%d): %s", chat.Title, chat.ID, senderChat.Title, senderChat.Username, update.Message.Text)
+			Logger.Tracef("[%s](%d) [%s](%d): %s", chat.Title, chat.ID, senderChat.Title, senderChat.Username, update.Message.Text)
 		} else {
-			Logger.Debugf("[%s](%d) [%s](%d): %s", chat.Title, chat.ID, user.FirstName+user.LastName, user.ID, update.Message.Text)
+			Logger.Tracef("[%s](%d) [%s](%d): %s", chat.Title, chat.ID, user.FirstName+user.LastName, user.ID, update.Message.Text)
 		}
 	}
 
