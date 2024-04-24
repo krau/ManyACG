@@ -37,7 +37,7 @@ func StartScheduler(ctx context.Context) {
 			}
 			continue
 		}
-		time.Sleep(time.Duration(config.Cfg.Telegram.Sleep) * time.Second)
+		time.Sleep(time.Duration(int(config.Cfg.Telegram.Sleep)*len(artwork.Pictures)) * time.Second)
 	}
 }
 
@@ -72,6 +72,6 @@ func FetchOnce(ctx context.Context, limit int) {
 			}
 			continue
 		}
-		time.Sleep(time.Duration(config.Cfg.Telegram.Sleep) * time.Second)
+		time.Sleep(time.Duration(int(config.Cfg.Telegram.Sleep)*len(artwork.Pictures)) * time.Second)
 	}
 }
