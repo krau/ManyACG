@@ -274,7 +274,11 @@ func getArtworkInfo(ctx context.Context, bot *telego.Bot, message telego.Message
 	if artwork.R18 {
 		photo.WithHasSpoiler()
 	}
-	bot.SendPhoto(photo)
+	_, err = bot.SendPhoto(photo)
+	if err != nil {
+		telegram.ReplyMessage(bot, message, "发送图片失败: "+err.Error())
+		return
+	}
 }
 
 func postArtwork(ctx context.Context, bot *telego.Bot, query telego.CallbackQuery) {
