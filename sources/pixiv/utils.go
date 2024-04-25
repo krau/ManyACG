@@ -22,7 +22,7 @@ func reqAjaxResp(sourceURL string) (*PixivAjaxResp, error) {
 		return nil, err
 	}
 	var pixivAjaxResp PixivAjaxResp
-	err = json.Unmarshal([]byte(resp.String()), &pixivAjaxResp)
+	err = json.Unmarshal(resp.Bytes(), &pixivAjaxResp)
 	if err != nil {
 		return nil, err
 	}
@@ -37,7 +37,7 @@ func reqIllustPages(sourceURL string) (*PixivIllustPages, error) {
 		return nil, err
 	}
 	var pixivIllustPages PixivIllustPages
-	err = json.Unmarshal([]byte(resp.String()), &pixivIllustPages)
+	err = json.Unmarshal(resp.Bytes(), &pixivIllustPages)
 	if err != nil {
 		return nil, err
 	}

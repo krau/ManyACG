@@ -2,12 +2,12 @@ package telegram
 
 import (
 	"ManyACG-Bot/service"
+	"ManyACG-Bot/sources"
 	"ManyACG-Bot/storage"
 	"ManyACG-Bot/types"
 	"bytes"
 	"context"
 	"fmt"
-	"path/filepath"
 	"regexp"
 	"strings"
 
@@ -51,7 +51,11 @@ func SendPictureFileByMessageID(ctx context.Context, bot *telego.Bot, message te
 		if err != nil {
 			return nil, err
 		}
-		file = telegoutil.File(telegoutil.NameReader(bytes.NewReader(data), filepath.Base(picture.Original)))
+		artwork, err := service.GetArtworkByMessageID(ctx, pictureMessageID)
+		if err != nil {
+			return nil, err
+		}
+		file = telegoutil.File(telegoutil.NameReader(bytes.NewReader(data), sources.GetFileName(artwork, picture)))
 	}
 
 	documentMessage, err := bot.SendDocument(telegoutil.Document(message.Chat.ChatID(), file).
@@ -123,4 +127,12 @@ func ReplyMessage(bot *telego.Bot, message telego.Message, text string) (*telego
 		WithReplyParameters(&telego.ReplyParameters{
 			MessageID: message.MessageID,
 		}))
+}
+
+func GetArtworkPostMessageURL(messageID int) string {
+	return fmt.Sprintf("https://t.me/%s/%d", strings.ReplaceAll(ChannelChatID.String(), "@", ""), messageID)
+}
+
+func GetDeepLinkForFile(messageID int) string {
+	return fmt.Sprintf("https://t.me/%s/?start=file_%d", BotUsername, messageID)
 }

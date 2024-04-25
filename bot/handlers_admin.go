@@ -1,7 +1,6 @@
 package bot
 
 import (
-	"ManyACG-Bot/common"
 	"ManyACG-Bot/config"
 	"ManyACG-Bot/fetcher"
 	"ManyACG-Bot/service"
@@ -221,7 +220,7 @@ func getArtworkInfoForAdmin(ctx context.Context, bot *telego.Bot, message telego
 		telegram.ReplyMessage(bot, message, "你没有获取作品信息的权限")
 		return
 	}
-	sourceURL := common.MatchSourceURL(message.Text)
+	sourceURL := sources.MatchSourceURL(message.Text)
 	if sourceURL == "" {
 		return
 	}
@@ -261,7 +260,7 @@ func getArtworkInfoForAdmin(ctx context.Context, bot *telego.Bot, message telego
 	if artwork.Pictures[0].TelegramInfo == nil || artwork.Pictures[0].TelegramInfo.PhotoFileID == "" {
 		photoURL := artwork.Pictures[0].Original
 		if artwork.SourceType == types.SourceTypePixiv {
-			photoURL = common.GetPixivRegularURL(photoURL)
+			photoURL = sources.GetPixivRegularURL(photoURL)
 		}
 		inputFile = telegoutil.FileFromURL(photoURL)
 	} else {
@@ -283,14 +282,19 @@ func getArtworkInfoForAdmin(ctx context.Context, bot *telego.Bot, message telego
 	if isAlreadyPosted {
 		photo.WithReplyMarkup(telegoutil.InlineKeyboard(
 			[]telego.InlineKeyboardButton{
-				telegoutil.InlineKeyboardButton("来源").WithURL(fmt.Sprintf("https://t.me/%s/%d", strings.ReplaceAll(telegram.ChannelChatID.String(), "@", ""), artwork.Pictures[0].TelegramInfo.MessageID)),
-				telegoutil.InlineKeyboardButton("原图").WithURL(fmt.Sprintf("https://t.me/%s/?start=file_%d", telegram.BotUsername, artwork.Pictures[0].TelegramInfo.MessageID)),
+				telegoutil.InlineKeyboardButton("来源").WithURL(telegram.GetArtworkPostMessageURL(artwork.Pictures[0].TelegramInfo.MessageID)),
+				telegoutil.InlineKeyboardButton("原图").WithURL(telegram.GetDeepLinkForFile(artwork.Pictures[0].TelegramInfo.MessageID)),
 			},
 		))
 	} else {
+		id, err := service.CreateCallbackData(ctx, artwork.SourceURL)
+		if err != nil {
+			telegram.ReplyMessage(bot, message, "创建回调数据失败: "+err.Error())
+			return
+		}
 		photo.WithReplyMarkup(telegoutil.InlineKeyboard(
 			[]telego.InlineKeyboardButton{
-				telegoutil.InlineKeyboardButton("发布到频道").WithCallbackData("admin post_artwork " + artwork.SourceURL),
+				telegoutil.InlineKeyboardButton("发布到频道").WithCallbackData("admin post_artwork " + id),
 			},
 		))
 	}
@@ -314,9 +318,18 @@ func postArtwork(ctx context.Context, bot *telego.Bot, query telego.CallbackQuer
 		})
 		return
 	}
-
-	Logger.Infof("postArtwork: %s", query.Data)
-	sourceURL := strings.Split(query.Data, " ")[2]
+	dataID := strings.Split(query.Data, " ")[2]
+	sourceURL, err := service.GetCallbackDataByID(ctx, dataID)
+	if err != nil {
+		bot.AnswerCallbackQuery(&telego.AnswerCallbackQueryParams{
+			CallbackQueryID: query.ID,
+			Text:            "获取回调数据失败" + err.Error(),
+			ShowAlert:       true,
+			CacheTime:       60,
+		})
+		return
+	}
+	Logger.Infof("posting artwork: %s", sourceURL)
 	artwork, err := sources.GetArtworkInfo(sourceURL)
 	if err != nil {
 		bot.AnswerCallbackQuery(&telego.AnswerCallbackQueryParams{
@@ -369,7 +382,7 @@ func postArtwork(ctx context.Context, bot *telego.Bot, query telego.CallbackQuer
 		Caption:   "发布成功: " + artwork.Title + "\n\n发布时间: " + artwork.CreatedAt.Format("2006-01-02 15:04:05"),
 		ReplyMarkup: telegoutil.InlineKeyboard(
 			[]telego.InlineKeyboardButton{
-				telegoutil.InlineKeyboardButton("去查看").WithURL(fmt.Sprintf("https://t.me/%s/%d", strings.ReplaceAll(telegram.ChannelChatID.String(), "@", ""), artwork.Pictures[0].TelegramInfo.MessageID)),
+				telegoutil.InlineKeyboardButton("去查看").WithURL(telegram.GetArtworkPostMessageURL(artwork.Pictures[0].TelegramInfo.MessageID)),
 			},
 		),
 	})

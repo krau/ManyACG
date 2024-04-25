@@ -66,3 +66,9 @@ type DeletedModel struct {
 	SourceURL string             `bson:"source_url"`
 	DeletedAt primitive.DateTime `bson:"deleted_at"`
 }
+
+type CallbackDataModel struct {
+	ID        primitive.ObjectID `bson:"_id,omitempty"`
+	Data      string             `bson:"data"`
+	CreatedAt primitive.DateTime `bson:"created_at"`
+}

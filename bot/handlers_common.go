@@ -1,13 +1,12 @@
 package bot
 
 import (
-	"ManyACG-Bot/common"
 	"ManyACG-Bot/service"
+	"ManyACG-Bot/sources"
 	"ManyACG-Bot/telegram"
 	"ManyACG-Bot/types"
 	"context"
 	"errors"
-	"fmt"
 	"math/rand"
 	"strconv"
 	"strings"
@@ -118,7 +117,7 @@ func randomPicture(ctx context.Context, bot *telego.Bot, message telego.Message)
 	} else {
 		photoURL := picture.Original
 		if artwork[0].SourceType == types.SourceTypePixiv {
-			photoURL = common.GetPixivRegularURL(photoURL)
+			photoURL = sources.GetPixivRegularURL(photoURL)
 		}
 		file = telegoutil.FileFromURL(photoURL)
 	}
@@ -127,8 +126,8 @@ func randomPicture(ctx context.Context, bot *telego.Bot, message telego.Message)
 			MessageID: message.MessageID,
 		}).WithCaption(artwork[0].Title).WithReplyMarkup(
 		telegoutil.InlineKeyboard([]telego.InlineKeyboardButton{
-			telegoutil.InlineKeyboardButton("来源").WithURL(fmt.Sprintf("https://t.me/%s/%d", strings.ReplaceAll(telegram.ChannelChatID.String(), "@", ""), picture.TelegramInfo.MessageID)),
-			telegoutil.InlineKeyboardButton("原图").WithURL(fmt.Sprintf("https://t.me/%s/?start=file_%d", telegram.BotUsername, picture.TelegramInfo.MessageID)),
+			telegoutil.InlineKeyboardButton("来源").WithURL(telegram.GetArtworkPostMessageURL(picture.TelegramInfo.MessageID)),
+			telegoutil.InlineKeyboardButton("原图").WithURL(telegram.GetDeepLinkForFile(picture.TelegramInfo.MessageID)),
 		}),
 	))
 	if err != nil {
@@ -147,7 +146,7 @@ func getArtworkInfo(ctx context.Context, bot *telego.Bot, message telego.Message
 		getArtworkInfoForAdmin(ctx, bot, message)
 		return
 	}
-	sourceURL := common.MatchSourceURL(message.Text)
+	sourceURL := sources.MatchSourceURL(message.Text)
 	if sourceURL == "" {
 		return
 	}
@@ -160,7 +159,7 @@ func getArtworkInfo(ctx context.Context, bot *telego.Bot, message telego.Message
 	if artwork.Pictures[0].TelegramInfo == nil || artwork.Pictures[0].TelegramInfo.PhotoFileID == "" {
 		photoURL := artwork.Pictures[0].Original
 		if artwork.SourceType == types.SourceTypePixiv {
-			photoURL = common.GetPixivRegularURL(photoURL)
+			photoURL = sources.GetPixivRegularURL(photoURL)
 		}
 		inputFile = telegoutil.FileFromURL(photoURL)
 	} else {
@@ -172,8 +171,8 @@ func getArtworkInfo(ctx context.Context, bot *telego.Bot, message telego.Message
 		WithCaption(telegram.GetArtworkMarkdownCaption(artwork)).
 		WithReplyMarkup(telegoutil.InlineKeyboard(
 			[]telego.InlineKeyboardButton{
-				telegoutil.InlineKeyboardButton("来源").WithURL(fmt.Sprintf("https://t.me/%s/%d", strings.ReplaceAll(telegram.ChannelChatID.String(), "@", ""), artwork.Pictures[0].TelegramInfo.MessageID)),
-				telegoutil.InlineKeyboardButton("原图").WithURL(fmt.Sprintf("https://t.me/%s/?start=file_%d", telegram.BotUsername, artwork.Pictures[0].TelegramInfo.MessageID)),
+				telegoutil.InlineKeyboardButton("来源").WithURL(telegram.GetArtworkPostMessageURL(artwork.Pictures[0].TelegramInfo.MessageID)),
+				telegoutil.InlineKeyboardButton("原图").WithURL(telegram.GetDeepLinkForFile(artwork.Pictures[0].TelegramInfo.MessageID)),
 			},
 		))
 

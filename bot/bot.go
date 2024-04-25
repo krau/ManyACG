@@ -1,8 +1,8 @@
 package bot
 
 import (
-	"ManyACG-Bot/common"
 	. "ManyACG-Bot/logger"
+	"ManyACG-Bot/sources"
 	"ManyACG-Bot/telegram"
 	"os"
 	"regexp"
@@ -43,7 +43,7 @@ func RunPolling() {
 	baseGroup.HandleMessageCtx(getPictureFile, telegohandler.CommandEqual("file"))
 	baseGroup.HandleMessageCtx(randomPicture, telegohandler.Or(telegohandler.CommandEqual("setu"), telegohandler.CommandEqual("random")))
 	baseGroup.HandleMessageCtx(help, telegohandler.CommandEqual("help"))
-	baseGroup.HandleMessageCtx(getArtworkInfo, telegohandler.TextMatches(common.AllSourceURLRegexp))
+	baseGroup.HandleMessageCtx(getArtworkInfo, telegohandler.TextMatches(sources.AllSourceURLRegexp))
 
 	adminHandlerGroup := botHandler.Group(
 		telegohandler.Or(

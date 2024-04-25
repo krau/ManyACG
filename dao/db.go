@@ -105,5 +105,14 @@ func InitDB(ctx context.Context) {
 		},
 	})
 
+	DB.CreateCollection(ctx, collections.CallbackData)
+	callbackDataCollection = DB.Collection(collections.CallbackData)
+	callbackDataCollection.Indexes().CreateMany(ctx, []mongo.IndexModel{
+		{
+			Keys:    bson.D{{Key: "created_at", Value: 1}},
+			Options: options.Index().SetExpireAfterSeconds(86400).SetName("created_at"),
+		},
+	})
+
 	Logger.Info("Database initialized")
 }

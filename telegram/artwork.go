@@ -1,9 +1,9 @@
 package telegram
 
 import (
-	"ManyACG-Bot/common"
 	"ManyACG-Bot/config"
 	"ManyACG-Bot/errors"
+	"ManyACG-Bot/sources"
 	"ManyACG-Bot/types"
 	"time"
 
@@ -27,7 +27,7 @@ func PostArtwork(bot *telego.Bot, artwork *types.Artwork) ([]telego.Message, err
 	for i, picture := range artwork.Pictures {
 		photoURL := picture.Original
 		if artwork.SourceType == types.SourceTypePixiv {
-			photoURL = common.GetPixivRegularURL(photoURL)
+			photoURL = sources.GetPixivRegularURL(photoURL)
 		}
 		photo := telegoutil.MediaPhoto(telegoutil.FileFromURL(photoURL))
 		if i == 0 {
