@@ -9,8 +9,8 @@ import (
 
 var (
 	PixivSourceURLRegexp   *regexp.Regexp = regexp.MustCompile(`https://(?:www\.)?pixiv\.net/(?:artworks|i)/(\d+)`)
-	TwitterSourceURLRegexp *regexp.Regexp = regexp.MustCompile(`https://(?:twitter|x)\.com/([^/]+)/status/(\d+)(?:\?.*)?`)
-	AllSourceURLRegexp     *regexp.Regexp = regexp.MustCompile(`https://(?:www\.)?(pixiv\.net/(?:artworks|i)/\d+|(?:twitter|x)\.com/[^/]+/status/\d+)(?:\?.*)?`)
+	TwitterSourceURLRegexp *regexp.Regexp = regexp.MustCompile(`https://(?:twitter|x)\.com/([^/]+)/status/(\d+)`)
+	AllSourceURLRegexp     *regexp.Regexp = regexp.MustCompile(`https://(?:www\.)?(pixiv\.net/(?:artworks|i)/\d+|(?:twitter|x)\.com/[^/]+/status/\d+)`)
 )
 
 var (
@@ -21,6 +21,7 @@ var (
 )
 
 func MatchSourceURL(text string) string {
+	text = strings.ReplaceAll(text, "\n", " ")
 	for name, reg := range SourceURLRegexps {
 		if reg.MatchString(text) {
 			switch name {
