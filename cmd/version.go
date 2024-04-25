@@ -5,7 +5,7 @@ import (
 )
 
 const (
-	Version string = "v0.1.4"
+	Version string = "v0.1.5"
 )
 
 func ShowVersion() {
