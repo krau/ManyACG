@@ -13,7 +13,6 @@ import (
 )
 
 const (
-	Version      string = "v0.1.3"
 	GithubApiUrl string = "https://api.github.com/repos/krau/ManyACG-Bot/releases/latest"
 )
 
