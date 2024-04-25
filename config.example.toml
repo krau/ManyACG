@@ -1,0 +1,57 @@
+[api]
+enable = false
+address = "0.0.0.0:39818"
+auth = true
+token = ""
+
+[fetcher]
+max_concurrent = 1
+limit = 30
+
+[log]
+level = "TRACE"
+file_path = "logs/trace.log"
+backup_num = 5
+
+[source]
+proxy = ""
+[source.pixiv]
+enable = true
+proxy = "i.pixiv.re"
+urls = []
+intervel = 60
+sleep = 1
+[[source.pixiv.cookies]]
+name = "PHPSESSID"
+value = "114514_wwwoooqqqqaaa"
+[[source.pixiv.cookies]]
+name = "yuid_b"
+value = "I1O12N"
+
+[source.twitter]
+enable = true
+fx_twitter_domain = "fxtwitter.com"
+
+[storage]
+type = "webdav"
+[storage.webdav]
+url = ""
+username = ""
+password = ""
+path = "/"
+cache_dir = "./cache"
+cache_ttl = 20
+
+[telegram]
+token = ""
+username = "@manyacg"
+sleep = 5
+admins = []
+
+[database]
+host = "127.0.0.1"
+port = 27017
+user = ""
+password = ""
+database = "manyacg"
+uri = ""

@@ -30,5 +30,6 @@ jobs:
                 extra_files: |
                     LICENSE
                     README.md
+                    config.example.toml
                 ldflags: -s -w
                 binary_name: ManyACG
