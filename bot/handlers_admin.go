@@ -217,8 +217,8 @@ func fetchArtwork(ctx context.Context, bot *telego.Bot, message telego.Message) 
 }
 
 func getArtworkInfoForAdmin(ctx context.Context, bot *telego.Bot, message telego.Message) {
-	if service.CheckAdminPermission(ctx, message.From.ID, types.GetArtworkInfo) {
-		getArtworkInfo(ctx, bot, message)
+	if !service.CheckAdminPermission(ctx, message.From.ID, types.GetArtworkInfo) {
+		telegram.ReplyMessage(bot, message, "你没有获取作品信息的权限")
 		return
 	}
 	sourceURL := common.MatchSourceURL(message.Text)

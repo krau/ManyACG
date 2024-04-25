@@ -143,6 +143,10 @@ func randomPicture(ctx context.Context, bot *telego.Bot, message telego.Message)
 }
 
 func getArtworkInfo(ctx context.Context, bot *telego.Bot, message telego.Message) {
+	if service.CheckAdminPermission(ctx, message.From.ID, types.GetArtworkInfo) {
+		getArtworkInfoForAdmin(ctx, bot, message)
+		return
+	}
 	sourceURL := common.MatchSourceURL(message.Text)
 	if sourceURL == "" {
 		return

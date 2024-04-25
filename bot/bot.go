@@ -49,7 +49,6 @@ func RunPolling() {
 		telegohandler.Or(
 			telegohandler.TextMatches(regexp.MustCompile(`^/(set_admin|del|delete|fetch)`)),
 			telegohandler.CallbackDataPrefix("admin"),
-			telegohandler.And(onlyPrivate, telegohandler.TextMatches(common.AllSourceURLRegexp)),
 		),
 	)
 	adminHandlerGroup.Use(adminCheck)
@@ -58,7 +57,6 @@ func RunPolling() {
 	adminHandlerGroup.HandleMessageCtx(deletePicture, telegohandler.Or(telegohandler.CommandEqual("del"), telegohandler.CommandEqual("delete")))
 	adminHandlerGroup.HandleMessageCtx(fetchArtwork, telegohandler.CommandEqual("fetch"))
 	adminHandlerGroup.HandleCallbackQueryCtx(postArtwork, telegohandler.CallbackDataContains("post_artwork"))
-	adminHandlerGroup.HandleMessageCtx(getArtworkInfoForAdmin, telegohandler.AnyMessageWithText())
 
 	botHandler.Start()
 }
