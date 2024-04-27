@@ -47,6 +47,7 @@ func SendPictureFileByMessageID(ctx context.Context, bot *telego.Bot, message te
 	if picture.TelegramInfo.DocumentFileID != "" {
 		file = telegoutil.FileFromID(picture.TelegramInfo.DocumentFileID)
 	} else {
+		go ReplyMessage(bot, message, "正在下载原图，请稍等~")
 		data, err := storage.GetStorage().GetFile(picture.StorageInfo)
 		if err != nil {
 			return nil, err
