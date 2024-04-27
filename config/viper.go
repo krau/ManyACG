@@ -1,6 +1,11 @@
 package config
 
-import "github.com/spf13/viper"
+import (
+	"fmt"
+	"os"
+
+	"github.com/spf13/viper"
+)
 
 type Config struct {
 	API      apiConfig      `toml:"api" mapstructure:"api" json:"api" yaml:"api"`
@@ -19,7 +24,7 @@ type fetcherConfig struct {
 
 var Cfg *Config
 
-func init() {
+func InitConfig() {
 	viper.SetConfigName("config")
 	viper.AddConfigPath(".")
 	viper.SetConfigType("toml")
@@ -47,10 +52,12 @@ func init() {
 	viper.SetDefault("Database.databse", "manyacg")
 
 	if err := viper.ReadInConfig(); err != nil {
-		panic(err)
+		fmt.Printf("error when reading config: %s\n", err)
+		os.Exit(1)
 	}
 	Cfg = &Config{}
 	if err := viper.Unmarshal(Cfg); err != nil {
-		panic(err)
+		fmt.Printf("error when unmarshal config: %s\n", err)
+		os.Exit(1)
 	}
 }

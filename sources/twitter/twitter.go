@@ -7,6 +7,9 @@ import (
 
 type Twitter struct{}
 
+func (t *Twitter) Init() {
+}
+
 func (t *Twitter) FetchNewArtworksWithCh(artworkCh chan *types.Artwork, limit int) error {
 	return nil
 }

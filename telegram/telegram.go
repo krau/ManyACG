@@ -16,7 +16,7 @@ var (
 	ChannelChatID telego.ChatID
 )
 
-func init() {
+func InitBot() {
 	var err error
 	Bot, err = telego.NewBot(
 		config.Cfg.Telegram.Token,

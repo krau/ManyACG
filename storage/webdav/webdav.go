@@ -10,9 +10,22 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
+
+	"github.com/studio-b12/gowebdav"
 )
 
 type Webdav struct{}
+
+var Client *gowebdav.Client
+
+func (w *Webdav) Init() {
+	webdavConfig := config.Cfg.Storage.Webdav
+	Client = gowebdav.NewClient(webdavConfig.URL, webdavConfig.Username, webdavConfig.Password)
+	if err := Client.Connect(); err != nil {
+		Logger.Fatalf("Failed to connect to webdav server: %v", err)
+		os.Exit(1)
+	}
+}
 
 func (w *Webdav) SavePicture(artwork *types.Artwork, picture *types.Picture) (*types.StorageInfo, error) {
 	Logger.Debugf("saving picture %d of artwork %s", picture.Index, artwork.Title)

@@ -12,6 +12,9 @@ import (
 )
 
 func RunPolling() {
+	if telegram.Bot == nil {
+		telegram.InitBot()
+	}
 	Logger.Info("Start polling")
 	updates, err := telegram.Bot.UpdatesViaLongPolling(&telego.GetUpdatesParams{
 		Offset: -1,

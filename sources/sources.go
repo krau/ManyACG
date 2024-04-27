@@ -14,12 +14,14 @@ import (
 
 var Sources = make(map[string]Source)
 
-func init() {
+func InitSources() {
 	if config.Cfg.Source.Pixiv.Enable {
 		Sources["pixiv"] = new(pixiv.Pixiv)
+		Sources["pixiv"].Init()
 	}
 	if config.Cfg.Source.Twitter.Enable {
 		Sources["twitter"] = new(twitter.Twitter)
+		Sources["twitter"].Init()
 	}
 }
 

@@ -6,23 +6,27 @@ import (
 	"ManyACG-Bot/config"
 	"ManyACG-Bot/dao"
 	"ManyACG-Bot/fetcher"
-	. "ManyACG-Bot/logger"
+	"ManyACG-Bot/logger"
+	"ManyACG-Bot/sources"
 	"context"
 	"os"
 	"time"
 )
 
 func Run() {
+	config.InitConfig()
+	logger.InitLogger()
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
-	Logger.Info("Start running")
+	logger.Logger.Info("Start running")
 	dao.InitDB(ctx)
 	defer func() {
 		if err := dao.Client.Disconnect(ctx); err != nil {
-			Logger.Fatal(err)
+			logger.Logger.Fatal(err)
 			os.Exit(1)
 		}
 	}()
+	sources.InitSources()
 	go bot.RunPolling()
 	go fetcher.StartScheduler(context.TODO())
 	if config.Cfg.API.Enable {

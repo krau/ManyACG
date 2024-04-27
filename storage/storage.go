@@ -12,8 +12,10 @@ func GetStorage() Storage {
 		switch config.Cfg.Storage.Type {
 		case "webdav":
 			storage = new(webdav.Webdav)
+			storage.Init()
 		default:
 			storage = new(webdav.Webdav)
+			storage.Init()
 		}
 	}
 	return storage

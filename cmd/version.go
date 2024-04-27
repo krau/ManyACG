@@ -1,13 +1,11 @@
 package cmd
 
-import (
-	. "ManyACG-Bot/logger"
-)
+import "fmt"
 
 const (
 	Version string = "v0.1.8"
 )
 
 func ShowVersion() {
-	Logger.Infof("Version: %s", Version)
+	fmt.Println(Version)
 }

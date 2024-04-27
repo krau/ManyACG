@@ -5,10 +5,28 @@ import (
 	"ManyACG-Bot/types"
 	"errors"
 	"fmt"
+	"net/http"
 	"strings"
+
+	"github.com/imroc/req/v3"
 )
 
 type Pixiv struct{}
+
+func (p *Pixiv) Init() {
+	ReqClient = req.C().ImpersonateChrome()
+	cookies := make([]*http.Cookie, 0)
+	for _, cookie := range config.Cfg.Source.Pixiv.Cookies {
+		cookies = append(cookies, &http.Cookie{
+			Name:  cookie.Name,
+			Value: cookie.Value,
+		})
+	}
+	ReqClient.SetCommonCookies(cookies...)
+	if config.Cfg.Source.Proxy != "" {
+		ReqClient.SetProxyURL(config.Cfg.Source.Proxy)
+	}
+}
 
 func (p *Pixiv) FetchNewArtworksWithCh(artworkCh chan *types.Artwork, limit int) error {
 	errs := make([]error, 0)

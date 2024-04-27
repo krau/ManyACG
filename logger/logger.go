@@ -10,7 +10,10 @@ import (
 
 var Logger *slog.Logger
 
-func init() {
+func InitLogger() {
+	if Logger != nil {
+		return
+	}
 	slog.DefaultChannelName = "ManyACG-Bot"
 	Logger = slog.New()
 	logLevel := slog.LevelByName(config.Cfg.Log.Level)
