@@ -146,7 +146,12 @@ func getArtworkInfo(ctx context.Context, bot *telego.Bot, message telego.Message
 		getArtworkInfoForAdmin(ctx, bot, message)
 		return
 	}
-	sourceURL := sources.MatchSourceURL(message.Text)
+	sourceURL := ""
+	if message.Caption != "" {
+		sourceURL = sources.MatchSourceURL(message.Caption)
+	} else {
+		sourceURL = sources.MatchSourceURL(message.Text)
+	}
 	if sourceURL == "" {
 		return
 	}

@@ -220,12 +220,17 @@ func getArtworkInfoForAdmin(ctx context.Context, bot *telego.Bot, message telego
 		telegram.ReplyMessage(bot, message, "你没有获取作品信息的权限")
 		return
 	}
-	sourceURL := sources.MatchSourceURL(message.Text)
+	sourceURL := ""
+	if message.Caption != "" {
+		sourceURL = sources.MatchSourceURL(message.Caption)
+	} else {
+		sourceURL = sources.MatchSourceURL(message.Text)
+	}
 	if sourceURL == "" {
 		return
 	}
-	var waitMessageID int
 
+	var waitMessageID int
 	go func() {
 		msg, err := telegram.ReplyMessage(bot, message, "正在获取作品信息...")
 		if err != nil {
