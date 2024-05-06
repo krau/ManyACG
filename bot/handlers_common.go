@@ -284,16 +284,11 @@ func searchPicture(ctx context.Context, bot *telego.Bot, message telego.Message)
 		return
 	}
 	text := fmt.Sprintf("找到%d张相似或相同图片\n", len(pictures))
-	for i, picture := range pictures {
-		artwork, err := service.GetArtworkByMessageID(ctx, picture.TelegramInfo.MessageID)
-		if err != nil {
-			text += fmt.Sprintf("%d\. %s\n", i+1, telegram.EscapeMarkdown(telegram.GetArtworkPostMessageURL(picture.TelegramInfo.MessageID)))
-			continue
-		}
-		text += fmt.Sprintf("%d\. [%s](%s)\n", i+1, artwork.Title, telegram.EscapeMarkdown(telegram.GetArtworkPostMessageURL(picture.TelegramInfo.MessageID)))
+	for _, picture := range pictures {
+		text += fmt.Sprintf("%s\n", telegram.GetArtworkPostMessageURL(picture.TelegramInfo.MessageID))
 	}
 	bot.SendMessage(telegoutil.Message(message.Chat.ChatID(), text).
 		WithReplyParameters(&telego.ReplyParameters{
 			MessageID: message.MessageID,
-		}).WithParseMode(telego.ModeMarkdownV2))
+		}))
 }
