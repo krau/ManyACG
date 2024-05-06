@@ -5,7 +5,20 @@ import (
 
 	"github.com/blang/semver"
 	"github.com/rhysd/go-github-selfupdate/selfupdate"
+	"github.com/spf13/cobra"
 )
+
+var updateCmd = &cobra.Command{
+	Use:   "update",
+	Short: "Update ManyACG-Bot",
+	Run: func(cmd *cobra.Command, args []string) {
+		Update()
+	},
+}
+
+func init() {
+	rootCmd.AddCommand(updateCmd)
+}
 
 func Update() {
 	v := semver.MustParse(Version)

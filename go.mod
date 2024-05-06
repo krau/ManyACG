@@ -8,6 +8,7 @@ require (
 	github.com/gin-gonic/gin v1.9.1
 	github.com/gookit/slog v0.5.5
 	github.com/rhysd/go-github-selfupdate v1.2.3
+	github.com/spf13/cobra v1.8.0
 	github.com/spf13/viper v1.18.2
 	github.com/studio-b12/gowebdav v0.9.0
 	go.mongodb.org/mongo-driver v1.15.0
@@ -37,6 +38,7 @@ require (
 	github.com/hashicorp/errwrap v1.1.0 // indirect
 	github.com/hashicorp/go-multierror v1.1.1 // indirect
 	github.com/inconshreveable/go-update v0.0.0-20160112193335-8152e7eb6ccf // indirect
+	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/klauspost/compress v1.17.8 // indirect
 	github.com/klauspost/cpuid/v2 v2.2.7 // indirect
@@ -88,7 +90,7 @@ require (
 	github.com/sourcegraph/conc v0.3.0 // indirect
 	github.com/spf13/afero v1.11.0 // indirect
 	github.com/spf13/cast v1.6.0 // indirect
-	github.com/spf13/pflag v1.0.5
+	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/subosito/gotenv v1.6.0 // indirect
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
 	github.com/xo/terminfo v0.0.0-20220910002029-abceb7e1c41e // indirect
