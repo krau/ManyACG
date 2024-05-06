@@ -5,7 +5,6 @@ import (
 	"ManyACG-Bot/sources"
 	"ManyACG-Bot/telegram"
 	"os"
-	"regexp"
 
 	"github.com/mymmrac/telego"
 	"github.com/mymmrac/telego/telegohandler"
@@ -48,18 +47,10 @@ func RunPolling() {
 	baseGroup.HandleMessageCtx(help, telegohandler.CommandEqual("help"))
 	baseGroup.HandleMessageCtx(getArtworkInfo, telegohandler.Or(telegohandler.TextMatches(sources.AllSourceURLRegexp), telegohandler.CaptionMatches(sources.AllSourceURLRegexp)))
 
-	adminHandlerGroup := botHandler.Group(
-		telegohandler.Or(
-			telegohandler.TextMatches(regexp.MustCompile(`^/(set_admin|del|delete|fetch)`)),
-			telegohandler.CallbackDataPrefix("admin"),
-		),
-	)
-	adminHandlerGroup.Use(adminCheck)
-
-	adminHandlerGroup.HandleMessageCtx(setAdmin, telegohandler.CommandEqual("set_admin"))
-	adminHandlerGroup.HandleMessageCtx(deletePicture, telegohandler.Or(telegohandler.CommandEqual("del"), telegohandler.CommandEqual("delete")))
-	adminHandlerGroup.HandleMessageCtx(fetchArtwork, telegohandler.CommandEqual("fetch"))
-	adminHandlerGroup.HandleCallbackQueryCtx(postArtwork, telegohandler.CallbackDataContains("post_artwork"))
+	baseGroup.HandleMessageCtx(setAdmin, telegohandler.CommandEqual("set_admin"))
+	baseGroup.HandleMessageCtx(deletePicture, telegohandler.Or(telegohandler.CommandEqual("del"), telegohandler.CommandEqual("delete")))
+	baseGroup.HandleMessageCtx(fetchArtwork, telegohandler.CommandEqual("fetch"))
+	baseGroup.HandleCallbackQueryCtx(postArtwork, telegohandler.CallbackDataContains("post_artwork"))
 
 	botHandler.Start()
 }

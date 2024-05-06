@@ -40,7 +40,7 @@ func GetAdminByUserID(ctx context.Context, userID int64) (*model.AdminModel, err
 	return dao.GetAdminByUserID(ctx, userID)
 }
 
-func CheckAdminPermission(ctx context.Context, userID int64, permission ...types.Permission) bool {
+func CheckAdminPermission(ctx context.Context, userID int64, permissions ...types.Permission) bool {
 	admin, err := dao.GetAdminByUserID(ctx, userID)
 	if err != nil {
 		return false
@@ -51,7 +51,7 @@ func CheckAdminPermission(ctx context.Context, userID int64, permission ...types
 	if admin.SuperAdmin {
 		return true
 	}
-	for _, p := range permission {
+	for _, p := range permissions {
 		if !admin.HasPermission(p) {
 			return false
 		}

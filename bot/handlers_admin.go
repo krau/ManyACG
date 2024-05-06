@@ -33,6 +33,7 @@ func setAdmin(ctx context.Context, bot *telego.Bot, message telego.Message) {
 		return
 	}
 	var userID int64
+	var userIDStr string
 	_, _, args := telegoutil.ParseCommand(message.Text)
 	var permissions []types.Permission
 	if message.ReplyToMessage != nil {
@@ -68,7 +69,8 @@ func setAdmin(ctx context.Context, bot *telego.Bot, message telego.Message) {
 			return
 		}
 		var err error
-		userID, err = strconv.ParseInt(args[0], 10, 64)
+		userIDStr = args[0]
+		userID, err = strconv.ParseInt(userIDStr, 10, 64)
 		if err != nil {
 			telegram.ReplyMessage(bot, message, "请不要输入奇怪的东西")
 			return
@@ -99,7 +101,12 @@ func setAdmin(ctx context.Context, bot *telego.Bot, message telego.Message) {
 	isAdmin, err := service.IsAdmin(ctx, userID)
 	if err != nil {
 		if errors.Is(err, mongo.ErrNoDocuments) {
-			err := service.CreateOrUpdateAdmin(ctx, userID, permissions, message.From.ID, len(permissions) == 0)
+			isSuper := len(permissions) == 0
+			if strings.HasPrefix(userIDStr, "-100") && isSuper {
+				telegram.ReplyMessage(bot, message, "禁止赋予群组所有权限")
+				return
+			}
+			err := service.CreateOrUpdateAdmin(ctx, userID, permissions, message.From.ID, isSuper)
 			if err != nil {
 				telegram.ReplyMessage(bot, message, "设置管理员失败: "+err.Error())
 				return
@@ -213,104 +220,6 @@ func fetchArtwork(ctx context.Context, bot *telego.Bot, message telego.Message) 
 
 	go fetcher.FetchOnce(context.TODO(), config.Cfg.Fetcher.Limit)
 	telegram.ReplyMessage(bot, message, "开始拉取作品了")
-}
-
-func getArtworkInfoForAdmin(ctx context.Context, bot *telego.Bot, message telego.Message) {
-	if !service.CheckAdminPermission(ctx, message.From.ID, types.GetArtworkInfo) {
-		telegram.ReplyMessage(bot, message, "你没有获取作品信息的权限")
-		return
-	}
-	sourceURL := ""
-	if message.Caption != "" {
-		sourceURL = sources.MatchSourceURL(message.Caption)
-	} else {
-		sourceURL = sources.MatchSourceURL(message.Text)
-	}
-	if sourceURL == "" {
-		return
-	}
-
-	var waitMessageID int
-	go func() {
-		msg, err := telegram.ReplyMessage(bot, message, "正在获取作品信息...")
-		if err != nil {
-			Logger.Warnf("发送消息失败: %s", err)
-			return
-		}
-		waitMessageID = msg.MessageID
-	}()
-
-	defer func() {
-		if r := recover(); r != nil {
-			Logger.Errorf("panic: %v", r)
-		}
-		time.Sleep(1 * time.Second)
-		if waitMessageID != 0 {
-			go bot.DeleteMessage(telegoutil.Delete(message.Chat.ChatID(), waitMessageID))
-		}
-	}()
-
-	isAlreadyPosted := true
-	artwork, err := service.GetArtworkByURL(ctx, sourceURL)
-	if err != nil {
-		isAlreadyPosted = false
-		artwork, err = sources.GetArtworkInfo(sourceURL)
-	}
-	if err != nil {
-		telegram.ReplyMessage(bot, message, "获取作品信息失败: "+err.Error())
-		return
-	}
-
-	var inputFile telego.InputFile
-	if artwork.Pictures[0].TelegramInfo == nil || artwork.Pictures[0].TelegramInfo.PhotoFileID == "" {
-		photoURL := artwork.Pictures[0].Original
-		if artwork.SourceType == types.SourceTypePixiv {
-			photoURL = sources.GetPixivRegularURL(photoURL)
-		}
-		inputFile = telegoutil.FileFromURL(photoURL)
-	} else {
-		inputFile = telegoutil.FileFromID(artwork.Pictures[0].TelegramInfo.PhotoFileID)
-	}
-
-	photo := telegoutil.Photo(message.Chat.ChatID(), inputFile).
-		WithReplyParameters(&telego.ReplyParameters{MessageID: message.MessageID}).
-		WithParseMode(telego.ModeMarkdownV2)
-
-	deletedModel, _ := service.GetDeletedByURL(ctx, sourceURL)
-	artworkInfoCaption := telegram.GetArtworkMarkdownCaption(artwork)
-	if deletedModel != nil {
-		photo.WithCaption(artworkInfoCaption + telegram.EscapeMarkdown(fmt.Sprintf("\n\n这是一个在 %s 删除的作品\n\n"+
-			"如果发布则会取消删除", deletedModel.DeletedAt.Time().Format("2006-01-02 15:04:05"))))
-	} else {
-		photo.WithCaption(telegram.GetArtworkMarkdownCaption(artwork))
-	}
-	if isAlreadyPosted {
-		photo.WithReplyMarkup(telegoutil.InlineKeyboard(
-			[]telego.InlineKeyboardButton{
-				telegoutil.InlineKeyboardButton("来源").WithURL(telegram.GetArtworkPostMessageURL(artwork.Pictures[0].TelegramInfo.MessageID)),
-				telegoutil.InlineKeyboardButton("原图").WithURL(telegram.GetDeepLinkForFile(artwork.Pictures[0].TelegramInfo.MessageID)),
-			},
-		))
-	} else {
-		id, err := service.CreateCallbackData(ctx, artwork.SourceURL)
-		if err != nil {
-			telegram.ReplyMessage(bot, message, "创建回调数据失败: "+err.Error())
-			return
-		}
-		photo.WithReplyMarkup(telegoutil.InlineKeyboard(
-			[]telego.InlineKeyboardButton{
-				telegoutil.InlineKeyboardButton("发布到频道").WithCallbackData("admin post_artwork " + id),
-			},
-		))
-	}
-	if artwork.R18 {
-		photo.WithHasSpoiler()
-	}
-	_, err = bot.SendPhoto(photo)
-	if err != nil {
-		telegram.ReplyMessage(bot, message, "发送图片失败: "+err.Error())
-		return
-	}
 }
 
 func postArtwork(ctx context.Context, bot *telego.Bot, query telego.CallbackQuery) {
