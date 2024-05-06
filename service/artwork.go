@@ -60,9 +60,6 @@ func CreateArtwork(ctx context.Context, artwork *types.Artwork) (*types.Artwork,
 		}
 		if artistModel != nil {
 			artist_id = artistModel.ID
-			artistModel.Name = artwork.Artist.Name
-			artistModel.Username = artwork.Artist.Username
-			dao.UpdateArtistByUID(ctx, artistModel.UID, artistModel)
 		} else {
 			artistModel = &model.ArtistModel{
 				Type:     artwork.Artist.Type,
