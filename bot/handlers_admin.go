@@ -301,3 +301,17 @@ func postArtwork(ctx context.Context, bot *telego.Bot, query telego.CallbackQuer
 		),
 	})
 }
+
+func processOldPictures(ctx context.Context, bot *telego.Bot, message telego.Message) {
+	userAdmin, err := service.GetAdminByUserID(ctx, message.From.ID)
+	if err != nil {
+		telegram.ReplyMessage(bot, message, "获取管理员信息失败: "+err.Error())
+		return
+	}
+	if userAdmin != nil && !userAdmin.SuperAdmin {
+		telegram.ReplyMessage(bot, message, "你没有权限处理旧图片")
+		return
+	}
+	go service.ProcessOldPicturesAndUpdate(context.TODO(), bot, &message)
+	telegram.ReplyMessage(bot, message, "开始处理了")
+}

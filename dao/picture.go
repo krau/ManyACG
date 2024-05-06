@@ -51,6 +51,28 @@ func GetPictureByID(ctx context.Context, id primitive.ObjectID) (*model.PictureM
 	return &picture, nil
 }
 
+func GetPictureByHash(ctx context.Context, hash string) (*model.PictureModel, error) {
+	var picture model.PictureModel
+	err := pictureCollection.FindOne(ctx, bson.M{"hash": hash}).Decode(&picture)
+	if err != nil {
+		return nil, err
+	}
+	return &picture, nil
+}
+
+func GetNotProcessedPictures(ctx context.Context) ([]*model.PictureModel, error) {
+	cursor, err := pictureCollection.Find(ctx, bson.M{"hash": ""})
+	if err != nil {
+		return nil, err
+	}
+	var pictures []*model.PictureModel
+	err = cursor.All(ctx, &pictures)
+	if err != nil {
+		return nil, err
+	}
+	return pictures, nil
+}
+
 func UpdatePictureTelegramInfoByID(ctx context.Context, id primitive.ObjectID, telegramInfo *model.TelegramInfo) (*mongo.UpdateResult, error) {
 	return pictureCollection.UpdateOne(ctx, bson.M{"_id": id}, bson.M{"$set": bson.M{"telegram_info": telegramInfo}})
 }
