@@ -38,7 +38,6 @@ func RunPolling() {
 
 	botHandler.Use(telegohandler.PanicRecovery())
 	botHandler.Use(messageLogger)
-
 	baseGroup := botHandler.BaseGroup()
 
 	baseGroup.HandleMessageCtx(start, telegohandler.CommandEqual("start"))

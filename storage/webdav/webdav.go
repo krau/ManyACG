@@ -52,6 +52,12 @@ func (w *Webdav) SavePicture(artwork *types.Artwork, picture *types.Picture) (*t
 		return nil, err
 	}
 	Logger.Infof("picture %d of artwork %s saved to %s", picture.Index, artwork.Title, filePath)
+	cachePath := strings.TrimSuffix(config.Cfg.Storage.Webdav.CacheDir, "/") + "/" + filepath.Base(filePath)
+	if err := common.MkFile(cachePath, fileBytes); err != nil {
+		Logger.Warnf("failed to save cache file: %s", err)
+	} else {
+		go common.PurgeFileAfter(cachePath, time.Duration(config.Cfg.Storage.Webdav.CacheTTL)*time.Second)
+	}
 	return &types.StorageInfo{
 		Type: types.StorageTypeWebdav,
 		Path: filePath,
@@ -67,8 +73,7 @@ func (w *Webdav) GetFile(info *types.StorageInfo) ([]byte, error) {
 }
 
 func (w *Webdav) GetFileWithCache(info *types.StorageInfo) ([]byte, error) {
-	cacheDir := config.Cfg.Storage.Webdav.CacheDir
-	cachePath := strings.TrimSuffix(cacheDir, "/") + "/" + filepath.Base(info.Path)
+	cachePath := strings.TrimSuffix(config.Cfg.Storage.Webdav.CacheDir, "/") + "/" + filepath.Base(info.Path)
 	data, err := os.ReadFile(cachePath)
 	if err == nil {
 		return data, nil

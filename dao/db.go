@@ -70,6 +70,14 @@ func InitDB(ctx context.Context) {
 			Keys:    bson.D{{Key: "original", Value: 1}},
 			Options: options.Index().SetName("original"),
 		},
+		{
+			Keys:    bson.D{{Key: "telegram_info.message_id", Value: 1}},
+			Options: options.Index().SetName("message_id"),
+		},
+		{
+			Keys:    bson.D{{Key: "hash", Value: 1}},
+			Options: options.Index().SetName("hash"),
+		},
 	})
 
 	DB.CreateCollection(ctx, collections.Artists)

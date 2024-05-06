@@ -4,6 +4,7 @@ go 1.22.2
 
 require (
 	github.com/blang/semver v3.5.1+incompatible
+	github.com/corona10/goimagehash v1.1.0
 	github.com/gin-gonic/gin v1.9.1
 	github.com/gookit/slog v0.5.5
 	github.com/rhysd/go-github-selfupdate v1.2.3
@@ -44,6 +45,7 @@ require (
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/montanaflynn/stats v0.7.1 // indirect
+	github.com/nfnt/resize v0.0.0-20180221191011-83c6a9932646 // indirect
 	github.com/onsi/ginkgo/v2 v2.17.1 // indirect
 	github.com/quic-go/qpack v0.4.0 // indirect
 	github.com/quic-go/quic-go v0.42.0 // indirect

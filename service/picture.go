@@ -1,8 +1,10 @@
 package service
 
 import (
+	"ManyACG-Bot/common"
 	"ManyACG-Bot/dao"
 	"ManyACG-Bot/dao/model"
+	"ManyACG-Bot/storage"
 	"ManyACG-Bot/types"
 	"context"
 
@@ -93,6 +95,41 @@ func DeletePictureByMessageID(ctx context.Context, messageID int) error {
 			if err != nil {
 				return nil, err
 			}
+		}
+		return nil, nil
+	})
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func ProcessPictureAndUpdate(ctx context.Context, picture *types.Picture) error {
+	pictureModel, err := dao.GetPictureByOriginal(ctx, picture.Original)
+	if err != nil {
+		return err
+	}
+	session, err := dao.Client.StartSession()
+	if err != nil {
+		return err
+	}
+	defer session.EndSession(ctx)
+	_, err = session.WithTransaction(ctx, func(ctx mongo.SessionContext) (interface{}, error) {
+		fileBytes, err := storage.GetStorage().GetFile(picture.StorageInfo)
+		if err != nil {
+			return nil, err
+		}
+		hash, err := common.GetPhash(fileBytes)
+		if err != nil {
+			return nil, err
+		}
+		blurscore, err := common.GetBlurScore(fileBytes)
+		if err != nil {
+			return nil, err
+		}
+		_, err = dao.UpdatePictureHashAndBlurScoreByID(ctx, pictureModel.ID, hash, blurscore)
+		if err != nil {
+			return nil, err
 		}
 		return nil, nil
 	})

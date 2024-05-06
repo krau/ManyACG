@@ -76,5 +76,16 @@ func PostAndCreateArtwork(ctx context.Context, artwork *types.Artwork, bot *tele
 		}()
 		return fmt.Errorf("error when creating artwork %s: %w", artwork.SourceURL, err)
 	}
+	go afterCreate(context.TODO(), artwork, bot, storage)
 	return nil
+}
+
+func afterCreate(ctx context.Context, artwork *types.Artwork, _ *telego.Bot, _ storage.Storage) {
+	for _, picture := range artwork.Pictures {
+		go func(picture *types.Picture) {
+			if err := service.ProcessPictureAndUpdate(ctx, picture); err != nil {
+				Logger.Warnf("error when processing %d of artwork %s: %s", picture.Index, artwork.Title, err)
+			}
+		}(picture)
+	}
 }
