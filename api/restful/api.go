@@ -11,7 +11,7 @@ import (
 func Run() {
 	r := gin.Default()
 
-	v1 := r.Group("/api/v1")
+	v1 := r.Group("/v1")
 	if config.Cfg.API.Auth {
 		v1.Use(AuthRequired)
 	}
