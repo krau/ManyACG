@@ -51,13 +51,17 @@ func GetPictureByID(ctx context.Context, id primitive.ObjectID) (*model.PictureM
 	return &picture, nil
 }
 
-func GetPictureByHash(ctx context.Context, hash string) (*model.PictureModel, error) {
-	var picture model.PictureModel
-	err := pictureCollection.FindOne(ctx, bson.M{"hash": hash}).Decode(&picture)
+func GetPicturesByHash(ctx context.Context, hash string) ([]*model.PictureModel, error) {
+	cursor, err := pictureCollection.Find(ctx, bson.M{"hash": hash})
 	if err != nil {
 		return nil, err
 	}
-	return &picture, nil
+	var pictures []*model.PictureModel
+	err = cursor.All(ctx, &pictures)
+	if err != nil {
+		return nil, err
+	}
+	return pictures, nil
 }
 
 func GetNotProcessedPictures(ctx context.Context) ([]*model.PictureModel, error) {

@@ -1,6 +1,7 @@
 package bot
 
 import (
+	"ManyACG-Bot/common"
 	"ManyACG-Bot/service"
 	"ManyACG-Bot/sources"
 	"ManyACG-Bot/telegram"
@@ -238,4 +239,61 @@ func getArtworkInfo(ctx context.Context, bot *telego.Bot, message telego.Message
 		telegram.ReplyMessage(bot, message, "发送图片失败: "+err.Error())
 		return
 	}
+}
+
+func searchPicture(ctx context.Context, bot *telego.Bot, message telego.Message) {
+	if !CheckPermissionInGroup(ctx, message, types.SearchPicture) {
+		telegram.ReplyMessage(bot, message, "用户或群组没有权限")
+		return
+	}
+	if message.ReplyToMessage == nil {
+		telegram.ReplyMessage(bot, message, "请使用该命令回复一条图片消息")
+		return
+	}
+	if message.ReplyToMessage.Photo == nil {
+		telegram.ReplyMessage(bot, message, "目标消息不包含图片")
+		return
+	}
+	go telegram.ReplyMessage(bot, message, "少女祈祷中...")
+	photo := message.ReplyToMessage.Photo
+	photoFileID := photo[len(photo)-1].FileID
+	tgFile, err := bot.GetFile(&telego.GetFileParams{
+		FileID: photoFileID,
+	})
+	if err != nil {
+		telegram.ReplyMessage(bot, message, "获取文件信息失败: "+err.Error())
+		return
+	}
+	fileBytes, err := telegoutil.DownloadFile(bot.FileDownloadURL(tgFile.FilePath))
+	if err != nil {
+		telegram.ReplyMessage(bot, message, "下载文件失败: "+err.Error())
+		return
+	}
+	hash, err := common.GetPhash(fileBytes)
+	if err != nil {
+		telegram.ReplyMessage(bot, message, "获取图片哈希失败: "+err.Error())
+		return
+	}
+	pictures, err := service.GetPicturesByHash(ctx, hash)
+	if err != nil {
+		telegram.ReplyMessage(bot, message, "搜索图片失败: "+err.Error())
+		return
+	}
+	if len(pictures) == 0 {
+		telegram.ReplyMessage(bot, message, "未在数据库中找到图片")
+		return
+	}
+	text := fmt.Sprintf("找到%d张相似图片\n", len(pictures))
+	for i, picture := range pictures {
+		artwork, err := service.GetArtworkByMessageID(ctx, picture.TelegramInfo.MessageID)
+		if err != nil {
+			text += fmt.Sprintf("%d. %s\n", i+1, telegram.EscapeMarkdown(telegram.GetArtworkPostMessageURL(picture.TelegramInfo.MessageID)))
+			continue
+		}
+		text += fmt.Sprintf("%d. [%s](%s)\n", i+1, artwork.Title, telegram.EscapeMarkdown(telegram.GetArtworkPostMessageURL(picture.TelegramInfo.MessageID)))
+	}
+	bot.SendMessage(telegoutil.Message(message.Chat.ChatID(), text).
+		WithReplyParameters(&telego.ReplyParameters{
+			MessageID: message.MessageID,
+		}).WithParseMode(telego.ModeMarkdownV2))
 }

@@ -138,3 +138,15 @@ func ProcessPictureAndUpdate(ctx context.Context, picture *types.Picture) error 
 	}
 	return nil
 }
+
+func GetPicturesByHash(ctx context.Context, hash string) ([]*types.Picture, error) {
+	pictures, err := dao.GetPicturesByHash(ctx, hash)
+	if err != nil {
+		return nil, err
+	}
+	var result []*types.Picture
+	for _, picture := range pictures {
+		result = append(result, picture.ToPicture())
+	}
+	return result, nil
+}
