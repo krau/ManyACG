@@ -1,6 +1,7 @@
 package sources
 
 import (
+	. "ManyACG-Bot/logger"
 	"ManyACG-Bot/sources/twitter"
 	"ManyACG-Bot/types"
 	"regexp"
@@ -8,9 +9,8 @@ import (
 )
 
 var (
-	PixivSourceURLRegexp   *regexp.Regexp = regexp.MustCompile(`https://(?:www\.)?pixiv\.net/(?:artworks|i)/(\d+)`)
-	TwitterSourceURLRegexp *regexp.Regexp = regexp.MustCompile(`https://(?:twitter|x)\.com/([^/]+)/status/(\d+)`)
-	AllSourceURLRegexp     *regexp.Regexp = regexp.MustCompile(`https://(?:www\.)?(pixiv\.net/(?:artworks|i)/\d+|(?:twitter|x)\.com/[^/]+/status/\d+)`)
+	PixivSourceURLRegexp   *regexp.Regexp = regexp.MustCompile(`pixiv\.net/(?:artworks/|i/|member_illust\.php\?(?:[\w=&]*\&|)illust_id=)(\d+)`)
+	TwitterSourceURLRegexp *regexp.Regexp = regexp.MustCompile(`(?:twitter|x)\.com/([^/]+)/status/(\d+)`)
 )
 
 var (
@@ -20,6 +20,7 @@ var (
 	}
 )
 
+// MatchSourceURL returns the source URL of the text.
 func MatchSourceURL(text string) string {
 	text = strings.ReplaceAll(text, "\n", " ")
 	for name, reg := range SourceURLRegexps {
@@ -30,8 +31,10 @@ func MatchSourceURL(text string) string {
 				pid := strings.Split(url, "/")[len(strings.Split(url, "/"))-1]
 				return "https://www.pixiv.net/artworks/" + pid
 			case string(types.SourceTypeTwitter):
-				tweetPath, err := twitter.GetTweetPath(text)
-				if err != nil {
+				url := reg.FindString(text)
+				tweetPath := twitter.GetTweetPath(url)
+				if tweetPath == "" {
+					Logger.Warnf("Matched Twitter URL but failed to get tweet path. URL: %s", url)
 					return ""
 				}
 				return "https://twitter.com/" + tweetPath
@@ -40,6 +43,17 @@ func MatchSourceURL(text string) string {
 		}
 	}
 	return ""
+}
+
+// MatchesSourceURL returns whether the text contains a source URL.
+func MatchesSourceURL(text string) bool {
+	text = strings.ReplaceAll(text, "\n", " ")
+	for _, reg := range SourceURLRegexps {
+		if reg.MatchString(text) {
+			return true
+		}
+	}
+	return false
 }
 
 func GetPixivRegularURL(original string) string {

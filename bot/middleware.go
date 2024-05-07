@@ -2,8 +2,6 @@ package bot
 
 import (
 	. "ManyACG-Bot/logger"
-	"ManyACG-Bot/service"
-	"ManyACG-Bot/telegram"
 
 	"github.com/mymmrac/telego"
 	"github.com/mymmrac/telego/telegohandler"
@@ -21,37 +19,5 @@ func messageLogger(bot *telego.Bot, update telego.Update, next telegohandler.Han
 		}
 	}
 
-	next(bot, update)
-}
-
-func adminCheck(bot *telego.Bot, update telego.Update, next telegohandler.Handler) {
-	if update.Message == nil && update.CallbackQuery == nil {
-		return
-	}
-	var userID int64
-	if update.Message != nil {
-		userID = update.Message.From.ID
-	}
-	if update.CallbackQuery != nil {
-		userID = update.CallbackQuery.From.ID
-	}
-	isAdmin, err := service.IsAdmin(update.Context(), userID)
-	if !isAdmin {
-		Logger.Debugf("User %d is not admin: %s", userID, err)
-		if update.CallbackQuery != nil {
-			bot.AnswerCallbackQuery(&telego.AnswerCallbackQueryParams{
-				CallbackQueryID: update.CallbackQuery.ID,
-				Text:            "你没有权限哦",
-				ShowAlert:       true,
-				CacheTime:       60,
-			})
-			return
-		}
-		if update.Message != nil {
-			telegram.ReplyMessage(bot, *update.Message, "你没有权限哦")
-			return
-		}
-		return
-	}
 	next(bot, update)
 }

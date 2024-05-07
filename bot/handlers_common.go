@@ -49,12 +49,14 @@ func help(ctx context.Context, bot *telego.Bot, message telego.Message) {
 /file - 回复一条频道的消息获取原图文件
 /setu - 来点涩图 <tag1> <tag2> ...
 /random - 随机1张全年龄图片 <tag1> <tag2> ...
+/search - 搜索相似图片
 `
 	isAdmin, _ := service.IsAdmin(ctx, message.From.ID)
 	if isAdmin {
 		helpText += `/set_admin - 设置|删除管理员
 /del - 删除图片
 /fetch - 手动开始一次抓取
+/process_old_pictures - 处理旧图片 (0.2.3 版本前)
 
 发送作品链接可以获取信息或发布到频道
 `
@@ -148,16 +150,10 @@ func getArtworkInfo(ctx context.Context, bot *telego.Bot, message telego.Message
 	if !CheckPermissionInGroup(ctx, message, types.GetArtworkInfo) {
 		return
 	}
-	sourceURL := ""
-	if message.Caption != "" {
-		sourceURL = sources.MatchSourceURL(message.Caption)
-	} else {
-		sourceURL = sources.MatchSourceURL(message.Text)
-	}
+	sourceURL := MatchSourceURLForMessage(&message)
 	if sourceURL == "" {
 		return
 	}
-
 	var waitMessageID int
 	go func() {
 		msg, err := telegram.ReplyMessage(bot, message, "正在获取作品信息...")
@@ -237,7 +233,6 @@ func getArtworkInfo(ctx context.Context, bot *telego.Bot, message telego.Message
 	_, err = bot.SendPhoto(photo)
 	if err != nil {
 		telegram.ReplyMessage(bot, message, "发送图片失败: "+err.Error())
-		return
 	}
 }
 

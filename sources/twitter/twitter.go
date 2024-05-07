@@ -19,9 +19,9 @@ func (t *Twitter) FetchNewArtworks(limit int) ([]*types.Artwork, error) {
 }
 
 func (t *Twitter) GetArtworkInfo(sourceURL string) (*types.Artwork, error) {
-	tweetPath, err := GetTweetPath(sourceURL)
-	if err != nil {
-		return nil, err
+	tweetPath := GetTweetPath(sourceURL)
+	if tweetPath == "" {
+		return nil, ErrInvalidURL
 	}
 	fxTwitterApiURL := "https://api." + config.Cfg.Source.Twitter.FxTwitterDomain + "/" + tweetPath
 	resp, err := reqApiResp(fxTwitterApiURL)

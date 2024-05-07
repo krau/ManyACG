@@ -3,6 +3,7 @@ package twitter
 import (
 	"ManyACG-Bot/common"
 	"encoding/json"
+	"regexp"
 	"strings"
 )
 
@@ -19,14 +20,13 @@ func reqApiResp(url string) (*FxTwitterApiResp, error) {
 	return &fxTwitterApiResp, nil
 }
 
-func GetTweetPath(sourceURL string) (string, error) {
-	urlSplit := strings.Split(sourceURL, "/")
-	if len(urlSplit) < 6 {
-		return "", ErrInvalidURL
-	}
-	authorUsername := urlSplit[3]
-	tweetID := urlSplit[5]
-	tweetID = strings.Split(tweetID, "?")[0]
-	tweetPath := authorUsername + "/status/" + tweetID
-	return tweetPath, nil
+var (
+	twitterSourceURLRegexp *regexp.Regexp = regexp.MustCompile(`(?:twitter|x)\.com/([^/]+)/status/(\d+)`)
+)
+
+func GetTweetPath(sourceURL string) string {
+	url := twitterSourceURLRegexp.FindString(sourceURL)
+	url = strings.TrimPrefix(url, "twitter.com/")
+	url = strings.TrimPrefix(url, "x.com/")
+	return url
 }

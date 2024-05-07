@@ -2,6 +2,7 @@ package bot
 
 import (
 	"ManyACG-Bot/service"
+	"ManyACG-Bot/sources"
 	"ManyACG-Bot/types"
 	"context"
 
@@ -17,4 +18,15 @@ func CheckPermissionInGroup(ctx context.Context, message telego.Message, permiss
 		return service.CheckAdminPermission(ctx, message.From.ID, permissions...)
 	}
 	return true
+}
+
+func MatchSourceURLForMessage(message *telego.Message) string {
+	text := message.Text
+	text += message.Caption + " "
+	for _, entity := range message.Entities {
+		if entity.Type == telego.EntityTypeTextLink {
+			text += entity.URL + " "
+		}
+	}
+	return sources.MatchSourceURL(text)
 }

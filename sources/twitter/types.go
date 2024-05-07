@@ -74,10 +74,11 @@ func (resp *FxTwitterApiResp) ToArtwork() (*types.Artwork, error) {
 	if err != nil {
 		return nil, err
 	}
-	tweetPath, err := GetTweetPath(tweet.URL)
-	if err != nil {
-		return nil, err
+	tweetPath := GetTweetPath(tweet.URL)
+	if tweetPath == "" {
+		return nil, ErrInvalidURL
 	}
+
 	return &types.Artwork{
 		Title:       tweetPath,
 		Description: tweet.Text,
