@@ -3,7 +3,10 @@ package twitter
 import (
 	"ManyACG-Bot/config"
 	"ManyACG-Bot/types"
+	"path/filepath"
 	"regexp"
+	"strconv"
+	"strings"
 )
 
 type Twitter struct{}
@@ -54,6 +57,16 @@ func (t *Twitter) GetCommonSourceURL(url string) string {
 		return ""
 	}
 	return "https://twitter.com/" + tweetPath
+}
+
+func (t *Twitter) GetFileName(artwork *types.Artwork, picture *types.Picture) string {
+	original := picture.Original
+	urlSplit := strings.Split(picture.Original, "?")
+	if len(urlSplit) > 1 {
+		original = strings.Join(urlSplit[:len(urlSplit)-1], "?")
+	}
+	tweetID := strings.Split(artwork.SourceURL, "/")[len(strings.Split(artwork.SourceURL, "/"))-1]
+	return tweetID + "_" + strconv.Itoa(int(picture.Index)) + filepath.Ext(original)
 }
 
 func (t *Twitter) Config() *config.SourceCommonConfig {

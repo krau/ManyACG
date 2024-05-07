@@ -15,5 +15,7 @@ type Source interface {
 	GetSourceURLRegexp() *regexp.Regexp
 	// CommonSourceURl should has prefix "https://"
 	GetCommonSourceURL(url string) string
+	// FileName 返回图片的用于存储和传输的文件名
+	GetFileName(artwork *types.Artwork, picture *types.Picture) string
 	Config() *config.SourceCommonConfig
 }

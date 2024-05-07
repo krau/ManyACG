@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"path/filepath"
 	"regexp"
 	"strings"
 
@@ -100,6 +101,10 @@ func (p *Pixiv) GetCommonSourceURL(url string) string {
 		return ""
 	}
 	return "https://www.pixiv.net/artworks/" + pid
+}
+
+func (p *Pixiv) GetFileName(artwork *types.Artwork, picture *types.Picture) string {
+	return artwork.Title + "_" + filepath.Base(picture.Original)
 }
 
 func (p *Pixiv) Config() *config.SourceCommonConfig {

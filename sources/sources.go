@@ -7,9 +7,7 @@ import (
 	"ManyACG-Bot/sources/pixiv"
 	"ManyACG-Bot/sources/twitter"
 	"ManyACG-Bot/types"
-	"path/filepath"
 	"regexp"
-	"strconv"
 	"strings"
 )
 
@@ -45,21 +43,7 @@ func GetArtworkInfo(sourceURL string) (*types.Artwork, error) {
 }
 
 func GetFileName(artwork *types.Artwork, picture *types.Picture) string {
-	fileName := ""
-	switch artwork.SourceType {
-	case types.SourceTypePixiv:
-		fileName = artwork.Title + "_" + filepath.Base(picture.Original)
-	case types.SourceTypeTwitter:
-		original := picture.Original
-		urlSplit := strings.Split(picture.Original, "?")
-		if len(urlSplit) > 1 {
-			original = strings.Join(urlSplit[:len(urlSplit)-1], "?")
-		}
-		tweetID := strings.Split(artwork.SourceURL, "/")[len(strings.Split(artwork.SourceURL, "/"))-1]
-		fileName = tweetID + "_" + strconv.Itoa(int(picture.Index)) + filepath.Ext(original)
-	default:
-		fileName = artwork.Title + "_" + filepath.Base(picture.Original)
-	}
+	fileName := Sources[artwork.SourceType].GetFileName(artwork, picture)
 	return common.ReplaceFileNameInvalidChar(fileName)
 }
 
