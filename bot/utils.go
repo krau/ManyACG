@@ -28,5 +28,5 @@ func MatchSourceURLForMessage(message *telego.Message) string {
 			text += entity.URL + " "
 		}
 	}
-	return sources.MatchSourceURL(text)
+	return sources.FindSourceURL(text)
 }

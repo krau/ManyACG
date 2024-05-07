@@ -3,6 +3,7 @@ package twitter
 import (
 	"ManyACG-Bot/config"
 	"ManyACG-Bot/types"
+	"regexp"
 )
 
 type Twitter struct{}
@@ -40,6 +41,19 @@ func (t *Twitter) GetPictureInfo(sourceURL string, index uint) (*types.Picture, 
 		return nil, ErrIndexOOB
 	}
 	return artwork.Pictures[index], nil
+
+}
+
+func (t *Twitter) GetSourceURLRegexp() *regexp.Regexp {
+	return twitterSourceURLRegexp
+}
+
+func (t *Twitter) GetCommonSourceURL(url string) string {
+	tweetPath := GetTweetPath(url)
+	if tweetPath == "" {
+		return ""
+	}
+	return "https://twitter.com/" + tweetPath
 }
 
 func (t *Twitter) Config() *config.SourceCommonConfig {

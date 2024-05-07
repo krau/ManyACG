@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"regexp"
 	"strings"
 
 	"github.com/imroc/req/v3"
@@ -87,6 +88,18 @@ func (p *Pixiv) GetPictureInfo(sourceURL string, index uint) (*types.Picture, er
 		Height:       uint(resp.Body[index].Height),
 		TelegramInfo: &types.TelegramInfo{},
 	}, nil
+}
+
+func (p *Pixiv) GetSourceURLRegexp() *regexp.Regexp {
+	return pixivSourceURLRegexp
+}
+
+func (p *Pixiv) GetCommonSourceURL(url string) string {
+	pid := GetPid(url)
+	if pid == "" {
+		return ""
+	}
+	return "https://www.pixiv.net/artworks/" + pid
 }
 
 func (p *Pixiv) Config() *config.SourceCommonConfig {

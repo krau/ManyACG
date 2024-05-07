@@ -10,12 +10,13 @@ import (
 	"time"
 )
 
-func getPid(url string) string {
-	return strings.Split(url, "/")[len(strings.Split(url, "/"))-1]
+func GetPid(url string) string {
+	matchUrl := pixivSourceURLRegexp.FindString(url)
+	return numberRegexp.FindString(matchUrl)
 }
 
 func reqAjaxResp(sourceURL string) (*PixivAjaxResp, error) {
-	ajaxURL := "https://www.pixiv.net/ajax/illust/" + getPid(sourceURL)
+	ajaxURL := "https://www.pixiv.net/ajax/illust/" + GetPid(sourceURL)
 	Logger.Tracef("request artwork info: %s", ajaxURL)
 	resp, err := ReqClient.R().Get(ajaxURL)
 	if err != nil {
@@ -30,7 +31,7 @@ func reqAjaxResp(sourceURL string) (*PixivAjaxResp, error) {
 }
 
 func reqIllustPages(sourceURL string) (*PixivIllustPages, error) {
-	ajaxURL := "https://www.pixiv.net/ajax/illust/" + getPid(sourceURL) + "/pages?lang=zh"
+	ajaxURL := "https://www.pixiv.net/ajax/illust/" + GetPid(sourceURL) + "/pages?lang=zh"
 	Logger.Tracef("request artwork pages: %s", ajaxURL)
 	resp, err := ReqClient.R().Get(ajaxURL)
 	if err != nil {

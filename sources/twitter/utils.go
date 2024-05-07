@@ -7,6 +7,10 @@ import (
 	"strings"
 )
 
+var (
+	twitterSourceURLRegexp *regexp.Regexp = regexp.MustCompile(`(?:twitter|x)\.com/([^/]+)/status/(\d+)`)
+)
+
 func reqApiResp(url string) (*FxTwitterApiResp, error) {
 	resp, err := common.Client.R().Get(url)
 	if err != nil {
@@ -19,10 +23,6 @@ func reqApiResp(url string) (*FxTwitterApiResp, error) {
 	}
 	return &fxTwitterApiResp, nil
 }
-
-var (
-	twitterSourceURLRegexp *regexp.Regexp = regexp.MustCompile(`(?:twitter|x)\.com/([^/]+)/status/(\d+)`)
-)
 
 func GetTweetPath(sourceURL string) string {
 	url := twitterSourceURLRegexp.FindString(sourceURL)
