@@ -30,49 +30,45 @@ func (w *Webdav) Init() {
 func (w *Webdav) SavePicture(artwork *types.Artwork, picture *types.Picture) (*types.StorageInfo, error) {
 	Logger.Debugf("saving picture %d of artwork %s", picture.Index, artwork.Title)
 	fileName := sources.GetFileName(artwork, picture)
-	artistName := common.ReplaceFileNameInvalidChar(artwork.Artist.Name)
+	artistName := common.ReplaceFileNameInvalidChar(artwork.Artist.Username)
 	fileDir := strings.TrimSuffix(config.Cfg.Storage.Webdav.Path, "/") + "/" + string(artwork.SourceType) + "/" + artistName + "/"
 	if err := Client.MkdirAll(fileDir, os.ModePerm); err != nil {
-		if strings.Contains(err.Error(), "409") || strings.Contains(err.Error(), "405") {
-			fileDir = strings.TrimSuffix(config.Cfg.Storage.Webdav.Path, "/") + "/" + string(artwork.SourceType) + "/" + artwork.Artist.Username + "/"
-			if err := Client.MkdirAll(fileDir, os.ModePerm); err != nil {
-				return nil, err
-			}
-		} else {
-			return nil, err
-		}
+		return nil, err
 	}
 	fileBytes, err := common.DownloadFromURL(picture.Original)
 	if err != nil {
 		return nil, err
 	}
-
 	filePath := fileDir + fileName
 	if err := Client.Write(filePath, fileBytes, os.ModePerm); err != nil {
 		return nil, err
 	}
 	Logger.Infof("picture %d of artwork %s saved to %s", picture.Index, artwork.Title, filePath)
+	storageInfo := &types.StorageInfo{
+		Type: types.StorageTypeWebdav,
+		Path: filePath,
+	}
+	if config.Cfg.Storage.Webdav.CacheDir == "" {
+		return storageInfo, nil
+	}
 	cachePath := strings.TrimSuffix(config.Cfg.Storage.Webdav.CacheDir, "/") + "/" + filepath.Base(filePath)
 	if err := common.MkFile(cachePath, fileBytes); err != nil {
 		Logger.Warnf("failed to save cache file: %s", err)
 	} else {
 		go common.PurgeFileAfter(cachePath, time.Duration(config.Cfg.Storage.Webdav.CacheTTL)*time.Second)
 	}
-	return &types.StorageInfo{
-		Type: types.StorageTypeWebdav,
-		Path: filePath,
-	}, nil
+	return storageInfo, nil
 }
 
 func (w *Webdav) GetFile(info *types.StorageInfo) ([]byte, error) {
 	Logger.Debugf("Getting file %s", info.Path)
 	if config.Cfg.Storage.Webdav.CacheDir != "" {
-		return w.GetFileWithCache(info)
+		return w.getFileWithCache(info)
 	}
 	return Client.Read(info.Path)
 }
 
-func (w *Webdav) GetFileWithCache(info *types.StorageInfo) ([]byte, error) {
+func (w *Webdav) getFileWithCache(info *types.StorageInfo) ([]byte, error) {
 	cachePath := strings.TrimSuffix(config.Cfg.Storage.Webdav.CacheDir, "/") + "/" + filepath.Base(info.Path)
 	data, err := os.ReadFile(cachePath)
 	if err == nil {
