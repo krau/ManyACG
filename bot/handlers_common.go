@@ -278,12 +278,10 @@ func searchPicture(ctx context.Context, bot *telego.Bot, message telego.Message)
 		telegram.ReplyMessage(bot, message, "未在数据库中找到图片")
 		return
 	}
-	text := fmt.Sprintf("找到%d张相似或相同图片\n", len(pictures))
+
+	text := fmt.Sprintf("找到%d张相似或相同的图片\n\n", len(pictures))
 	for _, picture := range pictures {
-		text += fmt.Sprintf("%s\n", telegram.GetArtworkPostMessageURL(picture.TelegramInfo.MessageID))
+		text += telegram.GetArtworkPostMessageURL(picture.TelegramInfo.MessageID) + "\n\n"
 	}
-	bot.SendMessage(telegoutil.Message(message.Chat.ChatID(), text).
-		WithReplyParameters(&telego.ReplyParameters{
-			MessageID: message.MessageID,
-		}))
+	telegram.ReplyMessage(bot, message, text)
 }

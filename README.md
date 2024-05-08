@@ -11,6 +11,9 @@ Work in progress...
 
 ManyACG Bot 是针对 Telegram 的 ACG 图片分享频道而设计的 Bot, 兼具爬虫和频道管理功能.
 
+> [!NOTE]\
+> 本项目处于早期开发阶段, 有较多的破坏性更改, 请您在升级版本前自行阅读提交记录, 并妥善备份数据.
+
 ## 部署
 
 依赖:
@@ -86,4 +89,4 @@ uri = "" # 当 uri 不为空时, 优先使用 uri 直接连接数据库
 ## 更新
 ### 二进制更新
 
-使用 ManyACG --update 可自动下载最新适合当前系统的 Release.
+使用 ManyACG update 可自动下载最新适合当前系统的 Release.

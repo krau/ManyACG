@@ -58,6 +58,10 @@ func InitBot() {
 				Description: "随机1张全年龄图片 <tag1> <tag2> ...",
 			},
 			{
+				Command:     "search",
+				Description: "搜索图片",
+			},
+			{
 				Command:     "help",
 				Description: "食用指南",
 			},
