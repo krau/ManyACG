@@ -48,7 +48,7 @@ func RunPolling() {
 	baseGroup.HandleMessageCtx(setAdmin, telegohandler.CommandEqual("set_admin"))
 	baseGroup.HandleMessageCtx(deletePicture, telegohandler.Or(telegohandler.CommandEqual("del"), telegohandler.CommandEqual("delete")))
 	baseGroup.HandleMessageCtx(fetchArtwork, telegohandler.CommandEqual("fetch"))
-	baseGroup.HandleMessageCtx(processOldPictures, telegohandler.CommandEqual("process_old_pictures"))
+	baseGroup.HandleMessageCtx(processPictures, telegohandler.CommandEqual("process_pictures"))
 	baseGroup.HandleCallbackQueryCtx(postArtwork, telegohandler.CallbackDataContains("post_artwork"))
 
 	botHandler.Start()

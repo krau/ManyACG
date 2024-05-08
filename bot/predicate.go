@@ -5,5 +5,5 @@ import (
 )
 
 func sourceUrlMatches(update telego.Update) bool {
-	return MatchSourceURLForMessage(update.Message) != ""
+	return FindSourceURLForMessage(update.Message) != ""
 }

@@ -9,7 +9,7 @@ import (
 	"github.com/mymmrac/telego/telegoutil"
 )
 
-func ProcessOldPicturesAndUpdate(ctx context.Context, bot *telego.Bot, message *telego.Message) {
+func ProcessPicturesAndUpdate(ctx context.Context, bot *telego.Bot, message *telego.Message) {
 	pictures, err := dao.GetNotProcessedPictures(ctx)
 	sendMessage := bot != nil && message != nil
 	if err != nil {

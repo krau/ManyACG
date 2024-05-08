@@ -56,7 +56,7 @@ func help(ctx context.Context, bot *telego.Bot, message telego.Message) {
 		helpText += `/set_admin - 设置|删除管理员
 /del - 删除图片
 /fetch - 手动开始一次抓取
-/process_old_pictures - 处理旧图片 (0.2.3 版本前)
+/process_pictures - 处理无哈希的图片
 
 发送作品链接可以获取信息或发布到频道
 `
@@ -147,26 +147,23 @@ func randomPicture(ctx context.Context, bot *telego.Bot, message telego.Message)
 }
 
 func getArtworkInfo(ctx context.Context, bot *telego.Bot, message telego.Message) {
-	if !CheckPermissionInGroup(ctx, message, types.GetArtworkInfo) {
-		return
-	}
-	sourceURL := MatchSourceURLForMessage(&message)
-	if sourceURL == "" {
-		return
-	}
+	hasPermission := CheckPermissionInGroup(ctx, message, types.GetArtworkInfo)
+	sourceURL := FindSourceURLForMessage(&message)
 	var waitMessageID int
-	go func() {
-		msg, err := telegram.ReplyMessage(bot, message, "正在获取作品信息...")
-		if err != nil {
-			Logger.Warnf("发送消息失败: %s", err)
-			return
-		}
-		waitMessageID = msg.MessageID
-	}()
+	if hasPermission {
+		go func() {
+			msg, err := telegram.ReplyMessage(bot, message, "正在获取作品信息...")
+			if err != nil {
+				Logger.Warnf("发送消息失败: %s", err)
+				return
+			}
+			waitMessageID = msg.MessageID
+		}()
+	}
 
 	defer func() {
 		if r := recover(); r != nil {
-			Logger.Errorf("panic: %v", r)
+			Logger.Fatalf("panic: %v", r)
 		}
 		time.Sleep(1 * time.Second)
 		if waitMessageID != 0 {
@@ -177,12 +174,15 @@ func getArtworkInfo(ctx context.Context, bot *telego.Bot, message telego.Message
 	isAlreadyPosted := true
 	artwork, err := service.GetArtworkByURL(ctx, sourceURL)
 	if err != nil {
+		if !hasPermission {
+			return
+		}
 		isAlreadyPosted = false
 		artwork, err = sources.GetArtworkInfo(sourceURL)
-	}
-	if err != nil {
-		telegram.ReplyMessage(bot, message, "获取作品信息失败: "+err.Error())
-		return
+		if err != nil {
+			telegram.ReplyMessage(bot, message, "获取作品信息失败: "+err.Error())
+			return
+		}
 	}
 
 	var inputFile telego.InputFile

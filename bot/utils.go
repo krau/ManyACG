@@ -20,7 +20,7 @@ func CheckPermissionInGroup(ctx context.Context, message telego.Message, permiss
 	return true
 }
 
-func MatchSourceURLForMessage(message *telego.Message) string {
+func FindSourceURLForMessage(message *telego.Message) string {
 	text := message.Text
 	text += message.Caption + " "
 	for _, entity := range message.Entities {

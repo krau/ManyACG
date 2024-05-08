@@ -35,37 +35,16 @@ func setAdmin(ctx context.Context, bot *telego.Bot, message telego.Message) {
 	var userID int64
 	var userIDStr string
 	_, _, args := telegoutil.ParseCommand(message.Text)
-	var permissions []types.Permission
-	if message.ReplyToMessage != nil {
-		if message.ReplyToMessage.SenderChat != nil {
-			userID = message.ReplyToMessage.SenderChat.ID
-		} else {
-			userID = message.ReplyToMessage.From.ID
-		}
-		permissions = make([]types.Permission, len(args))
-		unsupportedPermissions := make([]string, 0)
-		for i, arg := range args {
-			for _, p := range types.AllPermissions {
-				if string(p) == arg {
-					permissions[i] = p
-					break
-				}
-			}
-			if permissions[i] == "" {
-				unsupportedPermissions = append(unsupportedPermissions, arg)
-			}
-		}
-		if len(unsupportedPermissions) > 0 {
-			text := fmt.Sprintf("权限不存在: %v\n支持的权限:\n", unsupportedPermissions)
-			for _, p := range types.AllPermissions {
-				text += string(p) + "\n"
-			}
-			telegram.ReplyMessage(bot, message, text)
-			return
-		}
-	} else {
+	var supportedPermissionsText string
+	for _, p := range types.AllPermissions {
+		supportedPermissionsText += "`" + string(p) + "`" + "\n"
+	}
+	if message.ReplyToMessage == nil {
 		if len(args) == 0 {
-			telegram.ReplyMessage(bot, message, "请回复一条消息或提供用户ID, 并指定权限, 以空格分隔.\n若不提供权限则默认为所有权限")
+			telegram.ReplyMessageWithMarkdown(
+				bot, message,
+				fmt.Sprintf("请回复一名用户或提供ID\\, 并提供权限\\, 以空格分隔\n支持的权限\\:\n%v", supportedPermissionsText),
+			)
 			return
 		}
 		var err error
@@ -75,38 +54,42 @@ func setAdmin(ctx context.Context, bot *telego.Bot, message telego.Message) {
 			telegram.ReplyMessage(bot, message, "请不要输入奇怪的东西")
 			return
 		}
-		permissions = make([]types.Permission, len(args)-1)
-		unsupportedPermissions := make([]string, 0)
-		for i, arg := range args[1:] {
-			for _, p := range types.AllPermissions {
-				if string(p) == arg {
-					permissions[i] = p
-					break
-				}
-			}
-			if permissions[i] == "" {
-				unsupportedPermissions = append(unsupportedPermissions, arg)
+	} else {
+		if message.ReplyToMessage.SenderChat != nil {
+			userID = message.ReplyToMessage.SenderChat.ID
+		} else {
+			userID = message.ReplyToMessage.From.ID
+		}
+	}
+
+	inputPermissions := make([]types.Permission, len(args)-1)
+	unsupportedPermissions := make([]string, 0)
+	for i, arg := range args[1:] {
+		for _, p := range types.AllPermissions {
+			if string(p) == arg {
+				inputPermissions[i] = p
+				break
 			}
 		}
-		if len(unsupportedPermissions) > 0 {
-			text := fmt.Sprintf("权限不存在: %v\n支持的权限:\n", unsupportedPermissions)
-			for _, p := range types.AllPermissions {
-				text += string(p) + "\n"
-			}
-			telegram.ReplyMessage(bot, message, text)
-			return
+		if inputPermissions[i] == "" {
+			unsupportedPermissions = append(unsupportedPermissions, arg)
 		}
+	}
+
+	if len(unsupportedPermissions) > 0 {
+		telegram.ReplyMessageWithMarkdown(bot, message, telegram.EscapeMarkdown(fmt.Sprintf("权限不存在: %v\n支持的权限:\n", unsupportedPermissions))+supportedPermissionsText)
+		return
 	}
 
 	isAdmin, err := service.IsAdmin(ctx, userID)
 	if err != nil {
 		if errors.Is(err, mongo.ErrNoDocuments) {
-			isSuper := len(permissions) == 0
+			isSuper := len(inputPermissions) == 0
 			if strings.HasPrefix(userIDStr, "-100") && isSuper {
 				telegram.ReplyMessage(bot, message, "禁止赋予群组所有权限")
 				return
 			}
-			err := service.CreateOrUpdateAdmin(ctx, userID, permissions, message.From.ID, isSuper)
+			err := service.CreateOrUpdateAdmin(ctx, userID, inputPermissions, message.From.ID, isSuper)
 			if err != nil {
 				telegram.ReplyMessage(bot, message, "设置管理员失败: "+err.Error())
 				return
@@ -126,7 +109,7 @@ func setAdmin(ctx context.Context, bot *telego.Bot, message telego.Message) {
 			telegram.ReplyMessage(bot, message, fmt.Sprintf("删除管理员成功: %d", userID))
 			return
 		}
-		err := service.CreateOrUpdateAdmin(ctx, userID, permissions, message.From.ID, false)
+		err := service.CreateOrUpdateAdmin(ctx, userID, inputPermissions, message.From.ID, false)
 		if err != nil {
 			telegram.ReplyMessage(bot, message, "更新管理员失败: "+err.Error())
 			return
@@ -302,7 +285,7 @@ func postArtwork(ctx context.Context, bot *telego.Bot, query telego.CallbackQuer
 	})
 }
 
-func processOldPictures(ctx context.Context, bot *telego.Bot, message telego.Message) {
+func processPictures(ctx context.Context, bot *telego.Bot, message telego.Message) {
 	userAdmin, err := service.GetAdminByUserID(ctx, message.From.ID)
 	if err != nil {
 		telegram.ReplyMessage(bot, message, "获取管理员信息失败: "+err.Error())
@@ -312,6 +295,6 @@ func processOldPictures(ctx context.Context, bot *telego.Bot, message telego.Mes
 		telegram.ReplyMessage(bot, message, "你没有权限处理旧图片")
 		return
 	}
-	go service.ProcessOldPicturesAndUpdate(context.TODO(), bot, &message)
+	go service.ProcessPicturesAndUpdate(context.TODO(), bot, &message)
 	telegram.ReplyMessage(bot, message, "开始处理了")
 }
