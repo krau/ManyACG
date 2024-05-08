@@ -126,7 +126,7 @@ func randomPicture(ctx context.Context, bot *telego.Bot, message telego.Message)
 		}
 		file = telegoutil.FileFromURL(photoURL)
 	}
-	photoMessage, err := bot.SendPhoto(telegoutil.Photo(message.Chat.ChatID(), file).
+	photo := telegoutil.Photo(message.Chat.ChatID(), file).
 		WithReplyParameters(&telego.ReplyParameters{
 			MessageID: message.MessageID,
 		}).WithCaption(artwork[0].Title).WithReplyMarkup(
@@ -134,7 +134,11 @@ func randomPicture(ctx context.Context, bot *telego.Bot, message telego.Message)
 			telegoutil.InlineKeyboardButton("来源").WithURL(telegram.GetArtworkPostMessageURL(picture.TelegramInfo.MessageID)),
 			telegoutil.InlineKeyboardButton("原图").WithURL(telegram.GetDeepLinkForFile(picture.TelegramInfo.MessageID)),
 		}),
-	))
+	)
+	if artwork[0].R18 {
+		photo.WithHasSpoiler()
+	}
+	photoMessage, err := bot.SendPhoto(photo)
 	if err != nil {
 		telegram.ReplyMessage(bot, message, "发送图片失败: "+err.Error())
 	}
