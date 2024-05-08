@@ -278,9 +278,17 @@ func searchPicture(ctx context.Context, bot *telego.Bot, message telego.Message)
 	if len(pictures) > 0 {
 		text := fmt.Sprintf("找到%d张相似或相同的图片\n\n", len(pictures))
 		for _, picture := range pictures {
-			text += telegram.GetArtworkPostMessageURL(picture.TelegramInfo.MessageID) + "\n\n"
+			artwork, err := service.GetArtworkByMessageID(ctx, picture.TelegramInfo.MessageID)
+			if err != nil {
+				text += telegram.EscapeMarkdown(fmt.Sprintf("%s 模糊度: %.2f\n\n", telegram.GetArtworkPostMessageURL(picture.TelegramInfo.MessageID), picture.BlurScore))
+			}
+			text += fmt.Sprintf("[%s\\_%d](%s)  ",
+				telegram.EscapeMarkdown(artwork.Title),
+				picture.Index+1,
+				telegram.EscapeMarkdown(telegram.GetArtworkPostMessageURL(picture.TelegramInfo.MessageID)))
+			text += telegram.EscapeMarkdown(fmt.Sprintf("模糊度: %.2f\n\n", picture.BlurScore))
 		}
-		telegram.ReplyMessage(bot, message, text)
+		telegram.ReplyMessageWithMarkdown(bot, message, text)
 		return
 	}
 	if !hasPermission {
