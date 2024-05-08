@@ -140,6 +140,9 @@ func ProcessPictureAndUpdate(ctx context.Context, picture *types.Picture) error 
 }
 
 func GetPicturesByHash(ctx context.Context, hash string) ([]*types.Picture, error) {
+	if hash == "" {
+		return nil, nil
+	}
 	pictures, err := dao.GetPicturesByHash(ctx, hash)
 	if err != nil {
 		return nil, err

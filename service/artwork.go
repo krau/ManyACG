@@ -326,3 +326,49 @@ func CheckDeletedByURL(ctx context.Context, sourceURL string) bool {
 func GetDeletedByURL(ctx context.Context, sourceURL string) (*model.DeletedModel, error) {
 	return dao.GetDeletedByURL(ctx, sourceURL)
 }
+
+func GetArtworkIDByPicture(ctx context.Context, picture *types.Picture) (primitive.ObjectID, error) {
+	pictureModel, err := dao.GetPictureByOriginal(ctx, picture.Original)
+	if err != nil {
+		return primitive.NilObjectID, err
+	}
+	return pictureModel.ArtworkID, nil
+}
+
+func GetArtworkByID(ctx context.Context, id primitive.ObjectID) (*types.Artwork, error) {
+	artworkModel, err := dao.GetArtworkByID(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	artistModel, err := dao.GetArtistByID(ctx, artworkModel.ArtistID)
+	if err != nil {
+		return nil, err
+	}
+	tags := make([]string, len(artworkModel.Tags))
+	for i, tagID := range artworkModel.Tags {
+		tagModel, err := dao.GetTagByID(ctx, tagID)
+		if err != nil {
+			return nil, err
+		}
+		tags[i] = tagModel.Name
+	}
+	pictures := make([]*types.Picture, len(artworkModel.Pictures))
+	for i, pictureID := range artworkModel.Pictures {
+		pictureModel, err := dao.GetPictureByID(ctx, pictureID)
+		if err != nil {
+			return nil, err
+		}
+		pictures[i] = pictureModel.ToPicture()
+	}
+	return &types.Artwork{
+		Title:       artworkModel.Title,
+		Description: artworkModel.Description,
+		R18:         artworkModel.R18,
+		CreatedAt:   artworkModel.CreatedAt.Time(),
+		SourceType:  artworkModel.SourceType,
+		SourceURL:   artworkModel.SourceURL,
+		Artist:      artistModel.ToArtist(),
+		Tags:        tags,
+		Pictures:    pictures,
+	}, nil
+}

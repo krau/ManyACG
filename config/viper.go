@@ -60,4 +60,9 @@ func InitConfig() {
 		fmt.Printf("error when unmarshal config: %s\n", err)
 		os.Exit(1)
 	}
+
+	if len(Cfg.Telegram.Admins) == 0 {
+		fmt.Println("please set at least one admin in config file (telegram.admins)")
+		os.Exit(1)
+	}
 }

@@ -244,7 +244,7 @@ func postArtwork(ctx context.Context, bot *telego.Bot, query telego.CallbackQuer
 	})
 	if service.CheckDeletedByURL(ctx, sourceURL) {
 		if err := service.DeleteDeletedByURL(ctx, sourceURL); err != nil {
-			Logger.Errorf("删除删除记录失败: %s", err)
+			Logger.Errorf("取消删除记录失败: %s", err)
 			go bot.EditMessageCaption(&telego.EditMessageCaptionParams{
 				ChatID:    telegoutil.ID(query.Message.GetChat().ID),
 				MessageID: query.Message.GetMessageID(),
@@ -253,7 +253,7 @@ func postArtwork(ctx context.Context, bot *telego.Bot, query telego.CallbackQuer
 			return
 		}
 	}
-	if err := fetcher.PostAndCreateArtwork(ctx, artwork, bot, storage.GetStorage()); err != nil {
+	if err := fetcher.PostAndCreateArtwork(ctx, artwork, bot, storage.GetStorage(), query.From.ID); err != nil {
 		Logger.Errorf("发布失败: %s", err)
 		go bot.EditMessageCaption(&telego.EditMessageCaptionParams{
 			ChatID:    telegoutil.ID(query.Message.GetChat().ID),
