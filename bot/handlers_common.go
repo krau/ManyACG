@@ -237,10 +237,7 @@ func getArtworkInfo(ctx context.Context, bot *telego.Bot, message telego.Message
 }
 
 func searchPicture(ctx context.Context, bot *telego.Bot, message telego.Message) {
-	if !CheckPermissionInGroup(ctx, message, types.SearchPicture) {
-		telegram.ReplyMessage(bot, message, "用户或群组没有权限")
-		return
-	}
+	hasPermission := CheckPermissionInGroup(ctx, message, types.SearchPicture)
 	if message.ReplyToMessage == nil {
 		telegram.ReplyMessage(bot, message, "请使用该命令回复一条图片消息")
 		return
@@ -274,14 +271,18 @@ func searchPicture(ctx context.Context, bot *telego.Bot, message telego.Message)
 		telegram.ReplyMessage(bot, message, "搜索图片失败: "+err.Error())
 		return
 	}
-	if len(pictures) == 0 {
-		telegram.ReplyMessage(bot, message, "未在数据库中找到图片")
+	if len(pictures) > 0 {
+		text := fmt.Sprintf("找到%d张相似或相同的图片\n\n", len(pictures))
+		for _, picture := range pictures {
+			text += telegram.GetArtworkPostMessageURL(picture.TelegramInfo.MessageID) + "\n\n"
+		}
+		telegram.ReplyMessage(bot, message, text)
 		return
 	}
-
-	text := fmt.Sprintf("找到%d张相似或相同的图片\n\n", len(pictures))
-	for _, picture := range pictures {
-		text += telegram.GetArtworkPostMessageURL(picture.TelegramInfo.MessageID) + "\n\n"
+	if !hasPermission {
+		telegram.ReplyMessage(bot, message, "未在数据库中找到相似图片")
+		return
 	}
-	telegram.ReplyMessage(bot, message, text)
+	// TODO: 有权限时使用其他搜索引擎搜图
+	telegram.ReplyMessage(bot, message, "未找到相似图片")
 }
