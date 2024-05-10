@@ -21,6 +21,7 @@ func InitBot() {
 	Bot, err = telego.NewBot(
 		config.Cfg.Telegram.Token,
 		telego.WithDefaultLogger(false, true),
+		telego.WithAPIServer(config.Cfg.Telegram.APIURL),
 	)
 	if err != nil {
 		Logger.Fatalf("Error when creating bot: %s", err)

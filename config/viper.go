@@ -48,6 +48,7 @@ func InitConfig() {
 	viper.SetDefault("storage.local.path", "manyacg/")
 
 	viper.SetDefault("telegram.sleep", 1)
+	viper.SetDefault("telegram.api_url", "https://api.telegram.org")
 
 	viper.SetDefault("Database.databse", "manyacg")
 
