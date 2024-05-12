@@ -2,6 +2,7 @@ package twitter
 
 import (
 	"ManyACG-Bot/common"
+	. "ManyACG-Bot/logger"
 	"encoding/json"
 	"regexp"
 	"strings"
@@ -12,9 +13,11 @@ var (
 )
 
 func reqApiResp(url string) (*FxTwitterApiResp, error) {
+	Logger.Tracef("request artwork info: %s", url)
 	resp, err := common.Client.R().Get(url)
 	if err != nil {
-		return nil, err
+		Logger.Errorf("request failed: %v", err)
+		return nil, ErrRequestFailed
 	}
 	var fxTwitterApiResp FxTwitterApiResp
 	err = json.Unmarshal(resp.Bytes(), &fxTwitterApiResp)

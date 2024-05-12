@@ -237,10 +237,11 @@ func postArtwork(ctx context.Context, bot *telego.Bot, query telego.CallbackQuer
 		})
 		return
 	}
-	go bot.AnswerCallbackQuery(&telego.AnswerCallbackQueryParams{
-		CallbackQueryID: query.ID,
-		Text:            "正在发布, 请不要重复点击...",
-		CacheTime:       120,
+	go bot.EditMessageCaption(&telego.EditMessageCaptionParams{
+		ChatID:      telegoutil.ID(query.Message.GetChat().ID),
+		MessageID:   query.Message.GetMessageID(),
+		Caption:     "正在发布...",
+		ReplyMarkup: nil,
 	})
 	if service.CheckDeletedByURL(ctx, sourceURL) {
 		if err := service.DeleteDeletedByURL(ctx, sourceURL); err != nil {

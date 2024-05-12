@@ -39,8 +39,9 @@ type MediaItem struct {
 }
 
 var (
-	ErrInvalidURL = errors.New("invalid tweet URL")
-	ErrIndexOOB   = errors.New("index out of bounds")
+	ErrInvalidURL    = errors.New("invalid tweet URL")
+	ErrIndexOOB      = errors.New("index out of bounds")
+	ErrRequestFailed = errors.New("request twitter url failed")
 )
 
 func (resp *FxTwitterApiResp) ToArtwork() (*types.Artwork, error) {
