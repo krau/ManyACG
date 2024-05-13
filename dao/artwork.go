@@ -70,7 +70,7 @@ func GetRandomArtworksR18(ctx context.Context, r18 bool, limit int) ([]*model.Ar
 func GetRandomArtworksByTags(ctx context.Context, tags []primitive.ObjectID, limit int) ([]*model.ArtworkModel, error) {
 	var artworks []*model.ArtworkModel
 	cursor, err := artworkCollection.Aggregate(ctx, mongo.Pipeline{
-		bson.D{{Key: "$match", Value: bson.M{"tags": bson.M{"$in": tags}}}},
+		bson.D{{Key: "$match", Value: bson.M{"tags": bson.M{"$all": tags}}}},
 		bson.D{{Key: "$sample", Value: bson.M{"size": limit}}},
 	})
 	if err != nil {
@@ -86,7 +86,7 @@ func GetRandomArtworksByTags(ctx context.Context, tags []primitive.ObjectID, lim
 func GetRandomArtworksByTagsR18(ctx context.Context, tags []primitive.ObjectID, r18 bool, limit int) ([]*model.ArtworkModel, error) {
 	var artworks []*model.ArtworkModel
 	cursor, err := artworkCollection.Aggregate(ctx, mongo.Pipeline{
-		bson.D{{Key: "$match", Value: bson.M{"tags": bson.M{"$in": tags}, "r18": r18}}},
+		bson.D{{Key: "$match", Value: bson.M{"tags": bson.M{"$all": tags}, "r18": r18}}},
 		bson.D{{Key: "$sample", Value: bson.M{"size": limit}}},
 	})
 	if err != nil {
