@@ -317,8 +317,7 @@ func inlineQuery(ctx context.Context, bot *telego.Bot, query telego.InlineQuery)
 			break
 		}
 	}
-	limit := 44
-	Logger.Debug(tags, r18)
+	limit := 30
 	artworks, err := service.GetRandomArtworksByTagsR18(ctx, tags, r18, limit)
 	if err != nil {
 		Logger.Warnf("获取图片失败: %s", err)

@@ -157,39 +157,51 @@ func GetRandomArtworksByTagsR18(ctx context.Context, tags []string, r18 bool, li
 			return nil, err
 		}
 	}
-
 	artworks := make([]*types.Artwork, len(artworkModels))
+	errChan := make(chan error, len(artworkModels))
 	for i, artworkModel := range artworkModels {
-		allTags := make([]string, len(artworkModel.Tags))
-		for j, tagID := range artworkModel.Tags {
-			tagModel, err := dao.GetTagByID(ctx, tagID)
-			if err != nil {
-				return nil, err
+		go func(i int, artworkModel *model.ArtworkModel) {
+			allTags := make([]string, len(artworkModel.Tags))
+			for j, tagID := range artworkModel.Tags {
+				tagModel, err := dao.GetTagByID(ctx, tagID)
+				if err != nil {
+					errChan <- err
+					return
+				}
+				allTags[j] = tagModel.Name
 			}
-			allTags[j] = tagModel.Name
-		}
-		pictures := make([]*types.Picture, len(artworkModel.Pictures))
-		for k, pictureID := range artworkModel.Pictures {
-			pictureModel, err := dao.GetPictureByID(ctx, pictureID)
-			if err != nil {
-				return nil, err
+			pictures := make([]*types.Picture, len(artworkModel.Pictures))
+			for k, pictureID := range artworkModel.Pictures {
+				pictureModel, err := dao.GetPictureByID(ctx, pictureID)
+				if err != nil {
+					errChan <- err
+					return
+				}
+				pictures[k] = pictureModel.ToPicture()
 			}
-			pictures[k] = pictureModel.ToPicture()
-		}
-		artistModel, err := dao.GetArtistByID(ctx, artworkModel.ArtistID)
+			artistModel, err := dao.GetArtistByID(ctx, artworkModel.ArtistID)
+			if err != nil {
+				errChan <- err
+				return
+			}
+			artworks[i] = &types.Artwork{
+				Title:       artworkModel.Title,
+				Description: artworkModel.Description,
+				R18:         artworkModel.R18,
+				CreatedAt:   artworkModel.CreatedAt.Time(),
+				SourceType:  artworkModel.SourceType,
+				SourceURL:   artworkModel.SourceURL,
+				Artist:      artistModel.ToArtist(),
+				Tags:        allTags,
+				Pictures:    pictures,
+			}
+			errChan <- nil
+		}(i, artworkModel)
+	}
+	for range artworkModels {
+		err := <-errChan
 		if err != nil {
 			return nil, err
-		}
-		artworks[i] = &types.Artwork{
-			Title:       artworkModel.Title,
-			Description: artworkModel.Description,
-			R18:         artworkModel.R18,
-			CreatedAt:   artworkModel.CreatedAt.Time(),
-			SourceType:  artworkModel.SourceType,
-			SourceURL:   artworkModel.SourceURL,
-			Artist:      artistModel.ToArtist(),
-			Tags:        allTags,
-			Pictures:    pictures,
 		}
 	}
 	return artworks, nil
