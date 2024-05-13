@@ -75,6 +75,13 @@ func createIndex(ctx context.Context) {
 			Keys:    bson.D{{Key: "source_url", Value: 1}},
 			Options: options.Index().SetName("source_url").SetUnique(true),
 		},
+		{
+			Keys: bson.D{{Key: "title", Value: "text"}, {Key: "description", Value: "text"}},
+			Options: options.Index().SetName("title_description").SetWeights(bson.M{
+				"title":       10,
+				"description": 5,
+			}),
+		},
 	})
 
 	tagCollection.Indexes().CreateMany(ctx, []mongo.IndexModel{
@@ -112,6 +119,13 @@ func createIndex(ctx context.Context) {
 		{
 			Keys:    bson.D{{Key: "name", Value: 1}},
 			Options: options.Index().SetName("name"),
+		},
+		{
+			Keys: bson.D{{Key: "name", Value: "text"}, {Key: "username", Value: "text"}},
+			Options: options.Index().SetName("name_username").SetWeights(bson.M{
+				"name":     5,
+				"username": 10,
+			}),
 		},
 	})
 
