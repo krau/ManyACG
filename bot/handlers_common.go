@@ -14,11 +14,12 @@ import (
 	"strings"
 	"time"
 
+	. "ManyACG/logger"
+
+	"github.com/google/uuid"
 	"github.com/mymmrac/telego"
 	"github.com/mymmrac/telego/telegoutil"
 	"go.mongodb.org/mongo-driver/mongo"
-
-	. "ManyACG/logger"
 )
 
 func start(ctx context.Context, bot *telego.Bot, message telego.Message) {
@@ -300,4 +301,37 @@ func searchPicture(ctx context.Context, bot *telego.Bot, message telego.Message)
 	}
 	// TODO: 有权限时使用其他搜索引擎搜图
 	telegram.ReplyMessage(bot, message, "未找到相似图片")
+}
+
+func inlineQuery(ctx context.Context, bot *telego.Bot, query telego.InlineQuery) {
+	queryText := query.Query
+	tags := strings.Split(queryText, " ")
+	r18 := false
+	for i, tag := range tags {
+		if tag == "r18" {
+			r18 = true
+			tags = append(tags[:i], tags[i+1:]...)
+			break
+		}
+	}
+	limit := 44
+	artworks, err := service.GetRandomArtworksByTagsR18(ctx, tags, r18, limit)
+	if err != nil {
+		bot.AnswerInlineQuery(telegoutil.InlineQuery(query.ID, telegoutil.ResultArticle(uuid.NewString(), "未找到相关图片", telegoutil.TextMessage("/setu"))))
+		return
+	}
+	results := make([]telego.InlineQueryResult, 0, len(artworks))
+	for _, artwork := range artworks {
+		picture := artwork.Pictures[rand.Intn(len(artwork.Pictures))]
+		if picture.TelegramInfo.PhotoFileID == "" {
+			continue
+		}
+		result := telegoutil.ResultCachedPhoto(uuid.NewString(), picture.TelegramInfo.PhotoFileID).WithCaption(artwork.Title)
+		result.WithReplyMarkup(telegoutil.InlineKeyboard([]telego.InlineKeyboardButton{
+			telegoutil.InlineKeyboardButton("来源").WithURL(telegram.GetArtworkPostMessageURL(picture.TelegramInfo.MessageID)),
+			telegoutil.InlineKeyboardButton("原图").WithURL(telegram.GetDeepLinkForFile(picture.TelegramInfo.MessageID)),
+		}))
+		results = append(results, result)
+	}
+	bot.AnswerInlineQuery(telegoutil.InlineQuery(query.ID, results...).WithCacheTime(3))
 }

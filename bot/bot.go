@@ -20,6 +20,7 @@ func RunPolling() {
 			telego.MessageUpdates,
 			telego.ChannelPostUpdates,
 			telego.CallbackQueryUpdates,
+			telego.InlineQueryUpdates,
 		},
 	})
 	if err != nil {
@@ -50,6 +51,7 @@ func RunPolling() {
 	baseGroup.HandleMessageCtx(fetchArtwork, telegohandler.CommandEqual("fetch"))
 	baseGroup.HandleMessageCtx(processPictures, telegohandler.CommandEqual("process_pictures"))
 	baseGroup.HandleCallbackQueryCtx(postArtwork, telegohandler.CallbackDataContains("post_artwork"))
+	baseGroup.HandleInlineQueryCtx(inlineQuery)
 
 	botHandler.Start()
 }
