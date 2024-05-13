@@ -305,7 +305,10 @@ func searchPicture(ctx context.Context, bot *telego.Bot, message telego.Message)
 
 func inlineQuery(ctx context.Context, bot *telego.Bot, query telego.InlineQuery) {
 	queryText := query.Query
-	tags := strings.Split(queryText, " ")
+	tags := make([]string, 0)
+	if queryText != "" {
+		tags = strings.Split(queryText, " ")
+	}
 	r18 := false
 	for i, tag := range tags {
 		if tag == "r18" {
@@ -315,8 +318,10 @@ func inlineQuery(ctx context.Context, bot *telego.Bot, query telego.InlineQuery)
 		}
 	}
 	limit := 44
+	Logger.Debug(tags, r18)
 	artworks, err := service.GetRandomArtworksByTagsR18(ctx, tags, r18, limit)
 	if err != nil {
+		Logger.Warnf("获取图片失败: %s", err)
 		bot.AnswerInlineQuery(telegoutil.InlineQuery(query.ID, telegoutil.ResultArticle(uuid.NewString(), "未找到相关图片", telegoutil.TextMessage("/setu"))))
 		return
 	}
