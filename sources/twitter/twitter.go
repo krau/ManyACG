@@ -1,8 +1,8 @@
 package twitter
 
 import (
-	"ManyACG-Bot/config"
-	"ManyACG-Bot/types"
+	"ManyACG/config"
+	"ManyACG/types"
 	"path/filepath"
 	"regexp"
 	"strconv"

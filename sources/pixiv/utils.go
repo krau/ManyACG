@@ -1,9 +1,9 @@
 package pixiv
 
 import (
-	"ManyACG-Bot/config"
-	. "ManyACG-Bot/logger"
-	"ManyACG-Bot/types"
+	"ManyACG/config"
+	. "ManyACG/logger"
+	"ManyACG/types"
 	"encoding/json"
 	"encoding/xml"
 	"strings"

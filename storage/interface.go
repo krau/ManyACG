@@ -1,7 +1,7 @@
 package storage
 
 import (
-	"ManyACG-Bot/types"
+	"ManyACG/types"
 )
 
 type Storage interface {

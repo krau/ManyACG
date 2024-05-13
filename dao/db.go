@@ -1,9 +1,9 @@
 package dao
 
 import (
-	"ManyACG-Bot/config"
-	"ManyACG-Bot/dao/collections"
-	. "ManyACG-Bot/logger"
+	"ManyACG/config"
+	"ManyACG/dao/collections"
+	. "ManyACG/logger"
 	"context"
 	"fmt"
 	"os"

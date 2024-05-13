@@ -1,7 +1,7 @@
 package service
 
 import (
-	"ManyACG-Bot/dao"
+	"ManyACG/dao"
 	"context"
 
 	"go.mongodb.org/mongo-driver/bson/primitive"

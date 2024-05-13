@@ -10,7 +10,7 @@ import (
 
 var updateCmd = &cobra.Command{
 	Use:   "update",
-	Short: "Update ManyACG-Bot",
+	Short: "Update ManyACG",
 	Run: func(cmd *cobra.Command, args []string) {
 		Update()
 	},
@@ -22,7 +22,7 @@ func init() {
 
 func Update() {
 	v := semver.MustParse(Version)
-	latest, err := selfupdate.UpdateSelf(v, "krau/ManyACG-Bot")
+	latest, err := selfupdate.UpdateSelf(v, "krau/ManyACG")
 	if err != nil {
 		log.Println("Binary update failed:", err)
 		return

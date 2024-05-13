@@ -1,13 +1,13 @@
 package fetcher
 
 import (
-	"ManyACG-Bot/config"
-	"ManyACG-Bot/errors"
-	. "ManyACG-Bot/logger"
-	"ManyACG-Bot/sources"
-	"ManyACG-Bot/storage"
-	"ManyACG-Bot/telegram"
-	"ManyACG-Bot/types"
+	"ManyACG/config"
+	"ManyACG/errors"
+	. "ManyACG/logger"
+	"ManyACG/sources"
+	"ManyACG/storage"
+	"ManyACG/telegram"
+	"ManyACG/types"
 	"context"
 	es "errors"
 	"sync"

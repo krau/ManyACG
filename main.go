@@ -1,7 +1,7 @@
 package main
 
 import (
-	"ManyACG-Bot/cmd"
+	"ManyACG/cmd"
 )
 
 func main() {

@@ -1,8 +1,8 @@
 package pixiv
 
 import (
-	"ManyACG-Bot/config"
-	"ManyACG-Bot/types"
+	"ManyACG/config"
+	"ManyACG/types"
 	"encoding/xml"
 	"errors"
 	"regexp"

@@ -1,8 +1,8 @@
 package storage
 
 import (
-	"ManyACG-Bot/config"
-	"ManyACG-Bot/storage/webdav"
+	"ManyACG/config"
+	"ManyACG/storage/webdav"
 )
 
 var storage Storage

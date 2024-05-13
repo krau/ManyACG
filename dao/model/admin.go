@@ -1,6 +1,6 @@
 package model
 
-import "ManyACG-Bot/types"
+import "ManyACG/types"
 
 type AdminModel struct {
 	UserID      int64              `bson:"user_id"`

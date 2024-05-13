@@ -1,8 +1,8 @@
 package bot
 
 import (
-	. "ManyACG-Bot/logger"
-	"ManyACG-Bot/telegram"
+	. "ManyACG/logger"
+	"ManyACG/telegram"
 	"os"
 
 	"github.com/mymmrac/telego"

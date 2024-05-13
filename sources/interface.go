@@ -1,8 +1,8 @@
 package sources
 
 import (
-	"ManyACG-Bot/config"
-	"ManyACG-Bot/types"
+	"ManyACG/config"
+	"ManyACG/types"
 	"regexp"
 )
 

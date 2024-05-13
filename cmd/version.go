@@ -12,7 +12,7 @@ const (
 
 var VersionCmd = &cobra.Command{
 	Use:   "version",
-	Short: "Print the version number of ManyACG-Bot",
+	Short: "Print the version number of ManyACG",
 	Run: func(cmd *cobra.Command, args []string) {
 		ShowVersion()
 	},

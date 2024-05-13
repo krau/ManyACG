@@ -1,17 +1,17 @@
 package fetcher
 
 import (
-	"ManyACG-Bot/errors"
-	"ManyACG-Bot/service"
-	"ManyACG-Bot/storage"
-	"ManyACG-Bot/telegram"
-	"ManyACG-Bot/types"
+	"ManyACG/errors"
+	"ManyACG/service"
+	"ManyACG/storage"
+	"ManyACG/telegram"
+	"ManyACG/types"
 	"context"
 	es "errors"
 	"fmt"
 	"sync"
 
-	. "ManyACG-Bot/logger"
+	. "ManyACG/logger"
 
 	"github.com/mymmrac/telego"
 	"github.com/mymmrac/telego/telegoutil"

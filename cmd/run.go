@@ -1,13 +1,13 @@
 package cmd
 
 import (
-	"ManyACG-Bot/api/restful"
-	"ManyACG-Bot/bot"
-	"ManyACG-Bot/config"
-	"ManyACG-Bot/dao"
-	"ManyACG-Bot/fetcher"
-	"ManyACG-Bot/logger"
-	"ManyACG-Bot/sources"
+	"ManyACG/api/restful"
+	"ManyACG/bot"
+	"ManyACG/config"
+	"ManyACG/dao"
+	"ManyACG/fetcher"
+	"ManyACG/logger"
+	"ManyACG/sources"
 	"context"
 	"os"
 	"time"

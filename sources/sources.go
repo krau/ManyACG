@@ -1,12 +1,12 @@
 package sources
 
 import (
-	"ManyACG-Bot/common"
-	"ManyACG-Bot/config"
-	"ManyACG-Bot/errors"
-	"ManyACG-Bot/sources/pixiv"
-	"ManyACG-Bot/sources/twitter"
-	"ManyACG-Bot/types"
+	"ManyACG/common"
+	"ManyACG/config"
+	"ManyACG/errors"
+	"ManyACG/sources/pixiv"
+	"ManyACG/sources/twitter"
+	"ManyACG/types"
 	"regexp"
 	"strings"
 )

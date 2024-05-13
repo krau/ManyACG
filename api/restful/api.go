@@ -1,8 +1,8 @@
 package restful
 
 import (
-	"ManyACG-Bot/config"
-	. "ManyACG-Bot/logger"
+	"ManyACG/config"
+	. "ManyACG/logger"
 	"os"
 
 	"github.com/gin-gonic/gin"

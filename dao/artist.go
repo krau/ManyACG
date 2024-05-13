@@ -3,7 +3,7 @@ package dao
 import (
 	"context"
 
-	"ManyACG-Bot/dao/model"
+	"ManyACG/dao/model"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"

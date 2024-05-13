@@ -1,9 +1,9 @@
 package service
 
 import (
-	"ManyACG-Bot/dao"
-	"ManyACG-Bot/dao/model"
-	"ManyACG-Bot/types"
+	"ManyACG/dao"
+	"ManyACG/dao/model"
+	"ManyACG/types"
 	"context"
 	"errors"
 

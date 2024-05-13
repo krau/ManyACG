@@ -1,7 +1,7 @@
 package restful
 
 import (
-	"ManyACG-Bot/service"
+	"ManyACG/service"
 	"net/http"
 	"strconv"
 

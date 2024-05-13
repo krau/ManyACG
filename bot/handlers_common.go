@@ -1,11 +1,11 @@
 package bot
 
 import (
-	"ManyACG-Bot/common"
-	"ManyACG-Bot/service"
-	"ManyACG-Bot/sources"
-	"ManyACG-Bot/telegram"
-	"ManyACG-Bot/types"
+	"ManyACG/common"
+	"ManyACG/service"
+	"ManyACG/sources"
+	"ManyACG/telegram"
+	"ManyACG/types"
 	"context"
 	"errors"
 	"fmt"
@@ -18,7 +18,7 @@ import (
 	"github.com/mymmrac/telego/telegoutil"
 	"go.mongodb.org/mongo-driver/mongo"
 
-	. "ManyACG-Bot/logger"
+	. "ManyACG/logger"
 )
 
 func start(ctx context.Context, bot *telego.Bot, message telego.Message) {
@@ -61,7 +61,7 @@ func help(ctx context.Context, bot *telego.Bot, message telego.Message) {
 发送作品链接可以获取信息或发布到频道
 `
 	}
-	helpText += "源码: https://github.com/krau/ManyACG-Bot"
+	helpText += "源码: https://github.com/krau/ManyACG"
 	telegram.ReplyMessage(bot, message, helpText)
 }
 

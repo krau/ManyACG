@@ -3,7 +3,7 @@
 package dao
 
 import (
-	"ManyACG-Bot/dao/model"
+	"ManyACG/dao/model"
 	"context"
 	"errors"
 

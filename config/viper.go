@@ -37,7 +37,7 @@ func InitConfig() {
 	viper.SetDefault("fetcher.limit", 30)
 
 	viper.SetDefault("log.level", "TRACE")
-	viper.SetDefault("log.file_path", "logs/ManyACG-Bot.log")
+	viper.SetDefault("log.file_path", "logs/ManyACG.log")
 	viper.SetDefault("log.backup_num", 7)
 
 	viper.SetDefault("source.pixiv.enable", false)

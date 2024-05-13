@@ -1,11 +1,11 @@
 package service
 
 import (
-	"ManyACG-Bot/common"
-	"ManyACG-Bot/dao"
-	"ManyACG-Bot/dao/model"
-	"ManyACG-Bot/storage"
-	"ManyACG-Bot/types"
+	"ManyACG/common"
+	"ManyACG/dao"
+	"ManyACG/dao/model"
+	"ManyACG/storage"
+	"ManyACG/types"
 	"context"
 
 	"go.mongodb.org/mongo-driver/bson/primitive"

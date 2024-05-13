@@ -1,7 +1,7 @@
 package restful
 
 import (
-	"ManyACG-Bot/config"
+	"ManyACG/config"
 	"net/http"
 
 	"github.com/gin-gonic/gin"

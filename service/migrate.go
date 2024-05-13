@@ -1,8 +1,8 @@
 package service
 
 import (
-	"ManyACG-Bot/dao"
-	. "ManyACG-Bot/logger"
+	"ManyACG/dao"
+	. "ManyACG/logger"
 	"context"
 
 	"github.com/mymmrac/telego"

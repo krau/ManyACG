@@ -1,13 +1,13 @@
 package bot
 
 import (
-	"ManyACG-Bot/config"
-	"ManyACG-Bot/fetcher"
-	"ManyACG-Bot/service"
-	"ManyACG-Bot/sources"
-	"ManyACG-Bot/storage"
-	"ManyACG-Bot/telegram"
-	"ManyACG-Bot/types"
+	"ManyACG/config"
+	"ManyACG/fetcher"
+	"ManyACG/service"
+	"ManyACG/sources"
+	"ManyACG/storage"
+	"ManyACG/telegram"
+	"ManyACG/types"
 	"context"
 	"errors"
 	"fmt"
@@ -15,7 +15,7 @@ import (
 	"strings"
 	"time"
 
-	. "ManyACG-Bot/logger"
+	. "ManyACG/logger"
 
 	"github.com/mymmrac/telego"
 	"github.com/mymmrac/telego/telegoutil"

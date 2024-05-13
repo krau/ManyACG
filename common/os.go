@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"time"
 
-	. "ManyACG-Bot/logger"
+	. "ManyACG/logger"
 )
 
 func MkFile(path string, data []byte) error {

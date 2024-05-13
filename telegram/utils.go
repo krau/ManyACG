@@ -1,17 +1,17 @@
 package telegram
 
 import (
-	"ManyACG-Bot/service"
-	"ManyACG-Bot/sources"
-	"ManyACG-Bot/storage"
-	"ManyACG-Bot/types"
+	"ManyACG/service"
+	"ManyACG/sources"
+	"ManyACG/storage"
+	"ManyACG/types"
 	"bytes"
 	"context"
 	"fmt"
 	"regexp"
 	"strings"
 
-	. "ManyACG-Bot/logger"
+	. "ManyACG/logger"
 
 	"github.com/mymmrac/telego"
 	"github.com/mymmrac/telego/telegoutil"

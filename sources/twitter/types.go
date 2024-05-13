@@ -1,7 +1,7 @@
 package twitter
 
 import (
-	"ManyACG-Bot/types"
+	"ManyACG/types"
 	"errors"
 	"fmt"
 	"strconv"

@@ -1,9 +1,9 @@
 package bot
 
 import (
-	"ManyACG-Bot/service"
-	"ManyACG-Bot/sources"
-	"ManyACG-Bot/types"
+	"ManyACG/service"
+	"ManyACG/sources"
+	"ManyACG/types"
 	"context"
 
 	"github.com/mymmrac/telego"

@@ -1,11 +1,11 @@
 package webdav
 
 import (
-	"ManyACG-Bot/common"
-	"ManyACG-Bot/config"
-	. "ManyACG-Bot/logger"
-	"ManyACG-Bot/sources"
-	"ManyACG-Bot/types"
+	"ManyACG/common"
+	"ManyACG/config"
+	. "ManyACG/logger"
+	"ManyACG/sources"
+	"ManyACG/types"
 	"os"
 	"path/filepath"
 	"strings"

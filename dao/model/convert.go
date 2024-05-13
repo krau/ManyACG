@@ -1,6 +1,6 @@
 package model
 
-import "ManyACG-Bot/types"
+import "ManyACG/types"
 
 func (picture *PictureModel) ToPicture() *types.Picture {
 	return &types.Picture{

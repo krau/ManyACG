@@ -1,8 +1,8 @@
 package twitter
 
 import (
-	"ManyACG-Bot/common"
-	. "ManyACG-Bot/logger"
+	"ManyACG/common"
+	. "ManyACG/logger"
 	"encoding/json"
 	"regexp"
 	"strings"

@@ -1,15 +1,15 @@
 <p align="center">
-<img src="https://socialify.git.ci/krau/manyacg-bot/image?description=1&font=Jost&forks=1&issues=1&language=1&logo=data%3Aimage%2Fsvg%2Bxml%3Bbase64%2CPHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxZW0iIGhlaWdodD0iMWVtIiB2aWV3Qm94PSIwIDAgMjQgMjQiPjxwYXRoIGZpbGw9IiM4ODg4ODgiIGQ9Ik0xMiAyQzYuNDggMiAyIDYuNDggMiAxMnM0LjQ4IDEwIDEwIDEwczEwLTQuNDggMTAtMTBTMTcuNTIgMiAxMiAybTQuNjQgNi44Yy0uMTUgMS41OC0uOCA1LjQyLTEuMTMgNy4xOWMtLjE0Ljc1LS40MiAxLS42OCAxLjAzYy0uNTguMDUtMS4wMi0uMzgtMS41OC0uNzVjLS44OC0uNTgtMS4zOC0uOTQtMi4yMy0xLjVjLS45OS0uNjUtLjM1LTEuMDEuMjItMS41OWMuMTUtLjE1IDIuNzEtMi40OCAyLjc2LTIuNjlhLjIuMiAwIDAgMC0uMDUtLjE4Yy0uMDYtLjA1LS4xNC0uMDMtLjIxLS4wMmMtLjA5LjAyLTEuNDkuOTUtNC4yMiAyLjc5Yy0uNC4yNy0uNzYuNDEtMS4wOC40Yy0uMzYtLjAxLTEuMDQtLjItMS41NS0uMzdjLS42My0uMi0xLjEyLS4zMS0xLjA4LS42NmMuMDItLjE4LjI3LS4zNi43NC0uNTVjMi45Mi0xLjI3IDQuODYtMi4xMSA1LjgzLTIuNTFjMi43OC0xLjE2IDMuMzUtMS4zNiAzLjczLTEuMzZjLjA4IDAgLjI3LjAyLjM5LjEyYy4xLjA4LjEzLjE5LjE0LjI3Yy0uMDEuMDYuMDEuMjQgMCAuMzgiLz48L3N2Zz4%3D&name=1&owner=1&pattern=Solid&pulls=1&stargazers=1&theme=Auto" alt="manyacg-bot" width="640" height="320" />
+<img src="https://socialify.git.ci/krau/manyacg/image?description=1&font=Jost&forks=1&issues=1&language=1&logo=data%3Aimage%2Fsvg%2Bxml%3Bbase64%2CPHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxZW0iIGhlaWdodD0iMWVtIiB2aWV3Qm94PSIwIDAgMjQgMjQiPjxwYXRoIGZpbGw9IiM4ODg4ODgiIGQ9Ik0xMiAyQzYuNDggMiAyIDYuNDggMiAxMnM0LjQ4IDEwIDEwIDEwczEwLTQuNDggMTAtMTBTMTcuNTIgMiAxMiAybTQuNjQgNi44Yy0uMTUgMS41OC0uOCA1LjQyLTEuMTMgNy4xOWMtLjE0Ljc1LS40MiAxLS42OCAxLjAzYy0uNTguMDUtMS4wMi0uMzgtMS41OC0uNzVjLS44OC0uNTgtMS4zOC0uOTQtMi4yMy0xLjVjLS45OS0uNjUtLjM1LTEuMDEuMjItMS41OWMuMTUtLjE1IDIuNzEtMi40OCAyLjc2LTIuNjlhLjIuMiAwIDAgMC0uMDUtLjE4Yy0uMDYtLjA1LS4xNC0uMDMtLjIxLS4wMmMtLjA5LjAyLTEuNDkuOTUtNC4yMiAyLjc5Yy0uNC4yNy0uNzYuNDEtMS4wOC40Yy0uMzYtLjAxLTEuMDQtLjItMS41NS0uMzdjLS42My0uMi0xLjEyLS4zMS0xLjA4LS42NmMuMDItLjE4LjI3LS4zNi43NC0uNTVjMi45Mi0xLjI3IDQuODYtMi4xMSA1LjgzLTIuNTFjMi43OC0xLjE2IDMuMzUtMS4zNiAzLjczLTEuMzZjLjA4IDAgLjI3LjAyLjM5LjEyYy4xLjA4LjEzLjE5LjE0LjI3Yy0uMDEuMDYuMDEuMjQgMCAuMzgiLz48L3N2Zz4%3D&name=1&owner=1&pattern=Solid&pulls=1&stargazers=1&theme=Auto" alt="manyacg-bot" width="640" height="320" />
 </p>
 <div align="center">
 
-# ManyACG Bot
+# ManyACG
 
 Work in progress...
 文档完善中...
 </div>
 
-ManyACG Bot 是针对 Telegram 的 ACG 图片分享频道而设计的 Bot, 兼具爬虫和频道管理功能.
+ManyACG 是针对 Telegram 的 ACG 图片分享频道而设计的 Bot, 兼具爬虫和频道管理功能.
 
 ## ⭐特性
 
@@ -36,7 +36,7 @@ ManyACG Bot 是针对 Telegram 的 ACG 图片分享频道而设计的 Bot, 兼�
 
 在 [Releases](https://github.com/krau/manyacg-bot/releases) 页面下载对应平台的二进制文件, 并解压.
 
-编辑配置文件 `config.toml`, 或下载 [配置文件模板](https://github.com/krau/ManyACG-Bot/blob/main/config.example.toml) 并重命名为 `config.toml`.
+编辑配置文件 `config.toml`, 或下载 [配置文件模板](https://github.com/krau/ManyACG/blob/main/config.example.toml) 并重命名为 `config.toml`.
 
 ```toml
 [api] # Restful API 配置

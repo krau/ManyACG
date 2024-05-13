@@ -1,7 +1,7 @@
 package bot
 
 import (
-	. "ManyACG-Bot/logger"
+	. "ManyACG/logger"
 
 	"github.com/mymmrac/telego"
 	"github.com/mymmrac/telego/telegohandler"

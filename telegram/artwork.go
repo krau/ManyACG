@@ -1,13 +1,13 @@
 package telegram
 
 import (
-	"ManyACG-Bot/config"
-	"ManyACG-Bot/errors"
-	"ManyACG-Bot/sources"
-	"ManyACG-Bot/types"
+	"ManyACG/config"
+	"ManyACG/errors"
+	"ManyACG/sources"
+	"ManyACG/types"
 	"time"
 
-	. "ManyACG-Bot/logger"
+	. "ManyACG/logger"
 
 	"github.com/mymmrac/telego"
 	"github.com/mymmrac/telego/telegoutil"
