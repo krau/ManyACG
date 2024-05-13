@@ -187,6 +187,9 @@ func getArtworkInfo(ctx context.Context, bot *telego.Bot, message telego.Message
 			telegram.ReplyMessage(bot, message, "获取作品信息失败: "+err.Error())
 			return
 		}
+		if err := service.CreateCachedArtwork(ctx, artwork); err != nil {
+			Logger.Warnf("缓存作品失败: %s", err)
+		}
 	}
 
 	var inputFile telego.InputFile

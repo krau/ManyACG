@@ -59,6 +59,7 @@ func CreateArtwork(ctx context.Context, artwork *types.Artwork) (*types.Artwork,
 			return nil, err
 		}
 		if artistModel != nil {
+			artistModel.Name = artwork.Artist.Name
 			artist_id = artistModel.ID
 		} else {
 			artistModel = &model.ArtistModel{
@@ -371,4 +372,17 @@ func GetArtworkByID(ctx context.Context, id primitive.ObjectID) (*types.Artwork,
 		Tags:        tags,
 		Pictures:    pictures,
 	}, nil
+}
+
+func CreateCachedArtwork(ctx context.Context, artwork *types.Artwork) error {
+	_, err := dao.CreateCachedArtwork(ctx, artwork)
+	return err
+}
+
+func GetCachedArtworkByURL(ctx context.Context, sourceURL string) (*types.Artwork, error) {
+	cachedArtwork, err := dao.GetCachedArtworkByURL(ctx, sourceURL)
+	if err != nil {
+		return nil, err
+	}
+	return cachedArtwork.Artwork, nil
 }

@@ -227,7 +227,10 @@ func postArtwork(ctx context.Context, bot *telego.Bot, query telego.CallbackQuer
 		return
 	}
 	Logger.Infof("posting artwork: %s", sourceURL)
-	artwork, err := sources.GetArtworkInfo(sourceURL)
+	artwork, err := service.GetCachedArtworkByURL(ctx, sourceURL)
+	if err != nil {
+		artwork, err = sources.GetArtworkInfo(sourceURL)
+	}
 	if err != nil {
 		bot.AnswerCallbackQuery(&telego.AnswerCallbackQueryParams{
 			CallbackQueryID: query.ID,

@@ -44,44 +44,70 @@ func InitDB(ctx context.Context) {
 		Logger.Fatal("Failed to get database")
 		os.Exit(1)
 	}
+	createCollection(ctx)
+	createIndex(ctx)
 
+	Logger.Info("Database initialized")
+}
+
+func createCollection(ctx context.Context) {
 	DB.CreateCollection(ctx, collections.Artworks)
 	artworkCollection = DB.Collection(collections.Artworks)
+	DB.CreateCollection(ctx, collections.Tags)
+	tagCollection = DB.Collection(collections.Tags)
+	DB.CreateCollection(ctx, collections.Pictures)
+	pictureCollection = DB.Collection(collections.Pictures)
+	DB.CreateCollection(ctx, collections.Artists)
+	artistCollection = DB.Collection(collections.Artists)
+	DB.CreateCollection(ctx, collections.Admins)
+	adminCollection = DB.Collection(collections.Admins)
+	DB.CreateCollection(ctx, collections.Deleted)
+	deletedCollection = DB.Collection(collections.Deleted)
+	DB.CreateCollection(ctx, collections.CallbackData)
+	callbackDataCollection = DB.Collection(collections.CallbackData)
+	DB.CreateCollection(ctx, collections.CachedArtworks)
+	cachedArtworkCollection = DB.Collection(collections.CachedArtworks)
+}
+
+func createIndex(ctx context.Context) {
 	artworkCollection.Indexes().CreateMany(ctx, []mongo.IndexModel{
 		{
 			Keys:    bson.D{{Key: "source_url", Value: 1}},
-			Options: options.Index().SetName("source_url"),
+			Options: options.Index().SetName("source_url").SetUnique(true),
 		},
 	})
 
-	DB.CreateCollection(ctx, collections.Tags)
-	tagCollection = DB.Collection(collections.Tags)
 	tagCollection.Indexes().CreateMany(ctx, []mongo.IndexModel{
 		{
 			Keys:    bson.D{{Key: "name", Value: 1}},
-			Options: options.Index().SetName("name"),
+			Options: options.Index().SetName("name").SetUnique(true),
+		},
+		{
+			Keys: bson.D{{Key: "name", Value: "text"}},
+			Options: options.Index().SetName("name_text").SetWeights(bson.M{
+				"name": 10,
+			}),
 		},
 	})
 
-	DB.CreateCollection(ctx, collections.Pictures)
-	pictureCollection = DB.Collection(collections.Pictures)
 	pictureCollection.Indexes().CreateMany(ctx, []mongo.IndexModel{
 		{
 			Keys:    bson.D{{Key: "original", Value: 1}},
-			Options: options.Index().SetName("original"),
+			Options: options.Index().SetName("original").SetUnique(true),
 		},
 		{
 			Keys:    bson.D{{Key: "telegram_info.message_id", Value: 1}},
-			Options: options.Index().SetName("message_id"),
+			Options: options.Index().SetName("message_id").SetUnique(true),
 		},
 		{
 			Keys:    bson.D{{Key: "hash", Value: 1}},
 			Options: options.Index().SetName("hash"),
 		},
+		{
+			Keys: bson.D{{Key: "hash", Value: "text"}},
+		},
 	})
 
-	DB.CreateCollection(ctx, collections.Artists)
-	artistCollection = DB.Collection(collections.Artists)
 	artistCollection.Indexes().CreateMany(ctx, []mongo.IndexModel{
 		{
 			Keys:    bson.D{{Key: "name", Value: 1}},
@@ -89,8 +115,6 @@ func InitDB(ctx context.Context) {
 		},
 	})
 
-	DB.CreateCollection(ctx, collections.Admins)
-	adminCollection = DB.Collection(collections.Admins)
 	adminCollection.Indexes().CreateMany(ctx, []mongo.IndexModel{
 		{
 			Keys:    bson.D{{Key: "user_id", Value: 1}},
@@ -104,8 +128,6 @@ func InitDB(ctx context.Context) {
 		}
 	}
 
-	DB.CreateCollection(ctx, collections.Deleted)
-	deletedCollection = DB.Collection(collections.Deleted)
 	deletedCollection.Indexes().CreateMany(ctx, []mongo.IndexModel{
 		{
 			Keys:    bson.D{{Key: "source_url", Value: 1}},
@@ -113,8 +135,6 @@ func InitDB(ctx context.Context) {
 		},
 	})
 
-	DB.CreateCollection(ctx, collections.CallbackData)
-	callbackDataCollection = DB.Collection(collections.CallbackData)
 	callbackDataCollection.Indexes().CreateMany(ctx, []mongo.IndexModel{
 		{
 			Keys:    bson.D{{Key: "created_at", Value: 1}},
@@ -122,5 +142,14 @@ func InitDB(ctx context.Context) {
 		},
 	})
 
-	Logger.Info("Database initialized")
+	cachedArtworkCollection.Indexes().CreateMany(ctx, []mongo.IndexModel{
+		{
+			Keys:    bson.D{{Key: "source_url", Value: 1}},
+			Options: options.Index().SetName("source_url").SetUnique(true),
+		},
+		{
+			Keys:    bson.D{{Key: "created_at", Value: 1}},
+			Options: options.Index().SetExpireAfterSeconds(86400).SetName("created_at"),
+		},
+	})
 }
