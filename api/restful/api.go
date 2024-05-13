@@ -22,8 +22,8 @@ func Run() {
 		v1.POST("/artwork/random", RandomArtwork)
 	}
 
-	if r.Run(config.Cfg.API.Address) != nil {
-		Logger.Fatal("Failed to start restful API")
+	if err := r.Run(config.Cfg.API.Address); err != nil {
+		Logger.Fatalf("Failed to start server: %v", err)
 		os.Exit(1)
 	}
 }

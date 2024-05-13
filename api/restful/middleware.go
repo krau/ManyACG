@@ -8,12 +8,12 @@ import (
 )
 
 func AuthRequired(ctx *gin.Context) {
-	if ctx.GetHeader("Authorization") != "Bearer "+config.Cfg.API.Token {
-		ctx.JSON(http.StatusUnauthorized, gin.H{
-			"message": "Unauthorized",
-		})
-		ctx.Abort()
+	authHeader := ctx.GetHeader("Authorization")
+	tokenQuery := ctx.DefaultQuery("token", "")
+	if authHeader == "Bearer "+config.Cfg.API.Token || tokenQuery == config.Cfg.API.Token {
+		ctx.Next()
 		return
 	}
-	ctx.Next()
+	ctx.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+	ctx.Abort()
 }
