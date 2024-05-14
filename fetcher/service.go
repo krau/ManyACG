@@ -34,8 +34,8 @@ func PostAndCreateArtwork(ctx context.Context, artwork *types.Artwork, bot *tele
 	for i, picture := range artwork.Pictures {
 		info, err := storage.SavePicture(artwork, picture)
 		if err != nil {
-			Logger.Errorf("saving picture %s: %s", picture.Original, err)
-			return fmt.Errorf("saving picture %s: %w", picture.Original, err)
+			Logger.Errorf("saving picture %d of artwork %s: %s", i, artwork.Title, err)
+			return fmt.Errorf("saving picture %d of artwork %s: %w", i, artwork.Title, err)
 		}
 		artwork.Pictures[i].StorageInfo = info
 	}

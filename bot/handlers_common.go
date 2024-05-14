@@ -12,6 +12,7 @@ import (
 	"math/rand"
 	"strconv"
 	"strings"
+	"time"
 
 	. "ManyACG/logger"
 
@@ -151,7 +152,7 @@ func randomPicture(ctx context.Context, bot *telego.Bot, message telego.Message)
 }
 
 func getArtworkInfo(ctx context.Context, bot *telego.Bot, message telego.Message) {
-	hasPermission := CheckPermissionInGroup(ctx, message, types.GetArtworkInfo)
+	hasPermission := CheckPermissionInGroup(ctx, message, types.PermissionGetArtworkInfo)
 	sourceURL := FindSourceURLForMessage(&message)
 	var waitMessageID int
 	if hasPermission {
@@ -165,6 +166,7 @@ func getArtworkInfo(ctx context.Context, bot *telego.Bot, message telego.Message
 		}()
 	}
 	defer func() {
+		time.Sleep(1 * time.Second)
 		if waitMessageID != 0 {
 			bot.DeleteMessage(telegoutil.Delete(message.Chat.ChatID(), waitMessageID))
 		}
@@ -173,20 +175,22 @@ func getArtworkInfo(ctx context.Context, bot *telego.Bot, message telego.Message
 	isAlreadyPosted := true
 	artwork, err := service.GetArtworkByURL(ctx, sourceURL)
 	if err != nil {
-		artwork, err = service.GetCachedArtworkByURL(ctx, sourceURL)
+		cachedArtwork, err := service.GetCachedArtworkByURL(ctx, sourceURL)
 		if err != nil && !hasPermission {
 			return
 		}
 		isAlreadyPosted = false
-		if artwork == nil {
+		if cachedArtwork == nil {
 			artwork, err = sources.GetArtworkInfo(sourceURL)
 			if err != nil {
 				telegram.ReplyMessage(bot, message, "获取作品信息失败: "+err.Error())
 				return
 			}
-			if err := service.CreateCachedArtwork(ctx, artwork); err != nil {
+			if err := service.CreateCachedArtwork(ctx, artwork, types.ArtworkStatusCached); err != nil {
 				Logger.Warnf("缓存作品失败: %s", err)
 			}
+		} else {
+			artwork = cachedArtwork.Artwork
 		}
 	}
 
@@ -237,7 +241,7 @@ func getArtworkInfo(ctx context.Context, bot *telego.Bot, message telego.Message
 }
 
 func searchPicture(ctx context.Context, bot *telego.Bot, message telego.Message) {
-	hasPermission := CheckPermissionInGroup(ctx, message, types.SearchPicture)
+	hasPermission := CheckPermissionInGroup(ctx, message, types.PermissionSearchPicture)
 	if message.ReplyToMessage == nil {
 		telegram.ReplyMessage(bot, message, "请使用该命令回复一条图片消息")
 		return

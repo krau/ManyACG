@@ -7,9 +7,12 @@ import (
 	"ManyACG/dao"
 	"ManyACG/fetcher"
 	"ManyACG/logger"
+	"ManyACG/service"
 	"ManyACG/sources"
 	"context"
 	"os"
+	"os/signal"
+	"syscall"
 	"time"
 )
 
@@ -32,5 +35,12 @@ func Run() {
 	if config.Cfg.API.Enable {
 		go restful.Run()
 	}
-	select {}
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+	sig := <-quit
+	logger.Logger.Info(sig, " Exiting...")
+	if err := service.Cleanup(context.TODO()); err != nil {
+		logger.Logger.Error(err)
+	}
+	logger.Logger.Info("See you next time.")
 }

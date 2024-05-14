@@ -74,8 +74,9 @@ type CallbackDataModel struct {
 }
 
 type CachedArtworksModel struct {
-	ID        primitive.ObjectID `bson:"_id,omitempty"`
-	SourceURL string             `bson:"source_url"`
-	CreatedAt primitive.DateTime `bson:"created_at"`
-	Artwork   *types.Artwork     `bson:"artwork"`
+	ID        primitive.ObjectID  `bson:"_id,omitempty"`
+	SourceURL string              `bson:"source_url"`
+	CreatedAt primitive.DateTime  `bson:"created_at"`
+	Artwork   *types.Artwork      `bson:"artwork"`
+	Status    types.ArtworkStatus `bson:"status"`
 }

@@ -142,7 +142,7 @@ func deletePicture(ctx context.Context, bot *telego.Bot, message telego.Message)
 		channelMessageID = originChannel.MessageID
 	}
 	if cmd == "del" {
-		if !service.CheckAdminPermission(ctx, message.From.ID, types.DeletePicture) {
+		if !service.CheckAdminPermission(ctx, message.From.ID, types.PermissionDeleteArtwork) {
 			telegram.ReplyMessage(bot, message, "你没有删除图片的权限")
 			return
 		}
@@ -164,7 +164,7 @@ func deletePicture(ctx context.Context, bot *telego.Bot, message telego.Message)
 		}
 		return
 	}
-	if !service.CheckAdminPermission(ctx, message.From.ID, types.DeleteArtwork) {
+	if !service.CheckAdminPermission(ctx, message.From.ID, types.PermissionDeleteArtwork) {
 		telegram.ReplyMessage(bot, message, "你没有删除作品的权限")
 		return
 	}
@@ -196,7 +196,7 @@ func deletePicture(ctx context.Context, bot *telego.Bot, message telego.Message)
 }
 
 func fetchArtwork(ctx context.Context, bot *telego.Bot, message telego.Message) {
-	if !service.CheckAdminPermission(ctx, message.From.ID, types.FetchArtwork) {
+	if !service.CheckAdminPermission(ctx, message.From.ID, types.PermissionFetchArtwork) {
 		telegram.ReplyMessage(bot, message, "你没有拉取作品的权限")
 		return
 	}
@@ -206,7 +206,7 @@ func fetchArtwork(ctx context.Context, bot *telego.Bot, message telego.Message) 
 }
 
 func postArtwork(ctx context.Context, bot *telego.Bot, query telego.CallbackQuery) {
-	if !service.CheckAdminPermission(ctx, query.From.ID, types.PostArtwork) {
+	if !service.CheckAdminPermission(ctx, query.From.ID, types.PermissionPostArtwork) {
 		bot.AnswerCallbackQuery(&telego.AnswerCallbackQueryParams{
 			CallbackQueryID: query.ID,
 			Text:            "你没有发布作品的权限",
@@ -227,18 +227,39 @@ func postArtwork(ctx context.Context, bot *telego.Bot, query telego.CallbackQuer
 		return
 	}
 	Logger.Infof("posting artwork: %s", sourceURL)
-	artwork, err := service.GetCachedArtworkByURL(ctx, sourceURL)
+
+	var artwork *types.Artwork
+	cachedArtwork, err := service.GetCachedArtworkByURL(ctx, sourceURL)
 	if err != nil {
 		artwork, err = sources.GetArtworkInfo(sourceURL)
-	}
-	if err != nil {
-		bot.AnswerCallbackQuery(&telego.AnswerCallbackQueryParams{
-			CallbackQueryID: query.ID,
-			Text:            "获取作品信息失败" + err.Error(),
-			ShowAlert:       true,
-			CacheTime:       60,
-		})
-		return
+		if err != nil {
+			bot.AnswerCallbackQuery(&telego.AnswerCallbackQueryParams{
+				CallbackQueryID: query.ID,
+				Text:            "获取作品信息失败" + err.Error(),
+				ShowAlert:       true,
+				CacheTime:       60,
+			})
+			return
+		}
+	} else {
+		if cachedArtwork.Status == types.ArtworkStatusPosting {
+			bot.AnswerCallbackQuery(&telego.AnswerCallbackQueryParams{
+				CallbackQueryID: query.ID,
+				Text:            "该作品正在发布中",
+				ShowAlert:       true,
+				CacheTime:       60,
+			})
+			return
+		}
+		if err := service.UpdateCachedArtworkByURL(ctx, sourceURL, types.ArtworkStatusPosting); err != nil {
+			Logger.Errorf("更新缓存作品状态失败: %s", err)
+		}
+		artwork = cachedArtwork.Artwork
+		defer func() {
+			if err := service.UpdateCachedArtworkByURL(ctx, sourceURL, types.ArtworkStatusCached); err != nil {
+				Logger.Errorf("更新缓存作品状态失败: %s", err)
+			}
+		}()
 	}
 	go bot.EditMessageCaption(&telego.EditMessageCaptionParams{
 		ChatID:      telegoutil.ID(query.Message.GetChat().ID),

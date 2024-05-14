@@ -386,15 +386,20 @@ func GetArtworkByID(ctx context.Context, id primitive.ObjectID) (*types.Artwork,
 	}, nil
 }
 
-func CreateCachedArtwork(ctx context.Context, artwork *types.Artwork) error {
-	_, err := dao.CreateCachedArtwork(ctx, artwork)
+func CreateCachedArtwork(ctx context.Context, artwork *types.Artwork, status types.ArtworkStatus) error {
+	_, err := dao.CreateCachedArtwork(ctx, artwork, status)
 	return err
 }
 
-func GetCachedArtworkByURL(ctx context.Context, sourceURL string) (*types.Artwork, error) {
+func GetCachedArtworkByURL(ctx context.Context, sourceURL string) (*model.CachedArtworksModel, error) {
 	cachedArtwork, err := dao.GetCachedArtworkByURL(ctx, sourceURL)
 	if err != nil {
 		return nil, err
 	}
-	return cachedArtwork.Artwork, nil
+	return cachedArtwork, nil
+}
+
+func UpdateCachedArtworkByURL(ctx context.Context, sourceURL string, status types.ArtworkStatus) error {
+	_, err := dao.UpdateCachedArtworkByURL(ctx, sourceURL, status)
+	return err
 }
