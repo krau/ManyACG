@@ -31,6 +31,14 @@ func PostAndCreateArtwork(ctx context.Context, artwork *types.Artwork, bot *tele
 		Logger.Debugf("Artwork %s is deleted", artwork.Title)
 		return errors.ErrArtworkDeleted
 	}
+	for i, picture := range artwork.Pictures {
+		info, err := storage.SavePicture(artwork, picture)
+		if err != nil {
+			Logger.Errorf("saving picture %s: %s", picture.Original, err)
+			return fmt.Errorf("saving picture %s: %w", picture.Original, err)
+		}
+		artwork.Pictures[i].StorageInfo = info
+	}
 	messages, err := telegram.PostArtwork(telegram.Bot, artwork)
 	if err != nil {
 		return fmt.Errorf("posting artwork [%s](%s): %w", artwork.Title, artwork.SourceURL, err)
@@ -49,21 +57,6 @@ func PostAndCreateArtwork(ctx context.Context, artwork *types.Artwork, bot *tele
 		if messages[i].Document != nil {
 			picture.TelegramInfo.DocumentFileID = messages[i].Document.FileID
 		}
-	}
-
-	for i, picture := range artwork.Pictures {
-		info, err := storage.SavePicture(artwork, picture)
-		if err != nil {
-			Logger.Errorf("saving picture %s: %s", picture.Original, err)
-			if telegram.Bot.DeleteMessages(&telego.DeleteMessagesParams{
-				ChatID:     telegram.ChannelChatID,
-				MessageIDs: telegram.GetMessageIDs(messages),
-			}) != nil {
-				Logger.Errorf("deleting messages: %s", err)
-			}
-			return fmt.Errorf("saving picture %s: %w", picture.Original, err)
-		}
-		artwork.Pictures[i].StorageInfo = info
 	}
 
 	_, err = service.CreateArtwork(ctx, artwork)
