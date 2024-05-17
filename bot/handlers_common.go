@@ -47,7 +47,7 @@ func start(ctx context.Context, bot *telego.Bot, message telego.Message) {
 func help(ctx context.Context, bot *telego.Bot, message telego.Message) {
 	helpText := `使用方法:
 /start - 喵喵喵
-/file - 回复一条频道的消息获取原图文件
+/file - 回复一条频道的消息获取原图文件 <index>
 /setu - 来点涩图 <tag1> <tag2> ...
 /random - 随机1张全年龄图片 <tag1> <tag2> ...
 /search - 搜索相似图片
@@ -55,7 +55,9 @@ func help(ctx context.Context, bot *telego.Bot, message telego.Message) {
 	isAdmin, _ := service.IsAdmin(ctx, message.From.ID)
 	if isAdmin {
 		helpText += `/set_admin - 设置|删除管理员
-/del - 删除图片
+/del - 删除图片 <消息id>
+/delete - 删除整个作品
+/r18 - 设置作品R18标记
 /fetch - 手动开始一次抓取
 /process_pictures - 处理无哈希的图片
 
