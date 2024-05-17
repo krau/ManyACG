@@ -92,7 +92,7 @@ func CheckTargetMessageIsChannelArtworkPost(ctx context.Context, bot *telego.Bot
 	if message.ReplyToMessage == nil {
 		return nil, false
 	}
-	if !message.ReplyToMessage.IsAutomaticForward || message.ReplyToMessage.Photo == nil || message.ReplyToMessage.ForwardOrigin == nil {
+	if message.ReplyToMessage.Photo == nil || message.ReplyToMessage.ForwardOrigin == nil {
 		return nil, false
 	}
 	messageOriginChannel := GetMssageOriginChannel(ctx, bot, *message.ReplyToMessage)

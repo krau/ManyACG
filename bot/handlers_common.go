@@ -67,29 +67,31 @@ func help(ctx context.Context, bot *telego.Bot, message telego.Message) {
 }
 
 func getPictureFile(ctx context.Context, bot *telego.Bot, message telego.Message) {
-	replyToMessage := message.ReplyToMessage
-	if replyToMessage == nil {
-		telegram.ReplyMessage(bot, message, "请使用该命令回复一条频道的消息")
-		return
-	}
-	if replyToMessage.Photo == nil {
-		telegram.ReplyMessage(bot, message, "目标消息不包含图片")
-		return
-	}
-	if replyToMessage.ForwardOrigin == nil {
-		telegram.ReplyMessage(bot, message, "请使用该命令回复一条频道的消息")
+	messageOrigin, ok := telegram.CheckTargetMessageIsChannelArtworkPost(ctx, bot, message)
+	if !ok {
+		telegram.ReplyMessage(bot, message, "请使用该命令回复一条频道的图片消息")
 		return
 	}
 
-	var messageOriginChannel *telego.MessageOriginChannel
-	if replyToMessage.ForwardOrigin.OriginType() == telego.OriginTypeChannel {
-		messageOriginChannel = replyToMessage.ForwardOrigin.(*telego.MessageOriginChannel)
-	} else {
-		telegram.ReplyMessage(bot, message, "请使用该命令回复一条频道的消息")
-		return
+	pictureMessageID := messageOrigin.MessageID
+	_, _, args := telegoutil.ParseCommand(message.Text)
+	if len(args) > 0 {
+		index, err := strconv.Atoi(args[0])
+		if err == nil && index > 0 {
+			artwork, err := service.GetArtworkByMessageID(ctx, pictureMessageID)
+			if err != nil {
+				telegram.ReplyMessage(bot, message, "获取失败: "+err.Error())
+				return
+			}
+			if index > len(artwork.Pictures) {
+				telegram.ReplyMessage(bot, message, "这个作品没有这么多图片哦")
+				return
+			}
+			picture := artwork.Pictures[index-1]
+			pictureMessageID = picture.TelegramInfo.MessageID
+		}
 	}
-
-	_, err := telegram.SendPictureFileByMessageID(ctx, bot, message, messageOriginChannel.MessageID)
+	_, err := telegram.SendPictureFileByMessageID(ctx, bot, message, pictureMessageID)
 	if err != nil {
 		telegram.ReplyMessage(bot, message, "获取失败: "+err.Error())
 		return
