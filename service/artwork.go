@@ -288,58 +288,6 @@ func GetArtworkByMessageID(ctx context.Context, messageID int) (*types.Artwork, 
 	}, nil
 }
 
-func DeleteArtworkByURL(ctx context.Context, sourceURL string) error {
-	artworkModel, err := dao.GetArtworkByURL(ctx, sourceURL)
-	if err != nil {
-		return err
-	}
-	session, err := dao.Client.StartSession()
-	if err != nil {
-		return err
-	}
-	defer session.EndSession(ctx)
-	_, err = session.WithTransaction(ctx, func(ctx mongo.SessionContext) (interface{}, error) {
-		_, err := dao.DeleteArtworkByID(ctx, artworkModel.ID)
-		if err != nil {
-			return nil, err
-		}
-
-		_, err = dao.DeletePicturesByArtworkID(ctx, artworkModel.ID)
-		if err != nil {
-			return nil, err
-		}
-
-		_, err = dao.CreateDeleted(ctx, &model.DeletedModel{
-			SourceURL: sourceURL,
-			ArtworkID: artworkModel.ID,
-		})
-		if err != nil {
-			return nil, err
-		}
-		return nil, nil
-	})
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func DeleteDeletedByURL(ctx context.Context, sourceURL string) error {
-	_, err := dao.DeleteDeletedByURL(ctx, sourceURL)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func CheckDeletedByURL(ctx context.Context, sourceURL string) bool {
-	return dao.CheckDeletedByURL(ctx, sourceURL)
-}
-
-func GetDeletedByURL(ctx context.Context, sourceURL string) (*model.DeletedModel, error) {
-	return dao.GetDeletedByURL(ctx, sourceURL)
-}
-
 func GetArtworkIDByPicture(ctx context.Context, picture *types.Picture) (primitive.ObjectID, error) {
 	pictureModel, err := dao.GetPictureByOriginal(ctx, picture.Original)
 	if err != nil {
@@ -386,20 +334,50 @@ func GetArtworkByID(ctx context.Context, id primitive.ObjectID) (*types.Artwork,
 	}, nil
 }
 
-func CreateCachedArtwork(ctx context.Context, artwork *types.Artwork, status types.ArtworkStatus) error {
-	_, err := dao.CreateCachedArtwork(ctx, artwork, status)
-	return err
-}
-
-func GetCachedArtworkByURL(ctx context.Context, sourceURL string) (*model.CachedArtworksModel, error) {
-	cachedArtwork, err := dao.GetCachedArtworkByURL(ctx, sourceURL)
+func UpdateArtworkR18ByURL(ctx context.Context, sourceURL string, r18 bool) error {
+	artworkModel, err := dao.GetArtworkByURL(ctx, sourceURL)
 	if err != nil {
-		return nil, err
+		return err
 	}
-	return cachedArtwork, nil
+	_, err = dao.UpdateArtworkR18ByID(ctx, artworkModel.ID, r18)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
-func UpdateCachedArtworkByURL(ctx context.Context, sourceURL string, status types.ArtworkStatus) error {
-	_, err := dao.UpdateCachedArtworkByURL(ctx, sourceURL, status)
-	return err
+func DeleteArtworkByURL(ctx context.Context, sourceURL string) error {
+	artworkModel, err := dao.GetArtworkByURL(ctx, sourceURL)
+	if err != nil {
+		return err
+	}
+	session, err := dao.Client.StartSession()
+	if err != nil {
+		return err
+	}
+	defer session.EndSession(ctx)
+	_, err = session.WithTransaction(ctx, func(ctx mongo.SessionContext) (interface{}, error) {
+		_, err := dao.DeleteArtworkByID(ctx, artworkModel.ID)
+		if err != nil {
+			return nil, err
+		}
+
+		_, err = dao.DeletePicturesByArtworkID(ctx, artworkModel.ID)
+		if err != nil {
+			return nil, err
+		}
+
+		_, err = dao.CreateDeleted(ctx, &model.DeletedModel{
+			SourceURL: sourceURL,
+			ArtworkID: artworkModel.ID,
+		})
+		if err != nil {
+			return nil, err
+		}
+		return nil, nil
+	})
+	if err != nil {
+		return err
+	}
+	return nil
 }

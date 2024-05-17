@@ -9,6 +9,7 @@ const (
 	PermissionFetchArtwork   Permission = "fetch_artwork"
 	PermissionGetArtworkInfo Permission = "get_artwork_info"
 	PermissionSearchPicture  Permission = "search_picture"
+	PermissionEditArtwork    Permission = "edit_artwork"
 )
 
 var AllPermissions = []Permission{
@@ -18,4 +19,5 @@ var AllPermissions = []Permission{
 	PermissionFetchArtwork,
 	PermissionGetArtworkInfo,
 	PermissionSearchPicture,
+	PermissionEditArtwork,
 }

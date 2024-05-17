@@ -323,3 +323,28 @@ func processPictures(ctx context.Context, bot *telego.Bot, message telego.Messag
 	go service.ProcessPicturesAndUpdate(context.TODO(), bot, &message)
 	telegram.ReplyMessage(bot, message, "开始处理了")
 }
+
+func setR18(ctx context.Context, bot *telego.Bot, message telego.Message) {
+	if !service.CheckAdminPermission(ctx, message.From.ID, types.PermissionEditArtwork) {
+		telegram.ReplyMessage(bot, message, "你没有编辑作品的权限")
+		return
+	}
+
+	messageOrigin, ok := telegram.CheckTargetMessageIsChannelArtworkPost(ctx, bot, message)
+	if !ok {
+		telegram.ReplyMessage(bot, message, "请回复一条频道的图片消息")
+		return
+	}
+
+	artwork, err := service.GetArtworkByMessageID(ctx, messageOrigin.MessageID)
+	if err != nil {
+		telegram.ReplyMessage(bot, message, "获取作品信息失败: "+err.Error())
+		return
+	}
+
+	if err := service.UpdateArtworkR18ByURL(ctx, artwork.SourceURL, !artwork.R18); err != nil {
+		telegram.ReplyMessage(bot, message, "更新作品信息失败: "+err.Error())
+		return
+	}
+	telegram.ReplyMessage(bot, message, "该作品 R18 已标记为 "+strconv.FormatBool(!artwork.R18))
+}
