@@ -8,28 +8,9 @@ permissions:
     packages: write
 
 jobs:
-    releases-matrix:
-        name: Release Go Binary
+    create-release:
+        name: Create Release
         runs-on: ubuntu-latest
-        strategy:
-            matrix:
-                goos: [linux, darwin, windows]
-                goarch: [amd64, arm64]
         steps:
-            - name: Checkout
-              uses: actions/checkout@v4
             - name: Create Release
               uses: softprops/action-gh-release@v2
-            - name: Release Go Binary
-              uses: wangyoucao577/go-release-action@v1
-              with:
-                pre_command: export CGO_ENABLED=0
-                goos: ${{ matrix.goos }}
-                goarch: ${{ matrix.goarch }}
-                github_token: ${{ secrets.GITHUB_TOKEN }}
-                extra_files: |
-                    LICENSE
-                    README.md
-                    config.example.toml
-                ldflags: -s -w
-                binary_name: ManyACG
