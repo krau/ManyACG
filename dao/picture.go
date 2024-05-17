@@ -5,6 +5,7 @@ import (
 
 	"ManyACG/dao/model"
 
+	"github.com/corona10/goimagehash"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -61,6 +62,53 @@ func GetPicturesByHash(ctx context.Context, hash string) ([]*model.PictureModel,
 	if err != nil {
 		return nil, err
 	}
+	return pictures, nil
+}
+
+/*
+	全库遍历搜索
+
+1k 个图像每次搜索在 i7-12700h 上耗时 7ms 左右
+TODO: 优化搜索速度和内存占用
+*/
+func GetPicturesByHashHammingDistance(ctx context.Context, hashStr string, distance int) ([]*model.PictureModel, error) {
+	filter := bson.M{
+		"hash": bson.M{"$ne": ""},
+	}
+	cursor, err := pictureCollection.Find(ctx, filter)
+	if err != nil {
+		return nil, err
+	}
+	defer cursor.Close(ctx)
+
+	var pictures []*model.PictureModel
+	for cursor.Next(ctx) {
+		var picture model.PictureModel
+		err = cursor.Decode(&picture)
+		if err != nil {
+			return nil, err
+		}
+
+		hash, err := goimagehash.ImageHashFromString(picture.Hash)
+		if err != nil {
+			return nil, err
+		}
+
+		hashToCompare, err := goimagehash.ImageHashFromString(hashStr)
+		if err != nil {
+			return nil, err
+		}
+
+		dist, err := hash.Distance(hashToCompare)
+		if err != nil {
+			return nil, err
+		}
+
+		if dist <= distance {
+			pictures = append(pictures, &picture)
+		}
+	}
+
 	return pictures, nil
 }
 

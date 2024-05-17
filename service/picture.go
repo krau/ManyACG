@@ -139,11 +139,11 @@ func ProcessPictureAndUpdate(ctx context.Context, picture *types.Picture) error 
 	return nil
 }
 
-func GetPicturesByHash(ctx context.Context, hash string) ([]*types.Picture, error) {
+func GetPicturesByHashHammingDistance(ctx context.Context, hash string, distance int) ([]*types.Picture, error) {
 	if hash == "" {
 		return nil, nil
 	}
-	pictures, err := dao.GetPicturesByHash(ctx, hash)
+	pictures, err := dao.GetPicturesByHashHammingDistance(ctx, hash, distance)
 	if err != nil {
 		return nil, err
 	}

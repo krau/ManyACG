@@ -107,7 +107,7 @@ func afterCreate(ctx context.Context, artwork *types.Artwork, bot *telego.Bot, _
 			Logger.Warnf("error when getting picture by message ID: %s", err)
 			continue
 		}
-		resPictures, err := service.GetPicturesByHash(ctx, picture.Hash)
+		resPictures, err := service.GetPicturesByHashHammingDistance(ctx, picture.Hash, 10)
 		if err != nil {
 			Logger.Warnf("error when getting pictures by hash: %s", err)
 			continue

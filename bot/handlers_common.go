@@ -274,7 +274,7 @@ func searchPicture(ctx context.Context, bot *telego.Bot, message telego.Message)
 		telegram.ReplyMessage(bot, message, "获取图片哈希失败: "+err.Error())
 		return
 	}
-	pictures, err := service.GetPicturesByHash(ctx, hash)
+	pictures, err := service.GetPicturesByHashHammingDistance(ctx, hash, 10)
 	if err != nil {
 		telegram.ReplyMessage(bot, message, "搜索图片失败: "+err.Error())
 		return
