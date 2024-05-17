@@ -1,14 +1,21 @@
 on:
-    release:
-        types:
-            - created
+    push:
+        tags:
+            - "v*"
 
 permissions:
     contents: write
     packages: write
 
 jobs:
-    releases-matrix:
+    create-release:
+        name: Create Release
+        runs-on: ubuntu-latest
+        steps:
+            - name: Create Release
+              uses: softprops/action-gh-release@v2
+
+    build-matrix:
         name: Release Go Binary
         runs-on: ubuntu-latest
         strategy:
