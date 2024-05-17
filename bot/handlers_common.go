@@ -250,13 +250,23 @@ func searchPicture(ctx context.Context, bot *telego.Bot, message telego.Message)
 		telegram.ReplyMessage(bot, message, "请使用该命令回复一条图片消息")
 		return
 	}
-	if message.ReplyToMessage.Photo == nil {
+	if message.ReplyToMessage.Photo == nil && message.ReplyToMessage.Document == nil {
 		telegram.ReplyMessage(bot, message, "目标消息不包含图片")
 		return
 	}
 	go telegram.ReplyMessage(bot, message, "少女祈祷中...")
-	photo := message.ReplyToMessage.Photo
-	photoFileID := photo[len(photo)-1].FileID
+	photoFileID := ""
+	if message.ReplyToMessage.Photo != nil {
+		photoFileID = message.ReplyToMessage.Photo[len(message.ReplyToMessage.Photo)-1].FileID
+	}
+	if message.ReplyToMessage.Document != nil && strings.HasPrefix(message.ReplyToMessage.Document.MimeType, "image/") {
+		if message.ReplyToMessage.Document.FileSize > 20*1024*1024 {
+			telegram.ReplyMessage(bot, message, "文件过大")
+			return
+		}
+		photoFileID = message.ReplyToMessage.Document.FileID
+	}
+
 	tgFile, err := bot.GetFile(&telego.GetFileParams{
 		FileID: photoFileID,
 	})
