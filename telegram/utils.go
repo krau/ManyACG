@@ -104,12 +104,12 @@ func CheckTargetMessageIsChannelArtworkPost(ctx context.Context, bot *telego.Bot
 
 func GetArtworkMarkdownCaption(artwork *types.Artwork) string {
 	caption := fmt.Sprintf("[*%s*](%s)", EscapeMarkdown(artwork.Title), artwork.SourceURL)
-	caption += "\n\n" + "*Author:* " + EscapeMarkdown(artwork.Artist.Name)
+	caption += "\n" + "*Author:* " + EscapeMarkdown(artwork.Artist.Name)
 	if artwork.Description != "" {
-		if len(artwork.Description) > 233 {
-			caption += "\n\n" + "_" + EscapeMarkdown(artwork.Description[:233]) + "\\.\\.\\._"
+		if len(artwork.Description) > 500 {
+			caption += "\n\n>" + EscapeMarkdown(artwork.Description[:500]) + "\\.\\.\\."
 		} else {
-			caption += "\n\n" + "_" + EscapeMarkdown(artwork.Description) + "_"
+			caption += "\n\n>" + EscapeMarkdown(artwork.Description)
 		}
 	}
 	tags := ""
