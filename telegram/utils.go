@@ -106,10 +106,19 @@ func GetArtworkMarkdownCaption(artwork *types.Artwork) string {
 	caption := fmt.Sprintf("[*%s*](%s)", EscapeMarkdown(artwork.Title), artwork.SourceURL)
 	caption += "\n" + "*Author:* " + EscapeMarkdown(artwork.Artist.Name)
 	if artwork.Description != "" {
-		if len(artwork.Description) > 500 {
-			caption += "\n\n>" + EscapeMarkdown(artwork.Description[:500]) + "\\.\\.\\."
+		desc := artwork.Description
+		lines := strings.Split(desc, "\n")
+		for i, line := range lines {
+			lines[i] = ">" + EscapeMarkdown(line)
+			if i == len(lines)-1 {
+				lines[i] += "**"
+			}
+		}
+		desc = strings.Join(lines, "\n")
+		if len(desc) > 500 {
+			caption += "\n\n" + desc[:500] + "\\.\\.\\."
 		} else {
-			caption += "\n\n>" + EscapeMarkdown(artwork.Description)
+			caption += "\n\n" + desc
 		}
 	}
 	tags := ""
