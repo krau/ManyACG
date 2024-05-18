@@ -33,15 +33,18 @@ func (w *Webdav) SavePicture(artwork *types.Artwork, picture *types.Picture) (*t
 	artistName := common.ReplaceFileNameInvalidChar(artwork.Artist.Username)
 	fileDir := strings.TrimSuffix(config.Cfg.Storage.Webdav.Path, "/") + "/" + string(artwork.SourceType) + "/" + artistName + "/"
 	if err := Client.MkdirAll(fileDir, os.ModePerm); err != nil {
-		return nil, err
+		Logger.Errorf("failed to create directory: %s", err)
+		return nil, ErrFailedMkdirAll
 	}
 	fileBytes, err := common.DownloadFromURL(picture.Original)
 	if err != nil {
-		return nil, err
+		Logger.Errorf("failed to download file: %s", err)
+		return nil, ErrFailedDownload
 	}
 	filePath := fileDir + fileName
 	if err := Client.Write(filePath, fileBytes, os.ModePerm); err != nil {
-		return nil, err
+		Logger.Errorf("failed to write file: %s", err)
+		return nil, ErrFailedWrite
 	}
 	Logger.Infof("picture %d of artwork %s saved to %s", picture.Index, artwork.Title, filePath)
 	storageInfo := &types.StorageInfo{
@@ -76,7 +79,8 @@ func (w *Webdav) getFileWithCache(info *types.StorageInfo) ([]byte, error) {
 	}
 	data, err = Client.Read(info.Path)
 	if err != nil {
-		return nil, err
+		Logger.Errorf("failed to read file: %s", err)
+		return nil, ErrReadFile
 	}
 	if err := common.MkFile(cachePath, data); err != nil {
 		Logger.Errorf("failed to save cache file: %s", err)
