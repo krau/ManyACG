@@ -23,10 +23,12 @@ var (
 )
 
 func EscapeMarkdown(text string) string {
+	text = strings.ReplaceAll(text, "\\", "\\\\")
 	for _, char := range escapeChars {
 		text = strings.ReplaceAll(text, char, "\\"+char)
 	}
 	return text
+	// return regexp.MustCompile(`([_\*[\]\(\)~`+"`"+`>#\+\-=|{}\.!])`).ReplaceAllString(text, `\$1`)
 }
 
 func ReplaceChars(input string, oldChars []string, newChar string) string {
