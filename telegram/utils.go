@@ -8,7 +8,6 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"regexp"
 	"strings"
 
 	. "ManyACG/logger"
@@ -17,10 +16,17 @@ import (
 	"github.com/mymmrac/telego/telegoutil"
 )
 
+var (
+	escapeChars = []string{
+		"_", "*", "[", "]", "(", ")", "~", "`", ">", "#", "+", "-", "=", "|", "{", "}", ".", "!",
+	}
+)
+
 func EscapeMarkdown(text string) string {
-	escapeChars := `\_*[]()~` + "`" + ">#+-=|{}.!"
-	re := regexp.MustCompile("([" + regexp.QuoteMeta(escapeChars) + "])")
-	return re.ReplaceAllString(text, "\\$1")
+	for _, char := range escapeChars {
+		text = strings.ReplaceAll(text, char, "\\"+char)
+	}
+	return text
 }
 
 func ReplaceChars(input string, oldChars []string, newChar string) string {
