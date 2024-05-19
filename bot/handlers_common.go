@@ -321,7 +321,7 @@ func inlineQuery(ctx context.Context, bot *telego.Bot, query telego.InlineQuery)
 	}
 	r18 := false
 	for i, tag := range tags {
-		if tag == "r18" {
+		if tag == "r18" || tag == "R18" {
 			r18 = true
 			tags = append(tags[:i], tags[i+1:]...)
 			break
