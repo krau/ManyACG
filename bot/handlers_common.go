@@ -69,7 +69,7 @@ func help(ctx context.Context, bot *telego.Bot, message telego.Message) {
 }
 
 func getPictureFile(ctx context.Context, bot *telego.Bot, message telego.Message) {
-	messageOrigin, ok := telegram.CheckTargetMessageIsChannelArtworkPost(ctx, bot, message)
+	messageOrigin, ok := telegram.GetMessageOriginChannelArtworkPost(ctx, bot, message)
 	if !ok {
 		telegram.ReplyMessage(bot, message, "请使用该命令回复一条频道的图片消息")
 		return

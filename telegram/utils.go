@@ -96,7 +96,12 @@ func GetMssageOriginChannel(_ context.Context, _ *telego.Bot, message telego.Mes
 	}
 }
 
-func CheckTargetMessageIsChannelArtworkPost(ctx context.Context, bot *telego.Bot, message telego.Message) (*telego.MessageOriginChannel, bool) {
+/*
+	检查目标消息是否为频道的作品消息
+
+如果是，返回 messageOriginChannel 和 true
+*/
+func GetMessageOriginChannelArtworkPost(ctx context.Context, bot *telego.Bot, message telego.Message) (*telego.MessageOriginChannel, bool) {
 	if message.ReplyToMessage == nil {
 		return nil, false
 	}

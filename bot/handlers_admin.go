@@ -134,7 +134,7 @@ func deletePicture(ctx context.Context, bot *telego.Bot, message telego.Message)
 			return
 		}
 	} else {
-		originChannel, ok := telegram.CheckTargetMessageIsChannelArtworkPost(ctx, bot, message)
+		originChannel, ok := telegram.GetMessageOriginChannelArtworkPost(ctx, bot, message)
 		if !ok {
 			telegram.ReplyMessage(bot, message, "用法:\n使用 /del 回复一条频道的图片消息, 或者提供频道消息ID.\n若使用 /delete 则删除整个作品")
 			return
@@ -330,7 +330,7 @@ func setR18(ctx context.Context, bot *telego.Bot, message telego.Message) {
 		return
 	}
 
-	messageOrigin, ok := telegram.CheckTargetMessageIsChannelArtworkPost(ctx, bot, message)
+	messageOrigin, ok := telegram.GetMessageOriginChannelArtworkPost(ctx, bot, message)
 	if !ok {
 		telegram.ReplyMessage(bot, message, "请回复一条频道的图片消息")
 		return
