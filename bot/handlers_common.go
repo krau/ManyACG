@@ -48,8 +48,8 @@ func help(ctx context.Context, bot *telego.Bot, message telego.Message) {
 	helpText := `使用方法:
 /start - 喵喵喵
 /file - 回复一条频道的消息获取原图文件 <index>
-/setu - 来点涩图 <tag1> <tag2> ...
-/random - 随机1张全年龄图片 <tag1> <tag2> ...
+/setu - 随机图片 <keyword1> <keyword2> ...
+/random - 也是随机图片 <keyword1> <keyword2> ...
 /search - 搜索相似图片
 `
 	isAdmin, _ := service.IsAdmin(ctx, message.From.ID)
@@ -101,11 +101,9 @@ func getPictureFile(ctx context.Context, bot *telego.Bot, message telego.Message
 }
 
 func randomPicture(ctx context.Context, bot *telego.Bot, message telego.Message) {
-	cmd, _, args := telegoutil.ParseCommand(message.Text)
-	r18 := cmd == "setu"
+	_, _, args := telegoutil.ParseCommand(message.Text)
 	limit := 1
-	Logger.Infof("randomPicture: r18=%v, args=%v", r18, args)
-	artwork, err := service.GetRandomArtworksByTagsR18(ctx, args, r18, limit)
+	artwork, err := service.GetArtworksByTexts(ctx, args, limit)
 	if err != nil {
 		Logger.Warnf("获取图片失败: %s", err)
 		text := "获取图片失败" + err.Error()
@@ -315,21 +313,13 @@ func searchPicture(ctx context.Context, bot *telego.Bot, message telego.Message)
 
 func inlineQuery(ctx context.Context, bot *telego.Bot, query telego.InlineQuery) {
 	queryText := query.Query
-	tags := make([]string, 0)
+	texts := make([]string, 0)
 	if queryText != "" {
-		tags = strings.Split(queryText, " ")
-	}
-	r18 := false
-	for i, tag := range tags {
-		if tag == "r18" || tag == "R18" {
-			r18 = true
-			tags = append(tags[:i], tags[i+1:]...)
-			break
-		}
+		texts = strings.Split(queryText, " ")
 	}
 	limit := 30
-	artworks, err := service.GetRandomArtworksByTagsR18(ctx, tags, r18, limit)
-	if err != nil {
+	artworks, err := service.GetArtworksByTexts(ctx, texts, limit)
+	if err != nil || len(artworks) == 0 {
 		Logger.Warnf("获取图片失败: %s", err)
 		bot.AnswerInlineQuery(telegoutil.InlineQuery(query.ID, telegoutil.ResultArticle(uuid.NewString(), "未找到相关图片", telegoutil.TextMessage("/setu"))))
 		return
@@ -347,5 +337,7 @@ func inlineQuery(ctx context.Context, bot *telego.Bot, query telego.InlineQuery)
 		}))
 		results = append(results, result)
 	}
-	bot.AnswerInlineQuery(telegoutil.InlineQuery(query.ID, results...).WithCacheTime(3))
+	if err := bot.AnswerInlineQuery(telegoutil.InlineQuery(query.ID, results...).WithCacheTime(1)); err != nil {
+		Logger.Errorf("回复查询失败: %s", err)
+	}
 }

@@ -8,6 +8,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 var artworkCollection *mongo.Collection
@@ -48,10 +49,9 @@ func GetRandomArtworks(ctx context.Context, limit int) ([]*model.ArtworkModel, e
 		return nil, err
 	}
 	return artworks, nil
-
 }
 
-func GetRandomArtworksR18(ctx context.Context, r18 bool, limit int) ([]*model.ArtworkModel, error) {
+func GetArtworksR18(ctx context.Context, r18 bool, limit int) ([]*model.ArtworkModel, error) {
 	var artworks []*model.ArtworkModel
 	cursor, err := artworkCollection.Aggregate(ctx, mongo.Pipeline{
 		bson.D{{Key: "$match", Value: bson.M{"r18": r18}}},
@@ -67,7 +67,7 @@ func GetRandomArtworksR18(ctx context.Context, r18 bool, limit int) ([]*model.Ar
 	return artworks, nil
 }
 
-func GetRandomArtworksByTags(ctx context.Context, tags []primitive.ObjectID, limit int) ([]*model.ArtworkModel, error) {
+func GetArtworksByTags(ctx context.Context, tags []primitive.ObjectID, limit int) ([]*model.ArtworkModel, error) {
 	var artworks []*model.ArtworkModel
 	cursor, err := artworkCollection.Aggregate(ctx, mongo.Pipeline{
 		bson.D{{Key: "$match", Value: bson.M{"tags": bson.M{"$all": tags}}}},
@@ -83,12 +83,93 @@ func GetRandomArtworksByTags(ctx context.Context, tags []primitive.ObjectID, lim
 	return artworks, nil
 }
 
-func GetRandomArtworksByTagsR18(ctx context.Context, tags []primitive.ObjectID, r18 bool, limit int) ([]*model.ArtworkModel, error) {
+func GetArtworksByTagsR18(ctx context.Context, tags []primitive.ObjectID, r18 bool, limit int) ([]*model.ArtworkModel, error) {
 	var artworks []*model.ArtworkModel
 	cursor, err := artworkCollection.Aggregate(ctx, mongo.Pipeline{
 		bson.D{{Key: "$match", Value: bson.M{"tags": bson.M{"$all": tags}, "r18": r18}}},
 		bson.D{{Key: "$sample", Value: bson.M{"size": limit}}},
 	})
+	if err != nil {
+		return nil, err
+	}
+	err = cursor.All(ctx, &artworks)
+	if err != nil {
+		return nil, err
+	}
+	return artworks, nil
+}
+
+func GetArtworksByTitle(ctx context.Context, title string, limit int) ([]*model.ArtworkModel, error) {
+	var artworks []*model.ArtworkModel
+	cursor, err := artworkCollection.Find(ctx, bson.M{"title": primitive.Regex{Pattern: title, Options: "i"}}, options.Find().SetLimit(int64(limit)))
+	if err != nil {
+		return nil, err
+	}
+	err = cursor.All(ctx, &artworks)
+	if err != nil {
+		return nil, err
+	}
+	return artworks, nil
+}
+
+func GetArtworksByDescription(ctx context.Context, description string, limit int) ([]*model.ArtworkModel, error) {
+	var artworks []*model.ArtworkModel
+	cursor, err := artworkCollection.Find(ctx, bson.M{"description": primitive.Regex{Pattern: description, Options: "i"}}, options.Find().SetLimit(int64(limit)))
+	if err != nil {
+		return nil, err
+	}
+	err = cursor.All(ctx, &artworks)
+	if err != nil {
+		return nil, err
+	}
+	return artworks, nil
+}
+
+func GetArtworksByArtistID(ctx context.Context, artistID primitive.ObjectID, limit int) ([]*model.ArtworkModel, error) {
+	var artworks []*model.ArtworkModel
+	cursor, err := artworkCollection.Find(ctx, bson.M{"artist._id": artistID}, options.Find().SetLimit(int64(limit)))
+	if err != nil {
+		return nil, err
+	}
+	err = cursor.All(ctx, &artworks)
+	if err != nil {
+		return nil, err
+	}
+	return artworks, nil
+}
+
+func GetArtworksByArtistName(ctx context.Context, artistName string, limit int) ([]*model.ArtworkModel, error) {
+	var artworks []*model.ArtworkModel
+	artists, err := GetArtistsByNameLike(ctx, artistName)
+	if err != nil {
+		return nil, err
+	}
+	artistIDs := make([]primitive.ObjectID, len(artists))
+	for i, artist := range artists {
+		artistIDs[i] = artist.ID
+	}
+	cursor, err := artworkCollection.Find(ctx, bson.M{"artist_id": bson.M{"$in": artistIDs}}, options.Find().SetLimit(int64(limit)))
+	if err != nil {
+		return nil, err
+	}
+	err = cursor.All(ctx, &artworks)
+	if err != nil {
+		return nil, err
+	}
+	return artworks, nil
+}
+
+func GetArtworksByArtistUsername(ctx context.Context, artistUsername string, limit int) ([]*model.ArtworkModel, error) {
+	var artworks []*model.ArtworkModel
+	artists, err := GetArtistsByUserNameLike(ctx, artistUsername)
+	if err != nil {
+		return nil, err
+	}
+	artistIDs := make([]primitive.ObjectID, len(artists))
+	for i, artist := range artists {
+		artistIDs[i] = artist.ID
+	}
+	cursor, err := artworkCollection.Find(ctx, bson.M{"artist_id": bson.M{"$in": artistIDs}}, options.Find().SetLimit(int64(limit)))
 	if err != nil {
 		return nil, err
 	}

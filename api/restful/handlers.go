@@ -32,7 +32,7 @@ func RandomArtwork(ctx *gin.Context) {
 		})
 		return
 	}
-	artwork, err := service.GetRandomArtworksByTagsR18(ctx, tags, r18, 1)
+	artwork, err := service.GetArtworksByTagsR18(ctx, tags, r18, 1)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{
 			"message": err.Error(),

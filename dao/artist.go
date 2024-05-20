@@ -50,6 +50,30 @@ func GetArtistByUserName(ctx context.Context, username string) (*model.ArtistMod
 	return &artist, nil
 }
 
+func GetArtistsByNameLike(ctx context.Context, name string) ([]*model.ArtistModel, error) {
+	var artists []*model.ArtistModel
+	cursor, err := artistCollection.Find(ctx, bson.M{"name": primitive.Regex{Pattern: name, Options: "i"}})
+	if err != nil {
+		return nil, err
+	}
+	if err = cursor.All(ctx, &artists); err != nil {
+		return nil, err
+	}
+	return artists, nil
+}
+
+func GetArtistsByUserNameLike(ctx context.Context, username string) ([]*model.ArtistModel, error) {
+	var artists []*model.ArtistModel
+	cursor, err := artistCollection.Find(ctx, bson.M{"username": primitive.Regex{Pattern: username, Options: "i"}})
+	if err != nil {
+		return nil, err
+	}
+	if err = cursor.All(ctx, &artists); err != nil {
+		return nil, err
+	}
+	return artists, nil
+}
+
 func UpdateArtistByUID(ctx context.Context, uid int, artist *model.ArtistModel) (*mongo.UpdateResult, error) {
 	return artistCollection.UpdateOne(ctx, bson.M{"uid": uid}, bson.M{"$set": artist})
 }
