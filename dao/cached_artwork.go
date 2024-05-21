@@ -1,7 +1,7 @@
 package dao
 
 import (
-	"ManyACG/dao/model"
+	"ManyACG/model"
 	"ManyACG/types"
 	"context"
 	"time"

@@ -2,7 +2,7 @@ package service
 
 import (
 	"ManyACG/dao"
-	"ManyACG/dao/model"
+	"ManyACG/model"
 	"ManyACG/types"
 	"context"
 	"errors"

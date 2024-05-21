@@ -3,7 +3,7 @@ package dao
 import (
 	"context"
 
-	"ManyACG/dao/model"
+	"ManyACG/model"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -50,7 +50,10 @@ func GetArtistByUserName(ctx context.Context, username string) (*model.ArtistMod
 	return &artist, nil
 }
 
-func GetArtistsByNameLike(ctx context.Context, name string) ([]*model.ArtistModel, error) {
+func QueryArtistsByName(ctx context.Context, name string) ([]*model.ArtistModel, error) {
+	if name == "" {
+		return nil, mongo.ErrNoDocuments
+	}
 	var artists []*model.ArtistModel
 	cursor, err := artistCollection.Find(ctx, bson.M{"name": primitive.Regex{Pattern: name, Options: "i"}})
 	if err != nil {
@@ -59,10 +62,16 @@ func GetArtistsByNameLike(ctx context.Context, name string) ([]*model.ArtistMode
 	if err = cursor.All(ctx, &artists); err != nil {
 		return nil, err
 	}
+	if len(artists) == 0 {
+		return nil, mongo.ErrNoDocuments
+	}
 	return artists, nil
 }
 
-func GetArtistsByUserNameLike(ctx context.Context, username string) ([]*model.ArtistModel, error) {
+func QueryArtistsByUserName(ctx context.Context, username string) ([]*model.ArtistModel, error) {
+	if username == "" {
+		return nil, mongo.ErrNoDocuments
+	}
 	var artists []*model.ArtistModel
 	cursor, err := artistCollection.Find(ctx, bson.M{"username": primitive.Regex{Pattern: username, Options: "i"}})
 	if err != nil {
@@ -70,6 +79,9 @@ func GetArtistsByUserNameLike(ctx context.Context, username string) ([]*model.Ar
 	}
 	if err = cursor.All(ctx, &artists); err != nil {
 		return nil, err
+	}
+	if len(artists) == 0 {
+		return nil, mongo.ErrNoDocuments
 	}
 	return artists, nil
 }

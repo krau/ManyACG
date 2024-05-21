@@ -47,8 +47,3 @@ func ProcessPicturesAndUpdate(ctx context.Context, bot *telego.Bot, message *tel
 		))
 	}
 }
-
-func GetNotProcessedPictureCount(ctx context.Context) int {
-	pictures, _ := dao.GetNotProcessedPictures(ctx)
-	return len(pictures)
-}

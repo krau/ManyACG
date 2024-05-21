@@ -2,8 +2,8 @@ package restful
 
 import (
 	"ManyACG/service"
+	"ManyACG/types"
 	"net/http"
-	"strconv"
 
 	"github.com/gin-gonic/gin"
 )
@@ -16,23 +16,22 @@ func Ping(ctx *gin.Context) {
 
 func RandomArtwork(ctx *gin.Context) {
 	var r18Str string
-	var tags []string
 	if ctx.Request.Method == http.MethodGet {
-		r18Str = ctx.DefaultQuery("r18", "false")
-		tags = ctx.QueryArray("tags")
+		r18Str = ctx.DefaultQuery("r18", "2")
 	}
 	if ctx.Request.Method == http.MethodPost {
-		r18Str = ctx.DefaultPostForm("r18", "false")
-		tags = ctx.PostFormArray("tags")
+		r18Str = ctx.DefaultPostForm("r18", "2")
 	}
-	r18, err := strconv.ParseBool(r18Str)
-	if err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{
-			"message": "Invalid r18 value",
-		})
-		return
+	r18Type := types.R18TypeNone
+	switch r18Str {
+	case "0":
+		r18Type = types.R18TypeNone
+	case "1":
+		r18Type = types.R18TypeOnly
+	case "2":
+		r18Type = types.R18TypeAll
 	}
-	artwork, err := service.GetArtworksByTagsR18(ctx, tags, r18, 1)
+	artwork, err := service.GetRandomArtworks(ctx, r18Type, 1)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{
 			"message": err.Error(),

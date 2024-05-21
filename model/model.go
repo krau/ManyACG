@@ -31,6 +31,7 @@ type ArtistModel struct {
 type TagModel struct {
 	ID   primitive.ObjectID `bson:"_id,omitempty"`
 	Name string             `bson:"name"`
+	// Alias []string           `bson:"alias"`
 }
 
 type PictureModel struct {

@@ -1,9 +1,10 @@
 package service
 
 import (
+	"ManyACG/adapter"
 	"ManyACG/dao"
-	"ManyACG/dao/model"
 	es "ManyACG/errors"
+	"ManyACG/model"
 	"ManyACG/types"
 	"context"
 	"errors"
@@ -134,179 +135,12 @@ func CreateArtwork(ctx context.Context, artwork *types.Artwork) (*types.Artwork,
 	return artwork, nil
 }
 
-func GetArtworksByTags(ctx context.Context, tags []string, limit int) ([]*types.Artwork, error) {
-	tagsID := make([]primitive.ObjectID, len(tags))
-	for i, tag := range tags {
-		tagModel, err := dao.GetTagByName(ctx, tag)
-		if err != nil {
-			return nil, err
-		}
-		tagsID[i] = tagModel.ID
-	}
-	artworkModels, err := dao.GetArtworksByTags(ctx, tagsID, limit)
-	if err != nil {
-		return nil, err
-	}
-	artworks := make([]*types.Artwork, len(artworkModels))
-	errChan := make(chan error, len(artworkModels))
-	for i, artworkModel := range artworkModels {
-		go func(i int, artworkModel *model.ArtworkModel) {
-			artistModel, err := dao.GetArtistByID(ctx, artworkModel.ArtistID)
-			if err != nil {
-				errChan <- err
-				return
-			}
-			tags := make([]string, len(artworkModel.Tags))
-			for j, tagID := range artworkModel.Tags {
-				tagModel, err := dao.GetTagByID(ctx, tagID)
-				if err != nil {
-					errChan <- err
-					return
-				}
-				tags[j] = tagModel.Name
-			}
-			pictures := make([]*types.Picture, len(artworkModel.Pictures))
-			for j, pictureID := range artworkModel.Pictures {
-				pictureModel, err := dao.GetPictureByID(ctx, pictureID)
-				if err != nil {
-					errChan <- err
-					return
-				}
-				pictures[j] = pictureModel.ToPicture()
-			}
-			artworks[i] = &types.Artwork{
-				Title:       artworkModel.Title,
-				Description: artworkModel.Description,
-				R18:         artworkModel.R18,
-				CreatedAt:   artworkModel.CreatedAt.Time(),
-				SourceType:  artworkModel.SourceType,
-				SourceURL:   artworkModel.SourceURL,
-				Artist:      artistModel.ToArtist(),
-				Tags:        tags,
-				Pictures:    pictures,
-			}
-			errChan <- nil
-		}(i, artworkModel)
-	}
-	for range artworkModels {
-		err := <-errChan
-		if err != nil {
-			return nil, err
-		}
-	}
-	return artworks, nil
-}
-
-func GetArtworksByTagsR18(ctx context.Context, tags []string, r18 bool, limit int) ([]*types.Artwork, error) {
-	var artworkModels []*model.ArtworkModel
-	if len(tags) == 0 {
-		var err error
-		artworkModels, err = dao.GetArtworksR18(ctx, r18, limit)
-		if err != nil {
-			return nil, err
-		}
-	} else {
-		var err error
-		tagsID := make([]primitive.ObjectID, len(tags))
-		for i, tag := range tags {
-			tagModel, err := dao.GetTagByName(ctx, tag)
-			if err != nil {
-				return nil, err
-			}
-			tagsID[i] = tagModel.ID
-		}
-		artworkModels, err = dao.GetArtworksByTagsR18(ctx, tagsID, r18, limit)
-		if err != nil {
-			return nil, err
-		}
-	}
-	artworks := make([]*types.Artwork, len(artworkModels))
-	errChan := make(chan error, len(artworkModels))
-	for i, artworkModel := range artworkModels {
-		go func(i int, artworkModel *model.ArtworkModel) {
-			allTags := make([]string, len(artworkModel.Tags))
-			for j, tagID := range artworkModel.Tags {
-				tagModel, err := dao.GetTagByID(ctx, tagID)
-				if err != nil {
-					errChan <- err
-					return
-				}
-				allTags[j] = tagModel.Name
-			}
-			pictures := make([]*types.Picture, len(artworkModel.Pictures))
-			for k, pictureID := range artworkModel.Pictures {
-				pictureModel, err := dao.GetPictureByID(ctx, pictureID)
-				if err != nil {
-					errChan <- err
-					return
-				}
-				pictures[k] = pictureModel.ToPicture()
-			}
-			artistModel, err := dao.GetArtistByID(ctx, artworkModel.ArtistID)
-			if err != nil {
-				errChan <- err
-				return
-			}
-			artworks[i] = &types.Artwork{
-				Title:       artworkModel.Title,
-				Description: artworkModel.Description,
-				R18:         artworkModel.R18,
-				CreatedAt:   artworkModel.CreatedAt.Time(),
-				SourceType:  artworkModel.SourceType,
-				SourceURL:   artworkModel.SourceURL,
-				Artist:      artistModel.ToArtist(),
-				Tags:        allTags,
-				Pictures:    pictures,
-			}
-			errChan <- nil
-		}(i, artworkModel)
-	}
-	for range artworkModels {
-		err := <-errChan
-		if err != nil {
-			return nil, err
-		}
-	}
-	return artworks, nil
-}
-
 func GetArtworkByURL(ctx context.Context, sourceURL string) (*types.Artwork, error) {
 	artworkModel, err := dao.GetArtworkByURL(ctx, sourceURL)
 	if err != nil {
 		return nil, err
 	}
-	artistModel, err := dao.GetArtistByID(ctx, artworkModel.ArtistID)
-	if err != nil {
-		return nil, err
-	}
-	tags := make([]string, len(artworkModel.Tags))
-	for i, tagID := range artworkModel.Tags {
-		tagModel, err := dao.GetTagByID(ctx, tagID)
-		if err != nil {
-			return nil, err
-		}
-		tags[i] = tagModel.Name
-	}
-	pictures := make([]*types.Picture, len(artworkModel.Pictures))
-	for i, pictureID := range artworkModel.Pictures {
-		pictureModel, err := dao.GetPictureByID(ctx, pictureID)
-		if err != nil {
-			return nil, err
-		}
-		pictures[i] = pictureModel.ToPicture()
-	}
-
-	return &types.Artwork{
-		Title:       artworkModel.Title,
-		Description: artworkModel.Description,
-		R18:         artworkModel.R18,
-		CreatedAt:   artworkModel.CreatedAt.Time(),
-		SourceType:  artworkModel.SourceType,
-		SourceURL:   artworkModel.SourceURL,
-		Artist:      artistModel.ToArtist(),
-		Tags:        tags,
-		Pictures:    pictures,
-	}, nil
+	return adapter.ConvertToArtwork(ctx, artworkModel)
 }
 
 func GetArtworkByMessageID(ctx context.Context, messageID int) (*types.Artwork, error) {
@@ -318,37 +152,15 @@ func GetArtworkByMessageID(ctx context.Context, messageID int) (*types.Artwork, 
 	if err != nil {
 		return nil, err
 	}
-	artistModel, err := dao.GetArtistByID(ctx, artworkModel.ArtistID)
+	return adapter.ConvertToArtwork(ctx, artworkModel)
+}
+
+func GetArtworkByID(ctx context.Context, id primitive.ObjectID) (*types.Artwork, error) {
+	artworkModel, err := dao.GetArtworkByID(ctx, id)
 	if err != nil {
 		return nil, err
 	}
-	tags := make([]string, len(artworkModel.Tags))
-	for i, tagID := range artworkModel.Tags {
-		tagModel, err := dao.GetTagByID(ctx, tagID)
-		if err != nil {
-			return nil, err
-		}
-		tags[i] = tagModel.Name
-	}
-	pictures := make([]*types.Picture, len(artworkModel.Pictures))
-	for i, pictureID := range artworkModel.Pictures {
-		pictureModel, err := dao.GetPictureByID(ctx, pictureID)
-		if err != nil {
-			return nil, err
-		}
-		pictures[i] = pictureModel.ToPicture()
-	}
-	return &types.Artwork{
-		Title:       artworkModel.Title,
-		Description: artworkModel.Description,
-		R18:         artworkModel.R18,
-		CreatedAt:   artworkModel.CreatedAt.Time(),
-		SourceType:  artworkModel.SourceType,
-		SourceURL:   artworkModel.SourceURL,
-		Artist:      artistModel.ToArtist(),
-		Tags:        tags,
-		Pictures:    pictures,
-	}, nil
+	return adapter.ConvertToArtwork(ctx, artworkModel)
 }
 
 func GetArtworkIDByPicture(ctx context.Context, picture *types.Picture) (primitive.ObjectID, error) {
@@ -359,46 +171,8 @@ func GetArtworkIDByPicture(ctx context.Context, picture *types.Picture) (primiti
 	return pictureModel.ArtworkID, nil
 }
 
-func GetArtworkByID(ctx context.Context, id primitive.ObjectID) (*types.Artwork, error) {
-	artworkModel, err := dao.GetArtworkByID(ctx, id)
-	if err != nil {
-		return nil, err
-	}
-	artistModel, err := dao.GetArtistByID(ctx, artworkModel.ArtistID)
-	if err != nil {
-		return nil, err
-	}
-	tags := make([]string, len(artworkModel.Tags))
-	for i, tagID := range artworkModel.Tags {
-		tagModel, err := dao.GetTagByID(ctx, tagID)
-		if err != nil {
-			return nil, err
-		}
-		tags[i] = tagModel.Name
-	}
-	pictures := make([]*types.Picture, len(artworkModel.Pictures))
-	for i, pictureID := range artworkModel.Pictures {
-		pictureModel, err := dao.GetPictureByID(ctx, pictureID)
-		if err != nil {
-			return nil, err
-		}
-		pictures[i] = pictureModel.ToPicture()
-	}
-	return &types.Artwork{
-		Title:       artworkModel.Title,
-		Description: artworkModel.Description,
-		R18:         artworkModel.R18,
-		CreatedAt:   artworkModel.CreatedAt.Time(),
-		SourceType:  artworkModel.SourceType,
-		SourceURL:   artworkModel.SourceURL,
-		Artist:      artistModel.ToArtist(),
-		Tags:        tags,
-		Pictures:    pictures,
-	}, nil
-}
-
-func GetArtworksByTitle(ctx context.Context, title string, limit int) ([]*types.Artwork, error) {
-	artworkModels, err := dao.GetArtworksByTitle(ctx, title, limit)
+func GetRandomArtworks(ctx context.Context, r18 types.R18Type, limit int) ([]*types.Artwork, error) {
+	artworkModels, err := dao.GetArtworksByR18(ctx, r18, int64(limit))
 	if err != nil {
 		return nil, err
 	}
@@ -452,306 +226,36 @@ func GetArtworksByTitle(ctx context.Context, title string, limit int) ([]*types.
 	return artworks, nil
 }
 
-func GetArtowrksByDescription(ctx context.Context, description string, limit int) ([]*types.Artwork, error) {
-	artworkModels, err := dao.GetArtworksByDescription(ctx, description, limit)
-	if err != nil {
-		return nil, err
+// 通过标签获取作品, 标签名使用全字匹配
+//
+// tags: 二维数组, tags = [["tag1", "tag2"], ["tag3", "tag4"]] 表示 (tag1 || tag2) && (tag3 || tag4)
+func GetArtworksByTags(ctx context.Context, tags [][]string, r18 types.R18Type, limit int) ([]*types.Artwork, error) {
+	if len(tags) == 0 {
+		return GetRandomArtworks(ctx, r18, limit)
 	}
-	artworks := make([]*types.Artwork, len(artworkModels))
-	errChan := make(chan error, len(artworkModels))
-	for i, artworkModel := range artworkModels {
-		go func(i int, artworkModel *model.ArtworkModel) {
-			artistModel, err := dao.GetArtistByID(ctx, artworkModel.ArtistID)
+	tagIDs := make([][]primitive.ObjectID, len(tags))
+	for i, tagGroup := range tags {
+		tagIDs[i] = make([]primitive.ObjectID, len(tagGroup))
+		for j, tagName := range tagGroup {
+			tagModel, err := dao.GetTagByName(ctx, tagName)
 			if err != nil {
-				errChan <- err
-				return
-			}
-			tags := make([]string, len(artworkModel.Tags))
-			for j, tagID := range artworkModel.Tags {
-				tagModel, err := dao.GetTagByID(ctx, tagID)
-				if err != nil {
-					errChan <- err
-					return
-				}
-				tags[j] = tagModel.Name
-			}
-			pictures := make([]*types.Picture, len(artworkModel.Pictures))
-			for j, pictureID := range artworkModel.Pictures {
-				pictureModel, err := dao.GetPictureByID(ctx, pictureID)
-				if err != nil {
-					errChan <- err
-					return
-				}
-				pictures[j] = pictureModel.ToPicture()
-			}
-			artworks[i] = &types.Artwork{
-				Title:       artworkModel.Title,
-				Description: artworkModel.Description,
-				R18:         artworkModel.R18,
-				CreatedAt:   artworkModel.CreatedAt.Time(),
-				SourceType:  artworkModel.SourceType,
-				SourceURL:   artworkModel.SourceURL,
-				Artist:      artistModel.ToArtist(),
-				Tags:        tags,
-				Pictures:    pictures,
-			}
-			errChan <- nil
-		}(i, artworkModel)
-	}
-	for range artworkModels {
-		err := <-errChan
-		if err != nil {
-			return nil, err
-		}
-	}
-	return artworks, nil
-}
-
-func GetArtworksByArtistName(ctx context.Context, artistName string, limit int) ([]*types.Artwork, error) {
-	artworkModels, err := dao.GetArtworksByArtistName(ctx, artistName, limit)
-	if err != nil {
-		return nil, err
-	}
-	artworks := make([]*types.Artwork, len(artworkModels))
-	errChan := make(chan error, len(artworkModels))
-	for i, artworkModel := range artworkModels {
-		go func(i int, artworkModel *model.ArtworkModel) {
-			artistModel, err := dao.GetArtistByID(ctx, artworkModel.ArtistID)
-			if err != nil {
-				errChan <- err
-				return
-			}
-			tags := make([]string, len(artworkModel.Tags))
-			for j, tagID := range artworkModel.Tags {
-				tagModel, err := dao.GetTagByID(ctx, tagID)
-				if err != nil {
-					errChan <- err
-					return
-				}
-				tags[j] = tagModel.Name
-			}
-			pictures := make([]*types.Picture, len(artworkModel.Pictures))
-			for j, pictureID := range artworkModel.Pictures {
-				pictureModel, err := dao.GetPictureByID(ctx, pictureID)
-				if err != nil {
-					errChan <- err
-					return
-				}
-				pictures[j] = pictureModel.ToPicture()
-			}
-			artworks[i] = &types.Artwork{
-				Title:       artworkModel.Title,
-				Description: artworkModel.Description,
-				R18:         artworkModel.R18,
-				CreatedAt:   artworkModel.CreatedAt.Time(),
-				SourceType:  artworkModel.SourceType,
-				SourceURL:   artworkModel.SourceURL,
-				Artist:      artistModel.ToArtist(),
-				Tags:        tags,
-				Pictures:    pictures,
-			}
-			errChan <- nil
-		}(i, artworkModel)
-	}
-	for range artworkModels {
-		err := <-errChan
-		if err != nil {
-			return nil, err
-		}
-	}
-	return artworks, nil
-}
-
-func GetArtworksByArtistUsername(ctx context.Context, artistUsername string, limit int) ([]*types.Artwork, error) {
-	artworkModels, err := dao.GetArtworksByArtistUsername(ctx, artistUsername, limit)
-	if err != nil {
-		return nil, err
-	}
-	artworks := make([]*types.Artwork, len(artworkModels))
-	errChan := make(chan error, len(artworkModels))
-	for i, artworkModel := range artworkModels {
-		go func(i int, artworkModel *model.ArtworkModel) {
-			artistModel, err := dao.GetArtistByID(ctx, artworkModel.ArtistID)
-			if err != nil {
-				errChan <- err
-				return
-			}
-			tags := make([]string, len(artworkModel.Tags))
-			for j, tagID := range artworkModel.Tags {
-				tagModel, err := dao.GetTagByID(ctx, tagID)
-				if err != nil {
-					errChan <- err
-					return
-				}
-				tags[j] = tagModel.Name
-			}
-			pictures := make([]*types.Picture, len(artworkModel.Pictures))
-			for j, pictureID := range artworkModel.Pictures {
-				pictureModel, err := dao.GetPictureByID(ctx, pictureID)
-				if err != nil {
-					errChan <- err
-					return
-				}
-				pictures[j] = pictureModel.ToPicture()
-			}
-			artworks[i] = &types.Artwork{
-				Title:       artworkModel.Title,
-				Description: artworkModel.Description,
-				R18:         artworkModel.R18,
-				CreatedAt:   artworkModel.CreatedAt.Time(),
-				SourceType:  artworkModel.SourceType,
-				SourceURL:   artworkModel.SourceURL,
-				Artist:      artistModel.ToArtist(),
-				Tags:        tags,
-				Pictures:    pictures,
-			}
-			errChan <- nil
-		}(i, artworkModel)
-	}
-	for range artworkModels {
-		err := <-errChan
-		if err != nil {
-			return nil, err
-		}
-	}
-	return artworks, nil
-}
-
-func GetRandomArtworks(ctx context.Context, limit int) ([]*types.Artwork, error) {
-	artworkModels, err := dao.GetRandomArtworks(ctx, limit)
-	if err != nil {
-		return nil, err
-	}
-	artworks := make([]*types.Artwork, len(artworkModels))
-	errChan := make(chan error, len(artworkModels))
-	for i, artworkModel := range artworkModels {
-		go func(i int, artworkModel *model.ArtworkModel) {
-			artistModel, err := dao.GetArtistByID(ctx, artworkModel.ArtistID)
-			if err != nil {
-				errChan <- err
-				return
-			}
-			tags := make([]string, len(artworkModel.Tags))
-			for j, tagID := range artworkModel.Tags {
-				tagModel, err := dao.GetTagByID(ctx, tagID)
-				if err != nil {
-					errChan <- err
-					return
-				}
-				tags[j] = tagModel.Name
-			}
-			pictures := make([]*types.Picture, len(artworkModel.Pictures))
-			for j, pictureID := range artworkModel.Pictures {
-				pictureModel, err := dao.GetPictureByID(ctx, pictureID)
-				if err != nil {
-					errChan <- err
-					return
-				}
-				pictures[j] = pictureModel.ToPicture()
-			}
-			artworks[i] = &types.Artwork{
-				Title:       artworkModel.Title,
-				Description: artworkModel.Description,
-				R18:         artworkModel.R18,
-				CreatedAt:   artworkModel.CreatedAt.Time(),
-				SourceType:  artworkModel.SourceType,
-				SourceURL:   artworkModel.SourceURL,
-				Artist:      artistModel.ToArtist(),
-				Tags:        tags,
-				Pictures:    pictures,
-			}
-			errChan <- nil
-		}(i, artworkModel)
-	}
-	for range artworkModels {
-		err := <-errChan
-		if err != nil {
-			return nil, err
-		}
-	}
-	return artworks, nil
-}
-
-func GetArtworksByTexts(ctx context.Context, texts []string, limit int) ([]*types.Artwork, error) {
-	if len(texts) == 0 {
-		return GetRandomArtworks(ctx, limit)
-	}
-	// 优先级: tag name > artwork title > artwork description > artist name > artist username
-	artworks := make(map[string]*types.Artwork)
-
-	addArtworks := func(newArtworks []*types.Artwork) {
-		for _, artwork := range newArtworks {
-			if len(artworks) >= limit {
-				return
-			}
-			artworks[artwork.SourceURL] = artwork
-		}
-	}
-
-	artworksByTags, err := GetArtworksByTags(ctx, texts, limit)
-	if err != nil && !errors.Is(err, mongo.ErrNoDocuments) {
-		return nil, err
-	}
-	addArtworks(artworksByTags)
-
-	// 呃呃, 写的真难看
-	if len(artworks) < limit {
-		for _, text := range texts {
-			artworksByTitle, err := GetArtworksByTitle(ctx, text, limit-len(artworks))
-			if err != nil && !errors.Is(err, mongo.ErrNoDocuments) {
 				return nil, err
 			}
-			addArtworks(artworksByTitle)
-			if len(artworks) >= limit {
-				break
-			}
+			tagIDs[i][j] = tagModel.ID
 		}
 	}
-
-	if len(artworks) < limit {
-		for _, text := range texts {
-			artworksByDescription, err := GetArtowrksByDescription(ctx, text, limit-len(artworks))
-			if err != nil && !errors.Is(err, mongo.ErrNoDocuments) {
-				return nil, err
-			}
-			addArtworks(artworksByDescription)
-			if len(artworks) >= limit {
-				break
-			}
+	artworkModels, err := dao.GetArtworksByTags(ctx, tagIDs, r18, int64(limit))
+	if err != nil {
+		return nil, err
+	}
+	artworks := make([]*types.Artwork, len(artworkModels))
+	for i, artworkModel := range artworkModels {
+		artworks[i], err = adapter.ConvertToArtwork(ctx, artworkModel)
+		if err != nil {
+			return nil, err
 		}
 	}
-
-	if len(artworks) < limit {
-		for _, text := range texts {
-			artworksByArtistName, err := GetArtworksByArtistName(ctx, text, limit-len(artworks))
-			if err != nil && !errors.Is(err, mongo.ErrNoDocuments) {
-				return nil, err
-			}
-			addArtworks(artworksByArtistName)
-			if len(artworks) >= limit {
-				break
-			}
-		}
-	}
-
-	if len(artworks) < limit {
-		for _, text := range texts {
-			artworksByArtistUsername, err := GetArtworksByArtistUsername(ctx, text, limit-len(artworks))
-			if err != nil && !errors.Is(err, mongo.ErrNoDocuments) {
-				return nil, err
-			}
-			addArtworks(artworksByArtistUsername)
-			if len(artworks) >= limit {
-				break
-			}
-		}
-	}
-
-	result := make([]*types.Artwork, 0, len(artworks))
-	for _, artwork := range artworks {
-		result = append(result, artwork)
-	}
-	return result, nil
+	return artworks, nil
 }
 
 func UpdateArtworkR18ByURL(ctx context.Context, sourceURL string, r18 bool) error {

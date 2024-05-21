@@ -101,9 +101,20 @@ func getPictureFile(ctx context.Context, bot *telego.Bot, message telego.Message
 }
 
 func randomPicture(ctx context.Context, bot *telego.Bot, message telego.Message) {
-	_, _, args := telegoutil.ParseCommand(message.Text)
-	limit := 1
-	artwork, err := service.GetArtworksByTexts(ctx, args, limit)
+	cmd, _, args := telegoutil.ParseCommand(message.Text)
+	argText := strings.Join(args, " ")
+	textArray, err := common.ParseStringTo2DArray(argText, "|", " ")
+	if err != nil {
+		Logger.Warnf("解析参数失败: %s", err)
+		telegram.ReplyMessage(bot, message, "解析参数失败: "+err.Error()+"\n请使用'|'分隔'或'关系的关键词, 使用空格分隔'与'关系的关键词")
+		return
+	}
+	r18 := cmd == "setu"
+	r18Type := types.R18TypeNone
+	if r18 {
+		r18Type = types.R18TypeOnly
+	}
+	artwork, err := service.QueryArtworksByTexts(ctx, textArray, r18Type, 1)
 	if err != nil {
 		Logger.Warnf("获取图片失败: %s", err)
 		text := "获取图片失败" + err.Error()
@@ -313,12 +324,14 @@ func searchPicture(ctx context.Context, bot *telego.Bot, message telego.Message)
 
 func inlineQuery(ctx context.Context, bot *telego.Bot, query telego.InlineQuery) {
 	queryText := query.Query
-	texts := make([]string, 0)
-	if queryText != "" {
-		texts = strings.Split(queryText, " ")
+	texts, err := common.ParseStringTo2DArray(queryText, "|", " ")
+	if err != nil {
+		Logger.Warnf("解析参数失败: %s", err)
+		bot.AnswerInlineQuery(telegoutil.InlineQuery(query.ID, telegoutil.ResultArticle(uuid.NewString(), "解析参数失败", telegoutil.TextMessage("/setu"))))
+		return
 	}
 	limit := 30
-	artworks, err := service.GetArtworksByTexts(ctx, texts, limit)
+	artworks, err := service.QueryArtworksByTexts(ctx, texts, types.R18TypeAll, limit)
 	if err != nil || len(artworks) == 0 {
 		Logger.Warnf("获取图片失败: %s", err)
 		bot.AnswerInlineQuery(telegoutil.InlineQuery(query.ID, telegoutil.ResultArticle(uuid.NewString(), "未找到相关图片", telegoutil.TextMessage("/setu"))))

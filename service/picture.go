@@ -3,7 +3,7 @@ package service
 import (
 	"ManyACG/common"
 	"ManyACG/dao"
-	"ManyACG/dao/model"
+	"ManyACG/model"
 	"ManyACG/storage"
 	"ManyACG/types"
 	"context"

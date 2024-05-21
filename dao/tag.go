@@ -1,7 +1,7 @@
 package dao
 
 import (
-	"ManyACG/dao/model"
+	"ManyACG/model"
 	"context"
 
 	"go.mongodb.org/mongo-driver/bson"
@@ -37,4 +37,19 @@ func GetTagByName(ctx context.Context, name string) (*model.TagModel, error) {
 		return nil, err
 	}
 	return &tag, nil
+}
+
+func QueryTagsByName(ctx context.Context, name string) ([]*model.TagModel, error) {
+	if name == "" {
+		return nil, mongo.ErrNoDocuments
+	}
+	var tags []*model.TagModel
+	cursor, err := tagCollection.Find(ctx, bson.M{"name": primitive.Regex{Pattern: name, Options: "i"}})
+	if err != nil {
+		return nil, err
+	}
+	if err = cursor.All(ctx, &tags); err != nil {
+		return nil, err
+	}
+	return tags, nil
 }

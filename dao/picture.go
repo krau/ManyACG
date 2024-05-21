@@ -3,7 +3,7 @@ package dao
 import (
 	"context"
 
-	"ManyACG/dao/model"
+	"ManyACG/model"
 
 	"github.com/corona10/goimagehash"
 	"go.mongodb.org/mongo-driver/bson"
