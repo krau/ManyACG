@@ -305,6 +305,7 @@ func postArtwork(ctx context.Context, bot *telego.Bot, query telego.CallbackQuer
 		ReplyMarkup: telegoutil.InlineKeyboard(
 			[]telego.InlineKeyboardButton{
 				telegoutil.InlineKeyboardButton("去查看").WithURL(telegram.GetArtworkPostMessageURL(artwork.Pictures[0].TelegramInfo.MessageID)),
+				telegoutil.InlineKeyboardButton("原图").WithURL(telegram.GetDeepLinkForFile(artwork.Pictures[0].TelegramInfo.MessageID)),
 			},
 		),
 	})
