@@ -42,7 +42,6 @@ func QueryArtworksByTexts(ctx context.Context, texts [][]string, r18 types.R18Ty
 	}
 
 	match := bson.M{"$and": andConditions}
-
 	if r18 == types.R18TypeAll {
 		cursor, err = artworkCollection.Aggregate(ctx, mongo.Pipeline{
 			bson.D{{Key: "$match", Value: match}},
@@ -55,14 +54,15 @@ func QueryArtworksByTexts(ctx context.Context, texts [][]string, r18 types.R18Ty
 			bson.D{{Key: "$sample", Value: bson.M{"size": limit}}},
 		})
 	}
-
 	if err != nil {
 		return nil, err
 	}
-
 	err = cursor.All(ctx, &artworks)
 	if err != nil {
 		return nil, err
+	}
+	if len(artworks) == 0 {
+		return nil, mongo.ErrNoDocuments
 	}
 	return artworks, nil
 }
@@ -70,9 +70,11 @@ func QueryArtworksByTexts(ctx context.Context, texts [][]string, r18 types.R18Ty
 func getTagIDs(ctx context.Context, tags []string) []primitive.ObjectID {
 	var tagIDs []primitive.ObjectID
 	for _, tag := range tags {
-		tagModel, err := GetTagByName(ctx, tag)
+		tagModels, err := QueryTagsByName(ctx, tag)
 		if err == nil {
-			tagIDs = append(tagIDs, tagModel.ID)
+			for _, tagModel := range tagModels {
+				tagIDs = append(tagIDs, tagModel.ID)
+			}
 		}
 	}
 	return tagIDs

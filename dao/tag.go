@@ -51,5 +51,8 @@ func QueryTagsByName(ctx context.Context, name string) ([]*model.TagModel, error
 	if err = cursor.All(ctx, &tags); err != nil {
 		return nil, err
 	}
+	if len(tags) == 0 {
+		return nil, mongo.ErrNoDocuments
+	}
 	return tags, nil
 }

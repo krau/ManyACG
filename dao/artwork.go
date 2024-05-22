@@ -40,19 +40,13 @@ func GetArtworksByR18(ctx context.Context, r18 types.R18Type, limit int64) ([]*m
 	var artworks []*model.ArtworkModel
 	var cursor *mongo.Cursor
 	var err error
-	switch r18 {
-	case types.R18TypeAll:
+	if r18 == types.R18TypeAll {
 		cursor, err = artworkCollection.Aggregate(ctx, mongo.Pipeline{
 			bson.D{{Key: "$sample", Value: bson.M{"size": limit}}},
 		})
-	case types.R18TypeOnly:
+	} else {
 		cursor, err = artworkCollection.Aggregate(ctx, mongo.Pipeline{
-			bson.D{{Key: "$match", Value: bson.M{"r18": true}}},
-			bson.D{{Key: "$sample", Value: bson.M{"size": limit}}},
-		})
-	case types.R18TypeNone:
-		cursor, err = artworkCollection.Aggregate(ctx, mongo.Pipeline{
-			bson.D{{Key: "$match", Value: bson.M{"r18": false}}},
+			bson.D{{Key: "$match", Value: bson.M{"r18": r18 == types.R18TypeOnly}}},
 			bson.D{{Key: "$sample", Value: bson.M{"size": limit}}},
 		})
 	}
@@ -62,6 +56,9 @@ func GetArtworksByR18(ctx context.Context, r18 types.R18Type, limit int64) ([]*m
 	err = cursor.All(ctx, &artworks)
 	if err != nil {
 		return nil, err
+	}
+	if len(artworks) == 0 {
+		return nil, mongo.ErrNoDocuments
 	}
 	return artworks, nil
 }
@@ -83,21 +80,14 @@ func GetArtworksByTags(ctx context.Context, tags [][]primitive.ObjectID, r18 typ
 		orConditions = append(orConditions, bson.M{"$or": orCondition})
 	}
 	match["$and"] = orConditions
-	switch r18 {
-	case types.R18TypeAll:
+	if r18 == types.R18TypeAll {
 		cursor, err = artworkCollection.Aggregate(ctx, mongo.Pipeline{
 			bson.D{{Key: "$match", Value: match}},
 			bson.D{{Key: "$sample", Value: bson.M{"size": limit}}},
 		})
-	case types.R18TypeOnly:
+	} else {
 		cursor, err = artworkCollection.Aggregate(ctx, mongo.Pipeline{
-			bson.D{{Key: "$match", Value: bson.M{"r18": true}}},
-			bson.D{{Key: "$match", Value: match}},
-			bson.D{{Key: "$sample", Value: bson.M{"size": limit}}},
-		})
-	case types.R18TypeNone:
-		cursor, err = artworkCollection.Aggregate(ctx, mongo.Pipeline{
-			bson.D{{Key: "$match", Value: bson.M{"r18": false}}},
+			bson.D{{Key: "$match", Value: bson.M{"r18": r18 == types.R18TypeOnly}}},
 			bson.D{{Key: "$match", Value: match}},
 			bson.D{{Key: "$sample", Value: bson.M{"size": limit}}},
 		})
@@ -109,6 +99,9 @@ func GetArtworksByTags(ctx context.Context, tags [][]primitive.ObjectID, r18 typ
 	if err != nil {
 		return nil, err
 	}
+	if len(artworks) == 0 {
+		return nil, mongo.ErrNoDocuments
+	}
 	return artworks, nil
 }
 
@@ -116,20 +109,14 @@ func GetArtworksByArtistID(ctx context.Context, artistID primitive.ObjectID, r18
 	var artworks []*model.ArtworkModel
 	var cursor *mongo.Cursor
 	var err error
-	switch r18 {
-	case types.R18TypeAll:
+	if r18 == types.R18TypeAll {
 		cursor, err = artworkCollection.Aggregate(ctx, mongo.Pipeline{
 			bson.D{{Key: "$match", Value: bson.M{"artist_id": artistID}}},
 			bson.D{{Key: "$sample", Value: bson.M{"size": limit}}},
 		})
-	case types.R18TypeOnly:
+	} else {
 		cursor, err = artworkCollection.Aggregate(ctx, mongo.Pipeline{
-			bson.D{{Key: "$match", Value: bson.M{"artist_id": artistID, "r18": true}}},
-			bson.D{{Key: "$sample", Value: bson.M{"size": limit}}},
-		})
-	case types.R18TypeNone:
-		cursor, err = artworkCollection.Aggregate(ctx, mongo.Pipeline{
-			bson.D{{Key: "$match", Value: bson.M{"artist_id": artistID, "r18": false}}},
+			bson.D{{Key: "$match", Value: bson.M{"artist_id": artistID, "r18": r18 == types.R18TypeOnly}}},
 			bson.D{{Key: "$sample", Value: bson.M{"size": limit}}},
 		})
 	}
