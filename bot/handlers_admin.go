@@ -1,6 +1,7 @@
 package bot
 
 import (
+	"ManyACG/common"
 	"ManyACG/config"
 	"ManyACG/fetcher"
 	"ManyACG/service"
@@ -77,7 +78,7 @@ func setAdmin(ctx context.Context, bot *telego.Bot, message telego.Message) {
 	}
 
 	if len(unsupportedPermissions) > 0 {
-		telegram.ReplyMessageWithMarkdown(bot, message, telegram.EscapeMarkdown(fmt.Sprintf("权限不存在: %v\n支持的权限:\n", unsupportedPermissions))+supportedPermissionsText)
+		telegram.ReplyMessageWithMarkdown(bot, message, common.EscapeMarkdown(fmt.Sprintf("权限不存在: %v\n支持的权限:\n", unsupportedPermissions))+supportedPermissionsText)
 		return
 	}
 

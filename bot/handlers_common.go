@@ -156,10 +156,7 @@ func randomPicture(ctx context.Context, bot *telego.Bot, message telego.Message)
 		WithReplyParameters(&telego.ReplyParameters{
 			MessageID: message.MessageID,
 		}).WithCaption(artwork[0].Title).WithReplyMarkup(
-		telegoutil.InlineKeyboard([]telego.InlineKeyboardButton{
-			telegoutil.InlineKeyboardButton("来源").WithURL(telegram.GetArtworkPostMessageURL(picture.TelegramInfo.MessageID)),
-			telegoutil.InlineKeyboardButton("原图").WithURL(telegram.GetDeepLinkForFile(picture.TelegramInfo.MessageID)),
-		}),
+		telegoutil.InlineKeyboard(telegram.GetPostedPictureInlineKeyboardButton(picture)),
 	)
 	if artwork[0].R18 {
 		photo.WithHasSpoiler()
@@ -237,7 +234,7 @@ func getArtworkInfo(ctx context.Context, bot *telego.Bot, message telego.Message
 	deletedModel, _ := service.GetDeletedByURL(ctx, sourceURL)
 	artworkInfoCaption := telegram.GetArtworkMarkdownCaption(artwork)
 	if deletedModel != nil && hasPermission {
-		photo.WithCaption(artworkInfoCaption + telegram.EscapeMarkdown(fmt.Sprintf("\n\n这是一个在 %s 删除的作品\n\n"+
+		photo.WithCaption(artworkInfoCaption + common.EscapeMarkdown(fmt.Sprintf("\n\n这是一个在 %s 删除的作品\n\n"+
 			"如果发布则会取消删除", deletedModel.DeletedAt.Time().Format("2006-01-02 15:04:05"))))
 	} else {
 		photo.WithCaption(telegram.GetArtworkMarkdownCaption(artwork))
@@ -315,13 +312,13 @@ func searchPicture(ctx context.Context, bot *telego.Bot, message telego.Message)
 		for _, picture := range pictures {
 			artwork, err := service.GetArtworkByMessageID(ctx, picture.TelegramInfo.MessageID)
 			if err != nil {
-				text += telegram.EscapeMarkdown(fmt.Sprintf("%s 模糊度: %.2f\n\n", telegram.GetArtworkPostMessageURL(picture.TelegramInfo.MessageID), picture.BlurScore))
+				text += common.EscapeMarkdown(fmt.Sprintf("%s 模糊度: %.2f\n\n", telegram.GetArtworkPostMessageURL(picture.TelegramInfo.MessageID), picture.BlurScore))
 			}
 			text += fmt.Sprintf("[%s\\_%d](%s)  ",
-				telegram.EscapeMarkdown(artwork.Title),
+				common.EscapeMarkdown(artwork.Title),
 				picture.Index+1,
-				telegram.EscapeMarkdown(telegram.GetArtworkPostMessageURL(picture.TelegramInfo.MessageID)))
-			text += telegram.EscapeMarkdown(fmt.Sprintf("模糊度: %.2f\n\n", picture.BlurScore))
+				common.EscapeMarkdown(telegram.GetArtworkPostMessageURL(picture.TelegramInfo.MessageID)))
+			text += common.EscapeMarkdown(fmt.Sprintf("模糊度: %.2f\n\n", picture.BlurScore))
 		}
 		telegram.ReplyMessageWithMarkdown(bot, message, text)
 		return
@@ -355,10 +352,7 @@ func inlineQuery(ctx context.Context, bot *telego.Bot, query telego.InlineQuery)
 			continue
 		}
 		result := telegoutil.ResultCachedPhoto(uuid.NewString(), picture.TelegramInfo.PhotoFileID).WithCaption(artwork.Title)
-		result.WithReplyMarkup(telegoutil.InlineKeyboard([]telego.InlineKeyboardButton{
-			telegoutil.InlineKeyboardButton("详情").WithURL(telegram.GetArtworkPostMessageURL(picture.TelegramInfo.MessageID)),
-			telegoutil.InlineKeyboardButton("原图").WithURL(telegram.GetDeepLinkForFile(picture.TelegramInfo.MessageID)),
-		}))
+		result.WithReplyMarkup(telegoutil.InlineKeyboard(telegram.GetPostedPictureInlineKeyboardButton(picture)))
 		results = append(results, result)
 	}
 	if err := bot.AnswerInlineQuery(telegoutil.InlineQuery(query.ID, results...).WithCacheTime(1)); err != nil {

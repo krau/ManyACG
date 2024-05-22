@@ -1,6 +1,7 @@
 package telegram
 
 import (
+	"ManyACG/common"
 	"ManyACG/service"
 	"ManyACG/sources"
 	"ManyACG/storage"
@@ -15,21 +16,6 @@ import (
 	"github.com/mymmrac/telego"
 	"github.com/mymmrac/telego/telegoutil"
 )
-
-var (
-	escapeChars = []string{
-		"_", "*", "[", "]", "(", ")", "~", "`", ">", "#", "+", "-", "=", "|", "{", "}", ".", "!",
-	}
-)
-
-func EscapeMarkdown(text string) string {
-	text = strings.ReplaceAll(text, "\\", "\\\\")
-	for _, char := range escapeChars {
-		text = strings.ReplaceAll(text, char, "\\"+char)
-	}
-	return text
-	// return regexp.MustCompile(`([_\*[\]\(\)~`+"`"+`>#\+\-=|{}\.!])`).ReplaceAllString(text, `\$1`)
-}
 
 func ReplaceChars(input string, oldChars []string, newChar string) string {
 	for _, char := range oldChars {
@@ -116,13 +102,13 @@ func GetMessageOriginChannelArtworkPost(ctx context.Context, bot *telego.Bot, me
 }
 
 func GetArtworkMarkdownCaption(artwork *types.Artwork) string {
-	caption := fmt.Sprintf("[*%s*](%s)", EscapeMarkdown(artwork.Title), artwork.SourceURL)
-	caption += "\n" + "*Author:* " + EscapeMarkdown(artwork.Artist.Name)
+	caption := fmt.Sprintf("[*%s*](%s)", common.EscapeMarkdown(artwork.Title), artwork.SourceURL)
+	caption += "\n" + "*Author:* " + common.EscapeMarkdown(artwork.Artist.Name)
 	if artwork.Description != "" {
 		desc := artwork.Description
 		lines := strings.Split(desc, "\n")
 		for i, line := range lines {
-			lines[i] = ">" + EscapeMarkdown(line)
+			lines[i] = ">" + common.EscapeMarkdown(line)
 			if i == len(lines)-1 {
 				lines[i] += "**"
 			}
@@ -139,7 +125,7 @@ func GetArtworkMarkdownCaption(artwork *types.Artwork) string {
 		tag = ReplaceChars(tag, []string{":", "：", "-", "（", "）", "「", "」", "*"}, "_")
 		tag = ReplaceChars(tag, []string{"?"}, "")
 		tag = ReplaceChars(tag, []string{"/"}, " "+"#")
-		tags += "\\#" + strings.Join(strings.Split(EscapeMarkdown(tag), " "), "") + " "
+		tags += "\\#" + strings.Join(strings.Split(common.EscapeMarkdown(tag), " "), "") + " "
 	}
 	caption += "\n\n" + tags
 	return caption
@@ -169,9 +155,13 @@ func GetDeepLinkForFile(messageID int) string {
 
 func GetPostedPictureReplyMarkup(picture *types.Picture) telego.ReplyMarkup {
 	return telegoutil.InlineKeyboard(
-		[]telego.InlineKeyboardButton{
-			telegoutil.InlineKeyboardButton("详情").WithURL(GetArtworkPostMessageURL(picture.TelegramInfo.MessageID)),
-			telegoutil.InlineKeyboardButton("原图").WithURL(GetDeepLinkForFile(picture.TelegramInfo.MessageID)),
-		},
+		GetPostedPictureInlineKeyboardButton(picture),
 	)
+}
+
+func GetPostedPictureInlineKeyboardButton(picture *types.Picture) []telego.InlineKeyboardButton {
+	return []telego.InlineKeyboardButton{
+		telegoutil.InlineKeyboardButton("详情").WithURL(GetArtworkPostMessageURL(picture.TelegramInfo.MessageID)),
+		telegoutil.InlineKeyboardButton("原图").WithURL(GetDeepLinkForFile(picture.TelegramInfo.MessageID)),
+	}
 }

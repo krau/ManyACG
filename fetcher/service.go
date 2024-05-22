@@ -1,6 +1,7 @@
 package fetcher
 
 import (
+	"ManyACG/common"
 	"ManyACG/errors"
 	"ManyACG/service"
 	"ManyACG/storage"
@@ -90,7 +91,7 @@ func afterCreate(ctx context.Context, artwork *types.Artwork, bot *telego.Bot, _
 
 	sendNotify := fromID != 0 && bot != nil
 	artworkID, err := service.GetArtworkIDByPicture(ctx, artwork.Pictures[0])
-	artworkTitleMarkdown := telegram.EscapeMarkdown(artwork.Title)
+	artworkTitleMarkdown := common.EscapeMarkdown(artwork.Title)
 	if err != nil {
 		Logger.Errorf("error when getting artwork by URL: %s", err)
 		if sendNotify {
@@ -134,21 +135,21 @@ func afterCreate(ctx context.Context, artwork *types.Artwork, bot *telego.Bot, _
 
 		text := fmt.Sprintf("*刚刚发布的作品 [%s](%s) 中第 %d 张图片搜索到有%d个相似图片*\n",
 			artworkTitleMarkdown,
-			telegram.EscapeMarkdown(telegram.GetArtworkPostMessageURL(picture.TelegramInfo.MessageID)),
+			common.EscapeMarkdown(telegram.GetArtworkPostMessageURL(picture.TelegramInfo.MessageID)),
 			picture.Index+1,
 			len(similarPictures))
-		text += telegram.EscapeMarkdown(fmt.Sprintf("该图像模糊度: %.2f\n搜索到的相似图片列表:\n\n", picture.BlurScore))
+		text += common.EscapeMarkdown(fmt.Sprintf("该图像模糊度: %.2f\n搜索到的相似图片列表:\n\n", picture.BlurScore))
 		for _, similarPicture := range similarPictures {
 			artworkOfSimilarPicture, err := service.GetArtworkByMessageID(ctx, similarPicture.TelegramInfo.MessageID)
 			if err != nil {
-				text += telegram.EscapeMarkdown(fmt.Sprintf("%s 模糊度: %.2f\n\n", telegram.GetArtworkPostMessageURL(picture.TelegramInfo.MessageID), similarPicture.BlurScore))
+				text += common.EscapeMarkdown(fmt.Sprintf("%s 模糊度: %.2f\n\n", telegram.GetArtworkPostMessageURL(picture.TelegramInfo.MessageID), similarPicture.BlurScore))
 				continue
 			}
 			text += fmt.Sprintf("[%s\\_%d](%s)  ",
-				telegram.EscapeMarkdown(artworkOfSimilarPicture.Title),
+				common.EscapeMarkdown(artworkOfSimilarPicture.Title),
 				similarPicture.Index+1,
-				telegram.EscapeMarkdown(telegram.GetArtworkPostMessageURL(similarPicture.TelegramInfo.MessageID)))
-			text += telegram.EscapeMarkdown(fmt.Sprintf("模糊度: %.2f\n\n", similarPicture.BlurScore))
+				common.EscapeMarkdown(telegram.GetArtworkPostMessageURL(similarPicture.TelegramInfo.MessageID)))
+			text += common.EscapeMarkdown(fmt.Sprintf("模糊度: %.2f\n\n", similarPicture.BlurScore))
 		}
 		text += "_模糊度使用原图文件计算得出, 越小图像质量越好_"
 		_, err = bot.SendMessage(telegoutil.Messagef(telegoutil.ID(fromID), text).WithParseMode(telego.ModeMarkdownV2))
