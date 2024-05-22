@@ -216,7 +216,9 @@ func postArtwork(ctx context.Context, bot *telego.Bot, query telego.CallbackQuer
 		})
 		return
 	}
-	dataID := strings.Split(query.Data, " ")[2]
+	queryDataSlice := strings.Split(query.Data, " ")
+	asR18 := queryDataSlice[0] == "post_artwork_r18"
+	dataID := queryDataSlice[1]
 	sourceURL, err := service.GetCallbackDataByID(ctx, dataID)
 	if err != nil {
 		bot.AnswerCallbackQuery(&telego.AnswerCallbackQueryParams{
@@ -279,6 +281,9 @@ func postArtwork(ctx context.Context, bot *telego.Bot, query telego.CallbackQuer
 			return
 		}
 	}
+	if asR18 {
+		artwork.R18 = true
+	}
 	if err := fetcher.PostAndCreateArtwork(ctx, artwork, bot, storage.GetStorage(), query.From.ID); err != nil {
 		Logger.Errorf("发布失败: %s", err)
 		go bot.EditMessageCaption(&telego.EditMessageCaptionParams{
@@ -305,7 +310,7 @@ func postArtwork(ctx context.Context, bot *telego.Bot, query telego.CallbackQuer
 		Caption:   "发布成功: " + artwork.Title + "\n\n发布时间: " + artwork.CreatedAt.Format("2006-01-02 15:04:05"),
 		ReplyMarkup: telegoutil.InlineKeyboard(
 			[]telego.InlineKeyboardButton{
-				telegoutil.InlineKeyboardButton("去查看").WithURL(telegram.GetArtworkPostMessageURL(artwork.Pictures[0].TelegramInfo.MessageID)),
+				telegoutil.InlineKeyboardButton("查看").WithURL(telegram.GetArtworkPostMessageURL(artwork.Pictures[0].TelegramInfo.MessageID)),
 				telegoutil.InlineKeyboardButton("原图").WithURL(telegram.GetDeepLinkForFile(artwork.Pictures[0].TelegramInfo.MessageID)),
 			},
 		),

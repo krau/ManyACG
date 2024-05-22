@@ -249,7 +249,8 @@ func getArtworkInfo(ctx context.Context, bot *telego.Bot, message telego.Message
 		}
 		photo.WithReplyMarkup(telegoutil.InlineKeyboard(
 			[]telego.InlineKeyboardButton{
-				telegoutil.InlineKeyboardButton("发布到频道").WithCallbackData("admin post_artwork " + id),
+				telegoutil.InlineKeyboardButton("发布").WithCallbackData("post_artwork " + id),
+				telegoutil.InlineKeyboardButton("设为R18并发布").WithCallbackData("post_artwork_r18 " + id),
 			},
 		))
 	}
