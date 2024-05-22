@@ -176,12 +176,9 @@ func GetRandomArtworks(ctx context.Context, r18 types.R18Type, limit int) ([]*ty
 	if err != nil {
 		return nil, err
 	}
-	artworks := make([]*types.Artwork, len(artworkModels))
-	for i, artworkModel := range artworkModels {
-		artworks[i], err = adapter.ConvertToArtwork(ctx, artworkModel)
-		if err != nil {
-			return nil, err
-		}
+	artworks, err := adapter.ConvertToArtworks(ctx, artworkModels)
+	if err != nil {
+		return nil, err
 	}
 	return artworks, nil
 }
@@ -208,12 +205,9 @@ func GetArtworksByTags(ctx context.Context, tags [][]string, r18 types.R18Type, 
 	if err != nil {
 		return nil, err
 	}
-	artworks := make([]*types.Artwork, len(artworkModels))
-	for i, artworkModel := range artworkModels {
-		artworks[i], err = adapter.ConvertToArtwork(ctx, artworkModel)
-		if err != nil {
-			return nil, err
-		}
+	artworks, err := adapter.ConvertToArtworks(ctx, artworkModels)
+	if err != nil {
+		return nil, err
 	}
 	return artworks, nil
 }
@@ -228,12 +222,9 @@ func QueryArtworksByTexts(ctx context.Context, texts [][]string, r18 types.R18Ty
 	if err != nil {
 		return nil, err
 	}
-	artworks := make([]*types.Artwork, len(artworkModels))
-	for i, artworkModel := range artworkModels {
-		artworks[i], err = adapter.ConvertToArtwork(ctx, artworkModel)
-		if err != nil {
-			return nil, err
-		}
+	artworks, err := adapter.ConvertToArtworks(ctx, artworkModels)
+	if err != nil {
+		return nil, err
 	}
 	return artworks, nil
 }

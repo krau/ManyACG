@@ -57,3 +57,25 @@ func ConvertToArtwork(ctx context.Context, artworkModel *model.ArtworkModel) (*t
 	}, nil
 
 }
+
+func ConvertToArtworks(ctx context.Context, artworkModels []*model.ArtworkModel) ([]*types.Artwork, error) {
+	artworks := make([]*types.Artwork, len(artworkModels))
+	errCh := make(chan error, len(artworkModels))
+	for i, artworkModel := range artworkModels {
+		go func(i int, artworkModel *model.ArtworkModel) {
+			artwork, err := ConvertToArtwork(ctx, artworkModel)
+			if err != nil {
+				errCh <- err
+				return
+			}
+			artworks[i] = artwork
+			errCh <- nil
+		}(i, artworkModel)
+	}
+	for range artworkModels {
+		if err := <-errCh; err != nil {
+			return nil, err
+		}
+	}
+	return artworks, nil
+}
