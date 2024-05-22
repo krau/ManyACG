@@ -342,8 +342,7 @@ func inlineQuery(ctx context.Context, bot *telego.Bot, query telego.InlineQuery)
 		bot.AnswerInlineQuery(telegoutil.InlineQuery(query.ID, telegoutil.ResultArticle(uuid.NewString(), "解析参数失败", telegoutil.TextMessage("/setu"))))
 		return
 	}
-	limit := 30
-	artworks, err := service.QueryArtworksByTexts(ctx, texts, types.R18TypeAll, limit)
+	artworks, err := service.QueryArtworksByTexts(ctx, texts, types.R18TypeAll, 20)
 	if err != nil || len(artworks) == 0 {
 		Logger.Warnf("获取图片失败: %s", err)
 		bot.AnswerInlineQuery(telegoutil.InlineQuery(query.ID, telegoutil.ResultArticle(uuid.NewString(), "未找到相关图片", telegoutil.TextMessage("/setu"))))
@@ -357,7 +356,7 @@ func inlineQuery(ctx context.Context, bot *telego.Bot, query telego.InlineQuery)
 		}
 		result := telegoutil.ResultCachedPhoto(uuid.NewString(), picture.TelegramInfo.PhotoFileID).WithCaption(artwork.Title)
 		result.WithReplyMarkup(telegoutil.InlineKeyboard([]telego.InlineKeyboardButton{
-			telegoutil.InlineKeyboardButton("来源").WithURL(telegram.GetArtworkPostMessageURL(picture.TelegramInfo.MessageID)),
+			telegoutil.InlineKeyboardButton("详情").WithURL(telegram.GetArtworkPostMessageURL(picture.TelegramInfo.MessageID)),
 			telegoutil.InlineKeyboardButton("原图").WithURL(telegram.GetDeepLinkForFile(picture.TelegramInfo.MessageID)),
 		}))
 		results = append(results, result)

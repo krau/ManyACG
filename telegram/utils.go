@@ -170,7 +170,7 @@ func GetDeepLinkForFile(messageID int) string {
 func GetPostedPictureReplyMarkup(picture *types.Picture) telego.ReplyMarkup {
 	return telegoutil.InlineKeyboard(
 		[]telego.InlineKeyboardButton{
-			telegoutil.InlineKeyboardButton("来源").WithURL(GetArtworkPostMessageURL(picture.TelegramInfo.MessageID)),
+			telegoutil.InlineKeyboardButton("详情").WithURL(GetArtworkPostMessageURL(picture.TelegramInfo.MessageID)),
 			telegoutil.InlineKeyboardButton("原图").WithURL(GetDeepLinkForFile(picture.TelegramInfo.MessageID)),
 		},
 	)
