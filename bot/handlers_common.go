@@ -46,11 +46,18 @@ func start(ctx context.Context, bot *telego.Bot, message telego.Message) {
 
 func help(ctx context.Context, bot *telego.Bot, message telego.Message) {
 	helpText := `使用方法:
-/start - 喵喵喵
 /file - 回复一条频道的消息获取原图文件 <index>
-/setu - 随机图片 <keyword1> <keyword2> ...
-/random - 也是随机图片 <keyword1> <keyword2> ...
+/setu - 随机图片(NSFW)
+/random - 随机全年龄图片
 /search - 搜索相似图片
+
+关键词参数使用 '|' 分隔或关系, 使用空格分隔与关系, 示例:
+
+/random 萝莉|白丝 猫耳|原创
+
+表示搜索包含"萝莉"或"白丝", 且包含"猫耳"或"原创"的图片.
+Inline 查询支持同样的参数格式.
+
 `
 	isAdmin, _ := service.IsAdmin(ctx, message.From.ID)
 	if isAdmin {
@@ -82,11 +89,16 @@ func getPictureFile(ctx context.Context, bot *telego.Bot, message telego.Message
 		if err == nil && index > 0 {
 			artwork, err := service.GetArtworkByMessageID(ctx, pictureMessageID)
 			if err != nil {
-				telegram.ReplyMessage(bot, message, "获取失败: "+err.Error())
+				if errors.Is(err, mongo.ErrNoDocuments) {
+					telegram.ReplyMessage(bot, message, "这张图片未在数据库中呢")
+					return
+				}
+				Logger.Errorf("获取作品失败: %s", err)
+				telegram.ReplyMessage(bot, message, "获取失败, 去找管理员反馈吧~")
 				return
 			}
 			if index > len(artwork.Pictures) {
-				telegram.ReplyMessage(bot, message, "这个作品没有这么多图片哦")
+				telegram.ReplyMessage(bot, message, "这个作品没有这么多图片")
 				return
 			}
 			picture := artwork.Pictures[index-1]
@@ -95,14 +107,14 @@ func getPictureFile(ctx context.Context, bot *telego.Bot, message telego.Message
 	}
 	_, err := telegram.SendPictureFileByMessageID(ctx, bot, message, pictureMessageID)
 	if err != nil {
-		telegram.ReplyMessage(bot, message, "获取失败: "+err.Error())
+		telegram.ReplyMessage(bot, message, "图片发送失败: "+err.Error())
 		return
 	}
 }
 
 func randomPicture(ctx context.Context, bot *telego.Bot, message telego.Message) {
 	cmd, _, args := telegoutil.ParseCommand(message.Text)
-	argText := strings.Join(args, " ")
+	argText := strings.ReplaceAll(strings.Join(args, " "), "\\", "")
 	textArray, err := common.ParseStringTo2DArray(argText, "|", " ")
 	if err != nil {
 		Logger.Warnf("解析参数失败: %s", err)
