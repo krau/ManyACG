@@ -65,6 +65,7 @@ func GetArtworksByR18(ctx context.Context, r18 types.R18Type, limit int64) ([]*m
 	}
 	return artworks, nil
 }
+
 func GetArtworksByTags(ctx context.Context, tags [][]primitive.ObjectID, r18 types.R18Type, limit int64) ([]*model.ArtworkModel, error) {
 	if len(tags) == 0 {
 		return GetArtworksByR18(ctx, r18, limit)

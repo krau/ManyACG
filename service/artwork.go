@@ -177,48 +177,8 @@ func GetRandomArtworks(ctx context.Context, r18 types.R18Type, limit int) ([]*ty
 		return nil, err
 	}
 	artworks := make([]*types.Artwork, len(artworkModels))
-	errChan := make(chan error, len(artworkModels))
 	for i, artworkModel := range artworkModels {
-		go func(i int, artworkModel *model.ArtworkModel) {
-			artistModel, err := dao.GetArtistByID(ctx, artworkModel.ArtistID)
-			if err != nil {
-				errChan <- err
-				return
-			}
-			tags := make([]string, len(artworkModel.Tags))
-			for j, tagID := range artworkModel.Tags {
-				tagModel, err := dao.GetTagByID(ctx, tagID)
-				if err != nil {
-					errChan <- err
-					return
-				}
-				tags[j] = tagModel.Name
-			}
-			pictures := make([]*types.Picture, len(artworkModel.Pictures))
-			for j, pictureID := range artworkModel.Pictures {
-				pictureModel, err := dao.GetPictureByID(ctx, pictureID)
-				if err != nil {
-					errChan <- err
-					return
-				}
-				pictures[j] = pictureModel.ToPicture()
-			}
-			artworks[i] = &types.Artwork{
-				Title:       artworkModel.Title,
-				Description: artworkModel.Description,
-				R18:         artworkModel.R18,
-				CreatedAt:   artworkModel.CreatedAt.Time(),
-				SourceType:  artworkModel.SourceType,
-				SourceURL:   artworkModel.SourceURL,
-				Artist:      artistModel.ToArtist(),
-				Tags:        tags,
-				Pictures:    pictures,
-			}
-			errChan <- nil
-		}(i, artworkModel)
-	}
-	for range artworkModels {
-		err := <-errChan
+		artworks[i], err = adapter.ConvertToArtwork(ctx, artworkModel)
 		if err != nil {
 			return nil, err
 		}
@@ -245,6 +205,26 @@ func GetArtworksByTags(ctx context.Context, tags [][]string, r18 types.R18Type, 
 		}
 	}
 	artworkModels, err := dao.GetArtworksByTags(ctx, tagIDs, r18, int64(limit))
+	if err != nil {
+		return nil, err
+	}
+	artworks := make([]*types.Artwork, len(artworkModels))
+	for i, artworkModel := range artworkModels {
+		artworks[i], err = adapter.ConvertToArtwork(ctx, artworkModel)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return artworks, nil
+}
+
+// 使用tag名, 标题, 描述, 作者名, 作者用户名 综合查询
+//
+// 对于每个关键词, 只要tag名, 标题, 描述, 作者名, 作者用户名中有一个匹配即认为匹配成功
+//
+// 关键词二维数组中, 每个一维数组中的关键词之间是或的关系, 不同一维数组中的关键词之间是与的关系
+func QueryArtworksByTexts(ctx context.Context, texts [][]string, r18 types.R18Type, limit int) ([]*types.Artwork, error) {
+	artworkModels, err := dao.QueryArtworksByTexts(ctx, texts, r18, int64(limit))
 	if err != nil {
 		return nil, err
 	}
