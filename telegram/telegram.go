@@ -52,11 +52,11 @@ func InitBot() {
 			},
 			{
 				Command:     "setu",
-				Description: "来点涩图 <tag1> <tag2> ...",
+				Description: "来点涩图",
 			},
 			{
 				Command:     "random",
-				Description: "随机1张全年龄图片 <tag1> <tag2> ...",
+				Description: "随机1张全年龄图片",
 			},
 			{
 				Command:     "search",

@@ -2,6 +2,7 @@ package service
 
 import (
 	"ManyACG/adapter"
+	"ManyACG/common"
 	"ManyACG/dao"
 	es "ManyACG/errors"
 	"ManyACG/model"
@@ -235,6 +236,51 @@ func UpdateArtworkR18ByURL(ctx context.Context, sourceURL string, r18 bool) erro
 		return err
 	}
 	_, err = dao.UpdateArtworkR18ByID(ctx, artworkModel.ID, r18)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func UpdateArtworkTagsByURL(ctx context.Context, sourceURL string, tags []string) error {
+	artworkModel, err := dao.GetArtworkByURL(ctx, sourceURL)
+	if err != nil {
+		return err
+	}
+
+	session, err := dao.Client.StartSession()
+	if err != nil {
+		return err
+	}
+	defer session.EndSession(ctx)
+	tags = common.RemoveDuplicateStringSlice(tags)
+	tagIDs := make([]primitive.ObjectID, len(tags))
+	_, err = session.WithTransaction(ctx, func(ctx mongo.SessionContext) (interface{}, error) {
+		for i, tag := range tags {
+			tagModel, err := dao.GetTagByName(ctx, tag)
+			if err != nil && !errors.Is(err, mongo.ErrNoDocuments) {
+				return nil, err
+			}
+			if tagModel != nil {
+				tagIDs[i] = tagModel.ID
+				continue
+			}
+			tagModel = &model.TagModel{
+				Name: tag,
+			}
+			res, err := dao.CreateTag(ctx, tagModel)
+			if err != nil {
+				return nil, err
+			}
+			tagIDs[i] = res.InsertedID.(primitive.ObjectID)
+		}
+
+		_, err = dao.UpdateArtworkTagsByID(ctx, artworkModel.ID, tagIDs)
+		if err != nil {
+			return nil, err
+		}
+		return nil, nil
+	})
 	if err != nil {
 		return err
 	}

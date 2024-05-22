@@ -89,3 +89,16 @@ func ParseStringTo2DArray(str, sep, sep2 string) ([][]string, error) {
 
 	return result, nil
 }
+
+// 去除字符串切片中的重复元素
+func RemoveDuplicateStringSlice(s []string) []string {
+	encountered := map[string]bool{}
+	result := []string{}
+	for _, str := range s {
+		if !encountered[str] {
+			encountered[str] = true
+			result = append(result, str)
+		}
+	}
+	return result
+}

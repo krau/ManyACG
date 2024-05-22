@@ -65,6 +65,9 @@ Inline 查询支持同样的参数格式.
 /del - 删除图片 <消息id>
 /delete - 删除整个作品
 /r18 - 设置作品R18标记
+/tags - 更新作品标签(覆盖原有标签)
+/addtags - 添加作品标签
+/deltags - 删除作品标签
 /fetch - 手动开始一次抓取
 /process_pictures - 处理无哈希的图片
 

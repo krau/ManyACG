@@ -156,12 +156,12 @@ func deletePicture(ctx context.Context, bot *telego.Bot, message telego.Message)
 			telegram.ReplyMessage(bot, message, "从数据库中删除失败: "+err.Error())
 			return
 		}
-		go telegram.ReplyMessage(bot, message, fmt.Sprintf("删除成功: %d", channelMessageID))
-		go bot.DeleteMessage(telegoutil.Delete(telegram.ChannelChatID, channelMessageID))
+		telegram.ReplyMessage(bot, message, fmt.Sprintf("在数据库中已删除消息id为 %d 的图片", channelMessageID))
+		bot.DeleteMessage(telegoutil.Delete(telegram.ChannelChatID, channelMessageID))
 
 		if err := storage.GetStorage().DeletePicture(picture.StorageInfo); err != nil {
 			Logger.Warnf("删除图片失败: %s", err)
-			bot.SendMessage(telegoutil.Message(telegoutil.ID(message.From.ID), "删除图片失败: "+err.Error()))
+			bot.SendMessage(telegoutil.Message(telegoutil.ID(message.From.ID), "在存储中删除图片文件失败: "+err.Error()))
 		}
 		return
 	}
@@ -178,12 +178,12 @@ func deletePicture(ctx context.Context, bot *telego.Bot, message telego.Message)
 		telegram.ReplyMessage(bot, message, "从数据库中删除失败: "+err.Error())
 		return
 	}
-	go telegram.ReplyMessage(bot, message, fmt.Sprintf("删除成功: %d", channelMessageID))
+	telegram.ReplyMessage(bot, message, fmt.Sprintf("在数据库中已删除消息id为 %d 的作品", channelMessageID))
 	artworkMessageIDs := make([]int, len(artwork.Pictures))
 	for i, picture := range artwork.Pictures {
 		artworkMessageIDs[i] = picture.TelegramInfo.MessageID
 	}
-	go bot.DeleteMessages(&telego.DeleteMessagesParams{
+	bot.DeleteMessages(&telego.DeleteMessagesParams{
 		ChatID:     telegram.ChannelChatID,
 		MessageIDs: artworkMessageIDs,
 	})
@@ -273,7 +273,7 @@ func postArtwork(ctx context.Context, bot *telego.Bot, query telego.CallbackQuer
 	if service.CheckDeletedByURL(ctx, sourceURL) {
 		if err := service.DeleteDeletedByURL(ctx, sourceURL); err != nil {
 			Logger.Errorf("取消删除记录失败: %s", err)
-			go bot.EditMessageCaption(&telego.EditMessageCaptionParams{
+			bot.EditMessageCaption(&telego.EditMessageCaptionParams{
 				ChatID:    telegoutil.ID(query.Message.GetChat().ID),
 				MessageID: query.Message.GetMessageID(),
 				Caption:   "取消删除记录失败: " + err.Error(),
@@ -286,7 +286,7 @@ func postArtwork(ctx context.Context, bot *telego.Bot, query telego.CallbackQuer
 	}
 	if err := fetcher.PostAndCreateArtwork(ctx, artwork, bot, storage.GetStorage(), query.From.ID); err != nil {
 		Logger.Errorf("发布失败: %s", err)
-		go bot.EditMessageCaption(&telego.EditMessageCaptionParams{
+		bot.EditMessageCaption(&telego.EditMessageCaptionParams{
 			ChatID:    telegoutil.ID(query.Message.GetChat().ID),
 			MessageID: query.Message.GetMessageID(),
 			Caption:   "发布失败: " + err.Error() + "\n\n" + time.Now().Format("2006-01-02 15:04:05"),
@@ -296,7 +296,7 @@ func postArtwork(ctx context.Context, bot *telego.Bot, query telego.CallbackQuer
 	artwork, err = service.GetArtworkByURL(ctx, sourceURL)
 	if err != nil {
 		Logger.Errorf("获取发布后的作品信息失败: %s", err)
-		go bot.EditMessageCaption(&telego.EditMessageCaptionParams{
+		bot.EditMessageCaption(&telego.EditMessageCaptionParams{
 			ChatID:      telegoutil.ID(query.Message.GetChat().ID),
 			MessageID:   query.Message.GetMessageID(),
 			Caption:     "发布成功, 但获取作品信息失败: " + err.Error(),
@@ -304,7 +304,7 @@ func postArtwork(ctx context.Context, bot *telego.Bot, query telego.CallbackQuer
 		})
 		return
 	}
-	go bot.EditMessageCaption(&telego.EditMessageCaptionParams{
+	bot.EditMessageCaption(&telego.EditMessageCaptionParams{
 		ChatID:    telegoutil.ID(query.Message.GetChat().ID),
 		MessageID: query.Message.GetMessageID(),
 		Caption:   "发布成功: " + artwork.Title + "\n\n发布时间: " + artwork.CreatedAt.Format("2006-01-02 15:04:05"),
@@ -331,7 +331,7 @@ func processPictures(ctx context.Context, bot *telego.Bot, message telego.Messag
 	telegram.ReplyMessage(bot, message, "开始处理了")
 }
 
-func setR18(ctx context.Context, bot *telego.Bot, message telego.Message) {
+func setArtworkR18(ctx context.Context, bot *telego.Bot, message telego.Message) {
 	if !service.CheckAdminPermission(ctx, message.From.ID, types.PermissionEditArtwork) {
 		telegram.ReplyMessage(bot, message, "你没有编辑作品的权限")
 		return
@@ -354,4 +354,62 @@ func setR18(ctx context.Context, bot *telego.Bot, message telego.Message) {
 		return
 	}
 	telegram.ReplyMessage(bot, message, "该作品 R18 已标记为 "+strconv.FormatBool(!artwork.R18))
+}
+
+func setArtworkTags(ctx context.Context, bot *telego.Bot, message telego.Message) {
+	if !service.CheckAdminPermission(ctx, message.From.ID, types.PermissionEditArtwork) {
+		telegram.ReplyMessage(bot, message, "你没有编辑作品的权限")
+		return
+	}
+
+	messageOrigin, ok := telegram.GetMessageOriginChannelArtworkPost(ctx, bot, message)
+	if !ok {
+		telegram.ReplyMessage(bot, message, "请回复一条频道的图片消息")
+		return
+	}
+
+	artwork, err := service.GetArtworkByMessageID(ctx, messageOrigin.MessageID)
+	if err != nil {
+		telegram.ReplyMessage(bot, message, "获取作品信息失败: "+err.Error())
+		return
+	}
+
+	cmd, _, args := telegoutil.ParseCommand(message.Text)
+	if len(args) == 0 {
+		telegram.ReplyMessage(bot, message, "请提供标签, 以空格分隔.\n不存在的标签将自动创建")
+		return
+	}
+	tags := make([]string, 0)
+	switch cmd {
+	case "tags":
+		tags = args
+	case "addtags":
+		tags = append(artwork.Tags, args...)
+	case "deltags":
+		tags = artwork.Tags[:]
+		for _, arg := range args {
+			for i, tag := range tags {
+				if tag == arg {
+					tags = append(tags[:i], tags[i+1:]...)
+					break
+				}
+			}
+		}
+	}
+	if err := service.UpdateArtworkTagsByURL(ctx, artwork.SourceURL, tags); err != nil {
+		telegram.ReplyMessage(bot, message, "更新作品标签失败: "+err.Error())
+		return
+	}
+	artwork, err = service.GetArtworkByURL(ctx, artwork.SourceURL)
+	if err != nil {
+		telegram.ReplyMessage(bot, message, "获取更新后的作品信息失败: "+err.Error())
+		return
+	}
+	bot.EditMessageCaption(&telego.EditMessageCaptionParams{
+		ChatID:    telegram.ChannelChatID,
+		MessageID: artwork.Pictures[0].TelegramInfo.MessageID,
+		Caption:   telegram.GetArtworkMarkdownCaption(artwork),
+		ParseMode: telego.ModeMarkdownV2,
+	})
+	telegram.ReplyMessage(bot, message, "更新作品标签成功")
 }

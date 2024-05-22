@@ -138,6 +138,10 @@ func UpdateArtworkR18ByID(ctx context.Context, id primitive.ObjectID, r18 bool) 
 	return artworkCollection.UpdateOne(ctx, bson.M{"_id": id}, bson.M{"$set": bson.M{"r18": r18}})
 }
 
+func UpdateArtworkTagsByID(ctx context.Context, id primitive.ObjectID, tags []primitive.ObjectID) (*mongo.UpdateResult, error) {
+	return artworkCollection.UpdateOne(ctx, bson.M{"_id": id}, bson.M{"$set": bson.M{"tags": tags}})
+}
+
 func DeleteArtworkByID(ctx context.Context, id primitive.ObjectID) (*mongo.DeleteResult, error) {
 	return artworkCollection.DeleteOne(ctx, bson.M{"_id": id})
 }
