@@ -7,4 +7,5 @@ type telegramConfig struct {
 	Username string  `toml:"username" mapstructure:"username" json:"username" yaml:"username"`
 	Sleep    uint    `toml:"sleep" mapstructure:"sleep" json:"sleep" yaml:"sleep"`
 	Admins   []int64 `toml:"admins" mapstructure:"admins" json:"admins" yaml:"admins"`
+	GroupID  int64   `toml:"group_id" mapstructure:"group_id" json:"group_id" yaml:"group_id"`
 }

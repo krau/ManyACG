@@ -14,6 +14,7 @@ var (
 	Bot           *telego.Bot
 	BotUsername   string // 没有 @
 	ChannelChatID telego.ChatID
+	GroupChatID   telego.ChatID // 附属群组
 )
 
 func InitBot() {
@@ -31,6 +32,10 @@ func InitBot() {
 		ChannelChatID = telegoutil.Username(config.Cfg.Telegram.Username)
 	} else {
 		ChannelChatID = telegoutil.ID(config.Cfg.Telegram.ChatID)
+	}
+
+	if config.Cfg.Telegram.GroupID != 0 {
+		GroupChatID = telegoutil.ID(config.Cfg.Telegram.GroupID)
 	}
 
 	me, err := Bot.GetMe()
@@ -111,11 +116,25 @@ func InitBot() {
 		},
 	}
 
-	Bot.SetMyCommands(&telego.SetMyCommandsParams{
-		Commands: append(commonCommands, adminCommands...),
-		Scope: &telego.BotCommandScopeChat{
-			Type:   telego.ScopeTypeChat,
-			ChatID: telegoutil.ID(config.Cfg.Telegram.Admins[0]),
-		},
-	})
+	adminCommands = append(adminCommands, commonCommands...)
+
+	for _, adminID := range config.Cfg.Telegram.Admins {
+		Bot.SetMyCommands(&telego.SetMyCommandsParams{
+			Commands: adminCommands,
+			Scope: &telego.BotCommandScopeChat{
+				Type:   telego.ScopeTypeChat,
+				ChatID: telegoutil.ID(adminID),
+			},
+		})
+		if config.Cfg.Telegram.GroupID == 0 {
+			continue
+		}
+		Bot.SetMyCommands(&telego.SetMyCommandsParams{
+			Commands: adminCommands,
+			Scope: &telego.BotCommandScopeChat{
+				Type:   telego.ScopeTypeChat,
+				ChatID: telegoutil.ID(adminID),
+			},
+		})
+	}
 }
