@@ -131,9 +131,10 @@ func InitBot() {
 		}
 		Bot.SetMyCommands(&telego.SetMyCommandsParams{
 			Commands: adminCommands,
-			Scope: &telego.BotCommandScopeChat{
+			Scope: &telego.BotCommandScopeChatMember{
 				Type:   telego.ScopeTypeChat,
-				ChatID: telegoutil.ID(adminID),
+				ChatID: GroupChatID,
+				UserID: adminID,
 			},
 		})
 	}
