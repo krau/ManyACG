@@ -40,32 +40,82 @@ func InitBot() {
 	}
 	BotUsername = me.Username
 
+	commonCommands := []telego.BotCommand{
+		{
+			Command:     "start",
+			Description: "开始涩涩",
+		},
+		{
+			Command:     "file",
+			Description: "获取原图文件",
+		},
+		{
+			Command:     "setu",
+			Description: "来点涩图",
+		},
+		{
+			Command:     "random",
+			Description: "随机1张全年龄图片",
+		},
+		{
+			Command:     "search",
+			Description: "搜索图片",
+		},
+		{
+			Command:     "help",
+			Description: "食用指南",
+		},
+	}
+
 	Bot.SetMyCommands(&telego.SetMyCommandsParams{
-		Commands: []telego.BotCommand{
-			{
-				Command:     "start",
-				Description: "开始涩涩",
-			},
-			{
-				Command:     "file",
-				Description: "获取原图文件",
-			},
-			{
-				Command:     "setu",
-				Description: "来点涩图",
-			},
-			{
-				Command:     "random",
-				Description: "随机1张全年龄图片",
-			},
-			{
-				Command:     "search",
-				Description: "搜索图片",
-			},
-			{
-				Command:     "help",
-				Description: "食用指南",
-			},
+		Commands: commonCommands,
+		Scope:    &telego.BotCommandScopeDefault{Type: telego.ScopeTypeDefault},
+	})
+
+	adminCommands := []telego.BotCommand{
+		{
+			Command:     "set_admin",
+			Description: "设置管理员",
+		},
+		{
+			Command:     "del",
+			Description: "删除图片",
+		},
+		{
+			Command:     "delete",
+			Description: "删除图片对应的作品",
+		},
+		{
+			Command:     "r18",
+			Description: "设置作品 R18",
+		},
+		{
+			Command:     "tags",
+			Description: "设置作品标签(覆盖)",
+		},
+		{
+			Command:     "addtags",
+			Description: "添加作品标签",
+		},
+		{
+			Command:     "deltags",
+			Description: "删除作品标签",
+		},
+		{
+			Command:     "fetch",
+			Description: "开始一次拉取",
+		},
+		{
+			Command:     "process_pictures",
+			Description: "处理无哈希的图片",
+		},
+	}
+
+	Bot.SetMyCommands(&telego.SetMyCommandsParams{
+		Commands: append(commonCommands, adminCommands...),
+		Scope: &telego.BotCommandScopeChat{
+			Type:   telego.ScopeTypeChat,
+			ChatID: telegoutil.ID(config.Cfg.Telegram.Admins[0]),
 		},
 	})
 }
