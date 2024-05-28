@@ -2,8 +2,10 @@ package bot
 
 import (
 	"ManyACG/common"
+	"ManyACG/config"
 	"ManyACG/service"
 	"ManyACG/sources"
+	"ManyACG/storage"
 	"ManyACG/telegram"
 	"ManyACG/types"
 	"context"
@@ -86,20 +88,27 @@ func getPictureFile(ctx context.Context, bot *telego.Bot, message telego.Message
 	}
 
 	pictureMessageID := messageOrigin.MessageID
-	_, _, args := telegoutil.ParseCommand(message.Text)
+	cmd, _, args := telegoutil.ParseCommand(message.Text)
+	multiple := cmd == "files"
+	artwork, err := service.GetArtworkByMessageID(ctx, pictureMessageID)
+	if err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			telegram.ReplyMessage(bot, message, "这张图片未在数据库中呢")
+			return
+		}
+		Logger.Errorf("获取作品失败: %s", err)
+		telegram.ReplyMessage(bot, message, "获取失败, 去找管理员反馈吧~")
+		return
+	}
+
+	if multiple {
+		getArtworkFiles(ctx, bot, message, artwork)
+		return
+	}
+
 	if len(args) > 0 {
 		index, err := strconv.Atoi(args[0])
 		if err == nil && index > 0 {
-			artwork, err := service.GetArtworkByMessageID(ctx, pictureMessageID)
-			if err != nil {
-				if errors.Is(err, mongo.ErrNoDocuments) {
-					telegram.ReplyMessage(bot, message, "这张图片未在数据库中呢")
-					return
-				}
-				Logger.Errorf("获取作品失败: %s", err)
-				telegram.ReplyMessage(bot, message, "获取失败, 去找管理员反馈吧~")
-				return
-			}
 			if index > len(artwork.Pictures) {
 				telegram.ReplyMessage(bot, message, "这个作品没有这么多图片")
 				return
@@ -108,10 +117,59 @@ func getPictureFile(ctx context.Context, bot *telego.Bot, message telego.Message
 			pictureMessageID = picture.TelegramInfo.MessageID
 		}
 	}
-	_, err := telegram.SendPictureFileByMessageID(ctx, bot, message, pictureMessageID)
+	_, err = telegram.SendPictureFileByMessageID(ctx, bot, message, pictureMessageID)
 	if err != nil {
 		telegram.ReplyMessage(bot, message, "图片发送失败: "+err.Error())
 		return
+	}
+}
+
+func getArtworkFiles(ctx context.Context, bot *telego.Bot, message telego.Message, artwork *types.Artwork) {
+	defer func() {
+		if r := recover(); r != nil {
+			Logger.Fatalf("获取文件失败: %s", r)
+		}
+	}()
+	for i, picture := range artwork.Pictures {
+		var file telego.InputFile
+		alreadyCached := picture.TelegramInfo.DocumentFileID != ""
+		if alreadyCached {
+			file = telegoutil.FileFromID(picture.TelegramInfo.DocumentFileID)
+		} else {
+			downloadingMessage, _ := telegram.ReplyMessage(bot, message, "正在下载第"+strconv.Itoa(i+1)+"张图片...")
+			data, err := storage.GetStorage().GetFile(picture.StorageInfo)
+			if err != nil {
+				telegram.ReplyMessage(bot, message, "获取文件失败: "+err.Error())
+				bot.DeleteMessage(telegoutil.Delete(message.Chat.ChatID(), downloadingMessage.MessageID))
+				return
+			}
+			file = telegoutil.File(telegoutil.NameReader(strings.NewReader(string(data)), sources.GetFileName(artwork, picture)))
+			bot.DeleteMessage(telegoutil.Delete(message.Chat.ChatID(), downloadingMessage.MessageID))
+		}
+		documentMessage, err := bot.SendDocument(telegoutil.Document(message.Chat.ChatID(), file).
+			WithReplyParameters(&telego.ReplyParameters{
+				MessageID: message.MessageID,
+			}).WithCaption(artwork.Title + "_" + strconv.Itoa(i+1)))
+		if err != nil {
+			Logger.Errorf("发送文件失败: %s", err)
+			bot.SendMessage(telegoutil.Messagef(
+				message.Chat.ChatID(),
+				"发送第 %d 张图片时失败",
+				i+1,
+			).WithReplyParameters(&telego.ReplyParameters{
+				MessageID: message.MessageID,
+			}))
+			continue
+		}
+		if documentMessage != nil {
+			picture.TelegramInfo.DocumentFileID = documentMessage.Document.FileID
+			if service.UpdatePictureTelegramInfo(ctx, picture, picture.TelegramInfo) != nil {
+				Logger.Warnf("更新图片信息失败: %s", err)
+			}
+			if alreadyCached {
+				time.Sleep(time.Duration(config.Cfg.Telegram.Sleep) * time.Second)
+			}
+		}
 	}
 }
 

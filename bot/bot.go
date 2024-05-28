@@ -41,7 +41,7 @@ func RunPolling() {
 	baseGroup := botHandler.BaseGroup()
 
 	baseGroup.HandleMessageCtx(start, telegohandler.CommandEqual("start"), mentionIsBot)
-	baseGroup.HandleMessageCtx(getPictureFile, telegohandler.CommandEqual("file"), mentionIsBot)
+	baseGroup.HandleMessageCtx(getPictureFile, telegohandler.Or(telegohandler.CommandEqual("file"), telegohandler.CommandEqual("files")), mentionIsBot)
 	baseGroup.HandleMessageCtx(randomPicture, telegohandler.Or(telegohandler.CommandEqual("setu"), telegohandler.CommandEqual("random")), mentionIsBot)
 	baseGroup.HandleMessageCtx(help, telegohandler.CommandEqual("help"), mentionIsBot)
 	baseGroup.HandleMessageCtx(getArtworkInfo, sourceUrlMatches)

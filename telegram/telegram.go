@@ -55,6 +55,10 @@ func InitBot() {
 			Description: "获取原图文件",
 		},
 		{
+			Command:     "files",
+			Description: "获取作品所有图片文件",
+		},
+		{
 			Command:     "setu",
 			Description: "来点涩图",
 		},
@@ -116,7 +120,7 @@ func InitBot() {
 		},
 	}
 
-	adminCommands = append(adminCommands, commonCommands...)
+	adminCommands = append(commonCommands, adminCommands...)
 
 	for _, adminID := range config.Cfg.Telegram.Admins {
 		Bot.SetMyCommands(&telego.SetMyCommandsParams{
