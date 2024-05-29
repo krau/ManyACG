@@ -1,7 +1,11 @@
 package common
 
 import (
+	"ManyACG/config"
+	"os"
 	"time"
+
+	. "ManyACG/logger"
 
 	"github.com/imroc/req/v3"
 )
@@ -14,10 +18,22 @@ func init() {
 	Client = c
 }
 
-func DownloadFromURL(url string) ([]byte, error) {
+func DownloadWithCache(url string) ([]byte, error) {
+	cachePath := config.Cfg.Storage.CacheDir + "/" + ReplaceFileNameInvalidChar(url)
+	data, err := os.ReadFile(cachePath)
+	if err == nil {
+		Logger.Debugf("cache hit: %s", cachePath)
+		return data, nil
+	}
 	resp, err := Client.R().Get(url)
 	if err != nil {
 		return nil, err
 	}
-	return resp.Bytes(), nil
+	data = resp.Bytes()
+	if err := MkFile(cachePath, data); err != nil {
+		Logger.Errorf("failed to save cache file: %s", err)
+	} else {
+		go PurgeFileAfter(cachePath, time.Duration(config.Cfg.Storage.CacheTTL)*time.Second)
+	}
+	return data, nil
 }

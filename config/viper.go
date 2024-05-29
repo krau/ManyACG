@@ -43,9 +43,11 @@ func InitConfig() {
 	viper.SetDefault("source.pixiv.enable", false)
 	viper.SetDefault("source.twitter.enable", false)
 	viper.SetDefault("source.twitter.fx_twitter_domain", "fxtwitter.com")
+	viper.SetDefault("source.bilibili.enable", false)
 
-	viper.SetDefault("storage.type", "local")
-	viper.SetDefault("storage.local.path", "manyacg/")
+	viper.SetDefault("storage.cache_dir", "./cache")
+	viper.SetDefault("storage.cache_ttl", 86400)
+	viper.SetDefault("storage.type", "webdav")
 
 	viper.SetDefault("telegram.sleep", 1)
 	viper.SetDefault("telegram.api_url", "https://api.telegram.org")
