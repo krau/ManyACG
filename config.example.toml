@@ -37,13 +37,15 @@ enable = true
 
 [storage]
 type = "webdav"
+cache_dir = "./cache"
+cache_ttl = 20
+
 [storage.webdav]
 url = ""
 username = ""
 password = ""
 path = "/"
-cache_dir = "./cache"
-cache_ttl = 20
+
 
 [telegram]
 token = ""
