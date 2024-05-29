@@ -2,12 +2,15 @@ package common
 
 import (
 	"bytes"
+	"fmt"
 	"image"
 	"image/color"
 	_ "image/gif"
-	_ "image/jpeg"
+	"image/jpeg"
 	_ "image/png"
 	"strconv"
+
+	"golang.org/x/image/draw"
 
 	"github.com/corona10/goimagehash"
 )
@@ -79,4 +82,48 @@ func GetBlurScore(b []byte) (float64, error) {
 	variance /= float64(pixelCount)
 
 	return strconv.ParseFloat(strconv.FormatFloat(variance, 'f', 2, 64), 64)
+}
+
+func ResizeImage(img image.Image, width, height uint) image.Image {
+	rect := image.Rect(0, 0, int(width), int(height))
+	resizedImg := image.NewRGBA(rect)
+	draw.CatmullRom.Scale(resizedImg, rect, img, img.Bounds(), draw.Over, nil)
+	return resizedImg
+}
+
+// 压缩图像为指定的大小, 返回格式为JPEG
+func CompressImage(input []byte, maxSizeMB, maxEdgeLength uint) ([]byte, error) {
+	img, _, err := image.Decode(bytes.NewReader(input))
+	if err != nil {
+		return nil, err
+	}
+	bounds := img.Bounds()
+	width := bounds.Dx()
+	height := bounds.Dy()
+	var newWidth, newHeight uint
+	if width > height {
+		newWidth = maxEdgeLength
+		newHeight = uint(float64(height) * (float64(maxEdgeLength) / float64(width)))
+	} else {
+		newHeight = maxEdgeLength
+		newWidth = uint(float64(width) * (float64(maxEdgeLength) / float64(height)))
+	}
+	resizedImg := ResizeImage(img, newWidth, newHeight)
+	quality := 100
+	var buf bytes.Buffer
+	for {
+		buf.Reset()
+		err := jpeg.Encode(&buf, resizedImg, &jpeg.Options{Quality: quality})
+		if err != nil {
+			return nil, err
+		}
+		if buf.Len() < int(maxSizeMB*1024*1024) {
+			break
+		}
+		quality -= 5
+		if quality <= 0 {
+			return nil, fmt.Errorf("can not to compress image to %d MB", maxSizeMB)
+		}
+	}
+	return buf.Bytes(), nil
 }

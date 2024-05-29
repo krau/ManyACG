@@ -1,9 +1,10 @@
 package config
 
 type sourceConfigs struct {
-	Proxy   string              `toml:"proxy" mapstructure:"proxy" json:"proxy" yaml:"proxy"`
-	Pixiv   SourcePixivConfig   `toml:"pixiv" mapstructure:"pixiv" json:"pixiv" yaml:"pixiv"`
-	Twitter SourceTwitterConfig `toml:"twitter" mapstructure:"twitter" json:"twitter" yaml:"twitter"`
+	Proxy    string               `toml:"proxy" mapstructure:"proxy" json:"proxy" yaml:"proxy"`
+	Pixiv    SourcePixivConfig    `toml:"pixiv" mapstructure:"pixiv" json:"pixiv" yaml:"pixiv"`
+	Twitter  SourceTwitterConfig  `toml:"twitter" mapstructure:"twitter" json:"twitter" yaml:"twitter"`
+	Bilibili SourceBilibiliConfig `toml:"bilibili" mapstructure:"bilibili" json:"bilibili" yaml:"bilibili"`
 }
 
 type SourcePixivConfig struct {
@@ -18,4 +19,8 @@ type SourcePixivConfig struct {
 type SourceTwitterConfig struct {
 	Enable          bool   `toml:"enable" mapstructure:"enable" json:"enable" yaml:"enable"`
 	FxTwitterDomain string `toml:"fx_twitter_domain" mapstructure:"fx_twitter_domain" json:"fx_twitter_domain" yaml:"fx_twitter_domain"`
+}
+
+type SourceBilibiliConfig struct {
+	Enable bool `toml:"enable" mapstructure:"enable" json:"enable" yaml:"enable"`
 }

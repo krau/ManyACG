@@ -1,10 +1,12 @@
 package telegram
 
 import (
+	"ManyACG/common"
 	"ManyACG/config"
 	"ManyACG/errors"
-	"ManyACG/sources"
+	"ManyACG/storage"
 	"ManyACG/types"
+	"bytes"
 	"time"
 
 	. "ManyACG/logger"
@@ -13,7 +15,7 @@ import (
 	"github.com/mymmrac/telego/telegoutil"
 )
 
-func PostArtwork(bot *telego.Bot, artwork *types.Artwork) ([]telego.Message, error) {
+func PostArtwork(bot *telego.Bot, artwork *types.Artwork, storage storage.Storage) ([]telego.Message, error) {
 	if bot == nil {
 		Logger.Fatal("Bot is nil")
 		return nil, errors.ErrNilBot
@@ -25,11 +27,17 @@ func PostArtwork(bot *telego.Bot, artwork *types.Artwork) ([]telego.Message, err
 
 	inputMediaPhotos := make([]telego.InputMedia, len(artwork.Pictures))
 	for i, picture := range artwork.Pictures {
-		photoURL := picture.Original
-		if artwork.SourceType == types.SourceTypePixiv {
-			photoURL = sources.GetPixivRegularURL(photoURL)
+		fileBytes, err := storage.GetFile(picture.StorageInfo)
+		if err != nil {
+			Logger.Errorf("failed to get file: %s", err)
+			return nil, err
 		}
-		photo := telegoutil.MediaPhoto(telegoutil.FileFromURL(photoURL))
+		fileBytes, err = common.CompressImage(fileBytes, 10, 2560)
+		if err != nil {
+			Logger.Errorf("failed to compress image: %s", err)
+			return nil, err
+		}
+		photo := telegoutil.MediaPhoto(telegoutil.File(telegoutil.NameReader(bytes.NewReader(fileBytes), picture.StorageInfo.Path)))
 		if i == 0 {
 			photo = photo.WithCaption(GetArtworkMarkdownCaption(artwork)).WithParseMode(telego.ModeMarkdownV2)
 		}

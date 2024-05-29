@@ -8,6 +8,7 @@ import (
 	"ManyACG/storage"
 	"ManyACG/telegram"
 	"ManyACG/types"
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -143,7 +144,7 @@ func getArtworkFiles(ctx context.Context, bot *telego.Bot, message telego.Messag
 				bot.DeleteMessage(telegoutil.Delete(message.Chat.ChatID(), downloadingMessage.MessageID))
 				return
 			}
-			file = telegoutil.File(telegoutil.NameReader(strings.NewReader(string(data)), sources.GetFileName(artwork, picture)))
+			file = telegoutil.File(telegoutil.NameReader(bytes.NewReader(data), sources.GetFileName(artwork, picture)))
 			bot.DeleteMessage(telegoutil.Delete(message.Chat.ChatID(), downloadingMessage.MessageID))
 		}
 		documentMessage, err := bot.SendDocument(telegoutil.Document(message.Chat.ChatID(), file).
@@ -279,11 +280,17 @@ func getArtworkInfo(ctx context.Context, bot *telego.Bot, message telego.Message
 
 	var inputFile telego.InputFile
 	if artwork.Pictures[0].TelegramInfo == nil || artwork.Pictures[0].TelegramInfo.PhotoFileID == "" {
-		photoURL := artwork.Pictures[0].Original
-		if artwork.SourceType == types.SourceTypePixiv {
-			photoURL = sources.GetPixivRegularURL(photoURL)
+		fileBytes, err := common.DownloadFromURL(artwork.Pictures[0].Original)
+		if err != nil {
+			telegram.ReplyMessage(bot, message, "下载图片失败: "+err.Error())
+			return
 		}
-		inputFile = telegoutil.FileFromURL(photoURL)
+		fileBytes, err = common.CompressImage(fileBytes, 5, 2560)
+		if err != nil {
+			telegram.ReplyMessage(bot, message, "压缩图片失败: "+err.Error())
+			return
+		}
+		inputFile = telegoutil.File(telegoutil.NameReader(bytes.NewReader(fileBytes), artwork.Title))
 	} else {
 		inputFile = telegoutil.FileFromID(artwork.Pictures[0].TelegramInfo.PhotoFileID)
 	}

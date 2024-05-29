@@ -4,6 +4,7 @@ import (
 	"ManyACG/common"
 	"ManyACG/config"
 	"ManyACG/errors"
+	"ManyACG/sources/bilibili"
 	"ManyACG/sources/pixiv"
 	"ManyACG/sources/twitter"
 	"ManyACG/types"
@@ -24,6 +25,10 @@ func InitSources() {
 	if config.Cfg.Source.Twitter.Enable {
 		Sources[types.SourceTypeTwitter] = new(twitter.Twitter)
 		Sources[types.SourceTypeTwitter].Init()
+	}
+	if config.Cfg.Source.Bilibili.Enable {
+		Sources[types.SourceTypeBilibili] = new(bilibili.Bilibili)
+		Sources[types.SourceTypeBilibili].Init()
 	}
 
 	for sourceType, source := range Sources {

@@ -40,7 +40,7 @@ func PostAndCreateArtwork(ctx context.Context, artwork *types.Artwork, bot *tele
 		}
 		artwork.Pictures[i].StorageInfo = info
 	}
-	messages, err := telegram.PostArtwork(telegram.Bot, artwork)
+	messages, err := telegram.PostArtwork(telegram.Bot, artwork, storage)
 	if err != nil {
 		return fmt.Errorf("posting artwork [%s](%s): %w", artwork.Title, artwork.SourceURL, err)
 	}
