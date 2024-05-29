@@ -100,20 +100,25 @@ func CompressImage(input []byte, maxSizeMB, maxEdgeLength uint) ([]byte, error) 
 	bounds := img.Bounds()
 	width := bounds.Dx()
 	height := bounds.Dy()
-	var newWidth, newHeight uint
-	if width > height {
-		newWidth = maxEdgeLength
-		newHeight = uint(float64(height) * (float64(maxEdgeLength) / float64(width)))
-	} else {
-		newHeight = maxEdgeLength
-		newWidth = uint(float64(width) * (float64(maxEdgeLength) / float64(height)))
+	if width > int(maxEdgeLength) || height > int(maxEdgeLength) {
+		var newWidth, newHeight uint
+		if width > height {
+			newWidth = maxEdgeLength
+			newHeight = uint(float64(height) * (float64(maxEdgeLength) / float64(width)))
+		} else {
+			newHeight = maxEdgeLength
+			newWidth = uint(float64(width) * (float64(maxEdgeLength) / float64(height)))
+		}
+		img = ResizeImage(img, newWidth, newHeight)
 	}
-	resizedImg := ResizeImage(img, newWidth, newHeight)
 	quality := 100
 	var buf bytes.Buffer
+	if len(input) < int(maxSizeMB*1024*1024) {
+		return input, nil
+	}
 	for {
 		buf.Reset()
-		err := jpeg.Encode(&buf, resizedImg, &jpeg.Options{Quality: quality})
+		err := jpeg.Encode(&buf, img, &jpeg.Options{Quality: quality})
 		if err != nil {
 			return nil, err
 		}
