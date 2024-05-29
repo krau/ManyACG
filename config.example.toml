@@ -32,6 +32,9 @@ value = "I1O12N"
 enable = true
 fx_twitter_domain = "fxtwitter.com"
 
+[source.bilibili]
+enable = true
+
 [storage]
 type = "webdav"
 [storage.webdav]
