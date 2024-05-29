@@ -91,7 +91,7 @@ func (resp *BilibiliApiResp) ToArtwork() (*types.Artwork, error) {
 	}
 	title := opus.Title
 	if title == "" {
-		title = "t.bilibili.com/" + item.IdStr
+		title = "bilibili/" + item.IdStr
 	}
 	return &types.Artwork{
 		Title:       title,

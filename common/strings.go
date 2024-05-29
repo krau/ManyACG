@@ -1,6 +1,7 @@
 package common
 
 import (
+	"regexp"
 	"strings"
 )
 
@@ -22,19 +23,10 @@ func ReplaceFileNameInvalidChar(fileName string) string {
 	).Replace(fileName)
 }
 
-var (
-	escapeChars = []string{
-		"_", "*", "[", "]", "(", ")", "~", "`", ">", "#", "+", "-", "=", "|", "{", "}", ".", "!",
-	}
-)
-
 func EscapeMarkdown(text string) string {
-	text = strings.ReplaceAll(text, "\\", "\\\\")
-	for _, char := range escapeChars {
-		text = strings.ReplaceAll(text, char, "\\"+char)
-	}
-	return text
-	// return regexp.MustCompile(`([_\*[\]\(\)~`+"`"+`>#\+\-=|{}\.!])`).ReplaceAllString(text, `\$1`)
+	escapeChars := `\_*[]()~` + "`" + `>#+-=|{}.!`
+	re := regexp.MustCompile("([" + regexp.QuoteMeta(escapeChars) + "])")
+	return re.ReplaceAllString(text, "\\$1")
 }
 
 // 解析字符串为二维数组, 如果以字符串以引号包裹, 则无视分隔符
