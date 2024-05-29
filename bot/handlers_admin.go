@@ -396,6 +396,9 @@ func setArtworkTags(ctx context.Context, bot *telego.Bot, message telego.Message
 			}
 		}
 	}
+	for i, tag := range tags {
+		tags[i] = strings.TrimPrefix(tag, "#")
+	}
 	if err := service.UpdateArtworkTagsByURL(ctx, artwork.SourceURL, tags); err != nil {
 		telegram.ReplyMessage(bot, message, "更新作品标签失败: "+err.Error())
 		return
