@@ -114,7 +114,11 @@ func CompressImage(input []byte, maxSizeMB, maxEdgeLength uint) ([]byte, error) 
 	quality := 100
 	var buf bytes.Buffer
 	if len(input) < int(maxSizeMB*1024*1024) {
-		return input, nil
+		err := jpeg.Encode(&buf, img, &jpeg.Options{Quality: quality})
+		if err != nil {
+			return nil, err
+		}
+		return buf.Bytes(), nil
 	}
 	for {
 		buf.Reset()
