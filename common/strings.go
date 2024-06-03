@@ -29,6 +29,14 @@ func EscapeMarkdown(text string) string {
 	return re.ReplaceAllString(text, "\\$1")
 }
 
+func EscapeHTML(text string) string {
+	return strings.NewReplacer(
+		"<", "&lt;",
+		">", "&gt;",
+		"&", "&amp;",
+	).Replace(text)
+}
+
 // 解析字符串为二维数组, 如果以字符串以引号包裹, 则无视分隔符
 //
 // ParseStringTo2DArray("1,2,3;4,5,6", ",", ";") => [][]string{{"1", "2", "3"}, {"4", "5", "6"}}

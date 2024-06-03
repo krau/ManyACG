@@ -15,7 +15,7 @@ func RunPolling() {
 	}
 	Logger.Info("Start polling")
 	updates, err := telegram.Bot.UpdatesViaLongPolling(&telego.GetUpdatesParams{
-		Offset: -1,
+		Offset: -100,
 		AllowedUpdates: []string{
 			telego.MessageUpdates,
 			telego.ChannelPostUpdates,

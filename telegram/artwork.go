@@ -39,7 +39,7 @@ func PostArtwork(bot *telego.Bot, artwork *types.Artwork, storage storage.Storag
 		}
 		photo := telegoutil.MediaPhoto(telegoutil.File(telegoutil.NameReader(bytes.NewReader(fileBytes), picture.StorageInfo.Path)))
 		if i == 0 {
-			photo = photo.WithCaption(GetArtworkMarkdownCaption(artwork)).WithParseMode(telego.ModeMarkdownV2)
+			photo = photo.WithCaption(GetArtworkHTMLCaption(artwork)).WithParseMode(telego.ModeHTML)
 		}
 		if artwork.R18 {
 			photo = photo.WithHasSpoiler()

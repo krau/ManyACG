@@ -105,12 +105,8 @@ func GetArtworkMarkdownCaption(artwork *types.Artwork) string {
 	caption := fmt.Sprintf("[*%s*](%s)", common.EscapeMarkdown(artwork.Title), artwork.SourceURL)
 	caption += "\n" + "*Author:* " + common.EscapeMarkdown(artwork.Artist.Name)
 	if artwork.Description != "" {
-		desc := strings.ReplaceAll(artwork.Description, "\n", " ")
-		if len(desc) > 500 {
-			caption += "\n\n>" + common.EscapeMarkdown(desc) + "\\.\\.\\."
-		} else {
-			caption += "\n\n>" + common.EscapeMarkdown(desc)
-		}
+		desc := strings.ReplaceAll(artwork.Description, "\n", "\n>")
+		caption += "\n\n>" + common.EscapeMarkdown(desc)
 	}
 	tags := ""
 	for _, tag := range artwork.Tags {
@@ -118,6 +114,23 @@ func GetArtworkMarkdownCaption(artwork *types.Artwork) string {
 		tag = ReplaceChars(tag, []string{"?"}, "")
 		tag = ReplaceChars(tag, []string{"/"}, " "+"#")
 		tags += "\\#" + strings.Join(strings.Split(common.EscapeMarkdown(tag), " "), "") + " "
+	}
+	caption += "\n\n" + tags
+	return caption
+}
+
+func GetArtworkHTMLCaption(artwork *types.Artwork) string {
+	caption := fmt.Sprintf("<a href=\"%s\"><b>%s</b></a>", artwork.SourceURL, common.EscapeHTML(artwork.Title))
+	caption += "\n" + "<b>Author:</b> " + common.EscapeHTML(artwork.Artist.Name)
+	if artwork.Description != "" {
+		caption += fmt.Sprintf("\n\n<blockquote expandable=true>%s</blockquote>", common.EscapeHTML(artwork.Description))
+	}
+	tags := ""
+	for _, tag := range artwork.Tags {
+		tag = ReplaceChars(tag, []string{":", "：", "-", "（", "）", "「", "」", "*"}, "_")
+		tag = ReplaceChars(tag, []string{"?"}, "")
+		tag = ReplaceChars(tag, []string{"/"}, " "+"#")
+		tags += "#" + strings.Join(strings.Split(common.EscapeHTML(tag), " "), "") + " "
 	}
 	caption += "\n\n" + tags
 	return caption

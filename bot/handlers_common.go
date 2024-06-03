@@ -297,15 +297,14 @@ func getArtworkInfo(ctx context.Context, bot *telego.Bot, message telego.Message
 
 	photo := telegoutil.Photo(message.Chat.ChatID(), inputFile).
 		WithReplyParameters(&telego.ReplyParameters{MessageID: message.MessageID}).
-		WithParseMode(telego.ModeMarkdownV2)
+		WithParseMode(telego.ModeHTML)
 
 	deletedModel, _ := service.GetDeletedByURL(ctx, sourceURL)
-	artworkInfoCaption := telegram.GetArtworkMarkdownCaption(artwork)
+	artworkInfoCaption := telegram.GetArtworkHTMLCaption(artwork)
 	if deletedModel != nil && hasPermission {
-		photo.WithCaption(artworkInfoCaption + common.EscapeMarkdown(fmt.Sprintf("\n\n这是一个在 %s 删除的作品\n\n"+
-			"如果发布则会取消删除", deletedModel.DeletedAt.Time().Format("2006-01-02 15:04:05"))))
+		photo.WithCaption(artworkInfoCaption + fmt.Sprintf("\n\n这是一个在 %s 删除的作品\n如果发布则会取消删除", deletedModel.DeletedAt.Time().Format("2006-01-02 15:04:05")))
 	} else {
-		photo.WithCaption(telegram.GetArtworkMarkdownCaption(artwork))
+		photo.WithCaption(artworkInfoCaption)
 	}
 	if isAlreadyPosted {
 		photo.WithReplyMarkup(telegram.GetPostedPictureReplyMarkup(artwork.Pictures[0]))

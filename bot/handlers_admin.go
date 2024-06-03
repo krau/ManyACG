@@ -411,8 +411,8 @@ func setArtworkTags(ctx context.Context, bot *telego.Bot, message telego.Message
 	bot.EditMessageCaption(&telego.EditMessageCaptionParams{
 		ChatID:    telegram.ChannelChatID,
 		MessageID: artwork.Pictures[0].TelegramInfo.MessageID,
-		Caption:   telegram.GetArtworkMarkdownCaption(artwork),
-		ParseMode: telego.ModeMarkdownV2,
+		Caption:   telegram.GetArtworkHTMLCaption(artwork),
+		ParseMode: telego.ModeHTML,
 	})
 	telegram.ReplyMessage(bot, message, "更新作品标签成功")
 }

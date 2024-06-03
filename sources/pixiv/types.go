@@ -137,7 +137,7 @@ func (resp *PixivAjaxResp) ToArtwork() (*types.Artwork, error) {
 	}
 	return &types.Artwork{
 		Title:       resp.Body.IlustTitle,
-		Description: htmlRe.ReplaceAllString(resp.Body.Description, ""),
+		Description: htmlRe.ReplaceAllString(strings.ReplaceAll(resp.Body.Description, "<br />", "\n"), ""),
 		R18:         r18,
 		SourceType:  types.SourceTypePixiv,
 		SourceURL:   "https://www.pixiv.net/artworks/" + resp.Body.IllustId,
