@@ -91,7 +91,6 @@ func ResizeImage(img image.Image, width, height uint) image.Image {
 	return resizedImg
 }
 
-// 压缩图像为指定的大小, 返回格式为JPEG
 func CompressImage(input []byte, maxSizeMB, maxEdgeLength uint) ([]byte, error) {
 	img, _, err := image.Decode(bytes.NewReader(input))
 	if err != nil {
@@ -100,8 +99,8 @@ func CompressImage(input []byte, maxSizeMB, maxEdgeLength uint) ([]byte, error) 
 	bounds := img.Bounds()
 	width := bounds.Dx()
 	height := bounds.Dy()
+	var newWidth, newHeight uint
 	if width > int(maxEdgeLength) || height > int(maxEdgeLength) {
-		var newWidth, newHeight uint
 		if width > height {
 			newWidth = maxEdgeLength
 			newHeight = uint(float64(height) * (float64(maxEdgeLength) / float64(width)))
@@ -113,25 +112,25 @@ func CompressImage(input []byte, maxSizeMB, maxEdgeLength uint) ([]byte, error) 
 	}
 	quality := 100
 	var buf bytes.Buffer
-	if len(input) < int(maxSizeMB*1024*1024) {
-		err := jpeg.Encode(&buf, img, &jpeg.Options{Quality: quality})
-		if err != nil {
-			return nil, err
-		}
+	err = jpeg.Encode(&buf, img, &jpeg.Options{Quality: quality})
+	if err != nil {
+		return nil, err
+	}
+	if buf.Len() < int(maxSizeMB*1024*1024) {
 		return buf.Bytes(), nil
 	}
 	for {
+		if quality <= 0 {
+			return nil, fmt.Errorf("cannot compress image to %d MB", maxSizeMB)
+		}
+		quality -= 5
 		buf.Reset()
-		err := jpeg.Encode(&buf, img, &jpeg.Options{Quality: quality})
+		err = jpeg.Encode(&buf, img, &jpeg.Options{Quality: quality})
 		if err != nil {
 			return nil, err
 		}
 		if buf.Len() < int(maxSizeMB*1024*1024) {
 			break
-		}
-		quality -= 5
-		if quality <= 0 {
-			return nil, fmt.Errorf("can not to compress image to %d MB", maxSizeMB)
 		}
 	}
 	return buf.Bytes(), nil
