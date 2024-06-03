@@ -60,6 +60,7 @@ func (w *Webdav) SavePicture(artwork *types.Artwork, picture *types.Picture) (*t
 	} else {
 		go common.PurgeFileAfter(cachePath, time.Duration(config.Cfg.Storage.CacheTTL)*time.Second)
 	}
+	fileBytes = nil
 	return storageInfo, nil
 }
 

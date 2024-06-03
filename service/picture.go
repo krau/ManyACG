@@ -119,6 +119,9 @@ func ProcessPictureAndUpdate(ctx context.Context, picture *types.Picture) error 
 		if err != nil {
 			return nil, err
 		}
+		defer func() {
+			fileBytes = nil
+		}()
 		hash, err := common.GetPhash(fileBytes)
 		if err != nil {
 			return nil, err

@@ -7,6 +7,7 @@ import (
 	"ManyACG/storage"
 	"ManyACG/types"
 	"bytes"
+	"runtime"
 	"time"
 
 	. "ManyACG/logger"
@@ -25,8 +26,51 @@ func PostArtwork(bot *telego.Bot, artwork *types.Artwork, storage storage.Storag
 		return nil, errors.ErrNilArtwork
 	}
 
-	inputMediaPhotos := make([]telego.InputMedia, len(artwork.Pictures))
-	for i, picture := range artwork.Pictures {
+	if len(artwork.Pictures) <= 10 {
+		inputMediaPhotos, err := getInputMediaPhotos(artwork, storage, 0, len(artwork.Pictures))
+		if err != nil {
+			return nil, err
+		}
+		return bot.SendMediaGroup(
+			telegoutil.MediaGroup(
+				ChannelChatID,
+				inputMediaPhotos...,
+			),
+		)
+	}
+
+	allMessages := make([]telego.Message, len(artwork.Pictures))
+	for i := 0; i < len(artwork.Pictures); i += 10 {
+		end := i + 10
+		if end > len(artwork.Pictures) {
+			end = len(artwork.Pictures)
+		}
+		inputMediaPhotos, err := getInputMediaPhotos(artwork, storage, i, end)
+		if err != nil {
+			return nil, err
+		}
+		mediaGroup := telegoutil.MediaGroup(ChannelChatID, inputMediaPhotos...)
+		if i > 0 {
+			mediaGroup = mediaGroup.WithReplyParameters(&telego.ReplyParameters{
+				ChatID:    ChannelChatID,
+				MessageID: allMessages[i-1].MessageID,
+			})
+		}
+		messages, err := bot.SendMediaGroup(mediaGroup)
+		if err != nil {
+			return nil, err
+		}
+		copy(allMessages[i:], messages)
+		time.Sleep(time.Duration(int(config.Cfg.Telegram.Sleep)*len(inputMediaPhotos)) * time.Second)
+	}
+	return allMessages, nil
+}
+
+// start from 0
+func getInputMediaPhotos(artwork *types.Artwork, storage storage.Storage, start, end int) ([]telego.InputMedia, error) {
+	inputMediaPhotos := make([]telego.InputMedia, end-start)
+	for i := start; i < end; i++ {
+		picture := artwork.Pictures[i]
 		fileBytes, err := storage.GetFile(picture.StorageInfo)
 		if err != nil {
 			Logger.Errorf("failed to get file: %s", err)
@@ -44,40 +88,9 @@ func PostArtwork(bot *telego.Bot, artwork *types.Artwork, storage storage.Storag
 		if artwork.R18 {
 			photo = photo.WithHasSpoiler()
 		}
-		inputMediaPhotos[i] = photo
+		inputMediaPhotos[i-start] = photo
+		fileBytes = nil
 	}
-
-	if len(inputMediaPhotos) <= 10 {
-		return bot.SendMediaGroup(
-			telegoutil.MediaGroup(
-				ChannelChatID,
-				inputMediaPhotos...,
-			),
-		)
-	}
-
-	allMessages := make([]telego.Message, len(inputMediaPhotos))
-	for i := 0; i < len(inputMediaPhotos); i += 10 {
-		end := i + 10
-		if end > len(inputMediaPhotos) {
-			end = len(inputMediaPhotos)
-		}
-		mediaGroup := telegoutil.MediaGroup(
-			ChannelChatID,
-			inputMediaPhotos[i:end]...,
-		)
-		if i > 0 {
-			mediaGroup = mediaGroup.WithReplyParameters(&telego.ReplyParameters{
-				ChatID:    ChannelChatID,
-				MessageID: allMessages[i-1].MessageID,
-			})
-		}
-		messages, err := bot.SendMediaGroup(mediaGroup)
-		if err != nil {
-			return nil, err
-		}
-		copy(allMessages[i:], messages)
-		time.Sleep(time.Duration(int(config.Cfg.Telegram.Sleep)*len(inputMediaPhotos[i:end])) * time.Second)
-	}
-	return allMessages, nil
+	runtime.GC()
+	return inputMediaPhotos, nil
 }

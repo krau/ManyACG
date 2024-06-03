@@ -10,7 +10,7 @@ import (
 	"context"
 	es "errors"
 	"fmt"
-	"sync"
+	"runtime"
 
 	. "ManyACG/logger"
 
@@ -20,6 +20,7 @@ import (
 )
 
 func PostAndCreateArtwork(ctx context.Context, artwork *types.Artwork, bot *telego.Bot, storage storage.Storage, fromID int64) error {
+
 	artworkInDB, err := service.GetArtworkByURL(ctx, artwork.SourceURL)
 	if err == nil && artworkInDB != nil {
 		Logger.Debugf("Artwork %s already exists", artwork.Title)
@@ -73,22 +74,17 @@ func PostAndCreateArtwork(ctx context.Context, artwork *types.Artwork, bot *tele
 		return fmt.Errorf("error when creating artwork %s: %w", artwork.SourceURL, err)
 	}
 	go afterCreate(context.TODO(), artwork, bot, storage, fromID)
+
 	return nil
 }
 
 func afterCreate(ctx context.Context, artwork *types.Artwork, bot *telego.Bot, _ storage.Storage, fromID int64) {
-	var wg sync.WaitGroup
 	for _, picture := range artwork.Pictures {
-		wg.Add(1)
-		go func(picture *types.Picture) {
-			defer wg.Done()
-			if err := service.ProcessPictureAndUpdate(ctx, picture); err != nil {
-				Logger.Warnf("error when processing %d of artwork %s: %s", picture.Index, artwork.Title, err)
-			}
-		}(picture)
+		if err := service.ProcessPictureAndUpdate(ctx, picture); err != nil {
+			Logger.Warnf("error when processing %d of artwork %s: %s", picture.Index, artwork.Title, err)
+		}
 	}
-	wg.Wait()
-
+	runtime.GC()
 	sendNotify := fromID != 0 && bot != nil
 	artworkID, err := service.GetArtworkIDByPicture(ctx, artwork.Pictures[0])
 	artworkTitleMarkdown := common.EscapeMarkdown(artwork.Title)
