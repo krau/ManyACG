@@ -480,6 +480,15 @@ func batchPostArtwork(ctx context.Context, bot *telego.Bot, message telego.Messa
 	failed := 0
 	reader := bufio.NewReader(bytes.NewReader(file))
 	for i := startIndex; i < count+startIndex; i++ {
+		if callbackMessage != nil {
+			if i-startIndex == 0 || (i-startIndex)%10 == 0 {
+				bot.EditMessageText(&telego.EditMessageTextParams{
+					ChatID:    message.Chat.ChatID(),
+					MessageID: callbackMessage.MessageID,
+					Text:      fmt.Sprintf("总数: %d\n起始索引: %d\n间隔时间: %d秒\n已发布: %d\n失败: %d", count, startIndex, sleepTime, i, failed),
+				})
+			}
+		}
 		line, _, err := reader.ReadLine()
 		if err == io.EOF {
 			telegram.ReplyMessage(bot, message, "文件已读取完毕")
@@ -519,15 +528,6 @@ func batchPostArtwork(ctx context.Context, bot *telego.Bot, message telego.Messa
 			failed++
 			telegram.ReplyMessage(bot, message, "发布失败: "+err.Error())
 			return
-		}
-		if callbackMessage != nil {
-			if i-startIndex == 0 || (i-startIndex)%10 == 0 {
-				bot.EditMessageText(&telego.EditMessageTextParams{
-					ChatID:    message.Chat.ChatID(),
-					MessageID: callbackMessage.MessageID,
-					Text:      fmt.Sprintf("总数: %d\n起始索引: %d\n间隔时间: %d秒\n已发布: %d\n失败: %d", count, startIndex, sleepTime, i, failed),
-				})
-			}
 		}
 		time.Sleep(time.Duration(sleepTime) * time.Second)
 	}
