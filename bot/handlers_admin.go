@@ -533,10 +533,10 @@ func batchPostArtwork(ctx context.Context, bot *telego.Bot, message telego.Messa
 	}
 	if callbackMessage != nil {
 		text := fmt.Sprintf("发布完成\n\n总数: %d\n起始索引: %d\n已发布: %d\n失败: %d", count, startIndex, count, failed)
-		bot.EditMessageCaption(&telego.EditMessageCaptionParams{
+		bot.EditMessageText(&telego.EditMessageTextParams{
 			ChatID:    message.Chat.ChatID(),
 			MessageID: callbackMessage.MessageID,
-			Caption:   text,
+			Text:      text,
 		})
 	}
 	telegram.ReplyMessage(bot, message, "批量发布作品完成")
