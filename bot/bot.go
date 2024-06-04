@@ -15,7 +15,7 @@ func RunPolling() {
 	}
 	Logger.Info("Start polling")
 	updates, err := telegram.Bot.UpdatesViaLongPolling(&telego.GetUpdatesParams{
-		Offset: -100,
+		Offset: -1,
 		AllowedUpdates: []string{
 			telego.MessageUpdates,
 			telego.ChannelPostUpdates,
@@ -52,6 +52,8 @@ func RunPolling() {
 	baseGroup.HandleMessageCtx(processPictures, telegohandler.CommandEqual("process_pictures"))
 	baseGroup.HandleMessageCtx(setArtworkR18, telegohandler.CommandEqual("r18"))
 	baseGroup.HandleMessageCtx(setArtworkTags, telegohandler.Or(telegohandler.CommandEqual("tags"), telegohandler.CommandEqual("addtags"), telegohandler.CommandEqual("deltags")))
+	baseGroup.HandleMessageCtx(batchPostArtwork, telegohandler.CommandEqual("batch_post"))
+
 	baseGroup.HandleCallbackQueryCtx(postArtwork, telegohandler.CallbackDataContains("post_artwork"))
 	baseGroup.HandleInlineQueryCtx(inlineQuery)
 
