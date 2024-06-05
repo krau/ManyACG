@@ -477,19 +477,23 @@ func batchPostArtwork(ctx context.Context, bot *telego.Bot, message telego.Messa
 		callbackMessage = nil
 	}
 
-	failed := 0
 	reader := bufio.NewReader(bytes.NewReader(file))
-	for i := startIndex; i < count+startIndex; i++ {
-		if callbackMessage != nil {
-			if i-startIndex == 0 || (i-startIndex)%10 == 0 {
-				bot.EditMessageText(&telego.EditMessageTextParams{
-					ChatID:    message.Chat.ChatID(),
-					MessageID: callbackMessage.MessageID,
-					Text:      fmt.Sprintf("总数: %d\n起始索引: %d\n间隔时间: %d秒\n已发布: %d\n失败: %d", count, startIndex, sleepTime, i, failed),
-				})
-			}
+	sourceURLs := make([]string, 0)
+
+	for i := 0; i < startIndex; i++ {
+		_, err := reader.ReadString('\n')
+		if err == io.EOF {
+			telegram.ReplyMessage(bot, message, "起始索引超出文件行数")
+			return
 		}
-		line, _, err := reader.ReadLine()
+		if err != nil {
+			telegram.ReplyMessage(bot, message, "读取文件失败: "+err.Error())
+			return
+		}
+	}
+
+	for i := startIndex; i < count+startIndex; i++ {
+		text, err := reader.ReadString('\n')
 		if err == io.EOF {
 			telegram.ReplyMessage(bot, message, "文件已读取完毕")
 			break
@@ -498,11 +502,24 @@ func batchPostArtwork(ctx context.Context, bot *telego.Bot, message telego.Messa
 			telegram.ReplyMessage(bot, message, "读取文件失败: "+err.Error())
 			return
 		}
-		sourceURL := sources.FindSourceURL(string(line))
+		sourceURL := sources.FindSourceURL(text)
 		if sourceURL == "" {
-			Logger.Warnf("不支持的链接: %s", string(line))
-			failed++
+			Logger.Warnf("不支持的链接: %s", text)
 			continue
+		}
+		sourceURLs = append(sourceURLs, sourceURL)
+	}
+
+	failed := 0
+	for i, sourceURL := range sourceURLs {
+		if callbackMessage != nil {
+			if i == 0 || i%10 == 0 {
+				bot.EditMessageText(&telego.EditMessageTextParams{
+					ChatID:    message.Chat.ChatID(),
+					MessageID: callbackMessage.MessageID,
+					Text:      fmt.Sprintf("总数: %d\n起始索引: %d\n间隔时间: %d秒\n已发布: %d\n失败: %d", count, startIndex, sleepTime, i, failed),
+				})
+			}
 		}
 		Logger.Infof("posting artwork: %s", sourceURL)
 
