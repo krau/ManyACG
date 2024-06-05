@@ -123,7 +123,11 @@ func GetArtworkHTMLCaption(artwork *types.Artwork) string {
 	caption := fmt.Sprintf("<a href=\"%s\"><b>%s</b></a>", artwork.SourceURL, common.EscapeHTML(artwork.Title))
 	caption += "\n" + "<b>Author:</b> " + common.EscapeHTML(artwork.Artist.Name)
 	if artwork.Description != "" {
-		caption += fmt.Sprintf("\n\n<blockquote expandable=true>%s</blockquote>", common.EscapeHTML(artwork.Description))
+		desc := artwork.Description
+		if len(artwork.Description) > 3583 {
+			desc = artwork.Description[:3580] + "..."
+		}
+		caption += fmt.Sprintf("\n\n<blockquote expandable=true>%s</blockquote>", common.EscapeHTML(desc))
 	}
 	tags := ""
 	for _, tag := range artwork.Tags {
