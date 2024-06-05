@@ -124,8 +124,15 @@ func GetArtworkHTMLCaption(artwork *types.Artwork) string {
 	caption += "\n" + "<b>Author:</b> " + common.EscapeHTML(artwork.Artist.Name)
 	if artwork.Description != "" {
 		desc := artwork.Description
-		if len(artwork.Description) > 3583 {
-			desc = artwork.Description[:3580] + "..."
+		if len(artwork.Description) > 500 {
+			var n, i int
+			for i = range desc {
+				if n >= 500 {
+					break
+				}
+				n++
+			}
+			desc = desc[:i] + "..."
 		}
 		caption += fmt.Sprintf("\n\n<blockquote expandable=true>%s</blockquote>", common.EscapeHTML(desc))
 	}
