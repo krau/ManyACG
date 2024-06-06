@@ -37,6 +37,13 @@ func EscapeHTML(text string) string {
 	).Replace(text)
 }
 
+func ReplaceChars(input string, oldChars []string, newChar string) string {
+	for _, char := range oldChars {
+		input = strings.ReplaceAll(input, char, newChar)
+	}
+	return input
+}
+
 // 解析字符串为二维数组, 如果以字符串以引号包裹, 则无视分隔符
 //
 // ParseStringTo2DArray("1,2,3;4,5,6", ",", ";") => [][]string{{"1", "2", "3"}, {"4", "5", "6"}}

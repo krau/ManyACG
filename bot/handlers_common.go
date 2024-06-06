@@ -84,10 +84,29 @@ Inline 查询支持同样的参数格式.
 func getPictureFile(ctx context.Context, bot *telego.Bot, message telego.Message) {
 	messageOrigin, ok := telegram.GetMessageOriginChannelArtworkPost(ctx, bot, message)
 	if !ok {
-		telegram.ReplyMessage(bot, message, "请使用该命令回复一条频道的图片消息")
-		return
+		go telegram.ReplyMessage(bot, message, "少女祈祷中...")
+		fileBytes, err := telegram.GetMessagePhotoFileBytes(bot, message.ReplyToMessage)
+		if err != nil {
+			telegram.ReplyMessage(bot, message, "请回复一条频道的作品图片消息")
+			return
+		}
+		hash, err := common.GetPhash(fileBytes)
+		if err != nil {
+			telegram.ReplyMessage(bot, message, "请回复一条频道的作品图片消息")
+			return
+		}
+		pictures, err := service.GetPicturesByHashHammingDistance(ctx, hash, 10)
+		if err != nil || len(pictures) == 0 {
+			telegram.ReplyMessage(bot, message, "请回复一条频道的作品图片消息")
+			return
+		}
+		picture := pictures[0]
+		_, err = telegram.SendPictureFileByMessageID(ctx, bot, message, picture.TelegramInfo.MessageID)
+		if err != nil {
+			telegram.ReplyMessage(bot, message, "文件发送失败: "+err.Error())
+			return
+		}
 	}
-
 	pictureMessageID := messageOrigin.MessageID
 	cmd, _, args := telegoutil.ParseCommand(message.Text)
 	multiple := cmd == "files"
@@ -120,7 +139,7 @@ func getPictureFile(ctx context.Context, bot *telego.Bot, message telego.Message
 	}
 	_, err = telegram.SendPictureFileByMessageID(ctx, bot, message, pictureMessageID)
 	if err != nil {
-		telegram.ReplyMessage(bot, message, "图片发送失败: "+err.Error())
+		telegram.ReplyMessage(bot, message, "文件发送失败: "+err.Error())
 		return
 	}
 }
@@ -336,33 +355,11 @@ func searchPicture(ctx context.Context, bot *telego.Bot, message telego.Message)
 		telegram.ReplyMessage(bot, message, "请使用该命令回复一条图片消息")
 		return
 	}
-	if message.ReplyToMessage.Photo == nil && message.ReplyToMessage.Document == nil {
-		telegram.ReplyMessage(bot, message, "目标消息不包含图片")
-		return
-	}
 	go telegram.ReplyMessage(bot, message, "少女祈祷中...")
-	photoFileID := ""
-	if message.ReplyToMessage.Photo != nil {
-		photoFileID = message.ReplyToMessage.Photo[len(message.ReplyToMessage.Photo)-1].FileID
-	}
-	if message.ReplyToMessage.Document != nil && strings.HasPrefix(message.ReplyToMessage.Document.MimeType, "image/") {
-		if message.ReplyToMessage.Document.FileSize > 20*1024*1024 {
-			telegram.ReplyMessage(bot, message, "文件过大")
-			return
-		}
-		photoFileID = message.ReplyToMessage.Document.FileID
-	}
 
-	tgFile, err := bot.GetFile(&telego.GetFileParams{
-		FileID: photoFileID,
-	})
+	fileBytes, err := telegram.GetMessagePhotoFileBytes(bot, message.ReplyToMessage)
 	if err != nil {
-		telegram.ReplyMessage(bot, message, "获取文件信息失败: "+err.Error())
-		return
-	}
-	fileBytes, err := telegoutil.DownloadFile(bot.FileDownloadURL(tgFile.FilePath))
-	if err != nil {
-		telegram.ReplyMessage(bot, message, "下载文件失败: "+err.Error())
+		telegram.ReplyMessage(bot, message, "获取图片文件失败: "+err.Error())
 		return
 	}
 	hash, err := common.GetPhash(fileBytes)

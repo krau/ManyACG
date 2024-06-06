@@ -517,7 +517,7 @@ func batchPostArtwork(ctx context.Context, bot *telego.Bot, message telego.Messa
 				bot.EditMessageText(&telego.EditMessageTextParams{
 					ChatID:    message.Chat.ChatID(),
 					MessageID: callbackMessage.MessageID,
-					Text:      fmt.Sprintf("总数: %d\n起始索引: %d\n间隔时间: %d秒\n已发布: %d\n失败: %d", count, startIndex, sleepTime, i, failed),
+					Text:      fmt.Sprintf("总数: %d\n起始索引: %d\n间隔时间: %d秒\n已处理: %d\n失败: %d", count, startIndex, sleepTime, i, failed),
 				})
 			}
 		}
@@ -549,7 +549,7 @@ func batchPostArtwork(ctx context.Context, bot *telego.Bot, message telego.Messa
 		time.Sleep(time.Duration(sleepTime) * time.Second)
 	}
 	if callbackMessage != nil {
-		text := fmt.Sprintf("发布完成\n\n总数: %d\n起始索引: %d\n已发布: %d\n失败: %d", count, startIndex, count, failed)
+		text := fmt.Sprintf("发布完成\n\n总数: %d\n起始索引: %d\n已处理: %d\n失败: %d", count, startIndex, count, failed)
 		bot.EditMessageText(&telego.EditMessageTextParams{
 			ChatID:    message.Chat.ChatID(),
 			MessageID: callbackMessage.MessageID,

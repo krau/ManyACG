@@ -17,13 +17,6 @@ import (
 	"github.com/mymmrac/telego/telegoutil"
 )
 
-func ReplaceChars(input string, oldChars []string, newChar string) string {
-	for _, char := range oldChars {
-		input = strings.ReplaceAll(input, char, newChar)
-	}
-	return input
-}
-
 func GetMessageIDs(messages []telego.Message) []int {
 	ids := make([]int, len(messages))
 	for i, message := range messages {
@@ -110,9 +103,9 @@ func GetArtworkMarkdownCaption(artwork *types.Artwork) string {
 	}
 	tags := ""
 	for _, tag := range artwork.Tags {
-		tag = ReplaceChars(tag, []string{":", "：", "-", "（", "）", "「", "」", "*"}, "_")
-		tag = ReplaceChars(tag, []string{"?"}, "")
-		tag = ReplaceChars(tag, []string{"/"}, " "+"#")
+		tag = common.ReplaceChars(tag, []string{":", "：", "-", "（", "）", "「", "」", "*"}, "_")
+		tag = common.ReplaceChars(tag, []string{"?"}, "")
+		tag = common.ReplaceChars(tag, []string{"/"}, " "+"#")
 		tags += "\\#" + strings.Join(strings.Split(common.EscapeMarkdown(tag), " "), "") + " "
 	}
 	caption += "\n\n" + tags
@@ -138,9 +131,9 @@ func GetArtworkHTMLCaption(artwork *types.Artwork) string {
 	}
 	tags := ""
 	for _, tag := range artwork.Tags {
-		tag = ReplaceChars(tag, []string{":", "：", "-", "（", "）", "「", "」", "*"}, "_")
-		tag = ReplaceChars(tag, []string{"?"}, "")
-		tag = ReplaceChars(tag, []string{"/"}, " "+"#")
+		tag = common.ReplaceChars(tag, []string{":", "：", "-", "（", "）", "「", "」", "*"}, "_")
+		tag = common.ReplaceChars(tag, []string{"?"}, "")
+		tag = common.ReplaceChars(tag, []string{"/"}, " "+"#")
 		tags += "#" + strings.Join(strings.Split(common.EscapeHTML(tag), " "), "") + " "
 	}
 	caption += "\n\n" + tags
@@ -180,4 +173,26 @@ func GetPostedPictureInlineKeyboardButton(picture *types.Picture) []telego.Inlin
 		telegoutil.InlineKeyboardButton("详情").WithURL(GetArtworkPostMessageURL(picture.TelegramInfo.MessageID)),
 		telegoutil.InlineKeyboardButton("原图").WithURL(GetDeepLinkForFile(picture.TelegramInfo.MessageID)),
 	}
+}
+
+func GetMessagePhotoFileBytes(bot *telego.Bot, message *telego.Message) ([]byte, error) {
+	fileID := ""
+	if message.Photo != nil {
+		fileID = message.Photo[len(message.Photo)-1].FileID
+	}
+	if message.Document != nil && strings.HasPrefix(message.Document.MimeType, "image/") {
+		if message.Document.FileSize > 20*1024*1024 {
+			return nil, ErrFileTooLarge
+		}
+	}
+	if fileID == "" {
+		return nil, ErrNoPhotoInMessage
+	}
+	tgFile, err := bot.GetFile(
+		&telego.GetFileParams{FileID: fileID},
+	)
+	if err != nil {
+		return nil, err
+	}
+	return telegoutil.DownloadFile(bot.FileDownloadURL(tgFile.FilePath))
 }
