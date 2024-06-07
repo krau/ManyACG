@@ -537,13 +537,14 @@ func batchPostArtwork(ctx context.Context, bot *telego.Bot, message telego.Messa
 			if err != nil {
 				Logger.Errorf("获取作品信息失败: %s", err)
 				failed++
+				telegram.ReplyMessage(bot, message, fmt.Sprintf("获取 %s 信息失败: %s", sourceURL, err))
 				continue
 			}
 		}
 		if err := fetcher.PostAndCreateArtwork(ctx, artwork, bot, storage.GetStorage(), message.Chat.ID); err != nil {
 			Logger.Errorf("发布失败: %s", err)
 			failed++
-			telegram.ReplyMessage(bot, message, "发布失败: "+err.Error())
+			telegram.ReplyMessage(bot, message, fmt.Sprintf("发布 %s 失败: %s", sourceURL, err))
 			continue
 		}
 		time.Sleep(time.Duration(sleepTime) * time.Second)
