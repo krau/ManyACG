@@ -44,3 +44,16 @@ func DeleteAdminByUserID(ctx context.Context, userID int64) (*mongo.DeleteResult
 func UpdateAdmin(ctx context.Context, admin *model.AdminModel) (*mongo.UpdateResult, error) {
 	return adminCollection.ReplaceOne(ctx, bson.M{"user_id": admin.UserID}, admin)
 }
+
+func GetAdmins(ctx context.Context) ([]model.AdminModel, error) {
+	cursor, err := adminCollection.Find(ctx, bson.M{})
+	if err != nil {
+		return nil, err
+	}
+	var admins []model.AdminModel
+	err = cursor.All(ctx, &admins)
+	if err != nil {
+		return nil, err
+	}
+	return admins, nil
+}

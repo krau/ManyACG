@@ -2,6 +2,8 @@ package telegram
 
 import (
 	"ManyACG/config"
+	"ManyACG/service"
+	"context"
 	"os"
 
 	. "ManyACG/logger"
@@ -17,35 +19,8 @@ var (
 	GroupChatID   telego.ChatID // 附属群组
 )
 
-func InitBot() {
-	var err error
-	Bot, err = telego.NewBot(
-		config.Cfg.Telegram.Token,
-		telego.WithDefaultLogger(false, true),
-		telego.WithAPIServer(config.Cfg.Telegram.APIURL),
-	)
-	if err != nil {
-		Logger.Fatalf("Error when creating bot: %s", err)
-		os.Exit(1)
-	}
-	if config.Cfg.Telegram.Username != "" {
-		ChannelChatID = telegoutil.Username(config.Cfg.Telegram.Username)
-	} else {
-		ChannelChatID = telegoutil.ID(config.Cfg.Telegram.ChatID)
-	}
-
-	if config.Cfg.Telegram.GroupID != 0 {
-		GroupChatID = telegoutil.ID(config.Cfg.Telegram.GroupID)
-	}
-
-	me, err := Bot.GetMe()
-	if err != nil {
-		Logger.Errorf("Error when getting bot info: %s", err)
-		os.Exit(1)
-	}
-	BotUsername = me.Username
-
-	commonCommands := []telego.BotCommand{
+var (
+	CommonCommands = []telego.BotCommand{
 		{
 			Command:     "start",
 			Description: "开始涩涩",
@@ -76,12 +51,7 @@ func InitBot() {
 		},
 	}
 
-	Bot.SetMyCommands(&telego.SetMyCommandsParams{
-		Commands: commonCommands,
-		Scope:    &telego.BotCommandScopeDefault{Type: telego.ScopeTypeDefault},
-	})
-
-	adminCommands := []telego.BotCommand{
+	AdminCommands = []telego.BotCommand{
 		{
 			Command:     "set_admin",
 			Description: "设置管理员",
@@ -119,12 +89,52 @@ func InitBot() {
 			Description: "处理无哈希的图片",
 		},
 	}
+)
 
-	adminCommands = append(commonCommands, adminCommands...)
+func InitBot() {
+	var err error
+	Bot, err = telego.NewBot(
+		config.Cfg.Telegram.Token,
+		telego.WithDefaultLogger(false, true),
+		telego.WithAPIServer(config.Cfg.Telegram.APIURL),
+	)
+	if err != nil {
+		Logger.Fatalf("Error when creating bot: %s", err)
+		os.Exit(1)
+	}
+	if config.Cfg.Telegram.Username != "" {
+		ChannelChatID = telegoutil.Username(config.Cfg.Telegram.Username)
+	} else {
+		ChannelChatID = telegoutil.ID(config.Cfg.Telegram.ChatID)
+	}
 
-	for _, adminID := range config.Cfg.Telegram.Admins {
+	if config.Cfg.Telegram.GroupID != 0 {
+		GroupChatID = telegoutil.ID(config.Cfg.Telegram.GroupID)
+	}
+
+	me, err := Bot.GetMe()
+	if err != nil {
+		Logger.Errorf("Error when getting bot info: %s", err)
+		os.Exit(1)
+	}
+	BotUsername = me.Username
+
+	Bot.SetMyCommands(&telego.SetMyCommandsParams{
+		Commands: CommonCommands,
+		Scope:    &telego.BotCommandScopeDefault{Type: telego.ScopeTypeDefault},
+	})
+
+	allCommands := append(CommonCommands, AdminCommands...)
+
+	adminUserIDs, err := service.GetAdminUserIDs(context.TODO())
+	if err != nil {
+		Logger.Warnf("Error when getting admin user IDs: %s", err)
+		return
+	}
+
+	for _, adminID := range adminUserIDs {
 		Bot.SetMyCommands(&telego.SetMyCommandsParams{
-			Commands: adminCommands,
+			Commands: allCommands,
 			Scope: &telego.BotCommandScopeChat{
 				Type:   telego.ScopeTypeChat,
 				ChatID: telegoutil.ID(adminID),
@@ -134,7 +144,7 @@ func InitBot() {
 			continue
 		}
 		Bot.SetMyCommands(&telego.SetMyCommandsParams{
-			Commands: adminCommands,
+			Commands: allCommands,
 			Scope: &telego.BotCommandScopeChatMember{
 				Type:   telego.ScopeTypeChat,
 				ChatID: GroupChatID,
@@ -142,4 +152,21 @@ func InitBot() {
 			},
 		})
 	}
+
+	adminGroupIDs, err := service.GetAdminGroupIDs(context.TODO())
+	if err != nil {
+		Logger.Warnf("Error when getting admin group IDs: %s", err)
+		return
+	}
+
+	for _, adminID := range adminGroupIDs {
+		Bot.SetMyCommands(&telego.SetMyCommandsParams{
+			Commands: allCommands,
+			Scope: &telego.BotCommandScopeChat{
+				Type:   telego.ScopeTypeChat,
+				ChatID: telegoutil.ID(adminID),
+			},
+		})
+	}
+
 }

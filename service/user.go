@@ -75,3 +75,31 @@ func CreateOrUpdateAdmin(ctx context.Context, userID int64, permissions []types.
 	_, err = dao.UpdateAdmin(ctx, admin)
 	return err
 }
+
+func GetAdminUserIDs(ctx context.Context) ([]int64, error) {
+	admins, err := dao.GetAdmins(ctx)
+	if err != nil {
+		return nil, err
+	}
+	var userIDs []int64
+	for _, admin := range admins {
+		if admin.UserID > 0 {
+			userIDs = append(userIDs, admin.UserID)
+		}
+	}
+	return userIDs, nil
+}
+
+func GetAdminGroupIDs(ctx context.Context) ([]int64, error) {
+	admins, err := dao.GetAdmins(ctx)
+	if err != nil {
+		return nil, err
+	}
+	var groupIDs []int64
+	for _, admin := range admins {
+		if admin.UserID < 0 {
+			groupIDs = append(groupIDs, admin.UserID)
+		}
+	}
+	return groupIDs, nil
+}
