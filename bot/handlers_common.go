@@ -87,17 +87,17 @@ func getPictureFile(ctx context.Context, bot *telego.Bot, message telego.Message
 		go telegram.ReplyMessage(bot, message, "少女祈祷中...")
 		fileBytes, err := telegram.GetMessagePhotoFileBytes(bot, message.ReplyToMessage)
 		if err != nil {
-			telegram.ReplyMessage(bot, message, "请回复一条频道的作品图片消息")
+			telegram.ReplyMessage(bot, message, "请回复一条频道的图片消息")
 			return
 		}
 		hash, err := common.GetPhash(fileBytes)
 		if err != nil {
-			telegram.ReplyMessage(bot, message, "请回复一条频道的作品图片消息")
+			telegram.ReplyMessage(bot, message, "请回复一条频道的图片消息")
 			return
 		}
 		pictures, err := service.GetPicturesByHashHammingDistance(ctx, hash, 10)
 		if err != nil || len(pictures) == 0 {
-			telegram.ReplyMessage(bot, message, "请回复一条频道的作品图片消息")
+			telegram.ReplyMessage(bot, message, "请回复一条频道的图片消息")
 			return
 		}
 		picture := pictures[0]
@@ -106,6 +106,7 @@ func getPictureFile(ctx context.Context, bot *telego.Bot, message telego.Message
 			telegram.ReplyMessage(bot, message, "文件发送失败: "+err.Error())
 			return
 		}
+		return
 	}
 	pictureMessageID := messageOrigin.MessageID
 	cmd, _, args := telegoutil.ParseCommand(message.Text)

@@ -35,11 +35,11 @@ func SendPictureFileByMessageID(ctx context.Context, bot *telego.Bot, message te
 		file = telegoutil.FileFromID(picture.TelegramInfo.DocumentFileID)
 	} else {
 		go ReplyMessage(bot, message, "正在下载原图，请稍等~")
-		data, err := storage.GetStorage().GetFile(picture.StorageInfo)
+		artwork, err := service.GetArtworkByMessageID(ctx, pictureMessageID)
 		if err != nil {
 			return nil, err
 		}
-		artwork, err := service.GetArtworkByMessageID(ctx, pictureMessageID)
+		data, err := storage.GetStorage().GetFile(picture.StorageInfo)
 		if err != nil {
 			return nil, err
 		}
@@ -49,7 +49,9 @@ func SendPictureFileByMessageID(ctx context.Context, bot *telego.Bot, message te
 	documentMessage, err := bot.SendDocument(telegoutil.Document(message.Chat.ChatID(), file).
 		WithReplyParameters(&telego.ReplyParameters{
 			MessageID: message.MessageID,
-		}).WithCaption("这是你要的原图~"))
+		}).WithReplyMarkup(telegoutil.InlineKeyboard([]telego.InlineKeyboardButton{
+		telegoutil.InlineKeyboardButton("详情").WithURL(GetArtworkPostMessageURL(pictureMessageID)),
+	})))
 	if err != nil {
 		return nil, err
 	}
@@ -184,6 +186,7 @@ func GetMessagePhotoFileBytes(bot *telego.Bot, message *telego.Message) ([]byte,
 		if message.Document.FileSize > 20*1024*1024 {
 			return nil, ErrFileTooLarge
 		}
+		fileID = message.Document.FileID
 	}
 	if fileID == "" {
 		return nil, ErrNoPhotoInMessage

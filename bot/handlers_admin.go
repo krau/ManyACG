@@ -544,7 +544,7 @@ func batchPostArtwork(ctx context.Context, bot *telego.Bot, message telego.Messa
 			Logger.Errorf("发布失败: %s", err)
 			failed++
 			telegram.ReplyMessage(bot, message, "发布失败: "+err.Error())
-			return
+			continue
 		}
 		time.Sleep(time.Duration(sleepTime) * time.Second)
 	}
