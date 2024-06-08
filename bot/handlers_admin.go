@@ -32,7 +32,7 @@ func setAdmin(ctx context.Context, bot *telego.Bot, message telego.Message) {
 		telegram.ReplyMessage(bot, message, "获取管理员信息失败: "+err.Error())
 		return
 	}
-	if userAdmin != nil && !userAdmin.SuperAdmin {
+	if userAdmin == nil || !userAdmin.SuperAdmin {
 		telegram.ReplyMessage(bot, message, "你没有权限设置管理员")
 		return
 	}
@@ -124,6 +124,10 @@ func setAdmin(ctx context.Context, bot *telego.Bot, message telego.Message) {
 }
 
 func deletePicture(ctx context.Context, bot *telego.Bot, message telego.Message) {
+	if !CheckPermissionInGroup(ctx, message, types.PermissionDeleteArtwork) {
+		telegram.ReplyMessage(bot, message, "你没有删除图片的权限")
+		return
+	}
 	var channelMessageID int
 	cmd, _, args := telegoutil.ParseCommand(message.Text)
 	if message.ReplyToMessage == nil {
@@ -146,10 +150,6 @@ func deletePicture(ctx context.Context, bot *telego.Bot, message telego.Message)
 		channelMessageID = originChannel.MessageID
 	}
 	if cmd == "del" {
-		if !service.CheckAdminPermission(ctx, message.From.ID, types.PermissionDeleteArtwork) {
-			telegram.ReplyMessage(bot, message, "你没有删除图片的权限")
-			return
-		}
 		picture, err := service.GetPictureByMessageID(ctx, channelMessageID)
 		if err != nil {
 			telegram.ReplyMessage(bot, message, "获取图片信息失败: "+err.Error())
@@ -166,10 +166,6 @@ func deletePicture(ctx context.Context, bot *telego.Bot, message telego.Message)
 			Logger.Warnf("删除图片失败: %s", err)
 			bot.SendMessage(telegoutil.Message(telegoutil.ID(message.From.ID), "在存储中删除图片文件失败: "+err.Error()))
 		}
-		return
-	}
-	if !service.CheckAdminPermission(ctx, message.From.ID, types.PermissionDeleteArtwork) {
-		telegram.ReplyMessage(bot, message, "你没有删除作品的权限")
 		return
 	}
 	artwork, err := service.GetArtworkByMessageID(ctx, channelMessageID)
@@ -200,17 +196,17 @@ func deletePicture(ctx context.Context, bot *telego.Bot, message telego.Message)
 }
 
 func fetchArtwork(ctx context.Context, bot *telego.Bot, message telego.Message) {
-	if !service.CheckAdminPermission(ctx, message.From.ID, types.PermissionFetchArtwork) {
+	if CheckPermissionInGroup(ctx, message, types.PermissionFetchArtwork) {
 		telegram.ReplyMessage(bot, message, "你没有拉取作品的权限")
 		return
 	}
-
 	go fetcher.FetchOnce(context.TODO(), config.Cfg.Fetcher.Limit)
 	telegram.ReplyMessage(bot, message, "开始拉取作品了")
 }
 
 func postArtwork(ctx context.Context, bot *telego.Bot, query telego.CallbackQuery) {
-	if !service.CheckAdminPermission(ctx, query.From.ID, types.PermissionPostArtwork) {
+	if !service.CheckAdminPermission(ctx, query.From.ID, types.PermissionPostArtwork) &&
+		!service.CheckAdminPermission(ctx, query.Message.GetChat().ID, types.PermissionPostArtwork) {
 		bot.AnswerCallbackQuery(&telego.AnswerCallbackQueryParams{
 			CallbackQueryID: query.ID,
 			Text:            "你没有发布作品的权限",
@@ -287,7 +283,7 @@ func postArtwork(ctx context.Context, bot *telego.Bot, query telego.CallbackQuer
 	if asR18 {
 		artwork.R18 = true
 	}
-	if err := fetcher.PostAndCreateArtwork(ctx, artwork, bot, storage.GetStorage(), query.From.ID); err != nil {
+	if err := fetcher.PostAndCreateArtwork(ctx, artwork, bot, storage.GetStorage(), query.Message.GetChat().ID); err != nil {
 		Logger.Errorf("发布失败: %s", err)
 		bot.EditMessageCaption(&telego.EditMessageCaptionParams{
 			ChatID:    telegoutil.ID(query.Message.GetChat().ID),
@@ -335,11 +331,10 @@ func processPictures(ctx context.Context, bot *telego.Bot, message telego.Messag
 }
 
 func setArtworkR18(ctx context.Context, bot *telego.Bot, message telego.Message) {
-	if !service.CheckAdminPermission(ctx, message.From.ID, types.PermissionEditArtwork) {
+	if !CheckPermissionInGroup(ctx, message, types.PermissionEditArtwork) {
 		telegram.ReplyMessage(bot, message, "你没有编辑作品的权限")
 		return
 	}
-
 	messageOrigin, ok := telegram.GetMessageOriginChannelArtworkPost(ctx, bot, message)
 	if !ok {
 		telegram.ReplyMessage(bot, message, "请回复一条频道的图片消息")
@@ -360,11 +355,10 @@ func setArtworkR18(ctx context.Context, bot *telego.Bot, message telego.Message)
 }
 
 func setArtworkTags(ctx context.Context, bot *telego.Bot, message telego.Message) {
-	if !service.CheckAdminPermission(ctx, message.From.ID, types.PermissionEditArtwork) {
+	if !CheckPermissionInGroup(ctx, message, types.PermissionEditArtwork) {
 		telegram.ReplyMessage(bot, message, "你没有编辑作品的权限")
 		return
 	}
-
 	messageOrigin, ok := telegram.GetMessageOriginChannelArtworkPost(ctx, bot, message)
 	if !ok {
 		telegram.ReplyMessage(bot, message, "请回复一条频道的图片消息")
@@ -421,7 +415,7 @@ func setArtworkTags(ctx context.Context, bot *telego.Bot, message telego.Message
 }
 
 func batchPostArtwork(ctx context.Context, bot *telego.Bot, message telego.Message) {
-	if !service.CheckAdminPermission(ctx, message.From.ID, types.PermissionPostArtwork) {
+	if !CheckPermissionInGroup(ctx, message, types.PermissionPostArtwork) {
 		telegram.ReplyMessage(bot, message, "你没有发布作品的权限")
 		return
 	}
