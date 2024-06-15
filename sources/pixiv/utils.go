@@ -25,7 +25,8 @@ func reqAjaxResp(sourceURL string) (*PixivAjaxResp, error) {
 	var pixivAjaxResp PixivAjaxResp
 	err = json.Unmarshal(resp.Bytes(), &pixivAjaxResp)
 	if err != nil {
-		return nil, err
+		Logger.Errorf("Error decoding artwork info: %v", err)
+		return nil, ErrUnmarshalPixivAjax
 	}
 	return &pixivAjaxResp, nil
 }

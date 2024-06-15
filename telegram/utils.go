@@ -129,7 +129,7 @@ func GetArtworkHTMLCaption(artwork *types.Artwork) string {
 			}
 			desc = desc[:i] + "..."
 		}
-		caption += fmt.Sprintf("\n\n<blockquote expandable=true>%s</blockquote>", common.EscapeHTML(desc))
+		caption += fmt.Sprintf("\n<blockquote expandable=true>%s</blockquote>", common.EscapeHTML(desc))
 	}
 	tags := ""
 	for _, tag := range artwork.Tags {
@@ -138,7 +138,7 @@ func GetArtworkHTMLCaption(artwork *types.Artwork) string {
 		tag = common.ReplaceChars(tag, []string{"/"}, " "+"#")
 		tags += "#" + strings.Join(strings.Split(common.EscapeHTML(tag), " "), "") + " "
 	}
-	caption += "\n\n" + tags
+	caption += "\n\n" + fmt.Sprintf("<blockquote expandable=true>%s</blockquote>", tags)
 	return caption
 }
 

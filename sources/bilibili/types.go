@@ -1,6 +1,7 @@
 package bilibili
 
 import (
+	"ManyACG/common"
 	"ManyACG/types"
 	"errors"
 	"fmt"
@@ -77,6 +78,7 @@ func (resp *BilibiliApiResp) ToArtwork() (*types.Artwork, error) {
 	if opus.Pics == nil || opus.Summary == nil {
 		return nil, ErrInvalidURL
 	}
+
 	pics := opus.Pics
 	summary := opus.Summary
 	pictures := make([]*types.Picture, 0, len(pics))
@@ -93,7 +95,7 @@ func (resp *BilibiliApiResp) ToArtwork() (*types.Artwork, error) {
 	if title == "" {
 		title = "bilibili/" + item.IdStr
 	}
-	return &types.Artwork{
+	artwork := &types.Artwork{
 		Title:       title,
 		Description: summary.Text,
 		SourceType:  types.SourceTypeBilibili,
@@ -107,5 +109,7 @@ func (resp *BilibiliApiResp) ToArtwork() (*types.Artwork, error) {
 		},
 		Pictures: pictures,
 		Tags:     nil,
-	}, nil
+	}
+	common.DownloadWithCache(artwork.Pictures[0].Original, ReqClient)
+	return artwork, nil
 }

@@ -13,19 +13,22 @@ import (
 var Client *req.Client
 
 func init() {
-	c := req.C().ImpersonateChrome().SetCommonRetryCount(2).SetUserAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Safari/537.36")
+	c := req.C().ImpersonateChrome().SetCommonRetryCount(2)
 	c.TLSHandshakeTimeout = time.Second * 10
 	Client = c
 }
 
-func DownloadWithCache(url string) ([]byte, error) {
+func DownloadWithCache(url string, client *req.Client) ([]byte, error) {
+	if client == nil {
+		client = Client
+	}
 	cachePath := config.Cfg.Storage.CacheDir + "/" + ReplaceFileNameInvalidChar(url)
 	data, err := os.ReadFile(cachePath)
 	if err == nil {
 		Logger.Debugf("cache hit: %s", cachePath)
 		return data, nil
 	}
-	resp, err := Client.R().Get(url)
+	resp, err := client.R().Get(url)
 	if err != nil {
 		return nil, err
 	}

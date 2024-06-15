@@ -300,7 +300,7 @@ func getArtworkInfo(ctx context.Context, bot *telego.Bot, message telego.Message
 
 	var inputFile telego.InputFile
 	if artwork.Pictures[0].TelegramInfo == nil || artwork.Pictures[0].TelegramInfo.PhotoFileID == "" {
-		fileBytes, err := common.DownloadWithCache(artwork.Pictures[0].Original)
+		fileBytes, err := common.DownloadWithCache(artwork.Pictures[0].Original, nil)
 		if err != nil {
 			telegram.ReplyMessage(bot, message, "下载图片失败: "+err.Error())
 			return

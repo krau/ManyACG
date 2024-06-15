@@ -5,6 +5,7 @@ type sourceConfigs struct {
 	Pixiv    SourcePixivConfig    `toml:"pixiv" mapstructure:"pixiv" json:"pixiv" yaml:"pixiv"`
 	Twitter  SourceTwitterConfig  `toml:"twitter" mapstructure:"twitter" json:"twitter" yaml:"twitter"`
 	Bilibili SourceBilibiliConfig `toml:"bilibili" mapstructure:"bilibili" json:"bilibili" yaml:"bilibili"`
+	Danbooru SourceDanbooruConfig `toml:"danbooru" mapstructure:"danbooru" json:"danbooru" yaml:"danbooru"`
 }
 
 type SourcePixivConfig struct {
@@ -22,5 +23,9 @@ type SourceTwitterConfig struct {
 }
 
 type SourceBilibiliConfig struct {
+	Enable bool `toml:"enable" mapstructure:"enable" json:"enable" yaml:"enable"`
+}
+
+type SourceDanbooruConfig struct {
 	Enable bool `toml:"enable" mapstructure:"enable" json:"enable" yaml:"enable"`
 }

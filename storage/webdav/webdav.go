@@ -36,7 +36,7 @@ func (w *Webdav) SavePicture(artwork *types.Artwork, picture *types.Picture) (*t
 		Logger.Errorf("failed to create directory: %s", err)
 		return nil, ErrFailedMkdirAll
 	}
-	fileBytes, err := common.DownloadWithCache(picture.Original)
+	fileBytes, err := common.DownloadWithCache(picture.Original, nil)
 	if err != nil {
 		Logger.Errorf("failed to download file: %s", err)
 		return nil, ErrFailedDownload
