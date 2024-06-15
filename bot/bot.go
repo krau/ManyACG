@@ -44,7 +44,6 @@ func RunPolling() {
 	baseGroup.HandleMessageCtx(getPictureFile, telegohandler.Or(telegohandler.CommandEqual("file"), telegohandler.CommandEqual("files")), mentionIsBot)
 	baseGroup.HandleMessageCtx(randomPicture, telegohandler.Or(telegohandler.CommandEqual("setu"), telegohandler.CommandEqual("random")), mentionIsBot)
 	baseGroup.HandleMessageCtx(help, telegohandler.CommandEqual("help"), mentionIsBot)
-	baseGroup.HandleMessageCtx(getArtworkInfo, sourceUrlMatches)
 	baseGroup.HandleMessageCtx(searchPicture, telegohandler.CommandEqual("search"), mentionIsBot)
 	baseGroup.HandleMessageCtx(setAdmin, telegohandler.CommandEqual("set_admin"))
 	baseGroup.HandleMessageCtx(deletePicture, telegohandler.Or(telegohandler.CommandEqual("del"), telegohandler.CommandEqual("delete")))
@@ -52,9 +51,10 @@ func RunPolling() {
 	baseGroup.HandleMessageCtx(processPictures, telegohandler.CommandEqual("process_pictures"))
 	baseGroup.HandleMessageCtx(setArtworkR18, telegohandler.CommandEqual("r18"))
 	baseGroup.HandleMessageCtx(setArtworkTags, telegohandler.Or(telegohandler.CommandEqual("tags"), telegohandler.CommandEqual("addtags"), telegohandler.CommandEqual("deltags")))
+	baseGroup.HandleMessageCtx(postArtworkCmd, telegohandler.CommandEqual("post"))
 	baseGroup.HandleMessageCtx(batchPostArtwork, telegohandler.CommandEqual("batch_post"))
-
-	baseGroup.HandleCallbackQueryCtx(postArtwork, telegohandler.CallbackDataContains("post_artwork"))
+	baseGroup.HandleCallbackQueryCtx(postArtworkCb, telegohandler.CallbackDataContains("post_artwork"))
+	baseGroup.HandleMessageCtx(getArtworkInfo, sourceUrlMatches)
 	baseGroup.HandleInlineQueryCtx(inlineQuery)
 
 	botHandler.Start()

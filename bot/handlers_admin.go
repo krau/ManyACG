@@ -204,7 +204,7 @@ func fetchArtwork(ctx context.Context, bot *telego.Bot, message telego.Message) 
 	telegram.ReplyMessage(bot, message, "开始拉取作品了")
 }
 
-func postArtwork(ctx context.Context, bot *telego.Bot, query telego.CallbackQuery) {
+func postArtworkCb(ctx context.Context, bot *telego.Bot, query telego.CallbackQuery) {
 	if !service.CheckAdminPermission(ctx, query.From.ID, types.PermissionPostArtwork) &&
 		!service.CheckAdminPermission(ctx, query.Message.GetChat().ID, types.PermissionPostArtwork) {
 		bot.AnswerCallbackQuery(&telego.AnswerCallbackQueryParams{
@@ -314,6 +314,71 @@ func postArtwork(ctx context.Context, bot *telego.Bot, query telego.CallbackQuer
 			},
 		),
 	})
+}
+
+func postArtworkCmd(ctx context.Context, bot *telego.Bot, message telego.Message) {
+	if !CheckPermissionInGroup(ctx, message, types.PermissionPostArtwork) {
+		telegram.ReplyMessage(bot, message, "你没有发布作品的权限")
+		return
+	}
+	_, _, args := telegoutil.ParseCommand(message.Text)
+	if len(args) == 0 && message.ReplyToMessage == nil {
+		telegram.ReplyMessage(bot, message, "请提供作品链接, 或回复一条消息")
+		return
+	}
+	var sourceURL string
+	if message.ReplyToMessage != nil {
+		sourceURL = FindSourceURLForMessage(message.ReplyToMessage)
+		if sourceURL == "" {
+			if len(args) == 0 {
+				telegram.ReplyMessage(bot, message, "不支持的链接")
+				return
+			}
+			sourceURL = sources.FindSourceURL(args[0])
+		}
+	}
+	if len(args) > 0 {
+		sourceURL = sources.FindSourceURL(args[0])
+	}
+	if sourceURL == "" {
+		telegram.ReplyMessage(bot, message, "不支持的链接")
+		return
+	}
+	artwork, _ := service.GetArtworkByURL(ctx, sourceURL)
+	if artwork != nil {
+		telegram.ReplyMessage(bot, message, "作品已存在")
+		return
+	}
+	msg, err := telegram.ReplyMessage(bot, message, "正在发布...")
+	if err == nil && msg != nil {
+		defer bot.DeleteMessage(telegoutil.Delete(msg.Chat.ChatID(), msg.MessageID))
+	}
+	cachedArtwork, err := service.GetCachedArtworkByURL(ctx, sourceURL)
+	if err != nil {
+		artwork, err = sources.GetArtworkInfo(sourceURL)
+		if err != nil {
+			Logger.Errorf("获取作品信息失败: %s", err)
+			telegram.ReplyMessage(bot, message, "获取作品信息失败: "+err.Error())
+			return
+		}
+	} else {
+		artwork = cachedArtwork.Artwork
+	}
+	if err := fetcher.PostAndCreateArtwork(ctx, artwork, bot, storage.GetStorage(), message.Chat.ID); err != nil {
+		telegram.ReplyMessage(bot, message, "发布失败: "+err.Error())
+		return
+	}
+	artwork, err = service.GetArtworkByURL(ctx, sourceURL)
+	if err != nil {
+		telegram.ReplyMessage(bot, message, "获取发布后的作品信息失败: "+err.Error())
+		return
+	}
+	bot.SendMessage(telegoutil.Message(telegoutil.ID(message.Chat.ID), "发布成功: "+artwork.Title).
+		WithReplyParameters(&telego.ReplyParameters{
+			ChatID:    message.Chat.ChatID(),
+			MessageID: message.MessageID,
+		},
+		).WithReplyMarkup(telegram.GetPostedPictureReplyMarkup(artwork.Pictures[0])))
 }
 
 func processPictures(ctx context.Context, bot *telego.Bot, message telego.Message) {
