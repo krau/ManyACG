@@ -266,7 +266,7 @@ func postArtworkCb(ctx context.Context, bot *telego.Bot, query telego.CallbackQu
 	go bot.EditMessageCaption(&telego.EditMessageCaptionParams{
 		ChatID:      telegoutil.ID(query.Message.GetChat().ID),
 		MessageID:   query.Message.GetMessageID(),
-		Caption:     "正在发布...",
+		Caption:     fmt.Sprintf("正在发布: %s", artwork.SourceURL),
 		ReplyMarkup: nil,
 	})
 	if service.CheckDeletedByURL(ctx, sourceURL) {

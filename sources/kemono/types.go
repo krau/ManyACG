@@ -5,7 +5,9 @@ import (
 	"ManyACG/types"
 	"fmt"
 	"net/http"
+	"regexp"
 	"strconv"
+	"strings"
 )
 
 type KemonoPostResp struct {
@@ -33,6 +35,8 @@ type KemonoCreatorProfileResp struct {
 	Service  string `json:"service"`
 	PubilcID string `json:"public_id"` // username
 }
+
+var htmlRe = regexp.MustCompile("<[^>]+>")
 
 func (resp *KemonoPostResp) ToArtwork() (*types.Artwork, error) {
 	creatorResp, err := getAuthorProfile(resp.Service, resp.User)
@@ -100,7 +104,7 @@ func (resp *KemonoPostResp) ToArtwork() (*types.Artwork, error) {
 	}
 	artwork := &types.Artwork{
 		Title:       resp.Title,
-		Description: resp.Content,
+		Description: htmlRe.ReplaceAllString(strings.ReplaceAll(resp.Content, "<br/>", "\n"), ""),
 		R18:         false,
 		SourceType:  types.SourceTypeKemono,
 		SourceURL:   fmt.Sprintf("https://kemono.su/%s/user/%s/post/%s", resp.Service, resp.User, resp.ID),

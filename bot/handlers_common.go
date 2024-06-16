@@ -324,7 +324,7 @@ func getArtworkInfo(ctx context.Context, bot *telego.Bot, message telego.Message
 	if deletedModel != nil && hasPermission {
 		photo.WithCaption(artworkInfoCaption + fmt.Sprintf("\n\n这是一个在 %s 删除的作品\n如果发布则会取消删除", deletedModel.DeletedAt.Time().Format("2006-01-02 15:04:05")))
 	} else {
-		artworkInfoCaption += fmt.Sprintf("\n\n该作品共有%d张图片", len(artwork.Pictures))
+		artworkInfoCaption += fmt.Sprintf("\n该作品共有%d张图片", len(artwork.Pictures))
 		photo.WithCaption(artworkInfoCaption)
 	}
 	if isAlreadyPosted {
