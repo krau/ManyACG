@@ -19,7 +19,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
-func PostAndCreateArtwork(ctx context.Context, artwork *types.Artwork, bot *telego.Bot, storage storage.Storage, fromID int64) error {
+func PostAndCreateArtwork(ctx context.Context, artwork *types.Artwork, bot *telego.Bot, fromID int64, messageID int) error {
 	artworkInDB, err := service.GetArtworkByURL(ctx, artwork.SourceURL)
 	if err == nil && artworkInDB != nil {
 		Logger.Debugf("Artwork %s already exists", artwork.Title)
@@ -32,20 +32,60 @@ func PostAndCreateArtwork(ctx context.Context, artwork *types.Artwork, bot *tele
 		Logger.Debugf("Artwork %s is deleted", artwork.Title)
 		return errors.ErrArtworkDeleted
 	}
+	showProgress := fromID != 0 && messageID != 0 && bot != nil
+	if showProgress {
+		defer bot.EditMessageReplyMarkup(&telego.EditMessageReplyMarkupParams{
+			ChatID:      telegoutil.ID(fromID),
+			MessageID:   messageID,
+			ReplyMarkup: nil,
+		})
+	}
 	for i, picture := range artwork.Pictures {
-		info, err := storage.SavePicture(artwork, picture)
+		if showProgress {
+			go bot.EditMessageReplyMarkup(&telego.EditMessageReplyMarkupParams{
+				ChatID:    telegoutil.ID(fromID),
+				MessageID: messageID,
+				ReplyMarkup: telegoutil.InlineKeyboard(
+					[]telego.InlineKeyboardButton{
+						telegoutil.InlineKeyboardButton(fmt.Sprintf("正在保存图片 %d/%d", i+1, len(artwork.Pictures))).WithCallbackData("noop"),
+					},
+				),
+			})
+		}
+		info, err := storage.GetStorage().SavePicture(artwork, picture)
 		if err != nil {
 			Logger.Errorf("saving picture %d of artwork %s: %s", i, artwork.Title, err)
 			return fmt.Errorf("saving picture %d of artwork %s: %w", i, artwork.Title, err)
 		}
 		artwork.Pictures[i].StorageInfo = info
 	}
-	messages, err := telegram.PostArtwork(telegram.Bot, artwork, storage)
+	if showProgress {
+		go bot.EditMessageReplyMarkup(&telego.EditMessageReplyMarkupParams{
+			ChatID:    telegoutil.ID(fromID),
+			MessageID: messageID,
+			ReplyMarkup: telegoutil.InlineKeyboard(
+				[]telego.InlineKeyboardButton{
+					telegoutil.InlineKeyboardButton("图片保存完成, 正在发布到频道...").WithCallbackData("noop"),
+				},
+			),
+		})
+	}
+	messages, err := telegram.PostArtwork(telegram.Bot, artwork)
 	if err != nil {
 		return fmt.Errorf("posting artwork [%s](%s): %w", artwork.Title, artwork.SourceURL, err)
 	}
 	Logger.Infof("Posted artwork %s", artwork.Title)
-
+	if showProgress {
+		go bot.EditMessageReplyMarkup(&telego.EditMessageReplyMarkupParams{
+			ChatID:    telegoutil.ID(fromID),
+			MessageID: messageID,
+			ReplyMarkup: telegoutil.InlineKeyboard(
+				[]telego.InlineKeyboardButton{
+					telegoutil.InlineKeyboardButton("发布完成").WithCallbackData("noop"),
+				},
+			),
+		})
+	}
 	for i, picture := range artwork.Pictures {
 		if picture.TelegramInfo == nil {
 			picture.TelegramInfo = &types.TelegramInfo{}
@@ -72,12 +112,12 @@ func PostAndCreateArtwork(ctx context.Context, artwork *types.Artwork, bot *tele
 		}()
 		return fmt.Errorf("error when creating artwork %s: %w", artwork.SourceURL, err)
 	}
-	go afterCreate(context.TODO(), artwork, bot, storage, fromID)
+	go afterCreate(context.TODO(), artwork, bot, fromID, messageID)
 
 	return nil
 }
 
-func afterCreate(ctx context.Context, artwork *types.Artwork, bot *telego.Bot, _ storage.Storage, fromID int64) {
+func afterCreate(ctx context.Context, artwork *types.Artwork, bot *telego.Bot, fromID int64, _ int) {
 	for _, picture := range artwork.Pictures {
 		if err := service.ProcessPictureAndUpdate(ctx, picture); err != nil {
 			Logger.Warnf("error when processing %d of artwork %s: %s", picture.Index, artwork.Title, err)

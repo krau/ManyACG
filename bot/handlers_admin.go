@@ -283,7 +283,7 @@ func postArtworkCb(ctx context.Context, bot *telego.Bot, query telego.CallbackQu
 	if asR18 {
 		artwork.R18 = true
 	}
-	if err := fetcher.PostAndCreateArtwork(ctx, artwork, bot, storage.GetStorage(), query.Message.GetChat().ID); err != nil {
+	if err := fetcher.PostAndCreateArtwork(ctx, artwork, bot, query.Message.GetChat().ID, query.Message.GetMessageID()); err != nil {
 		Logger.Errorf("发布失败: %s", err)
 		bot.EditMessageCaption(&telego.EditMessageCaptionParams{
 			ChatID:    telegoutil.ID(query.Message.GetChat().ID),
@@ -364,7 +364,7 @@ func postArtworkCmd(ctx context.Context, bot *telego.Bot, message telego.Message
 	} else {
 		artwork = cachedArtwork.Artwork
 	}
-	if err := fetcher.PostAndCreateArtwork(ctx, artwork, bot, storage.GetStorage(), message.Chat.ID); err != nil {
+	if err := fetcher.PostAndCreateArtwork(ctx, artwork, bot, message.Chat.ID, message.MessageID); err != nil {
 		telegram.ReplyMessage(bot, message, "发布失败: "+err.Error())
 		return
 	}
@@ -600,7 +600,7 @@ func batchPostArtwork(ctx context.Context, bot *telego.Bot, message telego.Messa
 				continue
 			}
 		}
-		if err := fetcher.PostAndCreateArtwork(ctx, artwork, bot, storage.GetStorage(), message.Chat.ID); err != nil {
+		if err := fetcher.PostAndCreateArtwork(ctx, artwork, bot, message.Chat.ID, message.MessageID); err != nil {
 			Logger.Errorf("发布失败: %s", err)
 			failed++
 			telegram.ReplyMessage(bot, message, fmt.Sprintf("发布 %s 失败: %s", sourceURL, err))

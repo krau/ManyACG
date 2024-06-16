@@ -16,7 +16,7 @@ import (
 	"github.com/mymmrac/telego/telegoutil"
 )
 
-func PostArtwork(bot *telego.Bot, artwork *types.Artwork, storage storage.Storage) ([]telego.Message, error) {
+func PostArtwork(bot *telego.Bot, artwork *types.Artwork) ([]telego.Message, error) {
 	if bot == nil {
 		Logger.Fatal("Bot is nil")
 		return nil, errors.ErrNilBot
@@ -27,7 +27,7 @@ func PostArtwork(bot *telego.Bot, artwork *types.Artwork, storage storage.Storag
 	}
 
 	if len(artwork.Pictures) <= 10 {
-		inputMediaPhotos, err := getInputMediaPhotos(artwork, storage, 0, len(artwork.Pictures))
+		inputMediaPhotos, err := getInputMediaPhotos(artwork, 0, len(artwork.Pictures))
 		if err != nil {
 			return nil, err
 		}
@@ -45,7 +45,7 @@ func PostArtwork(bot *telego.Bot, artwork *types.Artwork, storage storage.Storag
 		if end > len(artwork.Pictures) {
 			end = len(artwork.Pictures)
 		}
-		inputMediaPhotos, err := getInputMediaPhotos(artwork, storage, i, end)
+		inputMediaPhotos, err := getInputMediaPhotos(artwork, i, end)
 		if err != nil {
 			return nil, err
 		}
@@ -67,11 +67,11 @@ func PostArtwork(bot *telego.Bot, artwork *types.Artwork, storage storage.Storag
 }
 
 // start from 0
-func getInputMediaPhotos(artwork *types.Artwork, storage storage.Storage, start, end int) ([]telego.InputMedia, error) {
+func getInputMediaPhotos(artwork *types.Artwork, start, end int) ([]telego.InputMedia, error) {
 	inputMediaPhotos := make([]telego.InputMedia, end-start)
 	for i := start; i < end; i++ {
 		picture := artwork.Pictures[i]
-		fileBytes, err := storage.GetFile(picture.StorageInfo)
+		fileBytes, err := storage.GetStorage().GetFile(picture.StorageInfo)
 		if err != nil {
 			Logger.Errorf("failed to get file: %s", err)
 			return nil, err
