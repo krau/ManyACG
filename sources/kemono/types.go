@@ -1,8 +1,10 @@
 package kemono
 
 import (
+	. "ManyACG/logger"
 	"ManyACG/types"
 	"fmt"
+	"net/http"
 	"strconv"
 )
 
@@ -49,25 +51,47 @@ func (resp *KemonoPostResp) ToArtwork() (*types.Artwork, error) {
 	}
 	pictures := make([]*types.Picture, 0)
 	if isImage(resp.File.Path) {
-		pictures = append(pictures, &types.Picture{
-			Index:     0,
-			Thumbnail: cdnBaseURL + resp.File.Path,
-			Original:  cdnBaseURL + resp.File.Path,
-			Width:     0,
-			Height:    0,
-		})
+		fileResp, err := reqClient.R().DisableAutoReadResponse().Get(cdnBaseURL + resp.File.Path)
+		if err == nil && fileResp.StatusCode == http.StatusOK {
+			pictures = append(pictures, &types.Picture{
+				Index:     0,
+				Thumbnail: cdnBaseURL + resp.File.Path,
+				Original:  cdnBaseURL + resp.File.Path,
+				Width:     0,
+				Height:    0,
+			})
+		}
+		fileResp.Body.Close()
 	}
-	for i, attachment := range resp.Attachments {
+	i := len(pictures)
+	for _, attachment := range resp.Attachments {
 		if !isImage(attachment.Path) {
 			continue
 		}
+		fileURL := cdnBaseURL + attachment.Path
+		fileResp, err := reqClient.R().DisableAutoReadResponse().Get(fileURL)
+		if err != nil {
+			Logger.Warnf("get attachment %s failed: %s", fileURL, err)
+			continue
+		}
+		if fileResp.StatusCode != http.StatusOK {
+			Logger.Warnf("get attachment %s failed: %d", fileURL, fileResp.StatusCode)
+			continue
+		}
+		fileResp.Body.Close()
+		for _, picture := range pictures {
+			if picture.Original == fileURL {
+				continue
+			}
+		}
 		pictures = append(pictures, &types.Picture{
-			Index:     uint(i + 1),
-			Thumbnail: cdnBaseURL + attachment.Path,
-			Original:  cdnBaseURL + attachment.Path,
+			Index:     uint(i),
+			Thumbnail: fileURL,
+			Original:  fileURL,
 			Width:     0,
 			Height:    0,
 		})
+		i++
 	}
 	artwork := &types.Artwork{
 		Title:       resp.Title,
