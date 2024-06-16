@@ -79,10 +79,15 @@ func (resp *KemonoPostResp) ToArtwork() (*types.Artwork, error) {
 			continue
 		}
 		fileResp.Body.Close()
+		isDuplicate := false
 		for _, picture := range pictures {
 			if picture.Original == fileURL {
-				continue
+				isDuplicate = true
+				break
 			}
+		}
+		if isDuplicate {
+			continue
 		}
 		pictures = append(pictures, &types.Picture{
 			Index:     uint(i),
