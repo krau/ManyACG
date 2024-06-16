@@ -19,6 +19,7 @@ func init() {
 }
 
 func DownloadWithCache(url string, client *req.Client) ([]byte, error) {
+	Logger.Debugf("downloading: %s", url)
 	if client == nil {
 		client = Client
 	}

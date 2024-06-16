@@ -6,6 +6,7 @@ import (
 	"ManyACG/errors"
 	"ManyACG/sources/bilibili"
 	"ManyACG/sources/danbooru"
+	"ManyACG/sources/kemono"
 	"ManyACG/sources/pixiv"
 	"ManyACG/sources/twitter"
 	"ManyACG/types"
@@ -30,6 +31,10 @@ func InitSources() {
 	if config.Cfg.Source.Bilibili.Enable {
 		Sources[types.SourceTypeBilibili] = new(bilibili.Bilibili)
 		Sources[types.SourceTypeBilibili].Init()
+	}
+	if config.Cfg.Source.Kemono.Enable {
+		Sources[types.SourceTypeKemono] = new(kemono.Kemono)
+		Sources[types.SourceTypeKemono].Init()
 	}
 	if config.Cfg.Source.Danbooru.Enable {
 		Sources[types.SourceTypeDanbooru] = new(danbooru.Danbooru)

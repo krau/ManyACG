@@ -45,6 +45,7 @@ func InitConfig() {
 	viper.SetDefault("source.twitter.fx_twitter_domain", "fxtwitter.com")
 	viper.SetDefault("source.bilibili.enable", false)
 	viper.SetDefault("source.danbooru.enable", false)
+	viper.SetDefault("source.kemono.enable", false)
 
 	viper.SetDefault("storage.cache_dir", "./cache")
 	viper.SetDefault("storage.cache_ttl", 86400)

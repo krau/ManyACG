@@ -1,3 +1,4 @@
 config.toml
 logs/
 cache/
+.VSCodeCounter

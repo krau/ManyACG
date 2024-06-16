@@ -134,6 +134,16 @@ func ProcessPictureAndUpdate(ctx context.Context, picture *types.Picture) error 
 		if err != nil {
 			return nil, err
 		}
+		if picture.Width == 0 || picture.Height == 0 {
+			width, height, err := common.GetImageSize(fileBytes)
+			if err != nil {
+				return nil, err
+			}
+			_, err = dao.UpdatePictureSizeByID(ctx, pictureModel.ID, width, height)
+			if err != nil {
+				return nil, err
+			}
+		}
 		return nil, nil
 	})
 	if err != nil {

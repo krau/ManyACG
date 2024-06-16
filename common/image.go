@@ -135,3 +135,12 @@ func CompressImage(input []byte, maxSizeMB, maxEdgeLength uint) ([]byte, error) 
 	}
 	return buf.Bytes(), nil
 }
+
+func GetImageSize(b []byte) (int, int, error) {
+	r := bytes.NewReader(b)
+	img, _, err := image.DecodeConfig(r)
+	if err != nil {
+		return 0, 0, err
+	}
+	return img.Width, img.Height, nil
+}

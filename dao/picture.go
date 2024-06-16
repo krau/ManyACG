@@ -133,6 +133,10 @@ func UpdatePictureHashAndBlurScoreByID(ctx context.Context, id primitive.ObjectI
 	return pictureCollection.UpdateOne(ctx, bson.M{"_id": id}, bson.M{"$set": bson.M{"hash": hash, "blur_score": blurScore}})
 }
 
+func UpdatePictureSizeByID(ctx context.Context, id primitive.ObjectID, width, height int) (*mongo.UpdateResult, error) {
+	return pictureCollection.UpdateOne(ctx, bson.M{"_id": id}, bson.M{"$set": bson.M{"width": width, "height": height}})
+}
+
 func DeletePicturesByIDs(ctx context.Context, ids []primitive.ObjectID) (*mongo.DeleteResult, error) {
 	return pictureCollection.DeleteMany(ctx, bson.M{"_id": bson.M{"$in": ids}})
 }

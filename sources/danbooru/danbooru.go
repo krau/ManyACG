@@ -36,16 +36,12 @@ func (d *Danbooru) GetArtworkInfo(sourceURL string) (*types.Artwork, error) {
 	if err != nil {
 		return nil, err
 	}
-	var danbooruResp DanbooruSuccessJsonResp
+	var danbooruResp DanbooruJsonResp
 	if err := json.Unmarshal(resp.Bytes(), &danbooruResp); err != nil {
 		return nil, err
 	}
-	if danbooruResp.ID == 0 {
-		var danbooruFailResp DanbooruFailJsonResp
-		if err := json.Unmarshal(resp.Bytes(), &danbooruFailResp); err != nil {
-			return nil, err
-		}
-		return nil, errors.New(danbooruFailResp.Message)
+	if danbooruResp.Error != "" {
+		return nil, errors.New(danbooruResp.Message)
 	}
 	return danbooruResp.ToArtwork(), nil
 }

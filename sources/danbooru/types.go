@@ -6,13 +6,14 @@ import (
 	"strings"
 )
 
-type DanbooruSuccessJsonResp struct {
+type DanbooruJsonResp struct {
 	ID           int    `json:"id"`
 	ImageWidth   int    `json:"image_width"`
 	ImageHeight  int    `json:"image_height"`
 	TagString    string `json:"tag_string"`
 	FileURL      string `json:"file_url"`
 	LargeFileURL string `json:"large_file_url"`
+	DanbooruFailJsonResp
 }
 
 type DanbooruFailJsonResp struct {
@@ -21,7 +22,7 @@ type DanbooruFailJsonResp struct {
 	Message string `json:"message"`
 }
 
-func (resp *DanbooruSuccessJsonResp) ToArtwork() *types.Artwork {
+func (resp *DanbooruJsonResp) ToArtwork() *types.Artwork {
 	tags := strings.Split(resp.TagString, " ")
 	pictures := make([]*types.Picture, 0)
 	pictures = append(pictures, &types.Picture{

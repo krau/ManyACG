@@ -20,7 +20,6 @@ import (
 )
 
 func PostAndCreateArtwork(ctx context.Context, artwork *types.Artwork, bot *telego.Bot, storage storage.Storage, fromID int64) error {
-
 	artworkInDB, err := service.GetArtworkByURL(ctx, artwork.SourceURL)
 	if err == nil && artworkInDB != nil {
 		Logger.Debugf("Artwork %s already exists", artwork.Title)
