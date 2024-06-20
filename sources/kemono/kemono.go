@@ -21,6 +21,7 @@ func (k *Kemono) Init() {
 			Value: config.Cfg.Source.Kemono.Session,
 		})
 	}
+	reqClient.SetCommonRetryCount(3).SetCommonRetryFixedInterval(5)
 }
 
 func (k *Kemono) FetchNewArtworksWithCh(artworkCh chan *types.Artwork, limit int) error {
