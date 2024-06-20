@@ -74,7 +74,7 @@ func (k *Kemono) GetCommonSourceURL(url string) string {
 }
 
 func (k *Kemono) GetFileName(artwork *types.Artwork, picture *types.Picture) string {
-	return artwork.Title + "_" + strconv.Itoa(int(picture.Index)) + filepath.Ext(picture.Original)
+	return artwork.Title + "_" + strconv.Itoa(int(picture.Index)) + "_" + filepath.Base(picture.Original)
 }
 
 func (k *Kemono) Config() *config.SourceCommonConfig {
