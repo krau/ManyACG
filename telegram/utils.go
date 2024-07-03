@@ -156,6 +156,13 @@ func ReplyMessageWithMarkdown(bot *telego.Bot, message telego.Message, text stri
 		}).WithParseMode(telego.ModeMarkdownV2))
 }
 
+func ReplyMessageWithHTML(bot *telego.Bot, message telego.Message, text string) (*telego.Message, error) {
+	return bot.SendMessage(telegoutil.Message(message.Chat.ChatID(), text).
+		WithReplyParameters(&telego.ReplyParameters{
+			MessageID: message.MessageID,
+		}).WithParseMode(telego.ModeHTML))
+}
+
 func GetArtworkPostMessageURL(messageID int) string {
 	return fmt.Sprintf("https://t.me/%s/%d", strings.ReplaceAll(ChannelChatID.String(), "@", ""), messageID)
 }
