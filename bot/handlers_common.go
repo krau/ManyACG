@@ -84,7 +84,10 @@ Inline 查询支持同样的参数格式.
 func getPictureFile(ctx context.Context, bot *telego.Bot, message telego.Message) {
 	messageOrigin, ok := telegram.GetMessageOriginChannelArtworkPost(ctx, bot, message)
 	if !ok {
-		go telegram.ReplyMessage(bot, message, "少女祈祷中...")
+		if message.ReplyToMessage == nil {
+			telegram.ReplyMessage(bot, message, "请回复一条频道的图片消息")
+			return
+		}
 		fileBytes, err := telegram.GetMessagePhotoFileBytes(bot, message.ReplyToMessage)
 		if err != nil {
 			telegram.ReplyMessage(bot, message, "请回复一条频道的图片消息")
