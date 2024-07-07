@@ -61,7 +61,9 @@ func PostArtwork(bot *telego.Bot, artwork *types.Artwork) ([]telego.Message, err
 			return nil, err
 		}
 		copy(allMessages[i:], messages)
-		time.Sleep(time.Duration(int(config.Cfg.Telegram.Sleep)*len(inputMediaPhotos)) * time.Second)
+		if i+10 < len(artwork.Pictures) {
+			time.Sleep(time.Duration(int(config.Cfg.Telegram.Sleep)*len(inputMediaPhotos)) * time.Second)
+		}
 	}
 	return allMessages, nil
 }
