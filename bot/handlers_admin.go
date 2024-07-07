@@ -196,7 +196,7 @@ func deletePicture(ctx context.Context, bot *telego.Bot, message telego.Message)
 }
 
 func fetchArtwork(ctx context.Context, bot *telego.Bot, message telego.Message) {
-	if CheckPermissionInGroup(ctx, message, types.PermissionFetchArtwork) {
+	if !CheckPermissionInGroup(ctx, message, types.PermissionFetchArtwork) {
 		telegram.ReplyMessage(bot, message, "你没有拉取作品的权限")
 		return
 	}
