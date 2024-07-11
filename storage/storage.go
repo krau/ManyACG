@@ -20,3 +20,7 @@ func GetStorage() Storage {
 	}
 	return storage
 }
+
+func InitStorage() {
+	GetStorage()
+}

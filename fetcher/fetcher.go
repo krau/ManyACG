@@ -16,7 +16,7 @@ import (
 func StartScheduler(ctx context.Context) {
 	artworkCh := make(chan *types.Artwork, config.Cfg.Fetcher.MaxConcurrent)
 	for name, source := range sources.Sources {
-		Logger.Infof("Start fetching from %s", name)
+		Logger.Infof("fetching from %s", name)
 		go func(source sources.Source, limit int, artworkCh chan *types.Artwork, interval int) {
 			if interval <= 0 {
 				return

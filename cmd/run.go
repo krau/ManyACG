@@ -9,6 +9,7 @@ import (
 	"ManyACG/logger"
 	"ManyACG/service"
 	"ManyACG/sources"
+	"ManyACG/storage"
 	"context"
 	"os"
 	"os/signal"
@@ -29,8 +30,9 @@ func Run() {
 			os.Exit(1)
 		}
 	}()
-	sources.InitSources()
 	go bot.RunPolling()
+	go storage.InitStorage()
+	go sources.InitSources()
 	go fetcher.StartScheduler(context.TODO())
 	if config.Cfg.API.Enable {
 		go restful.Run()
