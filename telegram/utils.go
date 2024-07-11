@@ -164,7 +164,7 @@ func ReplyMessageWithHTML(bot *telego.Bot, message telego.Message, text string) 
 }
 
 func GetArtworkPostMessageURL(messageID int) string {
-	return fmt.Sprintf("https://t.me/%s/%d", strings.ReplaceAll(ChannelChatID.String(), "@", ""), messageID)
+	return fmt.Sprintf("https://t.me/%s/%d", strings.TrimPrefix(strings.TrimPrefix(ChannelChatID.String(), "-100"), "@"), messageID)
 }
 
 func GetDeepLinkForFile(messageID int) string {

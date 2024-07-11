@@ -2,7 +2,7 @@
 enable = false
 address = "0.0.0.0:39818"
 auth = true
-token = ""
+token = "123123qwq"
 
 [fetcher]
 max_concurrent = 1
@@ -17,16 +17,16 @@ backup_num = 5
 proxy = ""
 [source.pixiv]
 enable = true
-proxy = "i.pixiv.re"
+proxy = "pixiv.re"
 urls = []
 intervel = 60
 sleep = 1
 [[source.pixiv.cookies]]
 name = "PHPSESSID"
-value = "114514_wwwoooqqqqaaa"
+value = "123_qwq"
 [[source.pixiv.cookies]]
 name = "yuid_b"
-value = "I1O12N"
+value = "1A2B3C"
 
 [source.twitter]
 enable = true
@@ -35,28 +35,36 @@ fx_twitter_domain = "fxtwitter.com"
 [source.bilibili]
 enable = true
 
+[source.danbooru]
+enable = true
+
+[source.kemono]
+enable = true
+session = ""
+
 [storage]
 type = "webdav"
 cache_dir = "./cache"
-cache_ttl = 20
+cache_ttl = 114514
 
 [storage.webdav]
-url = ""
-username = ""
-password = ""
+url = "https://example.com/dav"
+username = "dav@example.com"
+password = "1231145"
 path = "/"
 
-
 [telegram]
-token = ""
+token = "token"
+api_url = ""
 username = "@manyacg"
-sleep = 5
-admins = []
+sleep = 1
+group_id = -100114514
+admins = [114514]
 
 [database]
 host = "127.0.0.1"
 port = 27017
-user = ""
-password = ""
+user = "krau"
+password = "1919810"
 database = "manyacg"
-uri = ""
+uri = "mongodb://admin:mongo@127.0.0.1:27017/?authSource=admin"

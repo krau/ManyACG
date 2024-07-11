@@ -7,11 +7,12 @@
 
 Work in progress...
 文档完善中...
+
 </div>
 
 ManyACG 是针对 Telegram 的 ACG 图片分享频道而设计的 Bot, 兼具爬虫和频道管理功能.
 
-## ⭐特性
+## ⭐ 特性
 
 ⚡ 原生跨平台, 轻易部署.
 
@@ -39,66 +40,82 @@ ManyACG 是针对 Telegram 的 ACG 图片分享频道而设计的 Bot, 兼具爬
 编辑配置文件 `config.toml`, 或下载 [配置文件模板](https://github.com/krau/ManyACG/blob/main/config.example.toml) 并重命名为 `config.toml`.
 
 ```toml
-[api] # Restful API 配置
-enable = false 
-address = "0.0.0.0:39818"
-auth = true
-token = ""
+[api] # RESTful API
+enable = false # 是否启用
+address = "0.0.0.0:39818" # 监听地址
+auth = true # 是否启用认证
+token = "123123qwq" # 认证 Token
 
 [fetcher] # 爬虫配置
 max_concurrent = 1 # 最大并发数
-limit = 30 # 每次从每个源获取的图片数量
+limit = 30 # 每次从每个图源最大拉取数量
 
 [log] # 日志配置
-level = "TRACE" 
-file_path = "logs/trace.log"
-backup_num = 5
+level = "TRACE" # 日志级别
+file_path = "logs/trace.log" # 日志文件路径
+backup_num = 5 # 日志文件备份数量
 
 [source] # 图源配置
 proxy = "" # 向图源发起请求时使用的代理, 支持 http/https/socks5
+
 [source.pixiv]
 enable = true
-proxy = "i.pixiv.re" # Pixiv 反代域名
+proxy = "pixiv.re" # Pixiv 反向代理域名
 urls = [] # Pixiv RSS 地址
-intervel = 60 # 爬取间隔, 单位: 分钟
-sleep = 1 # 请求间隔, 单位: 秒
+intervel = 60 # 拉取间隔, 单位: 分钟
+sleep = 1 # 拉取间隔内每次请求间隔, 单位: 秒
 [[source.pixiv.cookies]] # Pixiv Cookies, 可在浏览器打开 F12 -> Application -> Cookies 中找到
 name = "PHPSESSID"
-value = "114514_wwwoooqqqqaaa"
+value = "123_qwq"
 [[source.pixiv.cookies]]
 name = "yuid_b"
-value = "I1O12N"
+value = "1A2B3C"
 
 [source.twitter]
 enable = true
 fx_twitter_domain = "fxtwitter.com" # FxTwitter 主域名
 
-[storage] # 原图存储配置
-type = "webdav" # 存储类型
+[source.bilibili]
+enable = true
+
+[source.danbooru]
+enable = true
+
+[source.kemono]
+enable = true
+session = "" # Kemono Session Key, 可选
+
+[storage] # 原图存储策略配置
+type = "webdav" # 存储类型, 目前仅支持 WebDAV
+cache_dir = "./cache" # 缓存文件目录
+cache_ttl = 114514 # 缓存过期时间, 单位: 秒
+
 [storage.webdav]
-url = "" # WebDAV 服务器地址
-username = "" # WebDAV 用户名
-password = "" # WebDAV 密码
+url = "https://example.com/dav"
+username = "dav@example.com"
+password = "1231145"
 path = "/" # 存储路径
-cache_dir = "./cache" # 缓存目录
-cache_ttl = 3600 # 缓存过期时间, 单位: 秒
 
-[telegram] # Telegram 配置
-token = "" # Bot Token
-username = "@manyacg" # 频道用户名, 需要包含 @
-sleep = 5 # 发送间隔, 单位: 秒
-admins = [] # 管理员 ID
+[telegram]
+token = "token"
+api_url = "" # Telegram API 地址, 默认 https://api.telegram.org
+username = "@manyacg" # 频道用户名
+chat_id = -100114514 # 频道 ID. username 和 chat_id 仅需设置一个, 若频道为公开频道, 请使用 username
+sleep = 1 # 向频道中发布作品间隔, 单位: 秒
+group_id = -100114514 # 频道附属群组 id, 可选
+admins = [114514]
 
-[database] # 数据库配置
+[database]
+uri = "mongodb://admin:mongo@127.0.0.1:27017/?authSource=admin" # 当 uri 不为空时, 优先使用 uri 直接连接数据库
 host = "127.0.0.1"
 port = 27017
-user = ""
-password = ""
+user = "krau"
+password = "1919810"
 database = "manyacg"
-uri = "" # 当 uri 不为空时, 优先使用 uri 直接连接数据库
 ```
 
 ## 更新
+
 ### 二进制更新
 
 使用 ManyACG update 可自动下载最新适合当前系统的 Release.

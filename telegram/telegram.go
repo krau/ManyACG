@@ -101,10 +101,14 @@ var (
 
 func InitBot() {
 	var err error
+	apiUrl := config.Cfg.Telegram.APIURL
+	if apiUrl == "" {
+		apiUrl = "https://api.telegram.org"
+	}
 	Bot, err = telego.NewBot(
 		config.Cfg.Telegram.Token,
 		telego.WithDefaultLogger(false, true),
-		telego.WithAPIServer(config.Cfg.Telegram.APIURL),
+		telego.WithAPIServer(apiUrl),
 	)
 	if err != nil {
 		Logger.Fatalf("Error when creating bot: %s", err)
