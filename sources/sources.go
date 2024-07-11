@@ -4,6 +4,7 @@ import (
 	"ManyACG/common"
 	"ManyACG/config"
 	"ManyACG/errors"
+	. "ManyACG/logger"
 	"ManyACG/sources/bilibili"
 	"ManyACG/sources/danbooru"
 	"ManyACG/sources/kemono"
@@ -20,6 +21,7 @@ var (
 )
 
 func InitSources() {
+	Logger.Info("Initializing sources")
 	if config.Cfg.Source.Pixiv.Enable {
 		Sources[types.SourceTypePixiv] = new(pixiv.Pixiv)
 		Sources[types.SourceTypePixiv].Init()

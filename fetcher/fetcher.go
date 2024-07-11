@@ -15,8 +15,9 @@ import (
 
 func StartScheduler(ctx context.Context) {
 	artworkCh := make(chan *types.Artwork, config.Cfg.Fetcher.MaxConcurrent)
+	enabledSources := ""
 	for name, source := range sources.Sources {
-		Logger.Infof("fetching from %s", name)
+		enabledSources += string(name) + " "
 		go func(source sources.Source, limit int, artworkCh chan *types.Artwork, interval int) {
 			if interval <= 0 {
 				return
@@ -31,6 +32,7 @@ func StartScheduler(ctx context.Context) {
 			}
 		}(source, config.Cfg.Fetcher.Limit, artworkCh, source.Config().Intervel)
 	}
+	Logger.Infof("Enabled sources: %s", enabledSources)
 	for artwork := range artworkCh {
 		err := PostAndCreateArtwork(ctx, artwork, telegram.Bot, config.Cfg.Telegram.Admins[0], 0)
 		if err != nil {

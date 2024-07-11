@@ -2,6 +2,7 @@ package storage
 
 import (
 	"ManyACG/config"
+	. "ManyACG/logger"
 	"ManyACG/storage/webdav"
 )
 
@@ -22,5 +23,6 @@ func GetStorage() Storage {
 }
 
 func InitStorage() {
+	Logger.Info("Initializing storage")
 	GetStorage()
 }

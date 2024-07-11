@@ -100,6 +100,7 @@ var (
 )
 
 func InitBot() {
+	Logger.Info("Initializing bot")
 	var err error
 	apiUrl := config.Cfg.Telegram.APIURL
 	if apiUrl == "" {
