@@ -49,6 +49,7 @@ func InitSources() {
 }
 
 func GetArtworkInfo(sourceURL string) (*types.Artwork, error) {
+	Logger.Infof("Getting artwork info: %s", sourceURL)
 	for k, v := range SourceURLRegexps {
 		if v.MatchString(sourceURL) {
 			if Sources[k] != nil {
@@ -56,6 +57,7 @@ func GetArtworkInfo(sourceURL string) (*types.Artwork, error) {
 			}
 		}
 	}
+	Logger.Warnf("Source URL not supported: %s", sourceURL)
 	return nil, errors.ErrSourceNotSupported
 }
 
