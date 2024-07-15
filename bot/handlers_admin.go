@@ -222,7 +222,7 @@ func postArtworkCb(ctx context.Context, bot *telego.Bot, query telego.CallbackQu
 	if err != nil {
 		bot.AnswerCallbackQuery(&telego.AnswerCallbackQueryParams{
 			CallbackQueryID: query.ID,
-			Text:            "获取回调数据失败" + err.Error(),
+			Text:            "获取回调数据失败 " + err.Error(),
 			ShowAlert:       true,
 			CacheTime:       60,
 		})
@@ -237,7 +237,7 @@ func postArtworkCb(ctx context.Context, bot *telego.Bot, query telego.CallbackQu
 		if err != nil {
 			bot.AnswerCallbackQuery(&telego.AnswerCallbackQueryParams{
 				CallbackQueryID: query.ID,
-				Text:            "获取作品信息失败" + err.Error(),
+				Text:            "获取作品信息失败 " + err.Error(),
 				ShowAlert:       true,
 				CacheTime:       60,
 			})
@@ -263,19 +263,19 @@ func postArtworkCb(ctx context.Context, bot *telego.Bot, query telego.CallbackQu
 			}
 		}()
 	}
-	go bot.EditMessageCaption(&telego.EditMessageCaptionParams{
+	go bot.EditMessageText(&telego.EditMessageTextParams{
 		ChatID:      telegoutil.ID(query.Message.GetChat().ID),
 		MessageID:   query.Message.GetMessageID(),
-		Caption:     fmt.Sprintf("正在发布: %s", artwork.SourceURL),
+		Text:        fmt.Sprintf("正在发布: %s", artwork.SourceURL),
 		ReplyMarkup: nil,
 	})
 	if service.CheckDeletedByURL(ctx, sourceURL) {
 		if err := service.DeleteDeletedByURL(ctx, sourceURL); err != nil {
 			Logger.Errorf("取消删除记录失败: %s", err)
-			bot.EditMessageCaption(&telego.EditMessageCaptionParams{
+			bot.EditMessageText(&telego.EditMessageTextParams{
 				ChatID:    telegoutil.ID(query.Message.GetChat().ID),
 				MessageID: query.Message.GetMessageID(),
-				Caption:   "取消删除记录失败: " + err.Error(),
+				Text:      "取消删除记录失败: " + err.Error(),
 			})
 			return
 		}
@@ -285,28 +285,28 @@ func postArtworkCb(ctx context.Context, bot *telego.Bot, query telego.CallbackQu
 	}
 	if err := fetcher.PostAndCreateArtwork(ctx, artwork, bot, query.Message.GetChat().ID, query.Message.GetMessageID()); err != nil {
 		Logger.Errorf("发布失败: %s", err)
-		bot.EditMessageCaption(&telego.EditMessageCaptionParams{
+		bot.EditMessageText(&telego.EditMessageTextParams{
 			ChatID:    telegoutil.ID(query.Message.GetChat().ID),
 			MessageID: query.Message.GetMessageID(),
-			Caption:   "发布失败: " + err.Error() + "\n\n" + time.Now().Format("2006-01-02 15:04:05"),
+			Text:      "发布失败: " + err.Error() + "\n\n" + time.Now().Format("2006-01-02 15:04:05"),
 		})
 		return
 	}
 	artwork, err = service.GetArtworkByURL(ctx, sourceURL)
 	if err != nil {
 		Logger.Errorf("获取发布后的作品信息失败: %s", err)
-		bot.EditMessageCaption(&telego.EditMessageCaptionParams{
+		bot.EditMessageText(&telego.EditMessageTextParams{
 			ChatID:      telegoutil.ID(query.Message.GetChat().ID),
 			MessageID:   query.Message.GetMessageID(),
-			Caption:     "发布成功, 但获取作品信息失败: " + err.Error(),
+			Text:        "发布成功, 但获取作品信息失败: " + err.Error(),
 			ReplyMarkup: nil,
 		})
 		return
 	}
-	bot.EditMessageCaption(&telego.EditMessageCaptionParams{
+	bot.EditMessageText(&telego.EditMessageTextParams{
 		ChatID:    telegoutil.ID(query.Message.GetChat().ID),
 		MessageID: query.Message.GetMessageID(),
-		Caption:   "发布成功: " + artwork.Title + "\n\n发布时间: " + artwork.CreatedAt.Format("2006-01-02 15:04:05"),
+		Text:      "发布成功: " + artwork.Title + "\n\n发布时间: " + artwork.CreatedAt.Format("2006-01-02 15:04:05"),
 		ReplyMarkup: telegoutil.InlineKeyboard(
 			[]telego.InlineKeyboardButton{
 				telegoutil.InlineKeyboardButton("查看").WithURL(telegram.GetArtworkPostMessageURL(artwork.Pictures[0].TelegramInfo.MessageID)),
