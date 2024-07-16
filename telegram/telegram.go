@@ -181,5 +181,51 @@ func InitBot() {
 			},
 		})
 	}
+	botInfo, err := Bot.GetMe()
+	if err != nil {
+		Logger.Errorf("Error when getting bot info: %s", err)
+		os.Exit(1)
+	}
+	Logger.Infof("Bot %s is ready", botInfo.Username)
 
+	if service.GetEtcData(context.TODO(), "bot_photo_file_id") != nil && service.GetEtcData(context.TODO(), "bot_photo_bytes") != nil {
+		return
+	}
+
+	botPhoto, err := Bot.GetUserProfilePhotos(&telego.GetUserProfilePhotosParams{
+		UserID: botInfo.ID,
+		Limit:  1,
+	})
+	if err != nil {
+		Logger.Errorf("Error when getting bot photo: %s", err)
+		os.Exit(1)
+	}
+	if botPhoto.TotalCount == 0 {
+		Logger.Warn("Please set bot photo")
+		os.Exit(1)
+	}
+
+	photoSize := botPhoto.Photos[0][len(botPhoto.Photos[0])-1]
+	photoFile, err := Bot.GetFile(&telego.GetFileParams{
+		FileID: photoSize.FileID,
+	})
+	if err != nil {
+		Logger.Errorf("Error when getting bot photo: %s", err)
+		os.Exit(1)
+	}
+	fileBytes, err := telegoutil.DownloadFile(Bot.FileDownloadURL(photoFile.FilePath))
+	if err != nil {
+		Logger.Errorf("Error when downloading bot photo: %s", err)
+		os.Exit(1)
+	}
+	_, err = service.SetEtcData(context.TODO(), "bot_photo_bytes", fileBytes)
+	if err != nil {
+		Logger.Errorf("Error when setting bot photo bytes: %s", err)
+		os.Exit(1)
+	}
+	_, err = service.SetEtcData(context.TODO(), "bot_photo_file_id", photoSize.FileID)
+	if err != nil {
+		Logger.Errorf("Error when setting bot photo file ID: %s", err)
+		os.Exit(1)
+	}
 }

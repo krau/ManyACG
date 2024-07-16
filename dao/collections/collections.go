@@ -9,4 +9,5 @@ const (
 	Deleted        string = "Deleted"
 	CallbackData   string = "CallbackData"
 	CachedArtworks string = "CachedArtworks"
+	EtcData        string = "EtcData"
 )

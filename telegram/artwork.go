@@ -73,12 +73,16 @@ func getInputMediaPhotos(artwork *types.Artwork, start, end int) ([]telego.Input
 	inputMediaPhotos := make([]telego.InputMedia, end-start)
 	for i := start; i < end; i++ {
 		picture := artwork.Pictures[i]
-		fileBytes, err := storage.GetStorage().GetFile(picture.StorageInfo)
-		if err != nil {
-			Logger.Errorf("failed to get file: %s", err)
-			return nil, err
+		fileBytes := common.GetReqCachedFile(picture.Original)
+		if fileBytes == nil {
+			var err error
+			fileBytes, err = storage.GetStorage().GetFile(picture.StorageInfo)
+			if err != nil {
+				Logger.Errorf("failed to get file: %s", err)
+				return nil, err
+			}
 		}
-		fileBytes, err = common.CompressImage(fileBytes, 10, 2560)
+		fileBytes, err := common.CompressImageWithCache(fileBytes, 10, 2560, picture.Original)
 		if err != nil {
 			Logger.Errorf("failed to compress image: %s", err)
 			return nil, err

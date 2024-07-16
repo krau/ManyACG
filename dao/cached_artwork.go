@@ -9,6 +9,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 var cachedArtworkCollection *mongo.Collection
@@ -32,7 +33,7 @@ func GetCachedArtworkByURL(ctx context.Context, url string) (*model.CachedArtwor
 	return &cachedArtwork, err
 }
 
-func UpdateCachedArtworkByURL(ctx context.Context, url string, status types.ArtworkStatus) (*mongo.UpdateResult, error) {
+func UpdateCachedArtworkStatusByURL(ctx context.Context, url string, status types.ArtworkStatus) (*mongo.UpdateResult, error) {
 	filter := bson.M{"source_url": url}
 	update := bson.M{"$set": bson.M{"status": status}}
 	return cachedArtworkCollection.UpdateOne(ctx, filter, update)
@@ -41,4 +42,11 @@ func UpdateCachedArtworkByURL(ctx context.Context, url string, status types.Artw
 func CleanPostingCachedArtwork(ctx context.Context) (*mongo.DeleteResult, error) {
 	filter := bson.M{"status": types.ArtworkStatusPosting}
 	return cachedArtworkCollection.DeleteMany(ctx, filter)
+}
+
+func UpdateCachedArtwork(ctx context.Context, artwork *model.CachedArtworksModel) (*mongo.UpdateResult, error) {
+	filter := bson.M{"source_url": artwork.SourceURL}
+	update := bson.M{"$set": bson.M{"artwork": artwork.Artwork}}
+	artwork.CreatedAt = primitive.NewDateTimeFromTime(time.Now())
+	return cachedArtworkCollection.UpdateOne(ctx, filter, update, options.Update().SetUpsert(true))
 }

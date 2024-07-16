@@ -67,6 +67,8 @@ func createCollection(ctx context.Context) {
 	callbackDataCollection = DB.Collection(collections.CallbackData)
 	DB.CreateCollection(ctx, collections.CachedArtworks)
 	cachedArtworkCollection = DB.Collection(collections.CachedArtworks)
+	DB.CreateCollection(ctx, collections.EtcData)
+	etcDataCollection = DB.Collection(collections.EtcData)
 }
 
 func createIndex(ctx context.Context) {

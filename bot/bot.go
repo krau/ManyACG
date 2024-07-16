@@ -56,6 +56,7 @@ func RunPolling() {
 	baseGroup.HandleMessageCtx(postArtworkCmd, telegohandler.CommandEqual("post"))
 	baseGroup.HandleMessageCtx(batchPostArtwork, telegohandler.CommandEqual("batch_post"))
 	baseGroup.HandleCallbackQueryCtx(postArtworkCb, telegohandler.CallbackDataContains("post_artwork"))
+	baseGroup.HandleCallbackQueryCtx(artworkPreview, telegohandler.CallbackDataContains("artwork_preview"))
 	baseGroup.HandleMessageCtx(getArtworkInfo, sourceUrlMatches)
 	baseGroup.HandleInlineQueryCtx(inlineQuery)
 

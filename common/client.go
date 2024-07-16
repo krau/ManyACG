@@ -23,7 +23,7 @@ func DownloadWithCache(url string, client *req.Client) ([]byte, error) {
 	if client == nil {
 		client = Client
 	}
-	cachePath := config.Cfg.Storage.CacheDir + "/" + ReplaceFileNameInvalidChar(url)
+	cachePath := config.Cfg.Storage.CacheDir + "/req/" + ReplaceFileNameInvalidChar(url)
 	data, err := os.ReadFile(cachePath)
 	if err == nil {
 		Logger.Debugf("cache hit: %s", cachePath)
@@ -40,4 +40,13 @@ func DownloadWithCache(url string, client *req.Client) ([]byte, error) {
 		go PurgeFileAfter(cachePath, time.Duration(config.Cfg.Storage.CacheTTL)*time.Second)
 	}
 	return data, nil
+}
+
+func GetReqCachedFile(path string) []byte {
+	cachePath := config.Cfg.Storage.CacheDir + "/req/" + ReplaceFileNameInvalidChar(path)
+	data, err := os.ReadFile(cachePath)
+	if err != nil {
+		return nil
+	}
+	return data
 }

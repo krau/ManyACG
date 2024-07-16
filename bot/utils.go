@@ -1,12 +1,17 @@
 package bot
 
 import (
+	"ManyACG/common"
+	"ManyACG/errors"
 	"ManyACG/service"
 	"ManyACG/sources"
+	"ManyACG/telegram"
 	"ManyACG/types"
+	"bytes"
 	"context"
 
 	"github.com/mymmrac/telego"
+	"github.com/mymmrac/telego/telegoutil"
 )
 
 func CheckPermissionInGroup(ctx context.Context, message telego.Message, permissions ...types.Permission) bool {
@@ -37,4 +42,43 @@ func FindSourceURLForMessage(message *telego.Message) string {
 		}
 	}
 	return sources.FindSourceURL(text)
+}
+
+func UpdateLinkPreview(ctx context.Context, targetMessage *telego.Message, artwork *types.Artwork, bot *telego.Bot, pictureIndex uint, photoParams *telego.SendPhotoParams) error {
+	if pictureIndex >= uint(len(artwork.Pictures)) {
+		return errors.ErrIndexOOB
+	}
+	var inputFile telego.InputFile
+	fileBytes, err := common.DownloadWithCache(artwork.Pictures[pictureIndex].Original, nil)
+	if err != nil {
+		return err
+	}
+	fileBytes, err = common.CompressImageWithCache(fileBytes, 10, 2560, artwork.Pictures[pictureIndex].Original)
+	if err != nil {
+		return err
+	}
+	inputFile = telegoutil.File(telegoutil.NameReader(bytes.NewReader(fileBytes), artwork.Title))
+	mediaPhoto := telegoutil.MediaPhoto(inputFile)
+	mediaPhoto.WithCaption(photoParams.Caption).WithParseMode(photoParams.ParseMode)
+
+	var replyMarkup *telego.InlineKeyboardMarkup
+	cachedArtwork, err := service.GetCachedArtworkByURL(ctx, artwork.SourceURL)
+	if err != nil {
+		return err
+	}
+	if cachedArtwork.Status == types.ArtworkStatusPosted {
+		replyMarkup = telegram.GetPostedPictureReplyMarkup(artwork.Pictures[pictureIndex])
+	} else if cachedArtwork.Status == types.ArtworkStatusCached {
+		replyMarkup = targetMessage.ReplyMarkup
+	} else {
+		mediaPhoto.WithCaption(photoParams.Caption + "\n<i>正在发布...</i>").WithParseMode(telego.ModeHTML)
+	}
+	_, err = bot.EditMessageMedia(&telego.EditMessageMediaParams{
+		ChatID:      targetMessage.Chat.ChatID(),
+		MessageID:   targetMessage.MessageID,
+		Media:       mediaPhoto,
+		ReplyMarkup: replyMarkup,
+	})
+	fileBytes = nil
+	return err
 }

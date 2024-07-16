@@ -1,6 +1,7 @@
 package common
 
 import (
+	"ManyACG/config"
 	"bytes"
 	"fmt"
 	"image"
@@ -8,14 +9,18 @@ import (
 	_ "image/gif"
 	"image/jpeg"
 	_ "image/png"
+	"os"
 	"strconv"
+	"time"
 
 	"golang.org/x/image/draw"
+
+	. "ManyACG/logger"
 
 	"github.com/corona10/goimagehash"
 )
 
-func GetPhash(b []byte) (string, error) {
+func GetImagePhash(b []byte) (string, error) {
 	r := bytes.NewReader(b)
 	img, _, err := image.Decode(r)
 	if err != nil {
@@ -28,7 +33,7 @@ func GetPhash(b []byte) (string, error) {
 	return hash.ToString(), nil
 }
 
-func GetBlurScore(b []byte) (float64, error) {
+func GetImageBlurScore(b []byte) (float64, error) {
 	r := bytes.NewReader(b)
 	img, _, err := image.Decode(r)
 	if err != nil {
@@ -134,6 +139,28 @@ func CompressImage(input []byte, maxSizeMB, maxEdgeLength uint) ([]byte, error) 
 		}
 	}
 	return buf.Bytes(), nil
+}
+
+func CompressImageWithCache(input []byte, maxSizeMB, maxEdgeLength uint, cacheKey string) ([]byte, error) {
+	if cacheKey != "" {
+		cachePath := config.Cfg.Storage.CacheDir + "/image/" + ReplaceFileNameInvalidChar(cacheKey)
+		data, err := os.ReadFile(cachePath)
+		if err == nil {
+			return data, nil
+		}
+	}
+	output, err := CompressImage(input, maxSizeMB, maxEdgeLength)
+	if err != nil {
+		return nil, err
+	}
+	if cacheKey != "" {
+		if err := MkFile(config.Cfg.Storage.CacheDir+"/image/"+ReplaceFileNameInvalidChar(cacheKey), output); err != nil {
+			Logger.Errorf("failed to save cache file: %s", err)
+		} else {
+			go PurgeFileAfter(config.Cfg.Storage.CacheDir+"/image/"+ReplaceFileNameInvalidChar(cacheKey), time.Duration(config.Cfg.Storage.CacheTTL)*time.Second)
+		}
+	}
+	return output, nil
 }
 
 func GetImageSize(b []byte) (int, int, error) {

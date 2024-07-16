@@ -96,24 +96,6 @@ func GetMessageOriginChannelArtworkPost(ctx context.Context, bot *telego.Bot, me
 	return messageOriginChannel, true
 }
 
-func GetArtworkMarkdownCaption(artwork *types.Artwork) string {
-	caption := fmt.Sprintf("[*%s*](%s)", common.EscapeMarkdown(artwork.Title), artwork.SourceURL)
-	caption += "\n" + "*Author:* " + common.EscapeMarkdown(artwork.Artist.Name)
-	if artwork.Description != "" {
-		desc := strings.ReplaceAll(artwork.Description, "\n", "\n>")
-		caption += "\n\n>" + common.EscapeMarkdown(desc)
-	}
-	tags := ""
-	for _, tag := range artwork.Tags {
-		tag = common.ReplaceChars(tag, []string{":", "：", "-", "（", "）", "「", "」", "*"}, "_")
-		tag = common.ReplaceChars(tag, []string{"?"}, "")
-		tag = common.ReplaceChars(tag, []string{"/"}, " "+"#")
-		tags += "\\#" + strings.Join(strings.Split(common.EscapeMarkdown(tag), " "), "") + " "
-	}
-	caption += "\n\n" + tags
-	return caption
-}
-
 func GetArtworkHTMLCaption(artwork *types.Artwork) string {
 	caption := fmt.Sprintf("<a href=\"%s\"><b>%s</b></a>", artwork.SourceURL, common.EscapeHTML(artwork.Title))
 	caption += "\n" + "<b>Author:</b> " + common.EscapeHTML(artwork.Artist.Name)
@@ -171,7 +153,7 @@ func GetDeepLinkForFile(messageID int) string {
 	return fmt.Sprintf("https://t.me/%s/?start=file_%d", BotUsername, messageID)
 }
 
-func GetPostedPictureReplyMarkup(picture *types.Picture) telego.ReplyMarkup {
+func GetPostedPictureReplyMarkup(picture *types.Picture) *telego.InlineKeyboardMarkup {
 	return telegoutil.InlineKeyboard(
 		GetPostedPictureInlineKeyboardButton(picture),
 	)

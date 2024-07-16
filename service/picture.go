@@ -122,11 +122,11 @@ func ProcessPictureAndUpdate(ctx context.Context, picture *types.Picture) error 
 		defer func() {
 			fileBytes = nil
 		}()
-		hash, err := common.GetPhash(fileBytes)
+		hash, err := common.GetImagePhash(fileBytes)
 		if err != nil {
 			return nil, err
 		}
-		blurscore, err := common.GetBlurScore(fileBytes)
+		blurscore, err := common.GetImageBlurScore(fileBytes)
 		if err != nil {
 			return nil, err
 		}
