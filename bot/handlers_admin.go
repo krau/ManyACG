@@ -464,12 +464,16 @@ func artworkPreview(ctx context.Context, bot *telego.Bot, query telego.CallbackQ
 		})
 
 		previewKeyboard := []telego.InlineKeyboardButton{}
-		if len(cachedArtwork.Artwork.Pictures) > 1 {
-			if currentPictureIndex+1 >= len(cachedArtwork.Artwork.Pictures) {
-				// 如果删除的是最后一张图片, 则显示前一张
+
+		if currentPictureIndex+1 >= len(cachedArtwork.Artwork.Pictures) {
+			// 如果删除的是最后一张图片, 则显示前一张
+			if currentPictureIndex > 0 {
 				currentPictureIndex -= 1
 				currentPictureIndexStr = strconv.Itoa(currentPictureIndex)
 			}
+		}
+
+		if len(cachedArtwork.Artwork.Pictures) > 1 {
 
 			deleteButton := telegoutil.InlineKeyboardButton(fmt.Sprintf("删除这张(%d)", currentPictureIndex+1)).WithCallbackData("artwork_preview " + dataID + " delete " + currentPictureIndexStr + " " + currentPictureIndexStr)
 			if currentPictureIndex == 0 {
