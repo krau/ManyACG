@@ -512,11 +512,10 @@ func calculatePicture(ctx context.Context, bot *telego.Bot, message telego.Messa
 		telegram.ReplyMessageWithHTML(bot, message, text)
 		return
 	}
-	bot.EditMessageCaption(&telego.EditMessageCaptionParams{
+	bot.EditMessageText(&telego.EditMessageTextParams{
 		ChatID:    message.Chat.ChatID(),
 		MessageID: waitMessageID,
-		Caption:   text,
+		Text:      text,
 		ParseMode: telego.ModeHTML,
 	})
-
 }
