@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"runtime"
 
 	"github.com/spf13/cobra"
 )
@@ -23,5 +24,5 @@ func init() {
 }
 
 func ShowVersion() {
-	fmt.Println(Version)
+	fmt.Printf("ManyACG version %s %s/%s", Version, runtime.GOOS, runtime.GOARCH)
 }

@@ -9,8 +9,9 @@ import (
 )
 
 var updateCmd = &cobra.Command{
-	Use:   "update",
-	Short: "Update ManyACG",
+	Use:     "update",
+	Aliases: []string{"up", "upgrade"},
+	Short:   "Upgrade ManyACG",
 	Run: func(cmd *cobra.Command, args []string) {
 		Update()
 	},
