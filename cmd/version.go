@@ -8,12 +8,13 @@ import (
 )
 
 const (
-	Version string = "0.11.3"
+	Version string = "0.11.4"
 )
 
 var VersionCmd = &cobra.Command{
-	Use:   "version",
-	Short: "Print the version number of ManyACG",
+	Use:     "version",
+	Aliases: []string{"v"},
+	Short:   "Print the version number of ManyACG",
 	Run: func(cmd *cobra.Command, args []string) {
 		ShowVersion()
 	},
