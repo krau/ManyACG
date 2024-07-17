@@ -23,14 +23,14 @@ func PostAndCreateArtwork(ctx context.Context, artwork *types.Artwork, bot *tele
 	artworkInDB, err := service.GetArtworkByURL(ctx, artwork.SourceURL)
 	if err == nil && artworkInDB != nil {
 		Logger.Debugf("Artwork %s already exists", artwork.Title)
-		return errors.ErrArtworkAlreadyExist
+		return fmt.Errorf("post artwork %s error: %w", artwork.Title, errors.ErrArtworkAlreadyExist)
 	}
 	if err != nil && !es.Is(err, mongo.ErrNoDocuments) {
 		return err
 	}
 	if service.CheckDeletedByURL(ctx, artwork.SourceURL) {
 		Logger.Debugf("Artwork %s is deleted", artwork.Title)
-		return errors.ErrArtworkDeleted
+		return fmt.Errorf("post artwork %s error: %w", artwork.Title, errors.ErrArtworkDeleted)
 	}
 	showProgress := fromID != 0 && messageID != 0 && bot != nil
 	if showProgress {

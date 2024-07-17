@@ -15,6 +15,7 @@ import (
 
 	"github.com/mymmrac/telego"
 	"github.com/mymmrac/telego/telegoutil"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 func GetMessageIDs(messages []telego.Message) []int {
@@ -187,4 +188,35 @@ func GetMessagePhotoFileBytes(bot *telego.Bot, message *telego.Message) ([]byte,
 		return nil, err
 	}
 	return telegoutil.DownloadFile(bot.FileDownloadURL(tgFile.FilePath))
+}
+
+func GetPicturePreviewInputFile(ctx context.Context, picture *types.Picture) (inputFile *telego.InputFile, needUpdatePreview bool, err error) {
+	if picture.TelegramInfo != nil && picture.TelegramInfo.PhotoFileID != "" {
+		inputFileStruct := telegoutil.FileFromID(picture.TelegramInfo.PhotoFileID)
+		inputFile = &inputFileStruct
+		return
+	}
+	if fileBytes := common.GetReqCachedFile(picture.Original); fileBytes != nil {
+		fileBytes, err = common.CompressImageWithCache(fileBytes, 10, 2560, picture.Original)
+		if err != nil {
+			return nil, false, err
+		}
+		inputFileStruct := telegoutil.File(telegoutil.NameReader(bytes.NewReader(fileBytes), picture.Original))
+		inputFile = &inputFileStruct
+		return
+	}
+	needUpdatePreview = true
+	if botPhotoFileID := service.GetEtcData(ctx, "bot_photo_file_id"); botPhotoFileID != nil {
+		inputFileStruct := telegoutil.FileFromID(botPhotoFileID.(string))
+		inputFile = &inputFileStruct
+		return
+	}
+	if botPhotoFileBytes := service.GetEtcData(ctx, "bot_photo_bytes"); botPhotoFileBytes != nil {
+		if data, ok := botPhotoFileBytes.(primitive.Binary); ok {
+			inputFileStruct := telegoutil.File(telegoutil.NameReader(bytes.NewReader(data.Data), picture.Original))
+			inputFile = &inputFileStruct
+			return
+		}
+	}
+	return nil, true, ErrNoAvailableFile
 }

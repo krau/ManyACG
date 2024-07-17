@@ -25,6 +25,14 @@ func CheckPermissionInGroup(ctx context.Context, message telego.Message, permiss
 	return true
 }
 
+func CheckPermissionForQuery(ctx context.Context, query telego.CallbackQuery, permissions ...types.Permission) bool {
+	if !service.CheckAdminPermission(ctx, query.From.ID, permissions...) &&
+		!service.CheckAdminPermission(ctx, query.Message.GetChat().ID, permissions...) {
+		return false
+	}
+	return true
+}
+
 func FindSourceURLForMessage(message *telego.Message) string {
 	text := message.Text
 	text += message.Caption + " "
@@ -73,12 +81,19 @@ func UpdateLinkPreview(ctx context.Context, targetMessage *telego.Message, artwo
 	} else {
 		mediaPhoto.WithCaption(photoParams.Caption + "\n<i>正在发布...</i>").WithParseMode(telego.ModeHTML)
 	}
-	_, err = bot.EditMessageMedia(&telego.EditMessageMediaParams{
+	msg, err := bot.EditMessageMedia(&telego.EditMessageMediaParams{
 		ChatID:      targetMessage.Chat.ChatID(),
 		MessageID:   targetMessage.MessageID,
 		Media:       mediaPhoto,
 		ReplyMarkup: replyMarkup,
 	})
-	fileBytes = nil
-	return err
+	if err != nil {
+		return err
+	}
+	if cachedArtwork.Artwork.Pictures[pictureIndex].TelegramInfo == nil {
+		cachedArtwork.Artwork.Pictures[pictureIndex].TelegramInfo = &types.TelegramInfo{}
+	}
+	cachedArtwork.Artwork.Pictures[pictureIndex].TelegramInfo.PhotoFileID = msg.Photo[len(msg.Photo)-1].FileID
+	service.UpdateCachedArtwork(ctx, cachedArtwork)
+	return nil
 }

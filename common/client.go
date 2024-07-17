@@ -19,16 +19,16 @@ func init() {
 }
 
 func DownloadWithCache(url string, client *req.Client) ([]byte, error) {
-	Logger.Debugf("downloading: %s", url)
 	if client == nil {
 		client = Client
 	}
 	cachePath := config.Cfg.Storage.CacheDir + "/req/" + ReplaceFileNameInvalidChar(url)
 	data, err := os.ReadFile(cachePath)
 	if err == nil {
-		Logger.Debugf("cache hit: %s", cachePath)
+		Logger.Debugf("Cache hit: %s", url)
 		return data, nil
 	}
+	Logger.Debugf("downloading: %s", url)
 	resp, err := client.R().Get(url)
 	if err != nil {
 		return nil, err

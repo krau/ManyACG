@@ -205,8 +205,7 @@ func fetchArtwork(ctx context.Context, bot *telego.Bot, message telego.Message) 
 }
 
 func postArtworkCb(ctx context.Context, bot *telego.Bot, query telego.CallbackQuery) {
-	if !service.CheckAdminPermission(ctx, query.From.ID, types.PermissionPostArtwork) &&
-		!service.CheckAdminPermission(ctx, query.Message.GetChat().ID, types.PermissionPostArtwork) {
+	if !CheckPermissionForQuery(ctx, query, types.PermissionPostArtwork) {
 		bot.AnswerCallbackQuery(&telego.AnswerCallbackQueryParams{
 			CallbackQueryID: query.ID,
 			Text:            "你没有发布作品的权限",
@@ -231,49 +230,43 @@ func postArtworkCb(ctx context.Context, bot *telego.Bot, query telego.CallbackQu
 	Logger.Infof("posting artwork: %s", sourceURL)
 
 	var artwork *types.Artwork
-	cachedArtwork, err := service.GetCachedArtworkByURL(ctx, sourceURL)
+	cachedArtwork, err := service.GetCachedArtworkByURLWithCache(ctx, sourceURL)
 	if err != nil {
-		artwork, err = sources.GetArtworkInfo(sourceURL)
-		if err != nil {
-			bot.AnswerCallbackQuery(&telego.AnswerCallbackQueryParams{
-				CallbackQueryID: query.ID,
-				Text:            "获取作品信息失败 " + err.Error(),
-				ShowAlert:       true,
-				CacheTime:       60,
-			})
-			return
-		}
-	} else {
-		if cachedArtwork.Status == types.ArtworkStatusPosting {
-			bot.AnswerCallbackQuery(&telego.AnswerCallbackQueryParams{
-				CallbackQueryID: query.ID,
-				Text:            "该作品正在发布中",
-				ShowAlert:       true,
-				CacheTime:       60,
-			})
-			return
-		}
-		if err := service.UpdateCachedArtworkStatusByURL(ctx, sourceURL, types.ArtworkStatusPosting); err != nil {
-			Logger.Errorf("更新缓存作品状态失败: %s", err)
-		}
-		artwork = cachedArtwork.Artwork
+		bot.AnswerCallbackQuery(&telego.AnswerCallbackQueryParams{
+			CallbackQueryID: query.ID,
+			Text:            "获取作品信息失败 " + err.Error(),
+			ShowAlert:       true,
+			CacheTime:       60,
+		})
+		return
 	}
+	if cachedArtwork.Status == types.ArtworkStatusPosting {
+		bot.AnswerCallbackQuery(&telego.AnswerCallbackQueryParams{
+			CallbackQueryID: query.ID,
+			Text:            "该作品正在发布中",
+			ShowAlert:       true,
+			CacheTime:       60,
+		})
+		return
+	}
+	if err := service.UpdateCachedArtworkStatusByURL(ctx, sourceURL, types.ArtworkStatusPosting); err != nil {
+		Logger.Errorf("更新缓存作品状态失败: %s", err)
+	}
+	artwork = cachedArtwork.Artwork
 	go bot.EditMessageCaption(&telego.EditMessageCaptionParams{
 		ChatID:      telegoutil.ID(query.Message.GetChat().ID),
 		MessageID:   query.Message.GetMessageID(),
 		Caption:     fmt.Sprintf("正在发布: %s", artwork.SourceURL),
 		ReplyMarkup: nil,
 	})
-	if service.CheckDeletedByURL(ctx, sourceURL) {
-		if err := service.DeleteDeletedByURL(ctx, sourceURL); err != nil {
-			Logger.Errorf("取消删除记录失败: %s", err)
-			bot.EditMessageCaption(&telego.EditMessageCaptionParams{
-				ChatID:    telegoutil.ID(query.Message.GetChat().ID),
-				MessageID: query.Message.GetMessageID(),
-				Caption:   "取消删除记录失败: " + err.Error(),
-			})
-			return
-		}
+	if err := service.DeleteDeletedByURL(ctx, sourceURL); err != nil {
+		Logger.Errorf("取消删除记录失败: %s", err)
+		bot.EditMessageCaption(&telego.EditMessageCaptionParams{
+			ChatID:    telegoutil.ID(query.Message.GetChat().ID),
+			MessageID: query.Message.GetMessageID(),
+			Caption:   "取消删除记录失败: " + err.Error(),
+		})
+		return
 	}
 	if asR18 {
 		artwork.R18 = true
@@ -380,54 +373,224 @@ func postArtworkCmd(ctx context.Context, bot *telego.Bot, message telego.Message
 }
 
 func artworkPreview(ctx context.Context, bot *telego.Bot, query telego.CallbackQuery) {
-	// if !service.CheckAdminPermission(ctx, query.From.ID, types.PermissionPostArtwork) &&
-	// 	!service.CheckAdminPermission(ctx, query.Message.GetChat().ID, types.PermissionPostArtwork) {
-	// 	bot.AnswerCallbackQuery(&telego.AnswerCallbackQueryParams{
-	// 		CallbackQueryID: query.ID,
-	// 		Text:            "你没有发布作品的权限",
-	// 		ShowAlert:       true,
-	// 		CacheTime:       60,
-	// 	})
-	// 	return
-	// }
-	// queryDataSlice := strings.Split(query.Data, " ")
-	// dataID := queryDataSlice[1]
-	// sourceURL, err := service.GetCallbackDataByID(ctx, dataID)
-	// if err != nil {
-	// 	bot.AnswerCallbackQuery(&telego.AnswerCallbackQueryParams{
-	// 		CallbackQueryID: query.ID,
-	// 		Text:            "获取回调数据失败 " + err.Error(),
-	// 		ShowAlert:       true,
-	// 		CacheTime:       60,
-	// 	})
-	// 	return
-	// }
+	if !CheckPermissionForQuery(ctx, query, types.PermissionPostArtwork) {
+		bot.AnswerCallbackQuery(&telego.AnswerCallbackQueryParams{
+			CallbackQueryID: query.ID,
+			Text:            "你没有发布作品的权限",
+			ShowAlert:       true,
+			CacheTime:       60,
+		})
+		return
+	}
+	queryDataSlice := strings.Split(query.Data, " ")
+	dataID := queryDataSlice[1]
+	sourceURL, err := service.GetCallbackDataByID(ctx, dataID)
+	if err != nil {
+		bot.AnswerCallbackQuery(&telego.AnswerCallbackQueryParams{
+			CallbackQueryID: query.ID,
+			Text:            "获取回调数据失败 " + err.Error(),
+			ShowAlert:       true,
+			CacheTime:       60,
+		})
+		return
+	}
+	cachedArtwork, err := service.GetCachedArtworkByURLWithCache(ctx, sourceURL)
+	if err != nil {
+		bot.AnswerCallbackQuery(&telego.AnswerCallbackQueryParams{
+			CallbackQueryID: query.ID,
+			Text:            "获取作品信息失败 " + err.Error(),
+			ShowAlert:       true,
+			CacheTime:       60,
+		})
+		return
+	}
+	if cachedArtwork.Status != types.ArtworkStatusCached {
+		bot.AnswerCallbackQuery(&telego.AnswerCallbackQueryParams{
+			CallbackQueryID: query.ID,
+			Text:            "该作品已发布或正在发布中",
+			ShowAlert:       true,
+			CacheTime:       60,
+		})
+		return
+	}
+	var callbackMessage *telego.Message
+	if query.Message.IsAccessible() {
+		callbackMessage = query.Message.(*telego.Message)
+	} else {
+		Logger.Warnf("callback message is not accessible")
+		return
+	}
 
-	// cachedArtwork, err := service.GetCachedArtworkByURL(ctx, sourceURL)
-	// if err != nil {
-	// 	bot.AnswerCallbackQuery(&telego.AnswerCallbackQueryParams{
-	// 		CallbackQueryID: query.ID,
-	// 		Text:            "获取缓存作品失败 " + err.Error(),
-	// 		ShowAlert:       true,
-	// 		CacheTime:       60,
-	// 	})
-	// 	return
-	// }
+	postArtworkKeyboard := []telego.InlineKeyboardButton{
+		telegoutil.InlineKeyboardButton("发布").WithCallbackData("post_artwork " + dataID),
+		telegoutil.InlineKeyboardButton("设为R18并发布").WithCallbackData("post_artwork_r18 " + dataID),
+	}
+	currentPictureIndexStr := queryDataSlice[4]
+	currentPictureIndex, err := strconv.Atoi(currentPictureIndexStr)
+	if err != nil {
+		bot.AnswerCallbackQuery(&telego.AnswerCallbackQueryParams{
+			CallbackQueryID: query.ID,
+			Text:            "解析回调数据错误: " + err.Error(),
+			ShowAlert:       true,
+			CacheTime:       60,
+		})
+		return
+	}
+	opera := queryDataSlice[2]
+	if opera == "delete" {
+		if err := service.DeleteCachedArtworkPicture(ctx, cachedArtwork, currentPictureIndex); err != nil {
+			bot.AnswerCallbackQuery(&telego.AnswerCallbackQueryParams{
+				CallbackQueryID: query.ID,
+				Text:            "删除失败: " + err.Error(),
+				ShowAlert:       true,
+				CacheTime:       60,
+			})
+			return
+		}
+		cachedArtwork, err = service.GetCachedArtworkByURL(ctx, sourceURL)
+		if err != nil {
+			bot.AnswerCallbackQuery(&telego.AnswerCallbackQueryParams{
+				CallbackQueryID: query.ID,
+				Text:            "已删除该图片, 但获取更新信息失败: " + err.Error(),
+				ShowAlert:       true,
+				CacheTime:       60,
+			})
+			return
+		}
+		go bot.AnswerCallbackQuery(&telego.AnswerCallbackQueryParams{
+			CallbackQueryID: query.ID,
+			Text:            "删除成功, 稍后发布作品时将不包含该图片",
+			CacheTime:       1,
+		})
 
-	// Logger.Infof("previewing artwork: %s", sourceURL)
+		previewKeyboard := []telego.InlineKeyboardButton{}
+		if len(cachedArtwork.Artwork.Pictures) > 1 {
+			if currentPictureIndex+1 >= len(cachedArtwork.Artwork.Pictures) {
+				// 如果删除的是最后一张图片, 则显示前一张
+				currentPictureIndex -= 1
+				currentPictureIndexStr = strconv.Itoa(currentPictureIndex)
+			}
 
-	// pictureIndexStr := queryDataSlice[2]
-	// if pictureIndexStr == "delete" {
+			deleteButton := telegoutil.InlineKeyboardButton(fmt.Sprintf("删除这张(%d)", currentPictureIndex+1)).WithCallbackData("artwork_preview " + dataID + " delete " + currentPictureIndexStr + " " + currentPictureIndexStr)
+			if currentPictureIndex == 0 {
+				previewKeyboard = append(previewKeyboard,
+					deleteButton,
+					telegoutil.InlineKeyboardButton("下一张").WithCallbackData("artwork_preview "+dataID+fmt.Sprintf(" preview %d %d", currentPictureIndex+1, currentPictureIndex)),
+				)
+			} else if currentPictureIndex == len(cachedArtwork.Artwork.Pictures)-1 {
+				previewKeyboard = append(previewKeyboard,
+					telegoutil.InlineKeyboardButton("上一张").WithCallbackData("artwork_preview "+dataID+fmt.Sprintf(" preview %d %d", currentPictureIndex-1, currentPictureIndex)),
+					deleteButton,
+				)
+			} else {
+				previewKeyboard = append(previewKeyboard,
+					telegoutil.InlineKeyboardButton("上一张").WithCallbackData("artwork_preview "+dataID+fmt.Sprintf(" preview %d %d", currentPictureIndex-1, currentPictureIndex)),
+					deleteButton,
+					telegoutil.InlineKeyboardButton("下一张").WithCallbackData("artwork_preview "+dataID+fmt.Sprintf(" preview %d %d", currentPictureIndex+1, currentPictureIndex)),
+				)
+			}
+		}
+		inputFile, _, err := telegram.GetPicturePreviewInputFile(ctx, cachedArtwork.Artwork.Pictures[currentPictureIndex])
+		if err != nil {
+			Logger.Errorf("获取预览图片失败: %s", err)
+			bot.AnswerCallbackQuery(&telego.AnswerCallbackQueryParams{
+				CallbackQueryID: query.ID,
+				Text:            "获取预览图片失败: " + err.Error(),
+				ShowAlert:       true,
+				CacheTime:       60,
+			})
+			return
+		}
+		_, err = bot.EditMessageMedia(&telego.EditMessageMediaParams{
+			ChatID:      callbackMessage.Chat.ChatID(),
+			MessageID:   callbackMessage.MessageID,
+			ReplyMarkup: telegoutil.InlineKeyboard(postArtworkKeyboard, previewKeyboard),
+			Media: telegoutil.MediaPhoto(*inputFile).
+				WithCaption(telegram.GetArtworkHTMLCaption(cachedArtwork.Artwork) + fmt.Sprintf("\n<i>当前作品有 %d 张图片</i>", len(cachedArtwork.Artwork.Pictures))).
+				WithParseMode(telego.ModeHTML),
+		})
+		if err != nil {
+			Logger.Errorf("编辑预览消息失败: %s", err)
+		}
+		return
+	}
 
-	// }
+	pictureIndex, err := strconv.Atoi(queryDataSlice[3])
+	if err != nil {
+		bot.AnswerCallbackQuery(&telego.AnswerCallbackQueryParams{
+			CallbackQueryID: query.ID,
+			Text:            "解析回调数据错误: " + err.Error(),
+			ShowAlert:       true,
+			CacheTime:       60,
+		})
+		return
+	}
 
-	bot.AnswerCallbackQuery(&telego.AnswerCallbackQueryParams{
-		CallbackQueryID: query.ID,
-		Text:            "Work in progress...",
-		ShowAlert:       true,
-		CacheTime:       60,
+	inputFile, needUpdatePreview, err := telegram.GetPicturePreviewInputFile(ctx, cachedArtwork.Artwork.Pictures[pictureIndex])
+	if err != nil {
+		Logger.Errorf("获取预览图片失败: %s", err)
+		bot.AnswerCallbackQuery(&telego.AnswerCallbackQueryParams{
+			CallbackQueryID: query.ID,
+			Text:            "获取预览图片失败: " + err.Error(),
+			ShowAlert:       true,
+			CacheTime:       3,
+		})
+		return
+	}
+	if needUpdatePreview {
+		bot.AnswerCallbackQuery(&telego.AnswerCallbackQueryParams{
+			CallbackQueryID: query.ID,
+			Text:            "图片还在加载, 请稍等",
+			CacheTime:       3,
+		})
+		return
+	}
+
+	previewKeyboard := []telego.InlineKeyboardButton{}
+	if len(cachedArtwork.Artwork.Pictures) > 1 {
+		deleteButton := telegoutil.InlineKeyboardButton(fmt.Sprintf("删除这张(%d)", pictureIndex+1)).WithCallbackData("artwork_preview " + dataID + " delete " + strconv.Itoa(pictureIndex) + " " + strconv.Itoa(pictureIndex))
+		if pictureIndex == 0 {
+			previewKeyboard = append(previewKeyboard,
+				deleteButton,
+				telegoutil.InlineKeyboardButton("下一张").WithCallbackData("artwork_preview "+dataID+fmt.Sprintf(" preview %d %d", pictureIndex+1, pictureIndex)),
+			)
+		} else if pictureIndex == len(cachedArtwork.Artwork.Pictures)-1 {
+			previewKeyboard = append(previewKeyboard,
+				telegoutil.InlineKeyboardButton("上一张").WithCallbackData("artwork_preview "+dataID+fmt.Sprintf(" preview %d %d", pictureIndex-1, pictureIndex)),
+				deleteButton,
+			)
+		} else {
+			previewKeyboard = append(previewKeyboard,
+				telegoutil.InlineKeyboardButton("上一张").WithCallbackData("artwork_preview "+dataID+fmt.Sprintf(" preview %d %d", pictureIndex-1, pictureIndex)),
+				deleteButton,
+				telegoutil.InlineKeyboardButton("下一张").WithCallbackData("artwork_preview "+dataID+fmt.Sprintf(" preview %d %d", pictureIndex+1, pictureIndex)),
+			)
+		}
+	}
+	msg, err := bot.EditMessageMedia(&telego.EditMessageMediaParams{
+		ChatID:    callbackMessage.Chat.ChatID(),
+		MessageID: callbackMessage.MessageID,
+		Media: telegoutil.MediaPhoto(*inputFile).
+			WithCaption(telegram.GetArtworkHTMLCaption(cachedArtwork.Artwork) + fmt.Sprintf("\n<i>当前作品有 %d 张图片</i>", len(cachedArtwork.Artwork.Pictures))).
+			WithParseMode(telego.ModeHTML),
+		ReplyMarkup: telegoutil.InlineKeyboard(
+			postArtworkKeyboard,
+			previewKeyboard,
+		),
 	})
-
+	if err != nil {
+		Logger.Errorf("编辑预览消息失败: %s", err)
+		return
+	}
+	if !needUpdatePreview {
+		if cachedArtwork.Artwork.Pictures[pictureIndex].TelegramInfo == nil {
+			cachedArtwork.Artwork.Pictures[pictureIndex].TelegramInfo = &types.TelegramInfo{}
+		}
+		cachedArtwork.Artwork.Pictures[pictureIndex].TelegramInfo.PhotoFileID = msg.Photo[len(msg.Photo)-1].FileID
+		if err := service.UpdateCachedArtwork(ctx, cachedArtwork); err != nil {
+			Logger.Errorf("更新缓存作品失败: %s", err)
+		}
+	}
 }
 
 func processPictures(ctx context.Context, bot *telego.Bot, message telego.Message) {

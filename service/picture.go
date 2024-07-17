@@ -58,6 +58,7 @@ func UpdatePictureTelegramInfo(ctx context.Context, picture *types.Picture, tele
 	删除 Picture
 
 如果删除后 Artwork 中没有 Picture , 则也删除 Artwork
+
 不会对存储进行操作
 */
 func DeletePictureByMessageID(ctx context.Context, messageID int) error {

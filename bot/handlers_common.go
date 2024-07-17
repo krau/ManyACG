@@ -22,7 +22,6 @@ import (
 	"github.com/google/uuid"
 	"github.com/mymmrac/telego"
 	"github.com/mymmrac/telego/telegoutil"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
@@ -280,83 +279,85 @@ func getArtworkInfo(ctx context.Context, bot *telego.Bot, message telego.Message
 		}
 	}()
 
-	isAlreadyPosted := true
+	isAlreadyPosted := false
 	artwork, err := service.GetArtworkByURL(ctx, sourceURL)
 	if err != nil {
-		cachedArtwork, err := service.GetCachedArtworkByURL(ctx, sourceURL)
-		if err != nil && !hasPermission {
+		if !hasPermission {
 			return
 		}
-		isAlreadyPosted = false
-		if cachedArtwork == nil {
-			artwork, err = sources.GetArtworkInfo(sourceURL)
-			if err != nil {
-				telegram.ReplyMessage(bot, message, "获取作品信息失败: "+err.Error())
-				return
-			}
-			if err := service.CreateCachedArtwork(ctx, artwork, types.ArtworkStatusCached); err != nil {
-				Logger.Warnf("缓存作品失败: %s", err)
-			}
-		} else {
-			artwork = cachedArtwork.Artwork
+		cachedArtwork, err := service.GetCachedArtworkByURLWithCache(ctx, sourceURL)
+		if err != nil {
+			telegram.ReplyMessage(bot, message, "获取作品信息失败: "+err.Error())
+			return
 		}
+		artwork = cachedArtwork.Artwork
+		go func() {
+			for i, picture := range artwork.Pictures {
+				if i == 0 {
+					continue
+				}
+				if picture.TelegramInfo != nil && picture.TelegramInfo.PhotoFileID != "" {
+					continue
+				}
+				cachedArtwork, err := service.GetCachedArtworkByURL(context.TODO(), artwork.SourceURL)
+				if err != nil {
+					Logger.Warnf("获取缓存作品失败: %s", err)
+					continue
+				}
+				if cachedArtwork.Status != types.ArtworkStatusCached {
+					break
+				}
+				fileBytes, err := common.DownloadWithCache(picture.Original, nil)
+				if err != nil {
+					Logger.Warnf("下载图片失败: %s", err)
+					continue
+				}
+				_, err = common.CompressImageWithCache(fileBytes, 10, 2560, picture.Original)
+				if err != nil {
+					Logger.Warnf("压缩图片失败: %s", err)
+				}
+			}
+		}()
+	} else {
+		isAlreadyPosted = true
 	}
 
 	text := telegram.GetArtworkHTMLCaption(artwork) + fmt.Sprintf("\n<i>该作品共有%d张图片</i>", len(artwork.Pictures))
 	deleteModel, _ := service.GetDeletedByURL(ctx, sourceURL)
-	if deleteModel != nil && hasPermission {
+	if deleteModel != nil {
 		text += fmt.Sprintf("\n<i>这是一个在 %s 删除的作品\n如果发布则会取消删除</i>", common.EscapeHTML(deleteModel.DeletedAt.Time().Format("2006-01-02 15:04:05")))
 	}
 	var replyMarkup telego.ReplyMarkup
 	if isAlreadyPosted {
 		replyMarkup = telegram.GetPostedPictureReplyMarkup(artwork.Pictures[0])
-	} else if hasPermission {
+	} else {
 		cbId, err := service.CreateCallbackData(ctx, artwork.SourceURL)
 		if err != nil {
 			telegram.ReplyMessage(bot, message, "创建回调数据失败: "+err.Error())
 			return
+		}
+
+		previewKeyboard := []telego.InlineKeyboardButton{}
+		if len(artwork.Pictures) > 1 {
+			previewKeyboard = append(previewKeyboard, telegoutil.InlineKeyboardButton(fmt.Sprintf("删除这张(%d)", 1)).WithCallbackData("artwork_preview "+cbId+" delete 0 0"))
+			previewKeyboard = append(previewKeyboard, telegoutil.InlineKeyboardButton("下一张").WithCallbackData("artwork_preview "+cbId+" preview 1 0"))
 		}
 		replyMarkup = telegoutil.InlineKeyboard(
 			[]telego.InlineKeyboardButton{
 				telegoutil.InlineKeyboardButton("发布").WithCallbackData("post_artwork " + cbId),
 				telegoutil.InlineKeyboardButton("设为R18并发布").WithCallbackData("post_artwork_r18 " + cbId),
 			},
-			[]telego.InlineKeyboardButton{
-				telegoutil.InlineKeyboardButton("删除这张").WithCallbackData("artwork_preview " + cbId + " delete"),
-				telegoutil.InlineKeyboardButton("下一张").WithCallbackData("artwork_preview " + cbId + " 1"),
-			},
+			previewKeyboard,
 		)
 	}
 
-	var inputFile telego.InputFile
-	needUpdatePreview := false
-	if artwork.Pictures[0].TelegramInfo != nil && artwork.Pictures[0].TelegramInfo.PhotoFileID != "" {
-		inputFile = telegoutil.FileFromID(artwork.Pictures[0].TelegramInfo.PhotoFileID)
-	} else {
-		if fileBytes := common.GetReqCachedFile(artwork.Pictures[0].Original); fileBytes != nil {
-			fileBytes, err = common.CompressImageWithCache(fileBytes, 10, 2560, artwork.Pictures[0].Original)
-			if err != nil {
-				telegram.ReplyMessage(bot, message, "压缩图片失败: "+err.Error())
-				return
-			}
-			inputFile = telegoutil.File(telegoutil.NameReader(bytes.NewReader(fileBytes), artwork.Title))
-		} else {
-			needUpdatePreview = true
-			if botPhotoFileId := service.GetEtcData(ctx, "bot_photo_file_id"); botPhotoFileId != nil {
-				inputFile = telegoutil.FileFromID(botPhotoFileId.(string))
-			} else if botPhotoFileBytes := service.GetEtcData(ctx, "bot_photo_bytes"); botPhotoFileBytes != nil {
-				if data, ok := botPhotoFileBytes.(primitive.Binary); ok {
-					inputFile = telegoutil.File(telegoutil.NameReader(bytes.NewReader(data.Data), artwork.Title))
-				} else {
-					inputFile = telegoutil.FileFromURL(artwork.Pictures[0].Thumbnail)
-				}
-			} else {
-				inputFile = telegoutil.FileFromURL(artwork.Pictures[0].Thumbnail)
-			}
-		}
+	inputFile, needUpdatePreview, err := telegram.GetPicturePreviewInputFile(ctx, artwork.Pictures[0])
+	if err != nil {
+		telegram.ReplyMessage(bot, message, "获取图片失败: "+err.Error())
+		return
 	}
 
-	photo := telegoutil.Photo(message.Chat.ChatID(), inputFile).
+	photo := telegoutil.Photo(message.Chat.ChatID(), *inputFile).
 		WithReplyParameters(&telego.ReplyParameters{MessageID: message.MessageID}).
 		WithCaption(text).
 		WithReplyMarkup(replyMarkup).
@@ -370,17 +371,32 @@ func getArtworkInfo(ctx context.Context, bot *telego.Bot, message telego.Message
 		telegram.ReplyMessage(bot, message, "发送图片失败: "+err.Error())
 		return
 	}
-	if needUpdatePreview {
-		if err := UpdateLinkPreview(ctx, msg, artwork, bot, 0, photo); err != nil {
-			Logger.Errorf("更新预览失败: %s", err)
-			bot.EditMessageCaption(&telego.EditMessageCaptionParams{
-				ChatID:      message.Chat.ChatID(),
-				MessageID:   msg.MessageID,
-				Caption:     text + "\n<i>更新预览失败</i>",
-				ParseMode:   telego.ModeHTML,
-				ReplyMarkup: msg.ReplyMarkup,
-			})
+
+	if !needUpdatePreview {
+		cachedArtwork, err := service.GetCachedArtworkByURL(ctx, sourceURL)
+		if err != nil {
+			Logger.Warnf("获取缓存作品失败: %s", err)
+			return
 		}
+		if cachedArtwork.Artwork.Pictures[0].TelegramInfo == nil {
+			cachedArtwork.Artwork.Pictures[0].TelegramInfo = &types.TelegramInfo{}
+		}
+		cachedArtwork.Artwork.Pictures[0].TelegramInfo.PhotoFileID = msg.Photo[len(msg.Photo)-1].FileID
+		if err := service.UpdateCachedArtwork(ctx, cachedArtwork); err != nil {
+			Logger.Warnf("更新缓存作品失败: %s", err)
+		}
+		return
+	}
+
+	if err := UpdateLinkPreview(ctx, msg, artwork, bot, 0, photo); err != nil {
+		Logger.Errorf("更新预览失败: %s", err)
+		bot.EditMessageCaption(&telego.EditMessageCaptionParams{
+			ChatID:      message.Chat.ChatID(),
+			MessageID:   msg.MessageID,
+			Caption:     text + "\n<i>更新预览失败</i>",
+			ParseMode:   telego.ModeHTML,
+			ReplyMarkup: msg.ReplyMarkup,
+		})
 	}
 
 }

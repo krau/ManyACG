@@ -7,4 +7,5 @@ import (
 var (
 	ErrNoPhotoInMessage = errors.New("message has no photo")
 	ErrFileTooLarge     = errors.New("file too large (>20MB)")
+	ErrNoAvailableFile  = errors.New("no available file")
 )
