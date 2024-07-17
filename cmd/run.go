@@ -33,7 +33,7 @@ func Run() {
 	go bot.RunPolling()
 	storage.InitStorage()
 	sources.InitSources()
-	fetcher.StartScheduler(context.TODO())
+	go fetcher.StartScheduler(context.TODO())
 	if config.Cfg.API.Enable {
 		go restful.Run()
 	}
