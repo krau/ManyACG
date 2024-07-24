@@ -50,6 +50,10 @@ func GetArtistByUserName(ctx context.Context, username string) (*model.ArtistMod
 	return &artist, nil
 }
 
+func GetArtistCount(ctx context.Context) (int64, error) {
+	return artistCollection.CountDocuments(ctx, bson.M{})
+}
+
 func QueryArtistsByName(ctx context.Context, name string) ([]*model.ArtistModel, error) {
 	if name == "" {
 		return nil, mongo.ErrNoDocuments

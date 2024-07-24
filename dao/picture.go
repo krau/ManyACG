@@ -125,6 +125,10 @@ func GetNotProcessedPictures(ctx context.Context) ([]*model.PictureModel, error)
 	return pictures, nil
 }
 
+func GetPictureCount(ctx context.Context) (int64, error) {
+	return pictureCollection.CountDocuments(ctx, bson.M{})
+}
+
 func UpdatePictureTelegramInfoByID(ctx context.Context, id primitive.ObjectID, telegramInfo *model.TelegramInfo) (*mongo.UpdateResult, error) {
 	return pictureCollection.UpdateOne(ctx, bson.M{"_id": id}, bson.M{"$set": bson.M{"telegram_info": telegramInfo}})
 }

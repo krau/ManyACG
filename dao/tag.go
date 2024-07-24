@@ -39,6 +39,10 @@ func GetTagByName(ctx context.Context, name string) (*model.TagModel, error) {
 	return &tag, nil
 }
 
+func GetTagCount(ctx context.Context) (int64, error) {
+	return tagCollection.CountDocuments(ctx, bson.M{})
+}
+
 func QueryTagsByName(ctx context.Context, name string) ([]*model.TagModel, error) {
 	if name == "" {
 		return nil, mongo.ErrNoDocuments

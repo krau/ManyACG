@@ -46,6 +46,7 @@ func RunPolling() {
 	baseGroup.HandleMessageCtx(help, telegohandler.CommandEqual("help"), mentionIsBot)
 	baseGroup.HandleMessageCtx(searchPicture, telegohandler.CommandEqual("search"), mentionIsBot)
 	baseGroup.HandleMessageCtx(calculatePicture, telegohandler.CommandEqual("info"), mentionIsBot)
+	baseGroup.HandleMessageCtx(getStats, telegohandler.CommandEqual("stats"), mentionIsBot)
 
 	baseGroup.HandleMessageCtx(setAdmin, telegohandler.CommandEqual("set_admin"))
 	baseGroup.HandleMessageCtx(deletePicture, telegohandler.Or(telegohandler.CommandEqual("del"), telegohandler.CommandEqual("delete")))
