@@ -53,6 +53,8 @@ func help(ctx context.Context, bot *telego.Bot, message telego.Message) {
 /setu - 随机图片(NSFW)
 /random - 随机全年龄图片
 /search - 搜索相似图片
+/info - 计算图片信息
+/stats - 获取统计数据
 
 关键词参数使用 '|' 分隔或关系, 使用空格分隔与关系, 示例:
 
