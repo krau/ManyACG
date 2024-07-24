@@ -50,6 +50,10 @@ var (
 			Description: "计算图片信息",
 		},
 		{
+			Command:     "stats",
+			Description: "统计数据",
+		},
+		{
 			Command:     "help",
 			Description: "食用指南",
 		},
