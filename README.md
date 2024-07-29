@@ -6,11 +6,12 @@
 # ManyACG
 
 Work in progress...
-文档完善中...
 
 </div>
 
 ManyACG 是针对 Telegram 的 ACG 图片分享频道而设计的 Bot, 兼具爬虫和频道管理功能.
+
+DEMO: [@kirakabot](https://kirakabot.t.me)
 
 ## ⭐ 特性
 
