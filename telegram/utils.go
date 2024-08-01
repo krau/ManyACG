@@ -97,9 +97,22 @@ func GetMessageOriginChannelArtworkPost(ctx context.Context, bot *telego.Bot, me
 	return messageOriginChannel, true
 }
 
+var tagCharsReplacer = strings.NewReplacer(
+	":", "_",
+	"：", "_",
+	"-", "_",
+	"（", "_",
+	"）", "_",
+	"「", "_",
+	"」", "_",
+	"*", "_",
+	"?", "",
+	"/", " #",
+)
+
 func GetArtworkHTMLCaption(artwork *types.Artwork) string {
 	caption := fmt.Sprintf("<a href=\"%s\"><b>%s</b></a>", artwork.SourceURL, common.EscapeHTML(artwork.Title))
-	caption += "\n" + "<b>Author:</b> " + common.EscapeHTML(artwork.Artist.Name)
+	caption += "\n<b>Author:</b> " + common.EscapeHTML(artwork.Artist.Name)
 	if artwork.Description != "" {
 		desc := artwork.Description
 		if len(artwork.Description) > 500 {
@@ -116,12 +129,10 @@ func GetArtworkHTMLCaption(artwork *types.Artwork) string {
 	}
 	tags := ""
 	for _, tag := range artwork.Tags {
-		tag = common.ReplaceChars(tag, []string{":", "：", "-", "（", "）", "「", "」", "*"}, "_")
-		tag = common.ReplaceChars(tag, []string{"?"}, "")
-		tag = common.ReplaceChars(tag, []string{"/"}, " "+"#")
-		tags += "#" + strings.Join(strings.Split(common.EscapeHTML(tag), " "), "") + " "
+		tag = tagCharsReplacer.Replace(tag)
+		tags += "#" + strings.TrimSpace(common.EscapeHTML(tag)) + " "
 	}
-	caption += "\n\n" + fmt.Sprintf("<blockquote expandable=true>%s</blockquote>", tags)
+	caption += fmt.Sprintf("\n\n<blockquote expandable=true>%s</blockquote>", tags)
 	return caption
 }
 
@@ -219,4 +230,23 @@ func GetPicturePreviewInputFile(ctx context.Context, picture *types.Picture) (in
 		}
 	}
 	return nil, true, ErrNoAvailableFile
+}
+
+func FindSourceURLForMessage(message *telego.Message) string {
+	text := message.Text
+	text += message.Caption + " "
+	for _, entity := range message.Entities {
+		if entity.Type == telego.EntityTypeTextLink {
+			text += entity.URL + " "
+		}
+	}
+	if message.From.ID == 777000 {
+		return sources.FindSourceURL(text)
+	}
+	for _, entity := range message.CaptionEntities {
+		if entity.Type == telego.EntityTypeTextLink {
+			text += entity.URL + " "
+		}
+	}
+	return sources.FindSourceURL(text)
 }

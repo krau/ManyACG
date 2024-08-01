@@ -2,6 +2,7 @@ package common
 
 import (
 	"reflect"
+	"strings"
 	"testing"
 )
 
@@ -58,5 +59,20 @@ func TestParseStringTo2DArray(t *testing.T) {
 		if !reflect.DeepEqual(result, test.expected) {
 			t.Fatalf("ParseStringTo2DArray(%s, %s, %s) = %v, expected %v", test.input, test.sep, test.sep2, result, test.expected)
 		}
+	}
+}
+
+func BenchmarkReplaceFileNameInvalidChar(b *testing.B) {
+	fileName := strings.Repeat("test file/name\\with:illegal*chars?\"<>|%#+", 100)
+	for i := 0; i < b.N; i++ {
+		ReplaceFileNameInvalidChar(fileName)
+	}
+}
+
+func BenchmarkEscapeHTML(b *testing.B) {
+	text := strings.Repeat(`This is a <test> & it should be escaped`, 100)
+
+	for i := 0; i < b.N; i++ {
+		EscapeHTML(text)
 	}
 }
