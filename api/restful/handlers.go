@@ -2,10 +2,15 @@ package restful
 
 import (
 	"ManyACG/service"
+	"ManyACG/telegram"
 	"ManyACG/types"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/mymmrac/telego"
+	"github.com/mymmrac/telego/telegoutil"
+
+	. "ManyACG/logger"
 )
 
 func Ping(ctx *gin.Context) {
@@ -45,4 +50,39 @@ func RandomArtwork(ctx *gin.Context) {
 		return
 	}
 	ctx.JSON(http.StatusOK, artwork[0])
+}
+
+func SendArtworkInfo(ctx *gin.Context) {
+	var request SendArtworkInfoRequest
+	if err := ctx.ShouldBindJSON(&request); err != nil {
+		ctx.JSON(
+			http.StatusBadRequest,
+			gin.H{
+				"message": err.Error(),
+			},
+		)
+		return
+	}
+	var chatID telego.ChatID
+	if request.ChatID != 0 {
+		chatID = telegoutil.ID(request.ChatID)
+	}
+	go func() {
+		if err := telegram.SendArtworkInfo(
+			ctx,
+			telegram.Bot,
+			request.SourceURL,
+			true,
+			&chatID,
+			true,
+			request.AppendCaption,
+			true,
+			nil,
+		); err != nil {
+			Logger.Error(err)
+		}
+	}()
+	ctx.JSON(http.StatusOK, gin.H{
+		"message": "task created",
+	})
 }

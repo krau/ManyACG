@@ -21,6 +21,7 @@ func Run() {
 		v1.GET("/ping", Ping)
 		v1.GET("/artwork/random", RandomArtwork)
 		v1.POST("/artwork/random", RandomArtwork)
+		v1.POST("/artwork/send_info", SendArtworkInfo)
 	}
 
 	if err := r.Run(config.Cfg.API.Address); err != nil {
