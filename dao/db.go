@@ -142,7 +142,7 @@ func createIndex(ctx context.Context) {
 		},
 		{
 			Keys:    bson.D{{Key: "created_at", Value: 1}},
-			Options: options.Index().SetExpireAfterSeconds(86400).SetName("created_at"),
+			Options: options.Index().SetExpireAfterSeconds(86400 * 30).SetName("created_at"),
 		},
 	})
 }
