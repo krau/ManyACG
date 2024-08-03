@@ -33,8 +33,16 @@ func GetArtworkInfo(ctx context.Context, bot *telego.Bot, message telego.Message
 	}()
 	chatID := message.Chat.ChatID()
 
-	err := telegram.SendArtworkInfo(ctx, bot, sourceURL, false, &chatID, hasPermission, "", false, &telego.ReplyParameters{
-		MessageID: message.MessageID,
+	err := telegram.SendArtworkInfo(ctx, bot, &telegram.SendArtworkInfoParams{
+		ChatID:        &chatID,
+		SourceURL:     sourceURL,
+		AppendCaption: "",
+		Verify:        false,
+		IgnoreDeleted: false,
+		HasPermission: hasPermission,
+		ReplyParams: &telego.ReplyParameters{
+			MessageID: message.MessageID,
+		},
 	})
 	if err != nil {
 		Logger.Error(err)

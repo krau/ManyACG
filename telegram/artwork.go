@@ -24,8 +24,7 @@ import (
 
 func PostArtwork(bot *telego.Bot, artwork *types.Artwork) ([]telego.Message, error) {
 	if bot == nil {
-		Logger.Fatal("Bot is nil")
-		return nil, errors.ErrNilBot
+		bot = Bot
 	}
 	if artwork == nil {
 		Logger.Fatal("Artwork is nil")
@@ -105,30 +104,29 @@ func getInputMediaPhotos(artwork *types.Artwork, start, end int) ([]telego.Input
 	return inputMediaPhotos, nil
 }
 
-func SendArtworkInfo(ctx context.Context, bot *telego.Bot, sourceURL string, needVerifySourceURL bool, chatID *telego.ChatID,
-	hasPermission bool, appendCaption string, ignoreDeleted bool, replyParameters *telego.ReplyParameters) error {
-	if needVerifySourceURL {
-		originSourceURL := sourceURL
-		sourceURL = sources.FindSourceURL(sourceURL)
-		if sourceURL == "" {
+func SendArtworkInfo(ctx context.Context, bot *telego.Bot, params *SendArtworkInfoParams) error {
+	if params.Verify {
+		originSourceURL := params.SourceURL
+		params.SourceURL = sources.FindSourceURL(params.SourceURL)
+		if params.SourceURL == "" {
 			return fmt.Errorf("无效的链接: %s", originSourceURL)
 		}
 	}
-	deleteModel, _ := service.GetDeletedByURL(ctx, sourceURL)
-	if deleteModel != nil && ignoreDeleted {
-		Logger.Debugf("已删除的作品: %s", sourceURL)
+	deleteModel, _ := service.GetDeletedByURL(ctx, params.SourceURL)
+	if deleteModel != nil && params.IgnoreDeleted {
+		Logger.Debugf("已删除的作品: %s", params.SourceURL)
 		return nil
 	}
 	isCreated := false
-	artwork, err := service.GetArtworkByURL(ctx, sourceURL)
+	artwork, err := service.GetArtworkByURL(ctx, params.SourceURL)
 	if err != nil {
-		if !hasPermission {
+		if !params.HasPermission {
 			return nil
 		}
 		if !es.Is(err, mongo.ErrNoDocuments) {
 			return fmt.Errorf("获取作品信息失败: %w", err)
 		}
-		cachedArtwork, err := service.GetCachedArtworkByURLWithCache(ctx, sourceURL)
+		cachedArtwork, err := service.GetCachedArtworkByURLWithCache(ctx, params.SourceURL)
 		if err != nil {
 			return fmt.Errorf("缓存作品失败: %w", err)
 		}
@@ -152,12 +150,12 @@ func SendArtworkInfo(ctx context.Context, bot *telego.Bot, sourceURL string, nee
 	if err != nil {
 		return fmt.Errorf("获取预览图片失败: %w", err)
 	}
-	caption += fmt.Sprintf("\n%s", appendCaption)
-	if chatID == nil {
-		chatID = &GroupChatID
+	caption += fmt.Sprintf("\n%s", params.AppendCaption)
+	if params.ChatID == nil {
+		params.ChatID = &GroupChatID
 	}
-	photo := telegoutil.Photo(*chatID, *inputFile).
-		WithReplyParameters(replyParameters).
+	photo := telegoutil.Photo(*params.ChatID, *inputFile).
+		WithReplyParameters(params.ReplyParams).
 		WithCaption(caption).
 		WithReplyMarkup(replyMarkup).
 		WithParseMode(telego.ModeHTML)
@@ -174,7 +172,7 @@ func SendArtworkInfo(ctx context.Context, bot *telego.Bot, sourceURL string, nee
 	}
 
 	if !needUpdatePreview {
-		cachedArtwork, err := service.GetCachedArtworkByURL(ctx, sourceURL)
+		cachedArtwork, err := service.GetCachedArtworkByURL(ctx, params.SourceURL)
 		if err != nil {
 			Logger.Warnf("获取缓存作品失败: %s", err)
 			return nil
@@ -191,7 +189,7 @@ func SendArtworkInfo(ctx context.Context, bot *telego.Bot, sourceURL string, nee
 	if err := updateLinkPreview(ctx, msg, artwork, bot, 0, photo); err != nil {
 		Logger.Warnf("更新预览失败: %s", err)
 		bot.EditMessageCaption(&telego.EditMessageCaptionParams{
-			ChatID:      *chatID,
+			ChatID:      *params.ChatID,
 			MessageID:   msg.MessageID,
 			Caption:     caption + "\n<i>更新预览失败</i>",
 			ParseMode:   telego.ModeHTML,

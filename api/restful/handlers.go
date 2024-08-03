@@ -69,17 +69,15 @@ func SendArtworkInfo(ctx *gin.Context) {
 	}
 	copyCtx := ctx.Copy()
 	go func() {
-		if err := telegram.SendArtworkInfo(
-			copyCtx,
-			telegram.Bot,
-			request.SourceURL,
-			true,
-			&chatID,
-			true,
-			request.AppendCaption,
-			true,
-			nil,
-		); err != nil {
+		if err := telegram.SendArtworkInfo(copyCtx, nil, &telegram.SendArtworkInfoParams{
+			ChatID:        &chatID,
+			SourceURL:     request.SourceURL,
+			AppendCaption: request.AppendCaption,
+			Verify:        true,
+			HasPermission: true,
+			IgnoreDeleted: true,
+			ReplyParams:   nil,
+		}); err != nil {
 			Logger.Error(err)
 		}
 	}()
