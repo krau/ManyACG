@@ -67,22 +67,24 @@ func SendArtworkInfo(ctx *gin.Context) {
 	if request.ChatID != 0 {
 		chatID = telegoutil.ID(request.ChatID)
 	}
-	go func() {
-		if err := telegram.SendArtworkInfo(
-			ctx,
-			telegram.Bot,
-			request.SourceURL,
-			true,
-			&chatID,
-			true,
-			request.AppendCaption,
-			true,
-			nil,
-		); err != nil {
-			Logger.Error(err)
-		}
-	}()
+	if err := telegram.SendArtworkInfo(
+		ctx,
+		telegram.Bot,
+		request.SourceURL,
+		true,
+		&chatID,
+		true,
+		request.AppendCaption,
+		true,
+		nil,
+	); err != nil {
+		Logger.Error(err)
+		ctx.JSON(http.StatusInternalServerError, gin.H{
+			"message": err.Error(),
+		})
+		return
+	}
 	ctx.JSON(http.StatusOK, gin.H{
-		"message": "task created",
+		"message": "success",
 	})
 }
