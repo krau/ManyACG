@@ -129,6 +129,9 @@ func GetArtworkHTMLCaption(artwork *types.Artwork) string {
 	}
 	tags := ""
 	for _, tag := range artwork.Tags {
+		if len(tags)+len(tag) > 200 {
+			break
+		}
 		tag = tagCharsReplacer.Replace(tag)
 		tags += "#" + strings.TrimSpace(common.EscapeHTML(tag)) + " "
 	}
