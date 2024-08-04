@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"ManyACG/common"
 	"ManyACG/fetcher"
 	. "ManyACG/logger"
 	"ManyACG/service"
@@ -359,11 +360,14 @@ func ArtworkPreview(ctx context.Context, bot *telego.Bot, query telego.CallbackQ
 		return
 	}
 	if needUpdatePreview {
-		bot.AnswerCallbackQuery(&telego.AnswerCallbackQueryParams{
+		go bot.AnswerCallbackQuery(&telego.AnswerCallbackQueryParams{
 			CallbackQueryID: query.ID,
 			Text:            "图片还在加载, 请稍等",
 			CacheTime:       3,
 		})
+		if common.GetReqCachedFile(cachedArtwork.Artwork.Pictures[pictureIndex].Original) == nil {
+			common.DownloadWithCache(cachedArtwork.Artwork.Pictures[pictureIndex].Original, nil)
+		}
 		return
 	}
 
