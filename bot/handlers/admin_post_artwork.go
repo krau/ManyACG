@@ -365,9 +365,7 @@ func ArtworkPreview(ctx context.Context, bot *telego.Bot, query telego.CallbackQ
 			Text:            "图片还在加载, 请稍等",
 			CacheTime:       3,
 		})
-		if common.GetReqCachedFile(cachedArtwork.Artwork.Pictures[pictureIndex].Original) == nil {
-			common.DownloadWithCache(cachedArtwork.Artwork.Pictures[pictureIndex].Original, nil)
-		}
+		go downloadAndCompressArtwork(ctx, cachedArtwork.Artwork, pictureIndex)
 		return
 	}
 
@@ -414,6 +412,34 @@ func ArtworkPreview(ctx context.Context, bot *telego.Bot, query telego.CallbackQ
 		cachedArtwork.Artwork.Pictures[pictureIndex].TelegramInfo.PhotoFileID = msg.Photo[len(msg.Photo)-1].FileID
 		if err := service.UpdateCachedArtwork(ctx, cachedArtwork); err != nil {
 			Logger.Errorf("更新缓存作品失败: %s", err)
+		}
+	}
+}
+
+func downloadAndCompressArtwork(ctx context.Context, artwork *types.Artwork, startIndex int) {
+	for i, picture := range artwork.Pictures {
+		if i < startIndex {
+			continue
+		}
+		if picture.TelegramInfo != nil && picture.TelegramInfo.PhotoFileID != "" {
+			continue
+		}
+		cachedArtwork, err := service.GetCachedArtworkByURL(ctx, artwork.SourceURL)
+		if err != nil {
+			Logger.Warnf("获取缓存作品失败: %s", err)
+			continue
+		}
+		if cachedArtwork.Status != types.ArtworkStatusCached {
+			break
+		}
+		fileBytes, err := common.DownloadWithCache(picture.Original, nil)
+		if err != nil {
+			Logger.Warnf("下载图片失败: %s", err)
+			continue
+		}
+		_, err = common.CompressImageWithCache(fileBytes, 10, 2560, picture.Original)
+		if err != nil {
+			Logger.Warnf("压缩图片失败: %s", err)
 		}
 	}
 }

@@ -131,7 +131,6 @@ func SendArtworkInfo(ctx context.Context, bot *telego.Bot, params *SendArtworkIn
 			return fmt.Errorf("缓存作品失败: %w", err)
 		}
 		artwork = cachedArtwork.Artwork
-		go downloadAndCompressArtwork(ctx, artwork)
 	} else {
 		isCreated = true
 	}
@@ -221,34 +220,6 @@ func getArtworkInfoReplyMarkup(ctx context.Context, artwork *types.Artwork, isCr
 		},
 		previewKeyboard,
 	), nil
-}
-
-func downloadAndCompressArtwork(ctx context.Context, artwork *types.Artwork) {
-	for i, picture := range artwork.Pictures {
-		if i == 0 {
-			continue
-		}
-		if picture.TelegramInfo != nil && picture.TelegramInfo.PhotoFileID != "" {
-			continue
-		}
-		cachedArtwork, err := service.GetCachedArtworkByURL(ctx, artwork.SourceURL)
-		if err != nil {
-			Logger.Warnf("获取缓存作品失败: %s", err)
-			continue
-		}
-		if cachedArtwork.Status != types.ArtworkStatusCached {
-			break
-		}
-		fileBytes, err := common.DownloadWithCache(picture.Original, nil)
-		if err != nil {
-			Logger.Warnf("下载图片失败: %s", err)
-			continue
-		}
-		_, err = common.CompressImageWithCache(fileBytes, 10, 2560, picture.Original)
-		if err != nil {
-			Logger.Warnf("压缩图片失败: %s", err)
-		}
-	}
 }
 
 func updateLinkPreview(ctx context.Context, targetMessage *telego.Message, artwork *types.Artwork, bot *telego.Bot, pictureIndex uint, photoParams *telego.SendPhotoParams) error {
