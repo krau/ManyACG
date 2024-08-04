@@ -365,7 +365,7 @@ func ArtworkPreview(ctx context.Context, bot *telego.Bot, query telego.CallbackQ
 			Text:            "图片还在加载, 请稍等",
 			CacheTime:       3,
 		})
-		go downloadAndCompressArtwork(ctx, cachedArtwork.Artwork, pictureIndex)
+		go downloadAndCompressArtwork(context.TODO(), cachedArtwork.Artwork, pictureIndex)
 		return
 	}
 
