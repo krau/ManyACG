@@ -59,6 +59,7 @@ func RunPolling() {
 	baseGroup.HandleMessageCtx(handlers.PostArtworkCommand, telegohandler.CommandEqual("post"))
 	baseGroup.HandleMessageCtx(handlers.BatchPostArtwork, telegohandler.CommandEqual("batch_post"))
 	baseGroup.HandleCallbackQueryCtx(handlers.PostArtworkCallbackQuery, telegohandler.CallbackDataContains("post_artwork"))
+	baseGroup.HandleCallbackQueryCtx(handlers.SearchPictureCallbackQuery, telegohandler.CallbackDataPrefix("search_picture"))
 	baseGroup.HandleCallbackQueryCtx(handlers.ArtworkPreview, telegohandler.CallbackDataContains("artwork_preview"))
 	baseGroup.HandleMessageCtx(handlers.GetArtworkInfo, func(update telego.Update) bool {
 		return telegram.FindSourceURLForMessage(update.Message) != ""
