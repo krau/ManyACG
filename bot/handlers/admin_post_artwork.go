@@ -239,7 +239,8 @@ func ArtworkPreview(ctx context.Context, bot *telego.Bot, query telego.CallbackQ
 
 	postArtworkKeyboard := []telego.InlineKeyboardButton{
 		telegoutil.InlineKeyboardButton("发布").WithCallbackData("post_artwork " + dataID),
-		telegoutil.InlineKeyboardButton("设为R18并发布").WithCallbackData("post_artwork_r18 " + dataID),
+		telegoutil.InlineKeyboardButton("查重").WithCallbackData("search_picture " + dataID),
+		telegoutil.InlineKeyboardButton("遮罩发布").WithCallbackData("post_artwork_r18 " + dataID),
 	}
 	currentPictureIndexStr := queryDataSlice[4]
 	currentPictureIndex, err := strconv.Atoi(currentPictureIndexStr)

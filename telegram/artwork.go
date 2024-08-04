@@ -217,8 +217,7 @@ func getArtworkInfoReplyMarkup(ctx context.Context, artwork *types.Artwork, isCr
 		[]telego.InlineKeyboardButton{
 			telegoutil.InlineKeyboardButton("发布").WithCallbackData("post_artwork " + cbId),
 			telegoutil.InlineKeyboardButton("查重").WithCallbackData("search_picture " + cbId),
-		}, []telego.InlineKeyboardButton{
-			telegoutil.InlineKeyboardButton("设为R18并发布").WithCallbackData("post_artwork_r18 " + cbId),
+			telegoutil.InlineKeyboardButton("遮罩发布").WithCallbackData("post_artwork_r18 " + cbId),
 		},
 		previewKeyboard,
 	), nil
