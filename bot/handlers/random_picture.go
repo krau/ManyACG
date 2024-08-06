@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"ManyACG/adapter"
 	"ManyACG/common"
 	. "ManyACG/logger"
 	"ManyACG/service"
@@ -26,7 +27,7 @@ func RandomPicture(ctx context.Context, bot *telego.Bot, message telego.Message)
 	if r18 {
 		r18Type = types.R18TypeOnly
 	}
-	artwork, err := service.QueryArtworksByTexts(ctx, textArray, r18Type, 1)
+	artwork, err := service.QueryArtworksByTexts(ctx, textArray, r18Type, 1, adapter.OnlyLoadPicture())
 	if err != nil {
 		Logger.Warnf("获取图片失败: %s", err)
 		text := "获取图片失败" + err.Error()

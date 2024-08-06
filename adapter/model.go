@@ -31,18 +31,56 @@ func GetArtworkModelPictures(ctx context.Context, artworkModel *model.ArtworkMod
 	return pictures, nil
 }
 
-func ConvertToArtwork(ctx context.Context, artworkModel *model.ArtworkModel) (*types.Artwork, error) {
-	tags, err := GetArtworkModelTags(ctx, artworkModel)
-	if err != nil {
-		return nil, err
+func ConvertToArtwork(ctx context.Context, artworkModel *model.ArtworkModel, opts ...*AdapterOption) (*types.Artwork, error) {
+	var tags []string
+	var pictures []*types.Picture
+	var artist *types.Artist
+	var err error
+	if len(opts) == 0 {
+		tags, err = GetArtworkModelTags(ctx, artworkModel)
+		if err != nil {
+			return nil, err
+		}
+		pictures, err = GetArtworkModelPictures(ctx, artworkModel)
+		if err != nil {
+			return nil, err
+		}
+		artistModel, err := dao.GetArtistByID(ctx, artworkModel.ArtistID)
+		if err != nil {
+			return nil, err
+		}
+		artist = artistModel.ToArtist()
+		return &types.Artwork{
+			Title:       artworkModel.Title,
+			Description: artworkModel.Description,
+			R18:         artworkModel.R18,
+			CreatedAt:   artworkModel.CreatedAt.Time(),
+			SourceType:  artworkModel.SourceType,
+			SourceURL:   artworkModel.SourceURL,
+			Artist:      artist,
+			Tags:        tags,
+			Pictures:    pictures,
+		}, nil
 	}
-	pictures, err := GetArtworkModelPictures(ctx, artworkModel)
-	if err != nil {
-		return nil, err
+	option := MergeOptions(opts...)
+	if option.LoadTag {
+		tags, err = GetArtworkModelTags(ctx, artworkModel)
+		if err != nil {
+			return nil, err
+		}
 	}
-	artistModel, err := dao.GetArtistByID(ctx, artworkModel.ArtistID)
-	if err != nil {
-		return nil, err
+	if option.LoadPicture {
+		pictures, err = GetArtworkModelPictures(ctx, artworkModel)
+		if err != nil {
+			return nil, err
+		}
+	}
+	if option.LoadArtist {
+		artistModel, err := dao.GetArtistByID(ctx, artworkModel.ArtistID)
+		if err != nil {
+			return nil, err
+		}
+		artist = artistModel.ToArtist()
 	}
 	return &types.Artwork{
 		Title:       artworkModel.Title,
@@ -51,19 +89,25 @@ func ConvertToArtwork(ctx context.Context, artworkModel *model.ArtworkModel) (*t
 		CreatedAt:   artworkModel.CreatedAt.Time(),
 		SourceType:  artworkModel.SourceType,
 		SourceURL:   artworkModel.SourceURL,
-		Artist:      artistModel.ToArtist(),
+		Artist:      artist,
 		Tags:        tags,
 		Pictures:    pictures,
 	}, nil
-
 }
 
-func ConvertToArtworks(ctx context.Context, artworkModels []*model.ArtworkModel) ([]*types.Artwork, error) {
+func ConvertToArtworks(ctx context.Context, artworkModels []*model.ArtworkModel, opts ...*AdapterOption) ([]*types.Artwork, error) {
+	if len(artworkModels) == 1 {
+		artwork, err := ConvertToArtwork(ctx, artworkModels[0])
+		if err != nil {
+			return nil, err
+		}
+		return []*types.Artwork{artwork}, nil
+	}
 	artworks := make([]*types.Artwork, len(artworkModels))
 	errCh := make(chan error, len(artworkModels))
 	for i, artworkModel := range artworkModels {
 		go func(i int, artworkModel *model.ArtworkModel) {
-			artwork, err := ConvertToArtwork(ctx, artworkModel)
+			artwork, err := ConvertToArtwork(ctx, artworkModel, opts...)
 			if err != nil {
 				errCh <- err
 				return

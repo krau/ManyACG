@@ -172,12 +172,12 @@ func GetArtworkIDByPicture(ctx context.Context, picture *types.Picture) (primiti
 	return pictureModel.ArtworkID, nil
 }
 
-func GetRandomArtworks(ctx context.Context, r18 types.R18Type, limit int) ([]*types.Artwork, error) {
+func GetRandomArtworks(ctx context.Context, r18 types.R18Type, limit int, convertOpts ...*adapter.AdapterOption) ([]*types.Artwork, error) {
 	artworkModels, err := dao.GetArtworksByR18(ctx, r18, limit)
 	if err != nil {
 		return nil, err
 	}
-	artworks, err := adapter.ConvertToArtworks(ctx, artworkModels)
+	artworks, err := adapter.ConvertToArtworks(ctx, artworkModels, convertOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -187,7 +187,7 @@ func GetRandomArtworks(ctx context.Context, r18 types.R18Type, limit int) ([]*ty
 // 通过标签获取作品, 标签名使用全字匹配
 //
 // tags: 二维数组, tags = [["tag1", "tag2"], ["tag3", "tag4"]] 表示 (tag1 || tag2) && (tag3 || tag4)
-func GetArtworksByTags(ctx context.Context, tags [][]string, r18 types.R18Type, limit int) ([]*types.Artwork, error) {
+func GetArtworksByTags(ctx context.Context, tags [][]string, r18 types.R18Type, limit int, convertOpts ...*adapter.AdapterOption) ([]*types.Artwork, error) {
 	if len(tags) == 0 {
 		return GetRandomArtworks(ctx, r18, limit)
 	}
@@ -206,7 +206,7 @@ func GetArtworksByTags(ctx context.Context, tags [][]string, r18 types.R18Type, 
 	if err != nil {
 		return nil, err
 	}
-	artworks, err := adapter.ConvertToArtworks(ctx, artworkModels)
+	artworks, err := adapter.ConvertToArtworks(ctx, artworkModels, convertOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -218,12 +218,12 @@ func GetArtworksByTags(ctx context.Context, tags [][]string, r18 types.R18Type, 
 // 对于每个关键词, 只要tag名, 标题, 描述, 作者名, 作者用户名中有一个匹配即认为匹配成功
 //
 // 关键词二维数组中, 每个一维数组中的关键词之间是或的关系, 不同一维数组中的关键词之间是与的关系
-func QueryArtworksByTexts(ctx context.Context, texts [][]string, r18 types.R18Type, limit int) ([]*types.Artwork, error) {
+func QueryArtworksByTexts(ctx context.Context, texts [][]string, r18 types.R18Type, limit int, convertOpts ...*adapter.AdapterOption) ([]*types.Artwork, error) {
 	artworkModels, err := dao.QueryArtworksByTexts(ctx, texts, r18, limit)
 	if err != nil {
 		return nil, err
 	}
-	artworks, err := adapter.ConvertToArtworks(ctx, artworkModels)
+	artworks, err := adapter.ConvertToArtworks(ctx, artworkModels, convertOpts...)
 	if err != nil {
 		return nil, err
 	}
