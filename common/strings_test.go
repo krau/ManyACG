@@ -52,13 +52,20 @@ func TestParseStringTo2DArray(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		result, err := ParseStringTo2DArray(test.input, test.sep, test.sep2)
-		if err != nil {
-			t.Fatalf("ParseStringTo2DArray(%s, %s, %s) failed: %v", test.input, test.sep, test.sep2, err)
-		}
+		result := ParseStringTo2DArray(test.input, test.sep, test.sep2)
 		if !reflect.DeepEqual(result, test.expected) {
 			t.Fatalf("ParseStringTo2DArray(%s, %s, %s) = %v, expected %v", test.input, test.sep, test.sep2, result, test.expected)
 		}
+	}
+}
+
+func BenchmarkParseStringTo2DArray(b *testing.B) {
+	str := "1,2,3;4,5,6"
+	sep := ","
+	sep2 := ";"
+
+	for i := 0; i < b.N; i++ {
+		ParseStringTo2DArray(str, sep, sep2)
 	}
 }
 

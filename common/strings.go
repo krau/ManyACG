@@ -42,10 +42,10 @@ func EscapeHTML(text string) string {
 // ParseStringTo2DArray("1,2,3;4,5,6", ",", ";") => [][]string{{"1", "2", "3"}, {"4", "5", "6"}}
 //
 // ParseStringTo2DArray("1,2,3;\"4,5,6\"", ",", ";") => [][]string{{"1", "2", "3"}, {"4,5,6"}}
-func ParseStringTo2DArray(str, sep, sep2 string) ([][]string, error) {
+func ParseStringTo2DArray(str, sep, sep2 string) [][]string {
 	var result [][]string
 	if str == "" {
-		return result, nil
+		return result
 	}
 
 	var row []string
@@ -57,9 +57,7 @@ func ParseStringTo2DArray(str, sep, sep2 string) ([][]string, error) {
 			if c == '"' || c == '\'' {
 				inQuote = false
 			} else {
-				if _, err := builder.WriteRune(c); err != nil {
-					return nil, err
-				}
+				builder.WriteRune(c)
 			}
 		} else {
 			if c == '"' || c == '\'' {
@@ -73,9 +71,7 @@ func ParseStringTo2DArray(str, sep, sep2 string) ([][]string, error) {
 				row = nil
 				builder.Reset()
 			} else {
-				if _, err := builder.WriteRune(c); err != nil {
-					return nil, err
-				}
+				builder.WriteRune(c)
 			}
 		}
 	}
@@ -87,7 +83,7 @@ func ParseStringTo2DArray(str, sep, sep2 string) ([][]string, error) {
 		result = append(result, row)
 	}
 
-	return result, nil
+	return result
 }
 
 // 去除字符串切片中的重复元素

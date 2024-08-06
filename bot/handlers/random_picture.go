@@ -20,12 +20,7 @@ import (
 func RandomPicture(ctx context.Context, bot *telego.Bot, message telego.Message) {
 	cmd, _, args := telegoutil.ParseCommand(message.Text)
 	argText := strings.ReplaceAll(strings.Join(args, " "), "\\", "")
-	textArray, err := common.ParseStringTo2DArray(argText, "|", " ")
-	if err != nil {
-		Logger.Warnf("解析参数失败: %s", err)
-		telegram.ReplyMessage(bot, message, "解析参数失败: "+err.Error()+"\n请使用'|'分隔'或'关系的关键词, 使用空格分隔'与'关系的关键词")
-		return
-	}
+	textArray := common.ParseStringTo2DArray(argText, "|", " ")
 	r18 := cmd == "setu"
 	r18Type := types.R18TypeNone
 	if r18 {

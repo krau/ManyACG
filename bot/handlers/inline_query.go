@@ -17,12 +17,7 @@ import (
 
 func InlineQuery(ctx context.Context, bot *telego.Bot, query telego.InlineQuery) {
 	queryText := query.Query
-	texts, err := common.ParseStringTo2DArray(queryText, "|", " ")
-	if err != nil {
-		Logger.Warnf("解析参数失败: %s", err)
-		bot.AnswerInlineQuery(telegoutil.InlineQuery(query.ID, telegoutil.ResultArticle(uuid.NewString(), "解析参数失败", telegoutil.TextMessage("/setu"))))
-		return
-	}
+	texts := common.ParseStringTo2DArray(queryText, "|", " ")
 	artworks, err := service.QueryArtworksByTexts(ctx, texts, types.R18TypeAll, 20)
 	if err != nil || len(artworks) == 0 {
 		Logger.Warnf("获取图片失败: %s", err)
