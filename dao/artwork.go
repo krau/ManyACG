@@ -36,7 +36,7 @@ func GetArtworkByURL(ctx context.Context, url string) (*model.ArtworkModel, erro
 	return &artwork, err
 }
 
-func GetArtworksByR18(ctx context.Context, r18 types.R18Type, limit int64) ([]*model.ArtworkModel, error) {
+func GetArtworksByR18(ctx context.Context, r18 types.R18Type, limit int) ([]*model.ArtworkModel, error) {
 	var artworks []*model.ArtworkModel
 	var cursor *mongo.Cursor
 	var err error
@@ -63,7 +63,7 @@ func GetArtworksByR18(ctx context.Context, r18 types.R18Type, limit int64) ([]*m
 	return artworks, nil
 }
 
-func GetArtworksByTags(ctx context.Context, tags [][]primitive.ObjectID, r18 types.R18Type, limit int64) ([]*model.ArtworkModel, error) {
+func GetArtworksByTags(ctx context.Context, tags [][]primitive.ObjectID, r18 types.R18Type, limit int) ([]*model.ArtworkModel, error) {
 	if len(tags) == 0 {
 		return GetArtworksByR18(ctx, r18, limit)
 	}
@@ -105,7 +105,7 @@ func GetArtworksByTags(ctx context.Context, tags [][]primitive.ObjectID, r18 typ
 	return artworks, nil
 }
 
-func GetArtworksByArtistID(ctx context.Context, artistID primitive.ObjectID, r18 types.R18Type, limit int64) ([]*model.ArtworkModel, error) {
+func GetArtworksByArtistID(ctx context.Context, artistID primitive.ObjectID, r18 types.R18Type, limit int) ([]*model.ArtworkModel, error) {
 	var artworks []*model.ArtworkModel
 	var cursor *mongo.Cursor
 	var err error

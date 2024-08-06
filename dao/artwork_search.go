@@ -10,7 +10,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
-func QueryArtworksByTexts(ctx context.Context, texts [][]string, r18 types.R18Type, limit int64) ([]*model.ArtworkModel, error) {
+func QueryArtworksByTexts(ctx context.Context, texts [][]string, r18 types.R18Type, limit int) ([]*model.ArtworkModel, error) {
 	if len(texts) == 0 {
 		return GetArtworksByR18(ctx, r18, limit)
 	}

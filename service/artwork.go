@@ -173,7 +173,7 @@ func GetArtworkIDByPicture(ctx context.Context, picture *types.Picture) (primiti
 }
 
 func GetRandomArtworks(ctx context.Context, r18 types.R18Type, limit int) ([]*types.Artwork, error) {
-	artworkModels, err := dao.GetArtworksByR18(ctx, r18, int64(limit))
+	artworkModels, err := dao.GetArtworksByR18(ctx, r18, limit)
 	if err != nil {
 		return nil, err
 	}
@@ -202,7 +202,7 @@ func GetArtworksByTags(ctx context.Context, tags [][]string, r18 types.R18Type, 
 			tagIDs[i][j] = tagModel.ID
 		}
 	}
-	artworkModels, err := dao.GetArtworksByTags(ctx, tagIDs, r18, int64(limit))
+	artworkModels, err := dao.GetArtworksByTags(ctx, tagIDs, r18, limit)
 	if err != nil {
 		return nil, err
 	}
@@ -219,7 +219,7 @@ func GetArtworksByTags(ctx context.Context, tags [][]string, r18 types.R18Type, 
 //
 // 关键词二维数组中, 每个一维数组中的关键词之间是或的关系, 不同一维数组中的关键词之间是与的关系
 func QueryArtworksByTexts(ctx context.Context, texts [][]string, r18 types.R18Type, limit int) ([]*types.Artwork, error) {
-	artworkModels, err := dao.QueryArtworksByTexts(ctx, texts, r18, int64(limit))
+	artworkModels, err := dao.QueryArtworksByTexts(ctx, texts, r18, limit)
 	if err != nil {
 		return nil, err
 	}
