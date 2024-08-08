@@ -9,6 +9,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"path/filepath"
 	"strings"
 
 	. "ManyACG/logger"
@@ -36,17 +37,12 @@ func SendPictureFileByMessageID(ctx context.Context, bot *telego.Bot, message te
 		file = telegoutil.FileFromID(picture.TelegramInfo.DocumentFileID)
 	} else {
 		go ReplyMessage(bot, message, "正在下载原图，请稍等~")
-		artwork, err := service.GetArtworkByMessageID(ctx, pictureMessageID)
-		if err != nil {
-			return nil, err
-		}
 		data, err := storage.GetStorage().GetFile(picture.StorageInfo)
 		if err != nil {
 			return nil, err
 		}
-		file = telegoutil.File(telegoutil.NameReader(bytes.NewReader(data), sources.GetFileName(artwork, picture)))
+		file = telegoutil.File(telegoutil.NameReader(bytes.NewReader(data), filepath.Base(picture.StorageInfo.Path)))
 	}
-
 	documentMessage, err := bot.SendDocument(telegoutil.Document(message.Chat.ChatID(), file).
 		WithReplyParameters(&telego.ReplyParameters{
 			MessageID: message.MessageID,
