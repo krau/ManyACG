@@ -2,6 +2,7 @@ package utils
 
 import (
 	"ManyACG/common"
+	"ManyACG/errors"
 	"ManyACG/service"
 	"ManyACG/sources"
 	"ManyACG/storage"
@@ -148,12 +149,12 @@ func GetMessagePhotoFileBytes(bot *telego.Bot, message *telego.Message) ([]byte,
 	}
 	if message.Document != nil && strings.HasPrefix(message.Document.MimeType, "image/") {
 		if message.Document.FileSize > 20*1024*1024 {
-			return nil, ErrFileTooLarge
+			return nil, errors.ErrFileTooLarge
 		}
 		fileID = message.Document.FileID
 	}
 	if fileID == "" {
-		return nil, ErrNoPhotoInMessage
+		return nil, errors.ErrNoPhotoInMessage
 	}
 	tgFile, err := bot.GetFile(
 		&telego.GetFileParams{FileID: fileID},
@@ -247,5 +248,5 @@ func GetPicturePreviewInputFile(ctx context.Context, picture *types.Picture) (in
 			return
 		}
 	}
-	return nil, true, ErrNoAvailableFile
+	return nil, true, errors.ErrNoAvailableFile
 }

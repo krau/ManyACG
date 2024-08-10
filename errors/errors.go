@@ -5,9 +5,14 @@ import (
 )
 
 var (
+	ErrNilBot           = errors.New("bot is nil")
+	ErrArtworkDeleted   = errors.New("artwork deleted")
+	ErrNoPhotoInMessage = errors.New("message has no photo")
+	ErrFileTooLarge     = errors.New("file too large (>20MB)")
+	ErrNoAvailableFile  = errors.New("no available file")
+
 	ErrNilArtwork          = errors.New("artwork is nil")
 	ErrArtworkAlreadyExist = errors.New("artwork already exists")
 	ErrSourceNotSupported  = errors.New("source not supported")
-	ErrArtworkDeleted      = errors.New("artwork deleted")
 	ErrIndexOOB            = errors.New("index out of bounds")
 )

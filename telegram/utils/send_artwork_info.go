@@ -86,7 +86,7 @@ func SendArtworkInfo(ctx context.Context, bot *telego.Bot, params *SendArtworkIn
 		photo.WithHasSpoiler()
 	}
 	if bot == nil {
-		return ErrNilBot
+		return errors.ErrNilBot
 	}
 	msg, err := bot.SendPhoto(photo)
 	if err != nil {

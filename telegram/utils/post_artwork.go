@@ -22,7 +22,7 @@ import (
 
 func PostArtwork(bot *telego.Bot, artwork *types.Artwork) ([]telego.Message, error) {
 	if bot == nil {
-		return nil, ErrNilBot
+		return nil, errors.ErrNilBot
 	}
 	if artwork == nil {
 		Logger.Fatal("Artwork is nil")
