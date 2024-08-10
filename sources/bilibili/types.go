@@ -88,7 +88,7 @@ func (resp *BilibiliApiResp) ToArtwork() (*types.Artwork, error) {
 			Original:  pic.Url,
 			Width:     uint(pic.Width),
 			Height:    uint(pic.Height),
-			Thumbnail: pic.Url,
+			Thumbnail: pic.Url + "@1024w_1024h.jpg",
 		})
 	}
 	title := opus.Title
