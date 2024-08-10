@@ -5,6 +5,7 @@ import (
 )
 
 type Artwork struct {
+	ID          string     `json:"id" bson:"_id"`
 	Title       string     `json:"title" bson:"title"`
 	Description string     `json:"description" bson:"description"`
 	R18         bool       `json:"r18" bson:"r18"`
@@ -17,6 +18,7 @@ type Artwork struct {
 }
 
 type Artist struct {
+	ID       string     `json:"id" bson:"_id"`
 	Name     string     `json:"name" bson:"name"`
 	Type     SourceType `json:"type" bson:"type"`
 	UID      int        `json:"uid" bson:"uid"`
@@ -24,6 +26,7 @@ type Artist struct {
 }
 
 type Picture struct {
+	ID        string `json:"id" bson:"_id"`
 	Index     uint   `json:"index" bson:"index"`
 	Thumbnail string `json:"thumbnail" bson:"thumbnail"`
 	Original  string `json:"original" bson:"original"`

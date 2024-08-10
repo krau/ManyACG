@@ -51,6 +51,7 @@ func ConvertToArtwork(ctx context.Context, artworkModel *model.ArtworkModel, opt
 		}
 		artist = artistModel.ToArtist()
 		return &types.Artwork{
+			ID:          artworkModel.ID.Hex(),
 			Title:       artworkModel.Title,
 			Description: artworkModel.Description,
 			R18:         artworkModel.R18,
@@ -83,6 +84,7 @@ func ConvertToArtwork(ctx context.Context, artworkModel *model.ArtworkModel, opt
 		artist = artistModel.ToArtist()
 	}
 	return &types.Artwork{
+		ID:          artworkModel.ID.Hex(),
 		Title:       artworkModel.Title,
 		Description: artworkModel.Description,
 		R18:         artworkModel.R18,

@@ -1,6 +1,7 @@
 package restful
 
 import (
+	"ManyACG/api/restful/routers"
 	"ManyACG/config"
 	. "ManyACG/logger"
 	"os"
@@ -13,16 +14,8 @@ func Run() {
 	r := gin.Default()
 
 	v1 := r.Group("/v1")
-	if config.Cfg.API.Auth {
-		v1.Use(AuthRequired)
-	}
 
-	{
-		v1.GET("/ping", Ping)
-		v1.GET("/artwork/random", RandomArtwork)
-		v1.POST("/artwork/random", RandomArtwork)
-		v1.POST("/artwork/send_info", SendArtworkInfo)
-	}
+	routers.RegisterAllRouters(v1)
 
 	if err := r.Run(config.Cfg.API.Address); err != nil {
 		Logger.Fatalf("Failed to start server: %v", err)

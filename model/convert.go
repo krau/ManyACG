@@ -4,6 +4,7 @@ import "ManyACG/types"
 
 func (picture *PictureModel) ToPicture() *types.Picture {
 	return &types.Picture{
+		ID:           picture.ID.Hex(),
 		Index:        picture.Index,
 		Thumbnail:    picture.Thumbnail,
 		Original:     picture.Original,
@@ -18,6 +19,7 @@ func (picture *PictureModel) ToPicture() *types.Picture {
 
 func (artist *ArtistModel) ToArtist() *types.Artist {
 	return &types.Artist{
+		ID:       artist.ID.Hex(),
 		Name:     artist.Name,
 		Type:     artist.Type,
 		UID:      artist.UID,

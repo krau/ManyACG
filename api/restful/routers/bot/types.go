@@ -1,4 +1,4 @@
-package restful
+package bot
 
 type SendArtworkInfoRequest struct {
 	SourceURL     string `json:"source_url" binding:"required"`
