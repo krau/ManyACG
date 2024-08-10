@@ -59,7 +59,7 @@ func (resp *KemonoPostResp) ToArtwork() (*types.Artwork, error) {
 		if err == nil && fileResp.StatusCode == http.StatusOK {
 			pictures = append(pictures, &types.Picture{
 				Index:     0,
-				Thumbnail: cdnBaseURL + resp.File.Path,
+				Thumbnail: thumbnailsBaseURL + resp.File.Path,
 				Original:  cdnBaseURL + resp.File.Path,
 				Width:     0,
 				Height:    0,
