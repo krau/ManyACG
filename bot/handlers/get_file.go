@@ -4,13 +4,13 @@ import (
 	"ManyACG/common"
 	"ManyACG/config"
 	"ManyACG/service"
-	"ManyACG/sources"
 	"ManyACG/storage"
 	"ManyACG/telegram"
 	"ManyACG/types"
 	"bytes"
 	"context"
 	"errors"
+	"path/filepath"
 	"strconv"
 	"time"
 
@@ -105,7 +105,7 @@ func getArtworkFiles(ctx context.Context, bot *telego.Bot, message telego.Messag
 				telegram.ReplyMessage(bot, message, "获取文件失败: "+err.Error())
 				return
 			}
-			file = telegoutil.File(telegoutil.NameReader(bytes.NewReader(data), sources.GetFileName(artwork, picture)))
+			file = telegoutil.File(telegoutil.NameReader(bytes.NewReader(data), filepath.Base(picture.StorageInfo.Path)))
 		}
 		documentMessage, err := bot.SendDocument(telegoutil.Document(message.Chat.ChatID(), file).
 			WithReplyParameters(&telego.ReplyParameters{

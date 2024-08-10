@@ -29,7 +29,10 @@ func (w *Webdav) Init() {
 
 func (w *Webdav) SavePicture(artwork *types.Artwork, picture *types.Picture) (*types.StorageInfo, error) {
 	Logger.Debugf("saving picture %d of artwork %s", picture.Index, artwork.Title)
-	fileName := sources.GetFileName(artwork, picture)
+	fileName, err := sources.GetFileName(artwork, picture)
+	if err != nil {
+		return nil, err
+	}
 	artistName := common.ReplaceFileNameInvalidChar(artwork.Artist.Username)
 	fileDir := strings.TrimSuffix(config.Cfg.Storage.Webdav.Path, "/") + "/" + string(artwork.SourceType) + "/" + artistName + "/"
 	if err := Client.MkdirAll(fileDir, os.ModePerm); err != nil {

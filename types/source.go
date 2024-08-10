@@ -9,3 +9,11 @@ const (
 	SourceTypeDanbooru SourceType = "danbooru"
 	SourceTypeKemono   SourceType = "kemono"
 )
+
+var SourceTypes []SourceType = []SourceType{
+	SourceTypePixiv,
+	SourceTypeTwitter,
+	SourceTypeBilibili,
+	SourceTypeDanbooru,
+	SourceTypeKemono,
+}

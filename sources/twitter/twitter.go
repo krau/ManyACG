@@ -44,7 +44,6 @@ func (t *Twitter) GetPictureInfo(sourceURL string, index uint) (*types.Picture, 
 		return nil, ErrIndexOOB
 	}
 	return artwork.Pictures[index], nil
-
 }
 
 func (t *Twitter) GetSourceURLRegexp() *regexp.Regexp {
