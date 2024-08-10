@@ -93,7 +93,7 @@ func createIndex(ctx context.Context) {
 		},
 		{
 			Keys:    bson.D{{Key: "telegram_info.message_id", Value: 1}},
-			Options: options.Index().SetName("message_id").SetUnique(true),
+			Options: options.Index().SetName("message_id"),
 		},
 		{
 			Keys:    bson.D{{Key: "hash", Value: 1}},
@@ -114,6 +114,7 @@ func createIndex(ctx context.Context) {
 			Options: options.Index().SetName("user_id").SetUnique(true),
 		},
 	})
+
 	for _, admin := range config.Cfg.Telegram.Admins {
 		_, err := CreateSuperAdminByUserID(ctx, admin, 0)
 		if err != nil {

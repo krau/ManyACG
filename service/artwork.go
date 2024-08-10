@@ -54,15 +54,25 @@ func CreateArtwork(ctx context.Context, artwork *types.Artwork) (*types.Artwork,
 			tagIDs[i] = tagRes.InsertedID.(primitive.ObjectID)
 		}
 
+		seen := make(map[string]struct{})
+		resultTags := []primitive.ObjectID{}
+		for _, tagID := range tagIDs {
+			if _, ok := seen[tagID.Hex()]; !ok {
+				resultTags = append(resultTags, tagID)
+				seen[tagID.Hex()] = struct{}{}
+			}
+		}
+		tagIDs = resultTags
+
 		// 创建 Artist
-		var artist_id primitive.ObjectID
+		var artistId primitive.ObjectID
 		artistModel, err := dao.GetArtistByUID(ctx, artwork.Artist.UID)
 		if err != nil && !errors.Is(err, mongo.ErrNoDocuments) {
 			return nil, err
 		}
 		if artistModel != nil {
 			artistModel.Name = artwork.Artist.Name
-			artist_id = artistModel.ID
+			artistId = artistModel.ID
 		} else {
 			artistModel = &model.ArtistModel{
 				Type:     artwork.Artist.Type,
@@ -74,7 +84,7 @@ func CreateArtwork(ctx context.Context, artwork *types.Artwork) (*types.Artwork,
 			if err != nil {
 				return nil, err
 			}
-			artist_id = res.InsertedID.(primitive.ObjectID)
+			artistId = res.InsertedID.(primitive.ObjectID)
 		}
 
 		// 创建 Artwork
@@ -84,7 +94,7 @@ func CreateArtwork(ctx context.Context, artwork *types.Artwork) (*types.Artwork,
 			R18:         artwork.R18,
 			SourceType:  artwork.SourceType,
 			SourceURL:   artwork.SourceURL,
-			ArtistID:    artist_id,
+			ArtistID:    artistId,
 			Tags:        tagIDs,
 		}
 		res, err := dao.CreateArtwork(ctx, artworkModel)

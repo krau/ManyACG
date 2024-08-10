@@ -16,10 +16,11 @@ import (
 )
 
 var (
-	Bot           *telego.Bot
-	BotUsername   string // 没有 @
-	ChannelChatID telego.ChatID
-	GroupChatID   telego.ChatID // 附属群组
+	Bot                *telego.Bot
+	BotUsername        string // 没有 @
+	ChannelChatID      telego.ChatID
+	GroupChatID        telego.ChatID // 附属群组
+	IsChannelAvailable bool
 )
 
 var (
@@ -121,10 +122,16 @@ func InitBot() {
 
 	if config.Cfg.Telegram.Username != "" {
 		ChannelChatID = telegoutil.Username(config.Cfg.Telegram.Username)
-	} else if config.Cfg.Telegram.ChatID != 0 {
-		ChannelChatID = telegoutil.ID(config.Cfg.Telegram.ChatID)
 	} else {
-		config.Cfg.Telegram.Channel = false
+		ChannelChatID = telegoutil.ID(config.Cfg.Telegram.ChatID)
+	}
+	if ChannelChatID.ID == 0 && ChannelChatID.Username == "" {
+		if config.Cfg.Telegram.Channel {
+			Logger.Fatalf("Enabled channel mode but no channel ID or username is provided")
+			os.Exit(1)
+		}
+	} else {
+		IsChannelAvailable = config.Cfg.Telegram.Channel
 	}
 
 	if config.Cfg.Telegram.GroupID != 0 {

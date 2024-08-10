@@ -1,6 +1,7 @@
 package bot
 
 import (
+	"ManyACG/config"
 	"ManyACG/telegram"
 	tgUtils "ManyACG/telegram/utils"
 	"net/http"
@@ -13,6 +14,12 @@ import (
 )
 
 func SendArtworkInfo(ctx *gin.Context) {
+	if config.Cfg.Telegram.Token == "" {
+		ctx.JSON(http.StatusInternalServerError, gin.H{
+			"message": "telegram bot is not set",
+		})
+		return
+	}
 	var request SendArtworkInfoRequest
 	if err := ctx.ShouldBindJSON(&request); err != nil {
 		ctx.JSON(
