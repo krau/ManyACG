@@ -17,18 +17,15 @@ func GetPictureByMessageID(ctx context.Context, messageID int) (*types.Picture, 
 	if err != nil {
 		return nil, err
 	}
-	return &types.Picture{
-		Index:     pictureModel.Index,
-		Original:  pictureModel.Original,
-		Thumbnail: pictureModel.Thumbnail,
+	return pictureModel.ToPicture(), nil
+}
 
-		Width:        pictureModel.Width,
-		Height:       pictureModel.Height,
-		Hash:         pictureModel.Hash,
-		BlurScore:    pictureModel.BlurScore,
-		TelegramInfo: (*types.TelegramInfo)(pictureModel.TelegramInfo),
-		StorageInfo:  (*types.StorageInfo)(pictureModel.StorageInfo),
-	}, nil
+func GetPictureByID(ctx context.Context, id primitive.ObjectID) (*types.Picture, error) {
+	pictureModel, err := dao.GetPictureByID(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	return pictureModel.ToPicture(), nil
 }
 
 func UpdatePictureTelegramInfo(ctx context.Context, picture *types.Picture, telegramInfo *types.TelegramInfo) error {

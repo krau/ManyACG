@@ -3,7 +3,6 @@ package handlers
 import (
 	"ManyACG/telegram/utils"
 	"context"
-	"strconv"
 	"strings"
 
 	. "ManyACG/logger"
@@ -17,13 +16,8 @@ func Start(ctx context.Context, bot *telego.Bot, message telego.Message) {
 	if len(args) > 0 {
 		Logger.Debugf("start: args=%v", args)
 		if strings.HasPrefix(args[0], "file_") {
-			messageIDStr := args[0][5:]
-			messageID, err := strconv.Atoi(messageIDStr)
-			if err != nil {
-				utils.ReplyMessage(bot, message, "获取失败: "+err.Error())
-				return
-			}
-			_, err = utils.SendPictureFileByMessageID(ctx, bot, message, ChannelChatID, messageID)
+			pictureID := args[0][5:]
+			_, err := utils.SendPictureFileByID(ctx, bot, message, ChannelChatID, pictureID)
 			if err != nil {
 				utils.ReplyMessage(bot, message, "获取失败: "+err.Error())
 				return

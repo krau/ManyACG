@@ -95,16 +95,24 @@ func SendArtworkInfo(ctx context.Context, bot *telego.Bot, params *SendArtworkIn
 
 	if !needUpdatePreview {
 		cachedArtwork, err := service.GetCachedArtworkByURL(ctx, params.SourceURL)
-		if err != nil {
+		if err == nil {
+			if cachedArtwork.Artwork.Pictures[0].TelegramInfo == nil {
+				cachedArtwork.Artwork.Pictures[0].TelegramInfo = &types.TelegramInfo{}
+			}
+			cachedArtwork.Artwork.Pictures[0].TelegramInfo.PhotoFileID = msg.Photo[len(msg.Photo)-1].FileID
+			if err := service.UpdateCachedArtwork(ctx, cachedArtwork); err != nil {
+				Logger.Warnf("更新缓存作品失败: %s", err)
+			}
+		} else {
 			Logger.Warnf("获取缓存作品失败: %s", err)
-			return nil
 		}
-		if cachedArtwork.Artwork.Pictures[0].TelegramInfo == nil {
-			cachedArtwork.Artwork.Pictures[0].TelegramInfo = &types.TelegramInfo{}
+		telegramInfo := artwork.Pictures[0].TelegramInfo
+		if telegramInfo == nil {
+			telegramInfo = &types.TelegramInfo{}
 		}
-		cachedArtwork.Artwork.Pictures[0].TelegramInfo.PhotoFileID = msg.Photo[len(msg.Photo)-1].FileID
-		if err := service.UpdateCachedArtwork(ctx, cachedArtwork); err != nil {
-			Logger.Warnf("更新缓存作品失败: %s", err)
+		telegramInfo.PhotoFileID = msg.Photo[len(msg.Photo)-1].FileID
+		if err := service.UpdatePictureTelegramInfo(ctx, artwork.Pictures[0], telegramInfo); err != nil {
+			Logger.Warnf("更新图片信息失败: %s", err)
 		}
 		return nil
 	}
@@ -163,16 +171,22 @@ func updateLinkPreview(ctx context.Context, targetMessage *telego.Message, artwo
 	mediaPhoto.WithCaption(photoParams.Caption).WithParseMode(photoParams.ParseMode)
 
 	var replyMarkup *telego.InlineKeyboardMarkup
+
 	cachedArtwork, err := service.GetCachedArtworkByURL(ctx, artwork.SourceURL)
-	if err != nil {
-		return err
-	}
-	if cachedArtwork.Status == types.ArtworkStatusPosted {
-		replyMarkup = GetPostedPictureReplyMarkup(artwork, pictureIndex, ChannelChatID, BotUsername)
-	} else if cachedArtwork.Status == types.ArtworkStatusCached {
-		replyMarkup = targetMessage.ReplyMarkup
+	if err == nil {
+		if cachedArtwork.Status == types.ArtworkStatusPosted {
+			replyMarkup = GetPostedPictureReplyMarkup(artwork, pictureIndex, ChannelChatID, BotUsername)
+		} else if cachedArtwork.Status == types.ArtworkStatusCached {
+			replyMarkup = targetMessage.ReplyMarkup
+		} else {
+			mediaPhoto.WithCaption(photoParams.Caption + "\n<i>正在发布...</i>").WithParseMode(telego.ModeHTML)
+		}
 	} else {
-		mediaPhoto.WithCaption(photoParams.Caption + "\n<i>正在发布...</i>").WithParseMode(telego.ModeHTML)
+		artwork, err := service.GetArtworkByURL(ctx, artwork.SourceURL)
+		if err != nil {
+			return err
+		}
+		replyMarkup = GetPostedPictureReplyMarkup(artwork, pictureIndex, ChannelChatID, BotUsername)
 	}
 	msg, err := bot.EditMessageMedia(&telego.EditMessageMediaParams{
 		ChatID:      targetMessage.Chat.ChatID(),
@@ -188,7 +202,10 @@ func updateLinkPreview(ctx context.Context, targetMessage *telego.Message, artwo
 	}
 	cachedArtwork.Artwork.Pictures[pictureIndex].TelegramInfo.PhotoFileID = msg.Photo[len(msg.Photo)-1].FileID
 	if err := service.UpdateCachedArtwork(ctx, cachedArtwork); err != nil {
-		return err
+		Logger.Warnf("更新缓存作品失败: %s", err)
+	}
+	if err := service.UpdatePictureTelegramInfo(ctx, cachedArtwork.Artwork.Pictures[pictureIndex], cachedArtwork.Artwork.Pictures[pictureIndex].TelegramInfo); err != nil {
+		Logger.Warnf("更新图片信息失败: %s", err)
 	}
 	return nil
 }

@@ -44,7 +44,7 @@ func GetPictureFile(ctx context.Context, bot *telego.Bot, message telego.Message
 			return
 		}
 		picture := pictures[0]
-		_, err = utils.SendPictureFileByMessageID(ctx, bot, message, ChannelChatID, picture.TelegramInfo.MessageID)
+		_, err = utils.SendPictureFileByID(ctx, bot, message, ChannelChatID, picture.ID)
 		if err != nil {
 			utils.ReplyMessage(bot, message, "文件发送失败: "+err.Error())
 			return
@@ -81,7 +81,17 @@ func GetPictureFile(ctx context.Context, bot *telego.Bot, message telego.Message
 			pictureMessageID = picture.TelegramInfo.MessageID
 		}
 	}
-	_, err = utils.SendPictureFileByMessageID(ctx, bot, message, ChannelChatID, pictureMessageID)
+	picture, err := service.GetPictureByMessageID(ctx, pictureMessageID)
+	if err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			utils.ReplyMessage(bot, message, "这张图片未在数据库中呢")
+			return
+		}
+		Logger.Errorf("获取图片失败: %s", err)
+		utils.ReplyMessage(bot, message, "获取失败, 去找管理员反馈吧~")
+		return
+	}
+	_, err = utils.SendPictureFileByID(ctx, bot, message, ChannelChatID, picture.ID)
 	if err != nil {
 		utils.ReplyMessage(bot, message, "文件发送失败: "+err.Error())
 		return

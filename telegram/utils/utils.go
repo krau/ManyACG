@@ -125,8 +125,8 @@ func GetArtworkPostMessageURL(messageID int, channelChatID telego.ChatID) string
 	return fmt.Sprintf("https://t.me/%s/%d", strings.TrimPrefix(strings.TrimPrefix(channelChatID.String(), "-100"), "@"), messageID)
 }
 
-func GetDeepLinkForFile(messageID int, botUsername string) string {
-	return fmt.Sprintf("https://t.me/%s/?start=file_%d", botUsername, messageID)
+func GetDeepLinkForFile(pictureID string, botUsername string) string {
+	return fmt.Sprintf("https://t.me/%s/?start=file_%s", botUsername, pictureID)
 }
 
 func GetPostedPictureReplyMarkup(artwork *types.Artwork, index uint, channelChatID telego.ChatID, botUsername string) *telego.InlineKeyboardMarkup {
@@ -140,15 +140,15 @@ func GetPostedPictureInlineKeyboardButton(artwork *types.Artwork, index uint, ch
 		Logger.Fatalf("图片索引越界: %d", index)
 		return nil
 	}
-	if channelChatID.ID == 0 && channelChatID.Username == "" {
+	if (channelChatID.ID == 0 && channelChatID.Username == "") || artwork.Pictures[index].TelegramInfo == nil {
 		return []telego.InlineKeyboardButton{
 			telegoutil.InlineKeyboardButton("详情").WithURL(artwork.SourceURL),
-			telegoutil.InlineKeyboardButton("原图").WithURL(GetDeepLinkForFile(artwork.Pictures[index].TelegramInfo.MessageID, botUsername)),
+			telegoutil.InlineKeyboardButton("原图").WithURL(GetDeepLinkForFile(artwork.Pictures[index].ID, botUsername)),
 		}
 	}
 	return []telego.InlineKeyboardButton{
 		telegoutil.InlineKeyboardButton("详情").WithURL(GetArtworkPostMessageURL(artwork.Pictures[index].TelegramInfo.MessageID, channelChatID)),
-		telegoutil.InlineKeyboardButton("原图").WithURL(GetDeepLinkForFile(artwork.Pictures[index].TelegramInfo.MessageID, botUsername)),
+		telegoutil.InlineKeyboardButton("原图").WithURL(GetDeepLinkForFile(artwork.Pictures[index].ID, botUsername)),
 	}
 }
 
@@ -194,13 +194,17 @@ func FindSourceURLForMessage(message *telego.Message) string {
 	return sources.FindSourceURL(text)
 }
 
-func SendPictureFileByMessageID(ctx context.Context, bot *telego.Bot, message telego.Message, channelChatID telego.ChatID, pictureMessageID int) (*telego.Message, error) {
-	picture, err := service.GetPictureByMessageID(ctx, pictureMessageID)
+func SendPictureFileByID(ctx context.Context, bot *telego.Bot, message telego.Message, channelChatID telego.ChatID, pictureID string) (*telego.Message, error) {
+	objectID, err := primitive.ObjectIDFromHex(pictureID)
+	if err != nil {
+		return nil, err
+	}
+	picture, err := service.GetPictureByID(ctx, objectID)
 	if err != nil {
 		return nil, err
 	}
 	var file telego.InputFile
-	if picture.TelegramInfo.DocumentFileID != "" {
+	if picture.TelegramInfo != nil && picture.TelegramInfo.DocumentFileID != "" {
 		file = telegoutil.FileFromID(picture.TelegramInfo.DocumentFileID)
 	} else {
 		go ReplyMessage(bot, message, "正在下载原图，请稍等~")
@@ -216,7 +220,7 @@ func SendPictureFileByMessageID(ctx context.Context, bot *telego.Bot, message te
 		})
 	if IsChannelAvailable {
 		document.WithReplyMarkup(telegoutil.InlineKeyboard([]telego.InlineKeyboardButton{
-			telegoutil.InlineKeyboardButton("详情").WithURL(GetArtworkPostMessageURL(pictureMessageID, channelChatID)),
+			telegoutil.InlineKeyboardButton("详情").WithURL(GetArtworkPostMessageURL(picture.TelegramInfo.MessageID, channelChatID)),
 		}))
 	}
 	documentMessage, err := bot.SendDocument(document)

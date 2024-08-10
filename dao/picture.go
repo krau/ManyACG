@@ -20,6 +20,9 @@ func CreatePicture(ctx context.Context, picture *model.PictureModel) (*mongo.Ins
 func CreatePictures(ctx context.Context, pictures []*model.PictureModel) (*mongo.InsertManyResult, error) {
 	var docs []interface{}
 	for _, picture := range pictures {
+		if picture.TelegramInfo == nil {
+			picture.TelegramInfo = &model.TelegramInfo{}
+		}
 		docs = append(docs, picture)
 	}
 	return pictureCollection.InsertMany(ctx, docs)

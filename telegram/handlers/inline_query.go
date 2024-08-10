@@ -30,7 +30,7 @@ func InlineQuery(ctx context.Context, bot *telego.Bot, query telego.InlineQuery)
 	for _, artwork := range artworks {
 		pictureIndex := rand.Intn(len(artwork.Pictures))
 		picture := artwork.Pictures[pictureIndex]
-		if picture.TelegramInfo.PhotoFileID == "" {
+		if picture.TelegramInfo == nil || picture.TelegramInfo.PhotoFileID == "" {
 			continue
 		}
 		result := telegoutil.ResultCachedPhoto(uuid.NewString(), picture.TelegramInfo.PhotoFileID).WithCaption(fmt.Sprintf("<a href=\"%s\">%s</a>", artwork.SourceURL, common.EscapeHTML(artwork.Title))).WithParseMode(telego.ModeHTML)
