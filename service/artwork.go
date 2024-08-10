@@ -136,15 +136,15 @@ func CreateArtwork(ctx context.Context, artwork *types.Artwork) (*types.Artwork,
 	return artwork, nil
 }
 
-func GetArtworkByURL(ctx context.Context, sourceURL string) (*types.Artwork, error) {
+func GetArtworkByURL(ctx context.Context, sourceURL string, opts ...*adapter.AdapterOption) (*types.Artwork, error) {
 	artworkModel, err := dao.GetArtworkByURL(ctx, sourceURL)
 	if err != nil {
 		return nil, err
 	}
-	return adapter.ConvertToArtwork(ctx, artworkModel)
+	return adapter.ConvertToArtwork(ctx, artworkModel, opts...)
 }
 
-func GetArtworkByMessageID(ctx context.Context, messageID int) (*types.Artwork, error) {
+func GetArtworkByMessageID(ctx context.Context, messageID int, opts ...*adapter.AdapterOption) (*types.Artwork, error) {
 	pictureModel, err := dao.GetPictureByMessageID(ctx, messageID)
 	if err != nil {
 		return nil, err
@@ -153,15 +153,15 @@ func GetArtworkByMessageID(ctx context.Context, messageID int) (*types.Artwork, 
 	if err != nil {
 		return nil, err
 	}
-	return adapter.ConvertToArtwork(ctx, artworkModel)
+	return adapter.ConvertToArtwork(ctx, artworkModel, opts...)
 }
 
-func GetArtworkByID(ctx context.Context, id primitive.ObjectID) (*types.Artwork, error) {
+func GetArtworkByID(ctx context.Context, id primitive.ObjectID, opts ...*adapter.AdapterOption) (*types.Artwork, error) {
 	artworkModel, err := dao.GetArtworkByID(ctx, id)
 	if err != nil {
 		return nil, err
 	}
-	return adapter.ConvertToArtwork(ctx, artworkModel)
+	return adapter.ConvertToArtwork(ctx, artworkModel, opts...)
 }
 
 func GetArtworkIDByPicture(ctx context.Context, picture *types.Picture) (primitive.ObjectID, error) {
@@ -182,6 +182,14 @@ func GetRandomArtworks(ctx context.Context, r18 types.R18Type, limit int, conver
 		return nil, err
 	}
 	return artworks, nil
+}
+
+func GetLatestArtworks(ctx context.Context, r18 types.R18Type, page, pageSize int64, convertOpts ...*adapter.AdapterOption) ([]*types.Artwork, error) {
+	artworkModels, err := dao.GetLatestArtworks(ctx, r18, page, pageSize)
+	if err != nil {
+		return nil, err
+	}
+	return adapter.ConvertToArtworks(ctx, artworkModels, convertOpts...)
 }
 
 // 通过标签获取作品, 标签名使用全字匹配
@@ -274,7 +282,6 @@ func UpdateArtworkTagsByURL(ctx context.Context, sourceURL string, tags []string
 			}
 			tagIDs[i] = res.InsertedID.(primitive.ObjectID)
 		}
-
 		_, err = dao.UpdateArtworkTagsByID(ctx, artworkModel.ID, tagIDs)
 		if err != nil {
 			return nil, err

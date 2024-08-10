@@ -18,8 +18,8 @@ func GetStats(ctx context.Context, bot *telego.Bot, message telego.Message) {
 		return
 	}
 	text := fmt.Sprintf(
-		"关于数据库可以公开的情报:\n\n总图片数: %d\n总标签数: %d\n总画师数: %d\n总作品数: %d\n最近更新时间: %s",
-		stats.TotalPictures, stats.TotalTags, stats.TotalArtists, stats.TotalArtworks, stats.LastArtworkUpdate.Format("2006-01-02 15:04:05"),
+		"关于数据库可以公开的情报:\n\n总图片数: %d\n总标签数: %d\n总画师数: %d\n总作品数: %d",
+		stats.TotalPictures, stats.TotalTags, stats.TotalArtists, stats.TotalArtworks, //stats.LastArtworkUpdate.Format("2006-01-02 15:04:05"),
 	)
 	telegram.ReplyMessage(bot, message, text)
 }

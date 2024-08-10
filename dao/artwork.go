@@ -9,6 +9,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 var artworkCollection *mongo.Collection
@@ -134,12 +135,16 @@ func GetArtworkCount(ctx context.Context) (int64, error) {
 	return artworkCollection.CountDocuments(ctx, bson.M{})
 }
 
-func GetLatestArtwork(ctx context.Context, limit int64) ([]*model.ArtworkModel, error) {
+func GetLatestArtworks(ctx context.Context, r18 types.R18Type, page, pageSize int64) ([]*model.ArtworkModel, error) {
 	var artworks []*model.ArtworkModel
-	cursor, err := artworkCollection.Aggregate(ctx, mongo.Pipeline{
-		bson.D{{Key: "$sort", Value: bson.M{"created_at": -1}}},
-		bson.D{{Key: "$limit", Value: limit}},
-	})
+	var cursor *mongo.Cursor
+	var err error
+	opts := options.Find().SetSort(bson.M{"created_at": -1}).SetSkip((page - 1) * pageSize).SetLimit(pageSize)
+	if r18 == types.R18TypeAll {
+		cursor, err = artworkCollection.Find(ctx, bson.M{}, opts)
+	} else {
+		cursor, err = artworkCollection.Find(ctx, bson.M{"r18": r18 == types.R18TypeOnly}, opts)
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -148,8 +153,8 @@ func GetLatestArtwork(ctx context.Context, limit int64) ([]*model.ArtworkModel, 
 		return nil, err
 	}
 	return artworks, nil
-}
 
+}
 func UpdateArtworkPicturesByID(ctx context.Context, id primitive.ObjectID, pictures []primitive.ObjectID) (*mongo.UpdateResult, error) {
 	return artworkCollection.UpdateOne(ctx, bson.M{"_id": id}, bson.M{"$set": bson.M{"pictures": pictures}})
 }

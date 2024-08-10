@@ -3,10 +3,9 @@ package artwork
 import "ManyACG/types"
 
 type ArtworkResponse struct {
-	Status   int                  `json:"status"`
-	Message  string               `json:"message"`
-	Data     *ArtworkResponseData `json:"data"`
-	FullData *types.Artwork       `json:"full_data"`
+	Status  int    `json:"status"`
+	Message string `json:"message"`
+	Data    any    `json:"data,omitempty"`
 }
 
 type ArtworkResponseData struct {
@@ -34,11 +33,19 @@ type PictureResponse struct {
 func ResponseFromArtwork(artwork *types.Artwork, isAuthorized bool) *ArtworkResponse {
 	if isAuthorized {
 		return &ArtworkResponse{
-			Status:   200,
-			Message:  "Success",
-			FullData: artwork,
+			Status:  200,
+			Message: "Success",
+			Data:    artwork,
 		}
 	}
+	return &ArtworkResponse{
+		Status:  200,
+		Message: "Success",
+		Data:    ResponseDataFromArtwork(artwork),
+	}
+}
+
+func ResponseDataFromArtwork(artwork *types.Artwork) *ArtworkResponseData {
 	pictures := make([]*PictureResponse, len(artwork.Pictures))
 	for i, picture := range artwork.Pictures {
 		pictures[i] = &PictureResponse{
@@ -50,20 +57,35 @@ func ResponseFromArtwork(artwork *types.Artwork, isAuthorized bool) *ArtworkResp
 			StorageInfo: picture.StorageInfo,
 		}
 	}
+	return &ArtworkResponseData{
+		ID:          artwork.ID,
+		CreatedAt:   artwork.CreatedAt.Format("2006-01-02 15:04:05"),
+		Title:       artwork.Title,
+		Description: artwork.Description,
+		SourceURL:   artwork.SourceURL,
+		R18:         artwork.R18,
+		Tags:        artwork.Tags,
+		Artist:      artwork.Artist,
+		SourceType:  artwork.SourceType,
+		Pictures:    pictures,
+	}
+}
+
+func ResponseFromArtworks(artworks []*types.Artwork, isAuthorized bool) *ArtworkResponse {
+	if isAuthorized {
+		return &ArtworkResponse{
+			Status:  200,
+			Message: "Success",
+			Data:    artworks,
+		}
+	}
+	responses := make([]*ArtworkResponseData, 0, len(artworks))
+	for _, artwork := range artworks {
+		responses = append(responses, ResponseDataFromArtwork(artwork))
+	}
 	return &ArtworkResponse{
 		Status:  200,
 		Message: "Success",
-		Data: &ArtworkResponseData{
-			ID:          artwork.ID,
-			CreatedAt:   artwork.CreatedAt.Format("2006-01-02 15:04:05"),
-			Title:       artwork.Title,
-			Description: artwork.Description,
-			SourceURL:   artwork.SourceURL,
-			R18:         artwork.R18,
-			Tags:        artwork.Tags,
-			Artist:      artwork.Artist,
-			SourceType:  artwork.SourceType,
-			Pictures:    pictures,
-		},
+		Data:    responses,
 	}
 }
