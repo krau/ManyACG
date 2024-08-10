@@ -30,6 +30,15 @@ func PostArtworkCallbackQuery(ctx context.Context, bot *telego.Bot, query telego
 		})
 		return
 	}
+	if !IsChannelAvailable {
+		bot.AnswerCallbackQuery(&telego.AnswerCallbackQueryParams{
+			CallbackQueryID: query.ID,
+			Text:            "未设置频道",
+			ShowAlert:       true,
+			CacheTime:       60,
+		})
+		return
+	}
 	queryDataSlice := strings.Split(query.Data, " ")
 	asR18 := queryDataSlice[0] == "post_artwork_r18"
 	dataID := queryDataSlice[1]
@@ -111,21 +120,20 @@ func PostArtworkCallbackQuery(ctx context.Context, bot *telego.Bot, query telego
 		Logger.Errorf("更新缓存作品状态失败: %s", err)
 	}
 	bot.EditMessageCaption(&telego.EditMessageCaptionParams{
-		ChatID:    telegoutil.ID(query.Message.GetChat().ID),
-		MessageID: query.Message.GetMessageID(),
-		Caption:   "发布成功: " + artwork.Title + "\n发布时间: " + artwork.CreatedAt.Format("2006-01-02 15:04:05"),
-		ReplyMarkup: telegoutil.InlineKeyboard(
-			[]telego.InlineKeyboardButton{
-				telegoutil.InlineKeyboardButton("查看").WithURL(utils.GetArtworkPostMessageURL(artwork.Pictures[0].TelegramInfo.MessageID, ChannelChatID)),
-				telegoutil.InlineKeyboardButton("原图").WithURL(utils.GetDeepLinkForFile(artwork.Pictures[0].TelegramInfo.MessageID, BotUsername)),
-			},
-		),
+		ChatID:      telegoutil.ID(query.Message.GetChat().ID),
+		MessageID:   query.Message.GetMessageID(),
+		Caption:     "发布成功: " + artwork.Title + "\n发布时间: " + artwork.CreatedAt.Format("2006-01-02 15:04:05"),
+		ReplyMarkup: utils.GetPostedPictureReplyMarkup(artwork, 0, ChannelChatID, BotUsername),
 	})
 }
 
 func PostArtworkCommand(ctx context.Context, bot *telego.Bot, message telego.Message) {
 	if !CheckPermissionInGroup(ctx, message, types.PermissionPostArtwork) {
 		utils.ReplyMessage(bot, message, "你没有发布作品的权限")
+		return
+	}
+	if !IsChannelAvailable {
+		utils.ReplyMessage(bot, message, "未设置频道")
 		return
 	}
 	_, _, args := telegoutil.ParseCommand(message.Text)
@@ -185,7 +193,7 @@ func PostArtworkCommand(ctx context.Context, bot *telego.Bot, message telego.Mes
 			ChatID:    message.Chat.ChatID(),
 			MessageID: message.MessageID,
 		},
-		).WithReplyMarkup(utils.GetPostedPictureReplyMarkup(artwork.Pictures[0], ChannelChatID, BotUsername)))
+		).WithReplyMarkup(utils.GetPostedPictureReplyMarkup(artwork, 0, ChannelChatID, BotUsername)))
 }
 
 func ArtworkPreview(ctx context.Context, bot *telego.Bot, query telego.CallbackQuery) {

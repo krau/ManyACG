@@ -27,6 +27,7 @@ type Artist struct {
 
 type Picture struct {
 	ID        string `json:"id" bson:"_id"`
+	ArtworkID string `json:"artwork_id" bson:"artwork_id"`
 	Index     uint   `json:"index" bson:"index"`
 	Thumbnail string `json:"thumbnail" bson:"thumbnail"`
 	Original  string `json:"original" bson:"original"`

@@ -57,7 +57,7 @@ func RandomPicture(ctx context.Context, bot *telego.Bot, message telego.Message)
 		WithReplyParameters(&telego.ReplyParameters{
 			MessageID: message.MessageID,
 		}).WithCaption(artwork[0].Title).WithReplyMarkup(
-		telegoutil.InlineKeyboard(utils.GetPostedPictureInlineKeyboardButton(picture, ChannelChatID, BotUsername)),
+		telegoutil.InlineKeyboard(utils.GetPostedPictureInlineKeyboardButton(artwork[0], 0, ChannelChatID, BotUsername)),
 	)
 	if artwork[0].R18 {
 		photo.WithHasSpoiler()

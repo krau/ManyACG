@@ -62,21 +62,22 @@ func getSearchResult(ctx context.Context, hasPermission bool, fileBytes []byte) 
 	if err != nil {
 		return "", fmt.Errorf("搜索图片失败: %w", err)
 	}
+	channelMessageAvailable := ChannelChatID.ID != 0 || ChannelChatID.Username != ""
 	if len(pictures) > 0 {
 		text := fmt.Sprintf("找到%d张相似的图片\n\n", len(pictures))
 		for _, picture := range pictures {
 			artwork, err := service.GetArtworkByMessageID(ctx, picture.TelegramInfo.MessageID)
 			if err != nil {
-				text += common.EscapeMarkdown(fmt.Sprintf("%s 模糊度: %.2f\n\n", utils.GetArtworkPostMessageURL(picture.TelegramInfo.MessageID, ChannelChatID), picture.BlurScore))
 				continue
 			}
-			text += fmt.Sprintf("[%s\\_%d](%s)\n[%s](%s)\n",
+			text += fmt.Sprintf("[%s\\_%d](%s)\n",
 				common.EscapeMarkdown(artwork.Title),
 				picture.Index+1,
 				common.EscapeMarkdown(artwork.SourceURL),
-				"\\-\\>频道消息",
-				utils.GetArtworkPostMessageURL(picture.TelegramInfo.MessageID, ChannelChatID),
 			)
+			if channelMessageAvailable {
+				text += fmt.Sprintf("[频道消息](%s)\n", utils.GetArtworkPostMessageURL(picture.TelegramInfo.MessageID, ChannelChatID))
+			}
 			text += common.EscapeMarkdown(fmt.Sprintf("模糊度: %.2f\n\n", picture.BlurScore))
 		}
 		return text, nil

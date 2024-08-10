@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"ManyACG/config"
 	"ManyACG/telegram/utils"
 
 	"github.com/mymmrac/telego"
@@ -8,13 +9,15 @@ import (
 )
 
 var (
-	ChannelChatID telego.ChatID
-	BotUsername   string
+	ChannelChatID      telego.ChatID
+	BotUsername        string
+	IsChannelAvailable bool
 )
 
 func Init(channelChatID telego.ChatID, botUsername string) {
 	ChannelChatID = channelChatID
 	BotUsername = botUsername
+	IsChannelAvailable = (ChannelChatID.ID != 0 || ChannelChatID.Username != "") && config.Cfg.Telegram.Channel
 }
 
 func RegisterHandlers(hg *telegohandler.HandlerGroup) {

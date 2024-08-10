@@ -123,7 +123,7 @@ func SendArtworkInfo(ctx context.Context, bot *telego.Bot, params *SendArtworkIn
 
 func getArtworkInfoReplyMarkup(ctx context.Context, artwork *types.Artwork, isCreated bool) (telego.ReplyMarkup, error) {
 	if isCreated {
-		return GetPostedPictureReplyMarkup(artwork.Pictures[0], ChannelChatID, BotUsername), nil
+		return GetPostedPictureReplyMarkup(artwork, 0, ChannelChatID, BotUsername), nil
 	}
 	cbId, err := service.CreateCallbackData(ctx, artwork.SourceURL)
 	if err != nil {
@@ -168,7 +168,7 @@ func updateLinkPreview(ctx context.Context, targetMessage *telego.Message, artwo
 		return err
 	}
 	if cachedArtwork.Status == types.ArtworkStatusPosted {
-		replyMarkup = GetPostedPictureReplyMarkup(artwork.Pictures[pictureIndex], ChannelChatID, BotUsername)
+		replyMarkup = GetPostedPictureReplyMarkup(artwork, pictureIndex, ChannelChatID, BotUsername)
 	} else if cachedArtwork.Status == types.ArtworkStatusCached {
 		replyMarkup = targetMessage.ReplyMarkup
 	} else {

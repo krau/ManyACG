@@ -92,10 +92,6 @@ var (
 			Description: "删除作品标签",
 		},
 		{
-			Command:     "fetch",
-			Description: "开始一次拉取",
-		},
-		{
 			Command:     "post",
 			Description: "发布作品 <url>",
 		},
@@ -125,8 +121,10 @@ func InitBot() {
 
 	if config.Cfg.Telegram.Username != "" {
 		ChannelChatID = telegoutil.Username(config.Cfg.Telegram.Username)
-	} else {
+	} else if config.Cfg.Telegram.ChatID != 0 {
 		ChannelChatID = telegoutil.ID(config.Cfg.Telegram.ChatID)
+	} else {
+		config.Cfg.Telegram.Channel = false
 	}
 
 	if config.Cfg.Telegram.GroupID != 0 {

@@ -28,12 +28,13 @@ func InlineQuery(ctx context.Context, bot *telego.Bot, query telego.InlineQuery)
 	}
 	results := make([]telego.InlineQueryResult, 0, len(artworks))
 	for _, artwork := range artworks {
-		picture := artwork.Pictures[rand.Intn(len(artwork.Pictures))]
+		pictureIndex := rand.Intn(len(artwork.Pictures))
+		picture := artwork.Pictures[pictureIndex]
 		if picture.TelegramInfo.PhotoFileID == "" {
 			continue
 		}
 		result := telegoutil.ResultCachedPhoto(uuid.NewString(), picture.TelegramInfo.PhotoFileID).WithCaption(fmt.Sprintf("<a href=\"%s\">%s</a>", artwork.SourceURL, common.EscapeHTML(artwork.Title))).WithParseMode(telego.ModeHTML)
-		result.WithReplyMarkup(telegoutil.InlineKeyboard(utils.GetPostedPictureInlineKeyboardButton(picture, ChannelChatID, BotUsername)))
+		result.WithReplyMarkup(telegoutil.InlineKeyboard(utils.GetPostedPictureInlineKeyboardButton(artwork, uint(pictureIndex), ChannelChatID, BotUsername)))
 		results = append(results, result)
 	}
 	if err := bot.AnswerInlineQuery(&telego.AnswerInlineQueryParams{
