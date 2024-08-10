@@ -6,7 +6,7 @@ import (
 	. "ManyACG/logger"
 	"ManyACG/service"
 	"ManyACG/sources"
-	"ManyACG/telegram"
+	"ManyACG/telegram/utils"
 	"ManyACG/types"
 	"context"
 	"errors"
@@ -34,11 +34,11 @@ func RandomPicture(ctx context.Context, bot *telego.Bot, message telego.Message)
 		if errors.Is(err, mongo.ErrNoDocuments) {
 			text = "未找到图片"
 		}
-		telegram.ReplyMessage(bot, message, text)
+		utils.ReplyMessage(bot, message, text)
 		return
 	}
 	if len(artwork) == 0 {
-		telegram.ReplyMessage(bot, message, "未找到图片")
+		utils.ReplyMessage(bot, message, "未找到图片")
 		return
 	}
 	pictures := artwork[0].Pictures
@@ -57,14 +57,14 @@ func RandomPicture(ctx context.Context, bot *telego.Bot, message telego.Message)
 		WithReplyParameters(&telego.ReplyParameters{
 			MessageID: message.MessageID,
 		}).WithCaption(artwork[0].Title).WithReplyMarkup(
-		telegoutil.InlineKeyboard(telegram.GetPostedPictureInlineKeyboardButton(picture)),
+		telegoutil.InlineKeyboard(utils.GetPostedPictureInlineKeyboardButton(picture, ChannelChatID, BotUsername)),
 	)
 	if artwork[0].R18 {
 		photo.WithHasSpoiler()
 	}
 	photoMessage, err := bot.SendPhoto(photo)
 	if err != nil {
-		telegram.ReplyMessage(bot, message, "发送图片失败: "+err.Error())
+		utils.ReplyMessage(bot, message, "发送图片失败: "+err.Error())
 	}
 	if photoMessage != nil {
 		picture.TelegramInfo.PhotoFileID = photoMessage.Photo[len(photoMessage.Photo)-1].FileID

@@ -4,7 +4,7 @@ import (
 	"ManyACG/adapter"
 	"ManyACG/common"
 	"ManyACG/service"
-	"ManyACG/telegram"
+	"ManyACG/telegram/utils"
 	"ManyACG/types"
 	"context"
 	"fmt"
@@ -33,7 +33,7 @@ func InlineQuery(ctx context.Context, bot *telego.Bot, query telego.InlineQuery)
 			continue
 		}
 		result := telegoutil.ResultCachedPhoto(uuid.NewString(), picture.TelegramInfo.PhotoFileID).WithCaption(fmt.Sprintf("<a href=\"%s\">%s</a>", artwork.SourceURL, common.EscapeHTML(artwork.Title))).WithParseMode(telego.ModeHTML)
-		result.WithReplyMarkup(telegoutil.InlineKeyboard(telegram.GetPostedPictureInlineKeyboardButton(picture)))
+		result.WithReplyMarkup(telegoutil.InlineKeyboard(utils.GetPostedPictureInlineKeyboardButton(picture, ChannelChatID, BotUsername)))
 		results = append(results, result)
 	}
 	if err := bot.AnswerInlineQuery(&telego.AnswerInlineQueryParams{

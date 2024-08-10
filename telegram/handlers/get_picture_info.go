@@ -2,7 +2,7 @@ package handlers
 
 import (
 	"ManyACG/common"
-	"ManyACG/telegram"
+	"ManyACG/telegram/utils"
 	"context"
 	"fmt"
 
@@ -11,32 +11,32 @@ import (
 
 func CalculatePicture(ctx context.Context, bot *telego.Bot, message telego.Message) {
 	if message.ReplyToMessage == nil {
-		telegram.ReplyMessage(bot, message, "请使用该命令回复一条图片消息")
+		utils.ReplyMessage(bot, message, "请使用该命令回复一条图片消息")
 		return
 	}
 	var waitMessageID int
-	msg, err := telegram.ReplyMessage(bot, message, "少女做高数中...(((φ(◎ロ◎;)φ)))")
+	msg, err := utils.ReplyMessage(bot, message, "少女做高数中...(((φ(◎ロ◎;)φ)))")
 	if err == nil {
 		waitMessageID = msg.MessageID
 	}
-	fileBytes, err := telegram.GetMessagePhotoFileBytes(bot, message.ReplyToMessage)
+	fileBytes, err := utils.GetMessagePhotoFileBytes(bot, message.ReplyToMessage)
 	if err != nil {
-		telegram.ReplyMessage(bot, message, "获取图片文件失败: "+err.Error())
+		utils.ReplyMessage(bot, message, "获取图片文件失败: "+err.Error())
 		return
 	}
 	hash, err := common.GetImagePhash(fileBytes)
 	if err != nil {
-		telegram.ReplyMessage(bot, message, "计算图片信息失败: "+err.Error())
+		utils.ReplyMessage(bot, message, "计算图片信息失败: "+err.Error())
 		return
 	}
 	blurScore, err := common.GetImageBlurScore(fileBytes)
 	if err != nil {
-		telegram.ReplyMessage(bot, message, "计算图片信息失败: "+err.Error())
+		utils.ReplyMessage(bot, message, "计算图片信息失败: "+err.Error())
 		return
 	}
 	width, height, err := common.GetImageSize(fileBytes)
 	if err != nil {
-		telegram.ReplyMessage(bot, message, "计算图片信息失败: "+err.Error())
+		utils.ReplyMessage(bot, message, "计算图片信息失败: "+err.Error())
 		return
 	}
 	text := fmt.Sprintf(
@@ -44,7 +44,7 @@ func CalculatePicture(ctx context.Context, bot *telego.Bot, message telego.Messa
 		hash, blurScore, width, height,
 	)
 	if waitMessageID == 0 {
-		telegram.ReplyMessageWithHTML(bot, message, text)
+		utils.ReplyMessageWithHTML(bot, message, text)
 		return
 	}
 	bot.EditMessageText(&telego.EditMessageTextParams{

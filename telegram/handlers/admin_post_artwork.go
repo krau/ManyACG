@@ -2,11 +2,10 @@ package handlers
 
 import (
 	"ManyACG/common"
-	"ManyACG/fetcher"
 	. "ManyACG/logger"
 	"ManyACG/service"
 	"ManyACG/sources"
-	"ManyACG/telegram"
+	"ManyACG/telegram/utils"
 	"ManyACG/types"
 	"bufio"
 	"bytes"
@@ -88,7 +87,7 @@ func PostArtworkCallbackQuery(ctx context.Context, bot *telego.Bot, query telego
 	if asR18 {
 		artwork.R18 = true
 	}
-	if err := fetcher.PostAndCreateArtwork(ctx, artwork, bot, query.Message.GetChat().ID, query.Message.GetMessageID()); err != nil {
+	if err := utils.PostAndCreateArtwork(ctx, artwork, bot, query.Message.GetChat().ID, query.Message.GetMessageID()); err != nil {
 		Logger.Errorf("发布失败: %s", err)
 		bot.EditMessageCaption(&telego.EditMessageCaptionParams{
 			ChatID:    telegoutil.ID(query.Message.GetChat().ID),
@@ -117,8 +116,8 @@ func PostArtworkCallbackQuery(ctx context.Context, bot *telego.Bot, query telego
 		Caption:   "发布成功: " + artwork.Title + "\n发布时间: " + artwork.CreatedAt.Format("2006-01-02 15:04:05"),
 		ReplyMarkup: telegoutil.InlineKeyboard(
 			[]telego.InlineKeyboardButton{
-				telegoutil.InlineKeyboardButton("查看").WithURL(telegram.GetArtworkPostMessageURL(artwork.Pictures[0].TelegramInfo.MessageID)),
-				telegoutil.InlineKeyboardButton("原图").WithURL(telegram.GetDeepLinkForFile(artwork.Pictures[0].TelegramInfo.MessageID)),
+				telegoutil.InlineKeyboardButton("查看").WithURL(utils.GetArtworkPostMessageURL(artwork.Pictures[0].TelegramInfo.MessageID, ChannelChatID)),
+				telegoutil.InlineKeyboardButton("原图").WithURL(utils.GetDeepLinkForFile(artwork.Pictures[0].TelegramInfo.MessageID, BotUsername)),
 			},
 		),
 	})
@@ -126,20 +125,20 @@ func PostArtworkCallbackQuery(ctx context.Context, bot *telego.Bot, query telego
 
 func PostArtworkCommand(ctx context.Context, bot *telego.Bot, message telego.Message) {
 	if !CheckPermissionInGroup(ctx, message, types.PermissionPostArtwork) {
-		telegram.ReplyMessage(bot, message, "你没有发布作品的权限")
+		utils.ReplyMessage(bot, message, "你没有发布作品的权限")
 		return
 	}
 	_, _, args := telegoutil.ParseCommand(message.Text)
 	if len(args) == 0 && message.ReplyToMessage == nil {
-		telegram.ReplyMessage(bot, message, "请提供作品链接, 或回复一条消息")
+		utils.ReplyMessage(bot, message, "请提供作品链接, 或回复一条消息")
 		return
 	}
 	var sourceURL string
 	if message.ReplyToMessage != nil {
-		sourceURL = telegram.FindSourceURLForMessage(message.ReplyToMessage)
+		sourceURL = utils.FindSourceURLForMessage(message.ReplyToMessage)
 		if sourceURL == "" {
 			if len(args) == 0 {
-				telegram.ReplyMessage(bot, message, "不支持的链接")
+				utils.ReplyMessage(bot, message, "不支持的链接")
 				return
 			}
 			sourceURL = sources.FindSourceURL(args[0])
@@ -149,15 +148,15 @@ func PostArtworkCommand(ctx context.Context, bot *telego.Bot, message telego.Mes
 		sourceURL = sources.FindSourceURL(args[0])
 	}
 	if sourceURL == "" {
-		telegram.ReplyMessage(bot, message, "不支持的链接")
+		utils.ReplyMessage(bot, message, "不支持的链接")
 		return
 	}
 	artwork, _ := service.GetArtworkByURL(ctx, sourceURL)
 	if artwork != nil {
-		telegram.ReplyMessage(bot, message, "作品已存在")
+		utils.ReplyMessage(bot, message, "作品已存在")
 		return
 	}
-	msg, err := telegram.ReplyMessage(bot, message, "正在发布...")
+	msg, err := utils.ReplyMessage(bot, message, "正在发布...")
 	if err == nil && msg != nil {
 		defer bot.DeleteMessage(telegoutil.Delete(msg.Chat.ChatID(), msg.MessageID))
 	}
@@ -166,19 +165,19 @@ func PostArtworkCommand(ctx context.Context, bot *telego.Bot, message telego.Mes
 		artwork, err = sources.GetArtworkInfo(sourceURL)
 		if err != nil {
 			Logger.Errorf("获取作品信息失败: %s", err)
-			telegram.ReplyMessage(bot, message, "获取作品信息失败: "+err.Error())
+			utils.ReplyMessage(bot, message, "获取作品信息失败: "+err.Error())
 			return
 		}
 	} else {
 		artwork = cachedArtwork.Artwork
 	}
-	if err := fetcher.PostAndCreateArtwork(ctx, artwork, bot, message.Chat.ID, message.MessageID); err != nil {
-		telegram.ReplyMessage(bot, message, "发布失败: "+err.Error())
+	if err := utils.PostAndCreateArtwork(ctx, artwork, bot, message.Chat.ID, message.MessageID); err != nil {
+		utils.ReplyMessage(bot, message, "发布失败: "+err.Error())
 		return
 	}
 	artwork, err = service.GetArtworkByURL(ctx, sourceURL)
 	if err != nil {
-		telegram.ReplyMessage(bot, message, "获取发布后的作品信息失败: "+err.Error())
+		utils.ReplyMessage(bot, message, "获取发布后的作品信息失败: "+err.Error())
 		return
 	}
 	bot.SendMessage(telegoutil.Message(telegoutil.ID(message.Chat.ID), "发布成功: "+artwork.Title).
@@ -186,7 +185,7 @@ func PostArtworkCommand(ctx context.Context, bot *telego.Bot, message telego.Mes
 			ChatID:    message.Chat.ChatID(),
 			MessageID: message.MessageID,
 		},
-		).WithReplyMarkup(telegram.GetPostedPictureReplyMarkup(artwork.Pictures[0])))
+		).WithReplyMarkup(utils.GetPostedPictureReplyMarkup(artwork.Pictures[0], ChannelChatID, BotUsername)))
 }
 
 func ArtworkPreview(ctx context.Context, bot *telego.Bot, query telego.CallbackQuery) {
@@ -312,7 +311,7 @@ func ArtworkPreview(ctx context.Context, bot *telego.Bot, query telego.CallbackQ
 				)
 			}
 		}
-		inputFile, _, err := telegram.GetPicturePreviewInputFile(ctx, cachedArtwork.Artwork.Pictures[currentPictureIndex])
+		inputFile, _, err := utils.GetPicturePreviewInputFile(ctx, cachedArtwork.Artwork.Pictures[currentPictureIndex])
 		if err != nil {
 			Logger.Errorf("获取预览图片失败: %s", err)
 			bot.AnswerCallbackQuery(&telego.AnswerCallbackQueryParams{
@@ -328,7 +327,7 @@ func ArtworkPreview(ctx context.Context, bot *telego.Bot, query telego.CallbackQ
 			MessageID:   callbackMessage.MessageID,
 			ReplyMarkup: telegoutil.InlineKeyboard(postArtworkKeyboard, previewKeyboard),
 			Media: telegoutil.MediaPhoto(*inputFile).
-				WithCaption(telegram.GetArtworkHTMLCaption(cachedArtwork.Artwork) + fmt.Sprintf("\n<i>当前作品有 %d 张图片</i>", len(cachedArtwork.Artwork.Pictures))).
+				WithCaption(utils.GetArtworkHTMLCaption(cachedArtwork.Artwork) + fmt.Sprintf("\n<i>当前作品有 %d 张图片</i>", len(cachedArtwork.Artwork.Pictures))).
 				WithParseMode(telego.ModeHTML),
 		})
 		if err != nil {
@@ -348,7 +347,7 @@ func ArtworkPreview(ctx context.Context, bot *telego.Bot, query telego.CallbackQ
 		return
 	}
 
-	inputFile, needUpdatePreview, err := telegram.GetPicturePreviewInputFile(ctx, cachedArtwork.Artwork.Pictures[pictureIndex])
+	inputFile, needUpdatePreview, err := utils.GetPicturePreviewInputFile(ctx, cachedArtwork.Artwork.Pictures[pictureIndex])
 	if err != nil {
 		Logger.Errorf("获取预览图片失败: %s", err)
 		bot.AnswerCallbackQuery(&telego.AnswerCallbackQueryParams{
@@ -394,7 +393,7 @@ func ArtworkPreview(ctx context.Context, bot *telego.Bot, query telego.CallbackQ
 		ChatID:    callbackMessage.Chat.ChatID(),
 		MessageID: callbackMessage.MessageID,
 		Media: telegoutil.MediaPhoto(*inputFile).
-			WithCaption(telegram.GetArtworkHTMLCaption(cachedArtwork.Artwork) + fmt.Sprintf("\n<i>当前作品有 %d 张图片</i>", len(cachedArtwork.Artwork.Pictures))).
+			WithCaption(utils.GetArtworkHTMLCaption(cachedArtwork.Artwork) + fmt.Sprintf("\n<i>当前作品有 %d 张图片</i>", len(cachedArtwork.Artwork.Pictures))).
 			WithParseMode(telego.ModeHTML),
 		ReplyMarkup: telegoutil.InlineKeyboard(
 			postArtworkKeyboard,
@@ -446,11 +445,11 @@ func downloadAndCompressArtwork(ctx context.Context, artwork *types.Artwork, sta
 
 func BatchPostArtwork(ctx context.Context, bot *telego.Bot, message telego.Message) {
 	if !CheckPermissionInGroup(ctx, message, types.PermissionPostArtwork) {
-		telegram.ReplyMessage(bot, message, "你没有发布作品的权限")
+		utils.ReplyMessage(bot, message, "你没有发布作品的权限")
 		return
 	}
 	if message.ReplyToMessage == nil || message.ReplyToMessage.Document == nil {
-		telegram.ReplyMessage(bot, message, "请回复一个批量作品链接的文件")
+		utils.ReplyMessage(bot, message, "请回复一个批量作品链接的文件")
 		return
 	}
 
@@ -460,7 +459,7 @@ func BatchPostArtwork(ctx context.Context, bot *telego.Bot, message telego.Messa
 		var err error
 		count, err = strconv.Atoi(args[0])
 		if err != nil {
-			telegram.ReplyMessage(bot, message, "参数错误"+err.Error())
+			utils.ReplyMessage(bot, message, "参数错误"+err.Error())
 			return
 		}
 	}
@@ -468,7 +467,7 @@ func BatchPostArtwork(ctx context.Context, bot *telego.Bot, message telego.Messa
 		var err error
 		startIndex, err = strconv.Atoi(args[1])
 		if err != nil {
-			telegram.ReplyMessage(bot, message, "参数错误"+err.Error())
+			utils.ReplyMessage(bot, message, "参数错误"+err.Error())
 			return
 		}
 	}
@@ -477,7 +476,7 @@ func BatchPostArtwork(ctx context.Context, bot *telego.Bot, message telego.Messa
 		var err error
 		sleepTime, err = strconv.Atoi(args[2])
 		if err != nil {
-			telegram.ReplyMessage(bot, message, "参数错误"+err.Error())
+			utils.ReplyMessage(bot, message, "参数错误"+err.Error())
 			return
 		}
 	}
@@ -486,16 +485,16 @@ func BatchPostArtwork(ctx context.Context, bot *telego.Bot, message telego.Messa
 		FileID: message.ReplyToMessage.Document.FileID,
 	})
 	if err != nil {
-		telegram.ReplyMessage(bot, message, "获取文件失败: "+err.Error())
+		utils.ReplyMessage(bot, message, "获取文件失败: "+err.Error())
 		return
 	}
 	file, err := telegoutil.DownloadFile(bot.FileDownloadURL(tgFile.FilePath))
 	if err != nil {
-		telegram.ReplyMessage(bot, message, "下载文件失败: "+err.Error())
+		utils.ReplyMessage(bot, message, "下载文件失败: "+err.Error())
 		return
 	}
 
-	callbackMessage, err := telegram.ReplyMessage(bot, message, fmt.Sprintf("开始发布作品...\n总数: %d\n起始索引: %d\n间隔时间: %d秒", count, startIndex, sleepTime))
+	callbackMessage, err := utils.ReplyMessage(bot, message, fmt.Sprintf("开始发布作品...\n总数: %d\n起始索引: %d\n间隔时间: %d秒", count, startIndex, sleepTime))
 	if err != nil {
 		Logger.Warnf("回复消息失败: %s", err)
 		callbackMessage = nil
@@ -507,11 +506,11 @@ func BatchPostArtwork(ctx context.Context, bot *telego.Bot, message telego.Messa
 	for i := 0; i < startIndex; i++ {
 		_, err := reader.ReadString('\n')
 		if err == io.EOF {
-			telegram.ReplyMessage(bot, message, "起始索引超出文件行数")
+			utils.ReplyMessage(bot, message, "起始索引超出文件行数")
 			return
 		}
 		if err != nil {
-			telegram.ReplyMessage(bot, message, "读取文件失败: "+err.Error())
+			utils.ReplyMessage(bot, message, "读取文件失败: "+err.Error())
 			return
 		}
 	}
@@ -519,11 +518,11 @@ func BatchPostArtwork(ctx context.Context, bot *telego.Bot, message telego.Messa
 	for i := startIndex; i < count+startIndex; i++ {
 		text, err := reader.ReadString('\n')
 		if err == io.EOF {
-			telegram.ReplyMessage(bot, message, "文件已读取完毕")
+			utils.ReplyMessage(bot, message, "文件已读取完毕")
 			break
 		}
 		if err != nil {
-			telegram.ReplyMessage(bot, message, "读取文件失败: "+err.Error())
+			utils.ReplyMessage(bot, message, "读取文件失败: "+err.Error())
 			return
 		}
 		sourceURL := sources.FindSourceURL(text)
@@ -561,14 +560,14 @@ func BatchPostArtwork(ctx context.Context, bot *telego.Bot, message telego.Messa
 			if err != nil {
 				Logger.Errorf("获取作品信息失败: %s", err)
 				failed++
-				telegram.ReplyMessage(bot, message, fmt.Sprintf("获取 %s 信息失败: %s", sourceURL, err))
+				utils.ReplyMessage(bot, message, fmt.Sprintf("获取 %s 信息失败: %s", sourceURL, err))
 				continue
 			}
 		}
-		if err := fetcher.PostAndCreateArtwork(ctx, artwork, bot, message.Chat.ID, message.MessageID); err != nil {
+		if err := utils.PostAndCreateArtwork(ctx, artwork, bot, message.Chat.ID, message.MessageID); err != nil {
 			Logger.Errorf("发布失败: %s", err)
 			failed++
-			telegram.ReplyMessage(bot, message, fmt.Sprintf("发布 %s 失败: %s", sourceURL, err))
+			utils.ReplyMessage(bot, message, fmt.Sprintf("发布 %s 失败: %s", sourceURL, err))
 			continue
 		}
 		time.Sleep(time.Duration(sleepTime) * time.Second)
@@ -581,5 +580,5 @@ func BatchPostArtwork(ctx context.Context, bot *telego.Bot, message telego.Messa
 			Text:      text,
 		})
 	}
-	telegram.ReplyMessage(bot, message, "批量发布作品完成")
+	utils.ReplyMessage(bot, message, "批量发布作品完成")
 }

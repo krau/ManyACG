@@ -1,7 +1,7 @@
 package handlers
 
 import (
-	"ManyACG/telegram"
+	"ManyACG/telegram/utils"
 	"context"
 	"strconv"
 	"strings"
@@ -20,12 +20,12 @@ func Start(ctx context.Context, bot *telego.Bot, message telego.Message) {
 			messageIDStr := args[0][5:]
 			messageID, err := strconv.Atoi(messageIDStr)
 			if err != nil {
-				telegram.ReplyMessage(bot, message, "获取失败: "+err.Error())
+				utils.ReplyMessage(bot, message, "获取失败: "+err.Error())
 				return
 			}
-			_, err = telegram.SendPictureFileByMessageID(ctx, bot, message, messageID)
+			_, err = utils.SendPictureFileByMessageID(ctx, bot, message, ChannelChatID, messageID)
 			if err != nil {
-				telegram.ReplyMessage(bot, message, "获取失败: "+err.Error())
+				utils.ReplyMessage(bot, message, "获取失败: "+err.Error())
 				return
 			}
 		}

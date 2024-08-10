@@ -2,6 +2,7 @@ package bot
 
 import (
 	"ManyACG/telegram"
+	tgUtils "ManyACG/telegram/utils"
 	"net/http"
 
 	. "ManyACG/logger"
@@ -28,7 +29,7 @@ func SendArtworkInfo(ctx *gin.Context) {
 	}
 	copyCtx := ctx.Copy()
 	go func() {
-		if err := telegram.SendArtworkInfo(copyCtx, nil, &telegram.SendArtworkInfoParams{
+		if err := telegram.SendArtworkInfo(copyCtx, nil, &tgUtils.SendArtworkInfoParams{
 			ChatID:        &chatID,
 			SourceURL:     request.SourceURL,
 			AppendCaption: request.AppendCaption,

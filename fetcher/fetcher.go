@@ -34,7 +34,7 @@ func StartScheduler(ctx context.Context) {
 	}
 	Logger.Infof("Enabled sources: %s", enabledSources)
 	for artwork := range artworkCh {
-		err := PostAndCreateArtwork(ctx, artwork, telegram.Bot, config.Cfg.Telegram.Admins[0], 0)
+		err := telegram.PostAndCreateArtwork(ctx, artwork, telegram.Bot, config.Cfg.Telegram.Admins[0], 0)
 		if err != nil {
 			if es.Is(err, errors.ErrArtworkAlreadyExist) || es.Is(err, errors.ErrArtworkDeleted) {
 				continue
@@ -69,7 +69,7 @@ func FetchOnce(ctx context.Context, limit int) {
 	Logger.Infof("Fetched %d artworks", len(artworks))
 
 	for _, artwork := range artworks {
-		err := PostAndCreateArtwork(ctx, artwork, telegram.Bot, config.Cfg.Telegram.Admins[0], 0)
+		err := telegram.PostAndCreateArtwork(ctx, artwork, telegram.Bot, config.Cfg.Telegram.Admins[0], 0)
 		if err != nil {
 			if es.Is(err, errors.ErrArtworkAlreadyExist) || es.Is(err, errors.ErrArtworkDeleted) {
 				continue

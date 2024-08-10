@@ -8,6 +8,7 @@ import (
 )
 
 type Config struct {
+	Debug    bool           `toml:"debug" mapstructure:"debug" json:"debug" yaml:"debug"`
 	API      apiConfig      `toml:"api" mapstructure:"api" json:"api" yaml:"api"`
 	Fetcher  fetcherConfig  `toml:"fetcher" mapstructure:"fetcher" json:"fetcher" yaml:"fetcher"`
 	Log      logConfig      `toml:"log" mapstructure:"log" json:"log" yaml:"log"`

@@ -2,7 +2,7 @@ package handlers
 
 import (
 	"ManyACG/service"
-	"ManyACG/telegram"
+	"ManyACG/telegram/utils"
 	"context"
 
 	"github.com/mymmrac/telego"
@@ -41,5 +41,5 @@ Inline 查询支持同样的参数格式.
 `
 	}
 	helpText += "源码: https://github.com/krau/ManyACG"
-	telegram.ReplyMessage(bot, message, helpText)
+	utils.ReplyMessage(bot, message, helpText)
 }

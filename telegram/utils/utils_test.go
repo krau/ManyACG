@@ -1,4 +1,4 @@
-package telegram
+package utils
 
 import (
 	"ManyACG/types"

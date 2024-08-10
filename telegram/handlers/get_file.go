@@ -5,7 +5,7 @@ import (
 	"ManyACG/config"
 	"ManyACG/service"
 	"ManyACG/storage"
-	"ManyACG/telegram"
+	"ManyACG/telegram/utils"
 	"ManyACG/types"
 	"bytes"
 	"context"
@@ -22,31 +22,31 @@ import (
 )
 
 func GetPictureFile(ctx context.Context, bot *telego.Bot, message telego.Message) {
-	messageOrigin, ok := telegram.GetMessageOriginChannelArtworkPost(ctx, bot, message)
+	messageOrigin, ok := utils.GetMessageOriginChannelArtworkPost(ctx, bot, message)
 	if !ok {
 		if message.ReplyToMessage == nil {
-			telegram.ReplyMessage(bot, message, "请回复一条频道的图片消息")
+			utils.ReplyMessage(bot, message, "请回复一条频道的图片消息")
 			return
 		}
-		fileBytes, err := telegram.GetMessagePhotoFileBytes(bot, message.ReplyToMessage)
+		fileBytes, err := utils.GetMessagePhotoFileBytes(bot, message.ReplyToMessage)
 		if err != nil {
-			telegram.ReplyMessage(bot, message, "请回复一条频道的图片消息")
+			utils.ReplyMessage(bot, message, "请回复一条频道的图片消息")
 			return
 		}
 		hash, err := common.GetImagePhash(fileBytes)
 		if err != nil {
-			telegram.ReplyMessage(bot, message, "请回复一条频道的图片消息")
+			utils.ReplyMessage(bot, message, "请回复一条频道的图片消息")
 			return
 		}
 		pictures, err := service.GetPicturesByHashHammingDistance(ctx, hash, 10)
 		if err != nil || len(pictures) == 0 {
-			telegram.ReplyMessage(bot, message, "请回复一条频道的图片消息")
+			utils.ReplyMessage(bot, message, "请回复一条频道的图片消息")
 			return
 		}
 		picture := pictures[0]
-		_, err = telegram.SendPictureFileByMessageID(ctx, bot, message, picture.TelegramInfo.MessageID)
+		_, err = utils.SendPictureFileByMessageID(ctx, bot, message, ChannelChatID, picture.TelegramInfo.MessageID)
 		if err != nil {
-			telegram.ReplyMessage(bot, message, "文件发送失败: "+err.Error())
+			utils.ReplyMessage(bot, message, "文件发送失败: "+err.Error())
 			return
 		}
 		return
@@ -57,11 +57,11 @@ func GetPictureFile(ctx context.Context, bot *telego.Bot, message telego.Message
 	artwork, err := service.GetArtworkByMessageID(ctx, pictureMessageID)
 	if err != nil {
 		if errors.Is(err, mongo.ErrNoDocuments) {
-			telegram.ReplyMessage(bot, message, "这张图片未在数据库中呢")
+			utils.ReplyMessage(bot, message, "这张图片未在数据库中呢")
 			return
 		}
 		Logger.Errorf("获取作品失败: %s", err)
-		telegram.ReplyMessage(bot, message, "获取失败, 去找管理员反馈吧~")
+		utils.ReplyMessage(bot, message, "获取失败, 去找管理员反馈吧~")
 		return
 	}
 
@@ -74,16 +74,16 @@ func GetPictureFile(ctx context.Context, bot *telego.Bot, message telego.Message
 		index, err := strconv.Atoi(args[0])
 		if err == nil && index > 0 {
 			if index > len(artwork.Pictures) {
-				telegram.ReplyMessage(bot, message, "这个作品没有这么多图片")
+				utils.ReplyMessage(bot, message, "这个作品没有这么多图片")
 				return
 			}
 			picture := artwork.Pictures[index-1]
 			pictureMessageID = picture.TelegramInfo.MessageID
 		}
 	}
-	_, err = telegram.SendPictureFileByMessageID(ctx, bot, message, pictureMessageID)
+	_, err = utils.SendPictureFileByMessageID(ctx, bot, message, ChannelChatID, pictureMessageID)
 	if err != nil {
-		telegram.ReplyMessage(bot, message, "文件发送失败: "+err.Error())
+		utils.ReplyMessage(bot, message, "文件发送失败: "+err.Error())
 		return
 	}
 }
@@ -102,7 +102,7 @@ func getArtworkFiles(ctx context.Context, bot *telego.Bot, message telego.Messag
 		} else {
 			data, err := storage.GetStorage().GetFile(picture.StorageInfo)
 			if err != nil {
-				telegram.ReplyMessage(bot, message, "获取文件失败: "+err.Error())
+				utils.ReplyMessage(bot, message, "获取文件失败: "+err.Error())
 				return
 			}
 			file = telegoutil.File(telegoutil.NameReader(bytes.NewReader(data), filepath.Base(picture.StorageInfo.Path)))

@@ -1,4 +1,4 @@
-package bot
+package telegram
 
 import (
 	. "ManyACG/logger"
@@ -13,9 +13,9 @@ func messageLogger(bot *telego.Bot, update telego.Update, next telegohandler.Han
 		user := update.Message.From
 		senderChat := update.Message.SenderChat
 		if senderChat != nil {
-			Logger.Tracef("[%s](%d) [%s](%d): %s", chat.Title, chat.ID, senderChat.Title, senderChat.Username, update.Message.Text)
+			Logger.Tracef("[%s](%d) [%s](%d)", chat.Title, chat.ID, senderChat.Title, senderChat.Username)
 		} else {
-			Logger.Tracef("[%s](%d) [%s](%d): %s", chat.Title, chat.ID, user.FirstName+user.LastName, user.ID, update.Message.Text)
+			Logger.Tracef("[%s](%d) [%s](%d)", chat.Title, chat.ID, user.FirstName+user.LastName, user.ID)
 		}
 	}
 

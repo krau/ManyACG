@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"ManyACG/api/restful"
-	"ManyACG/bot"
 	"ManyACG/config"
 	"ManyACG/dao"
 	"ManyACG/fetcher"
@@ -10,6 +9,7 @@ import (
 	"ManyACG/service"
 	"ManyACG/sources"
 	"ManyACG/storage"
+	"ManyACG/telegram"
 	"context"
 	"os"
 	"os/signal"
@@ -30,7 +30,9 @@ func Run() {
 			os.Exit(1)
 		}
 	}()
-	go bot.RunPolling()
+	if config.Cfg.Telegram.Token != "" {
+		go telegram.RunPolling()
+	}
 	storage.InitStorage()
 	sources.InitSources()
 	go fetcher.StartScheduler(context.TODO())

@@ -3,7 +3,7 @@ package handlers
 import (
 	"ManyACG/common"
 	"ManyACG/service"
-	"ManyACG/telegram"
+	"ManyACG/telegram/utils"
 	"ManyACG/types"
 	"context"
 	"fmt"
@@ -15,22 +15,22 @@ import (
 func SearchPicture(ctx context.Context, bot *telego.Bot, message telego.Message) {
 	hasPermission := CheckPermissionInGroup(ctx, message, types.PermissionSearchPicture)
 	if message.ReplyToMessage == nil {
-		telegram.ReplyMessage(bot, message, "请使用该命令回复一条图片消息")
+		utils.ReplyMessage(bot, message, "请使用该命令回复一条图片消息")
 		return
 	}
-	go telegram.ReplyMessage(bot, message, "少女祈祷中...")
+	go utils.ReplyMessage(bot, message, "少女祈祷中...")
 
-	fileBytes, err := telegram.GetMessagePhotoFileBytes(bot, message.ReplyToMessage)
+	fileBytes, err := utils.GetMessagePhotoFileBytes(bot, message.ReplyToMessage)
 	if err != nil {
-		telegram.ReplyMessage(bot, message, "获取图片文件失败: "+err.Error())
+		utils.ReplyMessage(bot, message, "获取图片文件失败: "+err.Error())
 		return
 	}
 	text, err := getSearchResult(ctx, hasPermission, fileBytes)
 	if err != nil {
-		telegram.ReplyMessage(bot, message, err.Error())
+		utils.ReplyMessage(bot, message, err.Error())
 		return
 	}
-	telegram.ReplyMessageWithMarkdown(bot, message, text)
+	utils.ReplyMessageWithMarkdown(bot, message, text)
 }
 
 func SearchPictureCallbackQuery(ctx context.Context, bot *telego.Bot, query telego.CallbackQuery) {
@@ -39,7 +39,7 @@ func SearchPictureCallbackQuery(ctx context.Context, bot *telego.Bot, query tele
 	}
 	message := query.Message.(*telego.Message)
 	go bot.AnswerCallbackQuery(telegoutil.CallbackQuery(query.ID).WithText("少女祈祷中...").WithCacheTime(5))
-	fileBytes, err := telegram.GetMessagePhotoFileBytes(bot, message)
+	fileBytes, err := utils.GetMessagePhotoFileBytes(bot, message)
 	if err != nil {
 		bot.AnswerCallbackQuery(telegoutil.CallbackQuery(query.ID).WithText("获取图片文件失败: " + err.Error()).WithShowAlert().WithCacheTime(5))
 		return
@@ -49,7 +49,7 @@ func SearchPictureCallbackQuery(ctx context.Context, bot *telego.Bot, query tele
 		bot.AnswerCallbackQuery(telegoutil.CallbackQuery(query.ID).WithText(err.Error()).WithShowAlert().WithCacheTime(5))
 		return
 	}
-	telegram.ReplyMessageWithMarkdown(bot, *message, text)
+	utils.ReplyMessageWithMarkdown(bot, *message, text)
 
 }
 
@@ -67,7 +67,7 @@ func getSearchResult(ctx context.Context, hasPermission bool, fileBytes []byte) 
 		for _, picture := range pictures {
 			artwork, err := service.GetArtworkByMessageID(ctx, picture.TelegramInfo.MessageID)
 			if err != nil {
-				text += common.EscapeMarkdown(fmt.Sprintf("%s 模糊度: %.2f\n\n", telegram.GetArtworkPostMessageURL(picture.TelegramInfo.MessageID), picture.BlurScore))
+				text += common.EscapeMarkdown(fmt.Sprintf("%s 模糊度: %.2f\n\n", utils.GetArtworkPostMessageURL(picture.TelegramInfo.MessageID, ChannelChatID), picture.BlurScore))
 				continue
 			}
 			text += fmt.Sprintf("[%s\\_%d](%s)\n[%s](%s)\n",
@@ -75,7 +75,7 @@ func getSearchResult(ctx context.Context, hasPermission bool, fileBytes []byte) 
 				picture.Index+1,
 				common.EscapeMarkdown(artwork.SourceURL),
 				"\\-\\>频道消息",
-				telegram.GetArtworkPostMessageURL(picture.TelegramInfo.MessageID),
+				utils.GetArtworkPostMessageURL(picture.TelegramInfo.MessageID, ChannelChatID),
 			)
 			text += common.EscapeMarkdown(fmt.Sprintf("模糊度: %.2f\n\n", picture.BlurScore))
 		}

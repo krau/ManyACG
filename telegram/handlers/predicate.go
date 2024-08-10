@@ -1,7 +1,6 @@
-package bot
+package handlers
 
 import (
-	"ManyACG/telegram"
 	"strings"
 
 	"github.com/mymmrac/telego"
@@ -17,7 +16,7 @@ func mentionIsBot(update telego.Update) bool {
 		if botUsername == "" {
 			return true
 		}
-		return strings.TrimPrefix(botUsername, "@") == telegram.BotUsername
+		return strings.TrimPrefix(botUsername, "@") == BotUsername
 	}
 	return true
 }

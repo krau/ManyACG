@@ -2,7 +2,7 @@ package handlers
 
 import (
 	. "ManyACG/logger"
-	"ManyACG/telegram"
+	"ManyACG/telegram/utils"
 	"ManyACG/types"
 	"context"
 	"time"
@@ -13,11 +13,11 @@ import (
 
 func GetArtworkInfo(ctx context.Context, bot *telego.Bot, message telego.Message) {
 	hasPermission := CheckPermissionInGroup(ctx, message, types.PermissionGetArtworkInfo)
-	sourceURL := telegram.FindSourceURLForMessage(&message)
+	sourceURL := utils.FindSourceURLForMessage(&message)
 	var waitMessageID int
 	if hasPermission {
 		go func() {
-			msg, err := telegram.ReplyMessage(bot, message, "正在获取作品信息...")
+			msg, err := utils.ReplyMessage(bot, message, "正在获取作品信息...")
 			if err != nil {
 				Logger.Warnf("发送消息失败: %s", err)
 				return
@@ -33,7 +33,7 @@ func GetArtworkInfo(ctx context.Context, bot *telego.Bot, message telego.Message
 	}()
 	chatID := message.Chat.ChatID()
 
-	err := telegram.SendArtworkInfo(ctx, bot, &telegram.SendArtworkInfoParams{
+	err := utils.SendArtworkInfo(ctx, bot, &utils.SendArtworkInfoParams{
 		ChatID:        &chatID,
 		SourceURL:     sourceURL,
 		AppendCaption: "",
@@ -46,6 +46,6 @@ func GetArtworkInfo(ctx context.Context, bot *telego.Bot, message telego.Message
 	})
 	if err != nil {
 		Logger.Error(err)
-		telegram.ReplyMessage(bot, message, err.Error())
+		utils.ReplyMessage(bot, message, err.Error())
 	}
 }
