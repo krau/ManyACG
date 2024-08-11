@@ -4,16 +4,35 @@ import (
 	"ManyACG/api/restful/routers"
 	"ManyACG/config"
 	. "ManyACG/logger"
+	"fmt"
 	"os"
 
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 )
 
 func Run() {
-	gin.SetMode(gin.ReleaseMode)
+	if config.Cfg.Debug {
+		gin.SetMode(gin.DebugMode)
+	} else {
+		gin.SetMode(gin.ReleaseMode)
+	}
+
 	r := gin.Default()
 
-	v1 := r.Group("/v1")
+	corsConfig := cors.DefaultConfig()
+	corsConfig.AllowCredentials = true
+	corsConfig.AllowHeaders = append(corsConfig.AllowHeaders, "Authorization")
+	if config.Cfg.Debug {
+		fmt.Println("Allowing all origins in debug mode")
+		corsConfig.AllowAllOrigins = true
+	} else {
+		corsConfig.AllowOrigins = config.Cfg.API.AllowedOrigins
+	}
+
+	r.Use(cors.New(corsConfig))
+
+	v1 := r.Group("/api/v1")
 
 	routers.RegisterAllRouters(v1)
 

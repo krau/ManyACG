@@ -9,25 +9,17 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-func RandomArtwork(ctx *gin.Context) {
-	var r18Str string
-	if ctx.Request.Method == http.MethodGet {
-		r18Str = ctx.DefaultQuery("r18", "0")
+func RandomArtworks(ctx *gin.Context) {
+	var request GetRandomArtworksRequest
+	if err := ctx.ShouldBind(&request); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{
+			"status":  http.StatusBadRequest,
+			"message": err.Error(),
+		})
+		return
 	}
-	if ctx.Request.Method == http.MethodPost {
-		r18Str = ctx.DefaultPostForm("r18", "0")
-	}
-	r18Type := types.R18TypeNone
-	switch r18Str {
-	case "0":
-		r18Type = types.R18TypeNone
-	case "1":
-		r18Type = types.R18TypeOnly
-	case "2":
-		r18Type = types.R18TypeAll
-	}
-
-	artwork, err := service.GetRandomArtworks(ctx, r18Type, 1)
+	r18Type := types.R18Type(request.R18)
+	artwork, err := service.GetRandomArtworks(ctx, r18Type, request.Limit)
 	isAuthorized := ctx.GetBool("auth")
 	if err != nil {
 		if isAuthorized {
@@ -51,7 +43,7 @@ func RandomArtwork(ctx *gin.Context) {
 		})
 		return
 	}
-	ctx.JSON(http.StatusOK, ResponseFromArtwork(artwork[0], isAuthorized))
+	ctx.JSON(http.StatusOK, ResponseFromArtworks(artwork, isAuthorized))
 }
 
 func GetArtwork(ctx *gin.Context) {

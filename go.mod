@@ -5,6 +5,7 @@ go 1.22.3
 require (
 	github.com/blang/semver v3.5.1+incompatible
 	github.com/corona10/goimagehash v1.1.0
+	github.com/gin-contrib/cors v1.7.2
 	github.com/gin-gonic/gin v1.10.0
 	github.com/google/uuid v1.6.0
 	github.com/gookit/slog v0.5.6
