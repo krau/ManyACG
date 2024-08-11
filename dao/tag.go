@@ -60,3 +60,20 @@ func QueryTagsByName(ctx context.Context, name string) ([]*model.TagModel, error
 	}
 	return tags, nil
 }
+
+func GetRandomTags(ctx context.Context, limit int) ([]*model.TagModel, error) {
+	var tags []*model.TagModel
+	cursor, err := tagCollection.Aggregate(ctx, mongo.Pipeline{
+		bson.D{{Key: "$sample", Value: bson.D{{Key: "size", Value: limit}}}},
+	})
+	if err != nil {
+		return nil, err
+	}
+	if err = cursor.All(ctx, &tags); err != nil {
+		return nil, err
+	}
+	if len(tags) == 0 {
+		return nil, mongo.ErrNoDocuments
+	}
+	return tags, nil
+}

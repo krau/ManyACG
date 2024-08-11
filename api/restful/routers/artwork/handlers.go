@@ -85,7 +85,7 @@ func GetArtwork(ctx *gin.Context) {
 
 func GetLatestArtworks(ctx *gin.Context) {
 	var request GetLatestArtworksRequest
-	if err := ctx.ShouldBindQuery(&request); err != nil {
+	if err := ctx.ShouldBind(&request); err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{
 			"status":  http.StatusBadRequest,
 			"message": err.Error(),
