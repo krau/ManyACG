@@ -60,13 +60,19 @@ func StartScheduler(ctx context.Context) {
 				Logger.Debugf("Artwork %s is deleted", artwork.Title)
 				continue
 			}
+
+			saveSuccess := true
 			for i, picture := range artwork.Pictures {
 				info, err := storage.GetStorage().SavePicture(artwork, picture)
 				if err != nil {
 					Logger.Errorf("saving picture %d of artwork %s: %s", i, artwork.Title, err)
-					continue
+					saveSuccess = false
+					break
 				}
 				artwork.Pictures[i].StorageInfo = info
+			}
+			if !saveSuccess {
+				continue
 			}
 			_, err = service.CreateArtwork(ctx, artwork)
 			if err != nil {

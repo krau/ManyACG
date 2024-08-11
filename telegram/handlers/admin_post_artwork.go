@@ -5,6 +5,7 @@ import (
 	. "ManyACG/logger"
 	"ManyACG/service"
 	"ManyACG/sources"
+	"ManyACG/storage"
 	"ManyACG/telegram/utils"
 	"ManyACG/types"
 	"bufio"
@@ -25,15 +26,6 @@ func PostArtworkCallbackQuery(ctx context.Context, bot *telego.Bot, query telego
 		bot.AnswerCallbackQuery(&telego.AnswerCallbackQueryParams{
 			CallbackQueryID: query.ID,
 			Text:            "你没有发布作品的权限",
-			ShowAlert:       true,
-			CacheTime:       60,
-		})
-		return
-	}
-	if !IsChannelAvailable {
-		bot.AnswerCallbackQuery(&telego.AnswerCallbackQueryParams{
-			CallbackQueryID: query.ID,
-			Text:            "未设置频道",
 			ShowAlert:       true,
 			CacheTime:       60,
 		})
@@ -96,15 +88,69 @@ func PostArtworkCallbackQuery(ctx context.Context, bot *telego.Bot, query telego
 	if asR18 {
 		artwork.R18 = true
 	}
-	if err := utils.PostAndCreateArtwork(ctx, artwork, bot, query.Message.GetChat().ID, query.Message.GetMessageID()); err != nil {
-		Logger.Errorf("发布失败: %s", err)
+
+	if IsChannelAvailable {
+		if err := utils.PostAndCreateArtwork(ctx, artwork, bot, query.Message.GetChat().ID, query.Message.GetMessageID()); err != nil {
+			Logger.Errorf("发布失败: %s", err)
+			bot.EditMessageCaption(&telego.EditMessageCaptionParams{
+				ChatID:    telegoutil.ID(query.Message.GetChat().ID),
+				MessageID: query.Message.GetMessageID(),
+				Caption:   "发布失败: " + err.Error() + "\n" + time.Now().Format("2006-01-02 15:04:05"),
+			})
+			return
+		}
+	} else {
+		for i, picture := range artwork.Pictures {
+			bot.EditMessageCaption(&telego.EditMessageCaptionParams{
+				ChatID:    telegoutil.ID(query.Message.GetChat().ID),
+				MessageID: query.Message.GetMessageID(),
+				ReplyMarkup: telegoutil.InlineKeyboard(
+					[]telego.InlineKeyboardButton{
+						telegoutil.InlineKeyboardButton(fmt.Sprintf("正在保存图片 %d/%d", i+1, len(artwork.Pictures))).WithCallbackData("noop"),
+					},
+				),
+			})
+			info, err := storage.GetStorage().SavePicture(artwork, picture)
+			if err != nil {
+				Logger.Errorf("保存第 %d 张图片失败: %s", i, err)
+				bot.EditMessageCaption(&telego.EditMessageCaptionParams{
+					ChatID:    telegoutil.ID(query.Message.GetChat().ID),
+					MessageID: query.Message.GetMessageID(),
+					Caption:   "保存图片失败: " + err.Error(),
+				})
+				return
+			}
+			artwork.Pictures[i].StorageInfo = info
+		}
 		bot.EditMessageCaption(&telego.EditMessageCaptionParams{
 			ChatID:    telegoutil.ID(query.Message.GetChat().ID),
 			MessageID: query.Message.GetMessageID(),
-			Caption:   "发布失败: " + err.Error() + "\n" + time.Now().Format("2006-01-02 15:04:05"),
+			ReplyMarkup: telegoutil.InlineKeyboard(
+				[]telego.InlineKeyboardButton{
+					telegoutil.InlineKeyboardButton("图片保存完成, 正在发布...").WithCallbackData("noop"),
+				},
+			),
 		})
-		return
+		artwork, err := service.CreateArtwork(ctx, artwork)
+		if err != nil {
+			Logger.Errorf("创建作品失败: %s", err)
+			bot.EditMessageCaption(&telego.EditMessageCaptionParams{
+				ChatID:    telegoutil.ID(query.Message.GetChat().ID),
+				MessageID: query.Message.GetMessageID(),
+				Caption:   "创建作品失败: " + err.Error(),
+			})
+			return
+		}
+		go func() {
+			for _, picture := range artwork.Pictures {
+				if err := service.ProcessPictureAndUpdate(context.TODO(), picture); err != nil {
+					Logger.Warnf("处理图片失败: %s", err)
+				}
+			}
+		}()
+		Logger.Infof("Post artwork %s", artwork.Title)
 	}
+
 	artwork, err = service.GetArtworkByURL(ctx, sourceURL)
 	if err != nil {
 		Logger.Errorf("获取发布后的作品信息失败: %s", err)
@@ -248,7 +294,7 @@ func ArtworkPreview(ctx context.Context, bot *telego.Bot, query telego.CallbackQ
 	postArtworkKeyboard := []telego.InlineKeyboardButton{
 		telegoutil.InlineKeyboardButton("发布").WithCallbackData("post_artwork " + dataID),
 		telegoutil.InlineKeyboardButton("查重").WithCallbackData("search_picture " + dataID),
-		telegoutil.InlineKeyboardButton("遮罩发布").WithCallbackData("post_artwork_r18 " + dataID),
+		telegoutil.InlineKeyboardButton("发布(R18)").WithCallbackData("post_artwork_r18 " + dataID),
 	}
 	currentPictureIndexStr := queryDataSlice[4]
 	currentPictureIndex, err := strconv.Atoi(currentPictureIndexStr)

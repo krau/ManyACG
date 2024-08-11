@@ -140,7 +140,7 @@ func GetPostedPictureInlineKeyboardButton(artwork *types.Artwork, index uint, ch
 		Logger.Fatalf("图片索引越界: %d", index)
 		return nil
 	}
-	if (channelChatID.ID == 0 && channelChatID.Username == "") || artwork.Pictures[index].TelegramInfo == nil {
+	if (channelChatID.ID == 0 && channelChatID.Username == "") || (artwork.Pictures[index].TelegramInfo == nil || artwork.Pictures[index].TelegramInfo.MessageID == 0) {
 		return []telego.InlineKeyboardButton{
 			telegoutil.InlineKeyboardButton("详情").WithURL(artwork.SourceURL),
 			telegoutil.InlineKeyboardButton("原图").WithURL(GetDeepLinkForFile(artwork.Pictures[index].ID, botUsername)),
@@ -222,6 +222,20 @@ func SendPictureFileByID(ctx context.Context, bot *telego.Bot, message telego.Me
 		document.WithReplyMarkup(telegoutil.InlineKeyboard([]telego.InlineKeyboardButton{
 			telegoutil.InlineKeyboardButton("详情").WithURL(GetArtworkPostMessageURL(picture.TelegramInfo.MessageID, channelChatID)),
 		}))
+	} else {
+		artworkID, err := primitive.ObjectIDFromHex(picture.ArtworkID)
+		if err == nil {
+			artwork, err := service.GetArtworkByID(ctx, artworkID)
+			if err == nil {
+				document.WithReplyMarkup(telegoutil.InlineKeyboard([]telego.InlineKeyboardButton{
+					telegoutil.InlineKeyboardButton("详情").WithURL(artwork.SourceURL),
+				}))
+			} else {
+				Logger.Warnf("获取作品信息失败: %s", err)
+			}
+		} else {
+			Logger.Warnf("创建 ObjectID 失败: %s", err)
+		}
 	}
 	documentMessage, err := bot.SendDocument(document)
 	if err != nil {
