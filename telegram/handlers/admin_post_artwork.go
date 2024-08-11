@@ -178,10 +178,6 @@ func PostArtworkCommand(ctx context.Context, bot *telego.Bot, message telego.Mes
 		utils.ReplyMessage(bot, message, "你没有发布作品的权限")
 		return
 	}
-	if !IsChannelAvailable {
-		utils.ReplyMessage(bot, message, "未设置频道")
-		return
-	}
 	_, _, args := telegoutil.ParseCommand(message.Text)
 	if len(args) == 0 && message.ReplyToMessage == nil {
 		utils.ReplyMessage(bot, message, "请提供作品链接, 或回复一条消息")
@@ -214,21 +210,64 @@ func PostArtworkCommand(ctx context.Context, bot *telego.Bot, message telego.Mes
 	if err == nil && msg != nil {
 		defer bot.DeleteMessage(telegoutil.Delete(msg.Chat.ChatID(), msg.MessageID))
 	}
-	cachedArtwork, err := service.GetCachedArtworkByURL(ctx, sourceURL)
+	cachedArtwork, err := service.GetCachedArtworkByURLWithCache(ctx, sourceURL)
 	if err != nil {
-		artwork, err = sources.GetArtworkInfo(sourceURL)
-		if err != nil {
-			Logger.Errorf("获取作品信息失败: %s", err)
-			utils.ReplyMessage(bot, message, "获取作品信息失败: "+err.Error())
+		Logger.Errorf("获取作品信息失败: %s", err)
+		utils.ReplyMessage(bot, message, "获取作品信息失败: "+err.Error())
+		return
+	}
+	if cachedArtwork.Status != types.ArtworkStatusCached {
+		utils.ReplyMessage(bot, message, "该作品已发布或正在发布中")
+		return
+	}
+	artwork = cachedArtwork.Artwork
+
+	if IsChannelAvailable {
+		if err := utils.PostAndCreateArtwork(ctx, artwork, bot, message.Chat.ID, message.MessageID); err != nil {
+			utils.ReplyMessage(bot, message, "发布失败: "+err.Error())
 			return
 		}
 	} else {
-		artwork = cachedArtwork.Artwork
+		for i, picture := range artwork.Pictures {
+			bot.EditMessageText(&telego.EditMessageTextParams{
+				ChatID:    message.Chat.ChatID(),
+				MessageID: msg.MessageID,
+				Text:      fmt.Sprintf("正在保存图片 %d/%d", i+1, len(artwork.Pictures)),
+			})
+			info, err := storage.GetStorage().SavePicture(artwork, picture)
+			if err != nil {
+				bot.EditMessageText(&telego.EditMessageTextParams{
+					ChatID:    message.Chat.ChatID(),
+					MessageID: msg.MessageID,
+					Text:      "保存图片失败: " + err.Error(),
+				})
+				return
+			}
+			artwork.Pictures[i].StorageInfo = info
+		}
+		bot.EditMessageText(&telego.EditMessageTextParams{
+			ChatID:    message.Chat.ChatID(),
+			MessageID: msg.MessageID,
+			Text:      "图片保存完成, 正在发布...",
+		})
+		artwork, err := service.CreateArtwork(ctx, artwork)
+		if err != nil {
+			bot.EditMessageText(&telego.EditMessageTextParams{
+				ChatID:    message.Chat.ChatID(),
+				MessageID: msg.MessageID,
+				Text:      "创建作品失败: " + err.Error(),
+			})
+			return
+		}
+		go func() {
+			for _, picture := range artwork.Pictures {
+				if err := service.ProcessPictureAndUpdate(context.TODO(), picture); err != nil {
+					Logger.Warnf("处理图片失败: %s", err)
+				}
+			}
+		}()
 	}
-	if err := utils.PostAndCreateArtwork(ctx, artwork, bot, message.Chat.ID, message.MessageID); err != nil {
-		utils.ReplyMessage(bot, message, "发布失败: "+err.Error())
-		return
-	}
+
 	artwork, err = service.GetArtworkByURL(ctx, sourceURL)
 	if err != nil {
 		utils.ReplyMessage(bot, message, "获取发布后的作品信息失败: "+err.Error())
