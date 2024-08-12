@@ -77,7 +77,7 @@ func getInputMediaPhotos(artwork *types.Artwork, start, end int) ([]telego.Input
 		fileBytes := common.GetReqCachedFile(picture.Original)
 		if fileBytes == nil {
 			var err error
-			fileBytes, err = storage.GetStorage().GetFile(picture.StorageInfo)
+			fileBytes, err = storage.GetFile(picture.StorageInfo)
 			if err != nil {
 				Logger.Errorf("failed to get file: %s", err)
 				return nil, err

@@ -15,4 +15,6 @@ var (
 	ErrArtworkAlreadyExist = errors.New("artwork already exists")
 	ErrSourceNotSupported  = errors.New("source not supported")
 	ErrIndexOOB            = errors.New("index out of bounds")
+
+	ErrStorageNotSupported = errors.New("storage not supported")
 )

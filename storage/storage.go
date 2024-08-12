@@ -2,6 +2,7 @@ package storage
 
 import (
 	"ManyACG/config"
+	"ManyACG/errors"
 	. "ManyACG/logger"
 	"ManyACG/storage/local"
 	"ManyACG/storage/webdav"
@@ -47,5 +48,21 @@ func InitStorage() {
 			Storages[types.StorageTypeLocal] = new(local.Local)
 			Storages[types.StorageTypeLocal].Init()
 		}
+	}
+}
+
+func GetFile(info *types.StorageInfo) ([]byte, error) {
+	if storage, ok := Storages[info.Type]; ok {
+		return storage.GetFile(info)
+	} else {
+		return nil, errors.ErrStorageNotSupported
+	}
+}
+
+func DeletePicture(info *types.StorageInfo) error {
+	if storage, ok := Storages[info.Type]; ok {
+		return storage.DeletePicture(info)
+	} else {
+		return errors.ErrStorageNotSupported
 	}
 }
