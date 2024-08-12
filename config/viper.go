@@ -50,7 +50,9 @@ func InitConfig() {
 
 	viper.SetDefault("storage.cache_dir", "./cache")
 	viper.SetDefault("storage.cache_ttl", 86400)
-	viper.SetDefault("storage.type", "webdav")
+	viper.SetDefault("storage.default", "local")
+	viper.SetDefault("storage.local.enable", true)
+	viper.SetDefault("storage.local.path", "./manyacg")
 
 	viper.SetDefault("telegram.sleep", 1)
 	viper.SetDefault("telegram.api_url", "https://api.telegram.org")

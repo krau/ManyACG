@@ -2,3 +2,4 @@ config.toml
 logs/
 cache/
 .VSCodeCounter
+downloads/

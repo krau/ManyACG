@@ -18,8 +18,13 @@ type Webdav struct{}
 
 var Client *gowebdav.Client
 
+var (
+	basePath string
+)
+
 func (w *Webdav) Init() {
 	webdavConfig := config.Cfg.Storage.Webdav
+	basePath = strings.TrimSuffix(webdavConfig.Path, "/")
 	Client = gowebdav.NewClient(webdavConfig.URL, webdavConfig.Username, webdavConfig.Password)
 	if err := Client.Connect(); err != nil {
 		Logger.Fatalf("Failed to connect to webdav server: %v", err)
@@ -34,7 +39,7 @@ func (w *Webdav) SavePicture(artwork *types.Artwork, picture *types.Picture) (*t
 		return nil, err
 	}
 	artistName := common.ReplaceFileNameInvalidChar(artwork.Artist.Username)
-	fileDir := strings.TrimSuffix(config.Cfg.Storage.Webdav.Path, "/") + "/" + string(artwork.SourceType) + "/" + artistName + "/"
+	fileDir := basePath + "/" + string(artwork.SourceType) + "/" + artistName + "/"
 	if err := Client.MkdirAll(fileDir, os.ModePerm); err != nil {
 		Logger.Errorf("failed to create directory: %s", err)
 		return nil, ErrFailedMkdirAll
