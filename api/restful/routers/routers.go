@@ -3,6 +3,7 @@ package routers
 import (
 	"ManyACG/api/restful/routers/artwork"
 	"ManyACG/api/restful/routers/bot"
+	"ManyACG/api/restful/routers/picture"
 	"ManyACG/api/restful/routers/tag"
 
 	"github.com/gin-gonic/gin"
@@ -20,4 +21,7 @@ func RegisterAllRouters(r *gin.RouterGroup) {
 
 	tagGroup := r.Group("/tag")
 	tag.RegisterRouter(tagGroup)
+
+	pictureGroup := r.Group("/picture")
+	picture.RegisterRouter(pictureGroup)
 }
