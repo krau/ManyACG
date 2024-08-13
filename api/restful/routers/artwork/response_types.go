@@ -22,6 +22,7 @@ type ArtworkResponseData struct {
 }
 
 type PictureResponse struct {
+	ID          string             `json:"id"`
 	Width       uint               `json:"width"`
 	Height      uint               `json:"height"`
 	Index       uint               `json:"index"`
@@ -49,6 +50,7 @@ func ResponseDataFromArtwork(artwork *types.Artwork) *ArtworkResponseData {
 	pictures := make([]*PictureResponse, len(artwork.Pictures))
 	for i, picture := range artwork.Pictures {
 		pictures[i] = &PictureResponse{
+			ID:          picture.ID,
 			Width:       picture.Width,
 			Height:      picture.Height,
 			Index:       picture.Index,
