@@ -69,9 +69,17 @@ func createCollection(ctx context.Context) {
 	cachedArtworkCollection = DB.Collection(collections.CachedArtworks)
 	DB.CreateCollection(ctx, collections.EtcData)
 	etcDataCollection = DB.Collection(collections.EtcData)
+	DB.CreateCollection(ctx, collections.Users)
+	userCollection = DB.Collection(collections.Users)
+	DB.CreateCollection(ctx, collections.Likes)
+	likeCollection = DB.Collection(collections.Likes)
+	DB.CreateCollection(ctx, collections.Favorites)
+	favoriteCollection = DB.Collection(collections.Favorites)
 }
 
 func createIndex(ctx context.Context) {
+
+	// 作品
 	artworkCollection.Indexes().CreateMany(ctx, []mongo.IndexModel{
 		{
 			Keys:    bson.D{{Key: "source_url", Value: 1}},
@@ -79,6 +87,19 @@ func createIndex(ctx context.Context) {
 		},
 	})
 
+	// 缓存的作品
+	cachedArtworkCollection.Indexes().CreateMany(ctx, []mongo.IndexModel{
+		{
+			Keys:    bson.D{{Key: "source_url", Value: 1}},
+			Options: options.Index().SetName("source_url").SetUnique(true),
+		},
+		{
+			Keys:    bson.D{{Key: "created_at", Value: 1}},
+			Options: options.Index().SetExpireAfterSeconds(86400 * 30).SetName("created_at"),
+		},
+	})
+
+	// 标签
 	tagCollection.Indexes().CreateMany(ctx, []mongo.IndexModel{
 		{
 			Keys:    bson.D{{Key: "name", Value: 1}},
@@ -86,6 +107,7 @@ func createIndex(ctx context.Context) {
 		},
 	})
 
+	// 图片
 	pictureCollection.Indexes().CreateMany(ctx, []mongo.IndexModel{
 		{
 			Keys:    bson.D{{Key: "original", Value: 1}},
@@ -101,6 +123,7 @@ func createIndex(ctx context.Context) {
 		},
 	})
 
+	// 画师
 	artistCollection.Indexes().CreateMany(ctx, []mongo.IndexModel{
 		{
 			Keys:    bson.D{{Key: "name", Value: 1}},
@@ -108,6 +131,7 @@ func createIndex(ctx context.Context) {
 		},
 	})
 
+	// 管理员 (deprecated)
 	adminCollection.Indexes().CreateMany(ctx, []mongo.IndexModel{
 		{
 			Keys:    bson.D{{Key: "user_id", Value: 1}},
@@ -122,6 +146,7 @@ func createIndex(ctx context.Context) {
 		}
 	}
 
+	// 已删除的作品
 	deletedCollection.Indexes().CreateMany(ctx, []mongo.IndexModel{
 		{
 			Keys:    bson.D{{Key: "source_url", Value: 1}},
@@ -129,6 +154,7 @@ func createIndex(ctx context.Context) {
 		},
 	})
 
+	// 回调数据
 	callbackDataCollection.Indexes().CreateMany(ctx, []mongo.IndexModel{
 		{
 			Keys:    bson.D{{Key: "created_at", Value: 1}},
@@ -136,14 +162,47 @@ func createIndex(ctx context.Context) {
 		},
 	})
 
-	cachedArtworkCollection.Indexes().CreateMany(ctx, []mongo.IndexModel{
+	// 用户
+	userCollection.Indexes().CreateMany(ctx, []mongo.IndexModel{
 		{
-			Keys:    bson.D{{Key: "source_url", Value: 1}},
-			Options: options.Index().SetName("source_url").SetUnique(true),
+			Keys:    bson.D{{Key: "username", Value: 1}},
+			Options: options.Index().SetName("username").SetUnique(true),
+		},
+		{
+			Keys:    bson.D{{Key: "email", Value: 1}},
+			Options: options.Index().SetName("email").SetUnique(true),
+		},
+		{
+			Keys:    bson.D{{Key: "telegram_id", Value: 1}},
+			Options: options.Index().SetName("telegram_id").SetUnique(true),
+		},
+	})
+
+	// 用户喜欢的作品 (24小时过期)
+	likeCollection.Indexes().CreateMany(ctx, []mongo.IndexModel{
+		{
+			Keys:    bson.D{{Key: "artwork_id", Value: 1}},
+			Options: options.Index().SetName("artwork_id"),
+		},
+		{
+			Keys:    bson.D{{Key: "user_id", Value: 1}},
+			Options: options.Index().SetName("user_id"),
 		},
 		{
 			Keys:    bson.D{{Key: "created_at", Value: 1}},
-			Options: options.Index().SetExpireAfterSeconds(86400 * 30).SetName("created_at"),
+			Options: options.Index().SetExpireAfterSeconds(86400).SetName("created_at"),
+		},
+	})
+
+	// 用户收藏的作品
+	favoriteCollection.Indexes().CreateMany(ctx, []mongo.IndexModel{
+		{
+			Keys:    bson.D{{Key: "artwork_id", Value: 1}},
+			Options: options.Index().SetName("artwork_id"),
+		},
+		{
+			Keys:    bson.D{{Key: "user_id", Value: 1}},
+			Options: options.Index().SetName("user_id"),
 		},
 	})
 }

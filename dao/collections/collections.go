@@ -10,4 +10,23 @@ const (
 	CallbackData   string = "CallbackData"
 	CachedArtworks string = "CachedArtworks"
 	EtcData        string = "EtcData"
+
+	Users     string = "Users"
+	Likes     string = "Likes"
+	Favorites string = "Favorites"
 )
+
+var AllCollections = []string{
+	Artworks,
+	Pictures,
+	Artists,
+	Tags,
+	Admins,
+	Deleted,
+	CallbackData,
+	CachedArtworks,
+	EtcData,
+	Users,
+	Likes,
+	Favorites,
+}
