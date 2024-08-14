@@ -20,6 +20,9 @@ func CreateUser(ctx context.Context, user *model.UserModel) (*mongo.InsertOneRes
 	timeNow := primitive.NewDateTimeFromTime(time.Now())
 	user.CreatedAt = timeNow
 	user.UpdatedAt = timeNow
+	if user.Settings == nil {
+		user.Settings = &model.UserSettings{}
+	}
 	return userCollection.InsertOne(ctx, user)
 }
 

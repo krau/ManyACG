@@ -6,6 +6,7 @@ import (
 	. "ManyACG/logger"
 	"ManyACG/sources"
 	"ManyACG/types"
+	"context"
 	"os"
 	"path/filepath"
 	"strings"
@@ -32,7 +33,7 @@ func (w *Webdav) Init() {
 	}
 }
 
-func (w *Webdav) SavePicture(artwork *types.Artwork, picture *types.Picture) (*types.StorageInfo, error) {
+func (w *Webdav) SavePicture(ctx context.Context, artwork *types.Artwork, picture *types.Picture) (*types.StorageInfo, error) {
 	Logger.Debugf("saving picture %d of artwork %s", picture.Index, artwork.Title)
 	fileName, err := sources.GetFileName(artwork, picture)
 	if err != nil {
@@ -44,7 +45,7 @@ func (w *Webdav) SavePicture(artwork *types.Artwork, picture *types.Picture) (*t
 		Logger.Errorf("failed to create directory: %s", err)
 		return nil, ErrFailedMkdirAll
 	}
-	fileBytes, err := common.DownloadWithCache(picture.Original, nil)
+	fileBytes, err := common.DownloadWithCache(ctx, picture.Original, nil)
 	if err != nil {
 		Logger.Errorf("failed to download file: %s", err)
 		return nil, ErrFailedDownload
@@ -72,15 +73,15 @@ func (w *Webdav) SavePicture(artwork *types.Artwork, picture *types.Picture) (*t
 	return storageInfo, nil
 }
 
-func (w *Webdav) GetFile(info *types.StorageInfo) ([]byte, error) {
+func (w *Webdav) GetFile(ctx context.Context, info *types.StorageInfo) ([]byte, error) {
 	Logger.Debugf("Getting file %s", info.Path)
 	if config.Cfg.Storage.CacheDir != "" {
-		return w.getFileWithCache(info)
+		return w.getFileWithCache(ctx, info)
 	}
 	return Client.Read(info.Path)
 }
 
-func (w *Webdav) getFileWithCache(info *types.StorageInfo) ([]byte, error) {
+func (w *Webdav) getFileWithCache(_ context.Context, info *types.StorageInfo) ([]byte, error) {
 	cachePath := strings.TrimSuffix(config.Cfg.Storage.CacheDir, "/") + "/" + filepath.Base(info.Path)
 	data, err := os.ReadFile(cachePath)
 	if err == nil {
@@ -99,7 +100,7 @@ func (w *Webdav) getFileWithCache(info *types.StorageInfo) ([]byte, error) {
 	return data, nil
 }
 
-func (w *Webdav) DeletePicture(info *types.StorageInfo) error {
+func (w *Webdav) DeletePicture(ctx context.Context, info *types.StorageInfo) error {
 	Logger.Debugf("deleting file %s", info.Path)
 	return Client.Remove(info.Path)
 }

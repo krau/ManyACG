@@ -7,6 +7,7 @@ import (
 	"ManyACG/storage/local"
 	"ManyACG/storage/webdav"
 	"ManyACG/types"
+	"context"
 	"os"
 )
 
@@ -51,17 +52,17 @@ func InitStorage() {
 	}
 }
 
-func GetFile(info *types.StorageInfo) ([]byte, error) {
+func GetFile(ctx context.Context, info *types.StorageInfo) ([]byte, error) {
 	if storage, ok := Storages[info.Type]; ok {
-		return storage.GetFile(info)
+		return storage.GetFile(ctx, info)
 	} else {
 		return nil, errors.ErrStorageNotSupported
 	}
 }
 
-func DeletePicture(info *types.StorageInfo) error {
+func DeletePicture(ctx context.Context, info *types.StorageInfo) error {
 	if storage, ok := Storages[info.Type]; ok {
-		return storage.DeletePicture(info)
+		return storage.DeletePicture(ctx, info)
 	} else {
 		return errors.ErrStorageNotSupported
 	}

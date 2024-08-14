@@ -1,6 +1,9 @@
 package artwork
 
-import "ManyACG/types"
+import (
+	"ManyACG/types"
+	"path/filepath"
+)
 
 type ArtworkResponse struct {
 	Status  int    `json:"status"`
@@ -22,13 +25,13 @@ type ArtworkResponseData struct {
 }
 
 type PictureResponse struct {
-	ID          string             `json:"id"`
-	Width       uint               `json:"width"`
-	Height      uint               `json:"height"`
-	Index       uint               `json:"index"`
-	Hash        string             `json:"hash"`
-	BlurScore   float64            `json:"blur_score"`
-	StorageInfo *types.StorageInfo `json:"storage_info"`
+	ID        string  `json:"id"`
+	Width     uint    `json:"width"`
+	Height    uint    `json:"height"`
+	Index     uint    `json:"index"`
+	Hash      string  `json:"hash"`
+	BlurScore float64 `json:"blur_score"`
+	FileName  string  `json:"file_name"`
 }
 
 func ResponseFromArtwork(artwork *types.Artwork, isAuthorized bool) *ArtworkResponse {
@@ -50,13 +53,13 @@ func ResponseDataFromArtwork(artwork *types.Artwork) *ArtworkResponseData {
 	pictures := make([]*PictureResponse, len(artwork.Pictures))
 	for i, picture := range artwork.Pictures {
 		pictures[i] = &PictureResponse{
-			ID:          picture.ID,
-			Width:       picture.Width,
-			Height:      picture.Height,
-			Index:       picture.Index,
-			Hash:        picture.Hash,
-			BlurScore:   picture.BlurScore,
-			StorageInfo: picture.StorageInfo,
+			ID:        picture.ID,
+			Width:     picture.Width,
+			Height:    picture.Height,
+			Index:     picture.Index,
+			Hash:      picture.Hash,
+			BlurScore: picture.BlurScore,
+			FileName:  filepath.Base(picture.StorageInfo.Path), // TODO:
 		}
 	}
 	return &ArtworkResponseData{

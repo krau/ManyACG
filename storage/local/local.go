@@ -6,6 +6,7 @@ import (
 	. "ManyACG/logger"
 	"ManyACG/sources"
 	"ManyACG/types"
+	"context"
 	"os"
 	"strings"
 )
@@ -28,7 +29,7 @@ func (l *Local) Init() {
 	}
 }
 
-func (l *Local) SavePicture(artwork *types.Artwork, picture *types.Picture) (*types.StorageInfo, error) {
+func (l *Local) SavePicture(ctx context.Context, artwork *types.Artwork, picture *types.Picture) (*types.StorageInfo, error) {
 	Logger.Debugf("Saving picture %d of artwork %s", picture.Index, artwork.Title)
 	fileName, err := sources.GetFileName(artwork, picture)
 	if err != nil {
@@ -36,7 +37,7 @@ func (l *Local) SavePicture(artwork *types.Artwork, picture *types.Picture) (*ty
 	}
 	artistName := common.ReplaceFileNameInvalidChar(artwork.Artist.Username)
 	fileDir := basePath + "/" + string(artwork.SourceType) + "/" + artistName + "/"
-	fileBytes, err := common.DownloadWithCache(picture.Original, nil)
+	fileBytes, err := common.DownloadWithCache(ctx, picture.Original, nil)
 	if err != nil {
 		Logger.Errorf("Failed to download file: %s", err)
 		return nil, err
@@ -55,10 +56,10 @@ func (l *Local) SavePicture(artwork *types.Artwork, picture *types.Picture) (*ty
 	return storageInfo, nil
 }
 
-func (l *Local) GetFile(info *types.StorageInfo) ([]byte, error) {
+func (l *Local) GetFile(ctx context.Context, info *types.StorageInfo) ([]byte, error) {
 	return os.ReadFile(info.Path)
 }
 
-func (l *Local) DeletePicture(info *types.StorageInfo) error {
+func (l *Local) DeletePicture(ctx context.Context, info *types.StorageInfo) error {
 	return common.PurgeFile(info.Path)
 }

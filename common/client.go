@@ -2,6 +2,7 @@ package common
 
 import (
 	"ManyACG/config"
+	"context"
 	"os"
 	"time"
 
@@ -18,7 +19,7 @@ func init() {
 	Client = c
 }
 
-func DownloadWithCache(url string, client *req.Client) ([]byte, error) {
+func DownloadWithCache(ctx context.Context, url string, client *req.Client) ([]byte, error) {
 	if client == nil {
 		client = Client
 	}
@@ -29,16 +30,20 @@ func DownloadWithCache(url string, client *req.Client) ([]byte, error) {
 		return data, nil
 	}
 	Logger.Debugf("downloading: %s", url)
-	resp, err := client.R().Get(url)
+	resp, err := client.R().SetContext(ctx).Get(url)
 	if err != nil {
 		return nil, err
 	}
 	data = resp.Bytes()
-	if err := MkFile(cachePath, data); err != nil {
-		Logger.Errorf("failed to save cache file: %s", err)
-	} else {
-		go PurgeFileAfter(cachePath, time.Duration(config.Cfg.Storage.CacheTTL)*time.Second)
-	}
+
+	go func() {
+		if err := MkFile(cachePath, data); err != nil {
+			Logger.Errorf("failed to save cache file: %s", err)
+		} else {
+			go PurgeFileAfter(cachePath, time.Duration(config.Cfg.Storage.CacheTTL)*time.Second)
+		}
+	}()
+
 	return data, nil
 }
 

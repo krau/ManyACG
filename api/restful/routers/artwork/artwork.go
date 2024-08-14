@@ -1,8 +1,13 @@
 package artwork
 
-import "github.com/gin-gonic/gin"
+import (
+	"ManyACG/api/restful/middleware"
+
+	"github.com/gin-gonic/gin"
+)
 
 func RegisterRouter(r *gin.RouterGroup) {
+	r.Use(middleware.OptionalJWTMiddleware)
 	r.GET("/random", RandomArtworks)
 	r.POST("/random", RandomArtworks)
 	r.GET("/list", GetLatestArtworks)

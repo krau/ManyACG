@@ -3,8 +3,10 @@ package bilibili
 import (
 	"ManyACG/common"
 	"ManyACG/types"
+	"context"
 	"errors"
 	"fmt"
+	"time"
 )
 
 type BilibiliApiResp struct {
@@ -110,6 +112,8 @@ func (resp *BilibiliApiResp) ToArtwork() (*types.Artwork, error) {
 		Pictures: pictures,
 		Tags:     nil,
 	}
-	common.DownloadWithCache(artwork.Pictures[0].Original, ReqClient)
+	timeOutCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	common.DownloadWithCache(timeOutCtx, artwork.Pictures[0].Original, ReqClient)
 	return artwork, nil
 }

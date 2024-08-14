@@ -20,7 +20,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
-func PostArtwork(bot *telego.Bot, artwork *types.Artwork) ([]telego.Message, error) {
+func PostArtwork(ctx context.Context, bot *telego.Bot, artwork *types.Artwork) ([]telego.Message, error) {
 	if bot == nil {
 		return nil, errors.ErrNilBot
 	}
@@ -29,7 +29,7 @@ func PostArtwork(bot *telego.Bot, artwork *types.Artwork) ([]telego.Message, err
 		return nil, errors.ErrNilArtwork
 	}
 	if len(artwork.Pictures) <= 10 {
-		inputMediaPhotos, err := getInputMediaPhotos(artwork, 0, len(artwork.Pictures))
+		inputMediaPhotos, err := getInputMediaPhotos(ctx, artwork, 0, len(artwork.Pictures))
 		if err != nil {
 			return nil, err
 		}
@@ -46,7 +46,7 @@ func PostArtwork(bot *telego.Bot, artwork *types.Artwork) ([]telego.Message, err
 		if end > len(artwork.Pictures) {
 			end = len(artwork.Pictures)
 		}
-		inputMediaPhotos, err := getInputMediaPhotos(artwork, i, end)
+		inputMediaPhotos, err := getInputMediaPhotos(ctx, artwork, i, end)
 		if err != nil {
 			return nil, err
 		}
@@ -70,14 +70,14 @@ func PostArtwork(bot *telego.Bot, artwork *types.Artwork) ([]telego.Message, err
 }
 
 // start from 0
-func getInputMediaPhotos(artwork *types.Artwork, start, end int) ([]telego.InputMedia, error) {
+func getInputMediaPhotos(ctx context.Context, artwork *types.Artwork, start, end int) ([]telego.InputMedia, error) {
 	inputMediaPhotos := make([]telego.InputMedia, end-start)
 	for i := start; i < end; i++ {
 		picture := artwork.Pictures[i]
 		fileBytes := common.GetReqCachedFile(picture.Original)
 		if fileBytes == nil {
 			var err error
-			fileBytes, err = storage.GetFile(picture.StorageInfo)
+			fileBytes, err = storage.GetFile(ctx, picture.StorageInfo)
 			if err != nil {
 				Logger.Errorf("failed to get file: %s", err)
 				return nil, err
@@ -135,7 +135,7 @@ func PostAndCreateArtwork(ctx context.Context, artwork *types.Artwork, bot *tele
 				),
 			})
 		}
-		info, err := storage.GetStorage().SavePicture(artwork, picture)
+		info, err := storage.GetStorage().SavePicture(ctx, artwork, picture)
 		if err != nil {
 			Logger.Errorf("saving picture %d of artwork %s: %s", i, artwork.Title, err)
 			return fmt.Errorf("saving picture %d of artwork %s: %w", i, artwork.Title, err)
@@ -153,7 +153,7 @@ func PostAndCreateArtwork(ctx context.Context, artwork *types.Artwork, bot *tele
 			),
 		})
 	}
-	messages, err := PostArtwork(bot, artwork)
+	messages, err := PostArtwork(ctx, bot, artwork)
 	if err != nil {
 		return fmt.Errorf("posting artwork [%s](%s): %w", artwork.Title, artwork.SourceURL, err)
 	}

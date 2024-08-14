@@ -21,6 +21,10 @@ type User struct {
 	UserName string
 }
 
+const (
+	IdentityKey = "id"
+)
+
 var JWTAuthMiddleware *jwt.GinJWTMiddleware
 
 func Init() {
@@ -59,7 +63,7 @@ func JWTInitParamas() *jwt.GinJWTMiddleware {
 		PayloadFunc: func(data interface{}) jwt.MapClaims {
 			if user, ok := data.(Login); ok {
 				return jwt.MapClaims{
-					"username": user.Username,
+					IdentityKey: user.Username,
 				}
 			}
 			return jwt.MapClaims{}
@@ -69,7 +73,7 @@ func JWTInitParamas() *jwt.GinJWTMiddleware {
 		IdentityHandler: func(ctx *gin.Context) interface{} {
 			claims := jwt.ExtractClaims(ctx)
 			return &User{
-				UserName: claims["username"].(string),
+				UserName: claims[IdentityKey].(string),
 			}
 		},
 
@@ -104,4 +108,16 @@ func JWTInitParamas() *jwt.GinJWTMiddleware {
 			return loginInfo, nil
 		},
 	}
+}
+
+func OptionalJWTMiddleware(ctx *gin.Context) {
+	token, err := JWTAuthMiddleware.ParseToken(ctx)
+	if err == nil && token.Valid {
+		claims := jwt.ExtractClaimsFromToken(token)
+		ctx.Set("logged", true)
+		ctx.Set("claims", claims)
+	} else {
+		ctx.Set("logged", false)
+	}
+	ctx.Next()
 }

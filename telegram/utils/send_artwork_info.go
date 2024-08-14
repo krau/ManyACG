@@ -158,7 +158,7 @@ func updateLinkPreview(ctx context.Context, targetMessage *telego.Message, artwo
 		return errors.ErrIndexOOB
 	}
 	var inputFile telego.InputFile
-	fileBytes, err := common.DownloadWithCache(artwork.Pictures[pictureIndex].Original, nil)
+	fileBytes, err := common.DownloadWithCache(ctx, artwork.Pictures[pictureIndex].Original, nil)
 	if err != nil {
 		return err
 	}

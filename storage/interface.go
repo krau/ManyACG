@@ -2,11 +2,12 @@ package storage
 
 import (
 	"ManyACG/types"
+	"context"
 )
 
 type Storage interface {
 	Init()
-	SavePicture(artwork *types.Artwork, picture *types.Picture) (*types.StorageInfo, error)
-	GetFile(info *types.StorageInfo) ([]byte, error)
-	DeletePicture(info *types.StorageInfo) error
+	SavePicture(ctx context.Context, artwork *types.Artwork, picture *types.Picture) (*types.StorageInfo, error)
+	GetFile(ctx context.Context, info *types.StorageInfo) ([]byte, error)
+	DeletePicture(ctx context.Context, info *types.StorageInfo) error
 }
