@@ -215,5 +215,13 @@ func createIndex(ctx context.Context) {
 			Keys:    bson.D{{Key: "created_at", Value: 1}},
 			Options: options.Index().SetExpireAfterSeconds(600).SetName("created_at"),
 		},
+		{
+			Keys:    bson.D{{Key: "username", Value: 1}},
+			Options: options.Index().SetName("username").SetUnique(true),
+		},
+		// {
+		// 	Keys:    bson.D{{Key: "telegram_id", Value: 1}},
+		// 	Options: options.Index().SetName("telegram_id").SetUnique(true),
+		// },
 	})
 }

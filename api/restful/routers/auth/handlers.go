@@ -8,6 +8,7 @@ import (
 	"ManyACG/types"
 	"errors"
 	"net/http"
+	"regexp"
 
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -28,6 +29,15 @@ func handleSendCode(c *gin.Context) {
 		})
 		return
 	}
+
+	if !regexp.MustCompile("^[a-zA-Z0-9_]+$").MatchString(request.Username) {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"status":  http.StatusBadRequest,
+			"message": "username must be alphanumeric",
+		})
+		return
+	}
+
 	user, err := service.GetUserByUsername(c, request.Username)
 	if err != nil && !errors.Is(err, mongo.ErrNoDocuments) {
 		Logger.Errorf("Failed to get user: %v", err)
@@ -38,6 +48,22 @@ func handleSendCode(c *gin.Context) {
 		return
 	}
 	if user != nil {
+		c.JSON(http.StatusConflict, gin.H{
+			"status":  http.StatusConflict,
+			"message": "User already exists",
+		})
+		return
+	}
+	unauthUserInDB, err := service.GetUnauthUserByUsername(c, request.Username)
+	if err != nil && !errors.Is(err, mongo.ErrNoDocuments) {
+		Logger.Errorf("Failed to get user: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"status":  http.StatusInternalServerError,
+			"message": "Failed to get user",
+		})
+		return
+	}
+	if unauthUserInDB != nil {
 		c.JSON(http.StatusConflict, gin.H{
 			"status":  http.StatusConflict,
 			"message": "User already exists",
@@ -88,6 +114,15 @@ func handleRegister(c *gin.Context) {
 		})
 		return
 	}
+
+	if !regexp.MustCompile("^[a-zA-Z0-9_]+$").MatchString(register.Username) {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"status":  http.StatusBadRequest,
+			"message": "username must be alphanumeric",
+		})
+		return
+	}
+
 	user, err := service.GetUserByUsername(c, register.Username)
 	if err != nil && !errors.Is(err, mongo.ErrNoDocuments) {
 		Logger.Errorf("Failed to get user: %v", err)
