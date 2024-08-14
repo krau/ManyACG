@@ -1,6 +1,7 @@
-package picture
+package middleware
 
 import (
+	"ManyACG/config"
 	. "ManyACG/logger"
 	"ManyACG/service"
 	"errors"
@@ -10,6 +11,28 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 )
+
+func CheckKey(ctx *gin.Context) {
+	keyHeader := ctx.GetHeader("X-API-KEY")
+	if keyHeader == config.Cfg.API.Key {
+		ctx.Set("auth", true)
+		ctx.Next()
+		return
+	}
+	ctx.Set("auth", false)
+	ctx.Next()
+}
+
+func KeyRequired(ctx *gin.Context) {
+	if ctx.GetBool("auth") {
+		ctx.Next()
+		return
+	}
+	ctx.JSON(http.StatusUnauthorized, gin.H{
+		"message": "Unauthorized",
+	})
+	ctx.Abort()
+}
 
 func ValidatePictureID(ctx *gin.Context) {
 	pictureID := ctx.Param("id")

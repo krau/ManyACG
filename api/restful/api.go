@@ -1,6 +1,8 @@
 package restful
 
 import (
+	"ManyACG/api/restful/auth"
+	"ManyACG/api/restful/middleware"
 	"ManyACG/api/restful/routers"
 	"ManyACG/config"
 	. "ManyACG/logger"
@@ -32,9 +34,10 @@ func Run() {
 
 	r.Use(cors.New(corsConfig))
 
+	middleware.Init()
 	v1 := r.Group("/api/v1")
-
-	routers.RegisterAllRouters(v1)
+	auth.RegisterRouter(v1, middleware.JWTAuthMiddleware)
+	routers.RegisterAllRouters(v1, middleware.JWTAuthMiddleware)
 
 	if err := r.Run(config.Cfg.API.Address); err != nil {
 		Logger.Fatalf("Failed to start server: %v", err)
