@@ -1,8 +1,14 @@
+debug = false
+
 [api]
 enable = false
 address = "0.0.0.0:39818"
-auth = true
-token = "123123qwq"
+key = "123123qwq"
+allowed_origins = []
+realm = "manyacg"
+secret = "zxjkfhdofienasuiqowfndjfbajihoi"
+token_expire = 600 # 分钟
+refresh_token_expire = 600
 
 [fetcher]
 max_concurrent = 1
@@ -43,19 +49,26 @@ enable = true
 session = ""
 
 [storage]
-type = "webdav"
+default = "webdav"
 cache_dir = "./cache"
 cache_ttl = 114514
 
 [storage.webdav]
+enable = true
 url = "https://example.com/dav"
 username = "dav@example.com"
 password = "1231145"
-path = "/"
+path = "/manyacg/"
+
+[storage.local]
+enable = true
+path = "./downloads"
+
 
 [telegram]
 token = "token"
-api_url = ""
+channel = true
+api_url = "https://api.telegram.org"
 username = "@manyacg"
 sleep = 1
 group_id = -100114514
