@@ -139,7 +139,8 @@ func GetLatestArtworks(ctx context.Context, r18 types.R18Type, page, pageSize in
 	var artworks []*model.ArtworkModel
 	var cursor *mongo.Cursor
 	var err error
-	opts := options.Find().SetSort(bson.M{"created_at": -1}).SetSkip((page - 1) * pageSize).SetLimit(pageSize)
+	// opts := options.Find().SetSort(bson.M{"created_at": -1}).SetSkip((page - 1) * pageSize).SetLimit(pageSize)
+	opts := options.Find().SetSort(bson.M{"_id": -1}).SetSkip((page - 1) * pageSize).SetLimit(pageSize)
 	if r18 == types.R18TypeAll {
 		cursor, err = artworkCollection.Find(ctx, bson.M{}, opts)
 	} else {

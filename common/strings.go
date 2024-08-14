@@ -1,6 +1,7 @@
 package common
 
 import (
+	"math/rand"
 	"regexp"
 	"strings"
 )
@@ -97,4 +98,20 @@ func RemoveDuplicateStringSlice(s []string) []string {
 		}
 	}
 	return result
+}
+
+const defaultCharset = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
+
+func GenerateRandomString(length int, charset ...string) string {
+	var letters string
+	if len(charset) > 0 {
+		letters = strings.Join(charset, "")
+	} else {
+		letters = defaultCharset
+	}
+	b := make([]byte, length)
+	for i := range b {
+		b[i] = letters[rand.Intn(len(letters))]
+	}
+	return string(b)
 }

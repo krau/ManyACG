@@ -75,6 +75,9 @@ func createCollection(ctx context.Context) {
 	likeCollection = DB.Collection(collections.Likes)
 	DB.CreateCollection(ctx, collections.Favorites)
 	favoriteCollection = DB.Collection(collections.Favorites)
+
+	DB.CreateCollection(ctx, collections.UnauthUser)
+	unauthUserCollection = DB.Collection(collections.UnauthUser)
 }
 
 func createIndex(ctx context.Context) {
@@ -168,14 +171,15 @@ func createIndex(ctx context.Context) {
 			Keys:    bson.D{{Key: "username", Value: 1}},
 			Options: options.Index().SetName("username").SetUnique(true),
 		},
-		{
-			Keys:    bson.D{{Key: "email", Value: 1}},
-			Options: options.Index().SetName("email").SetUnique(true),
-		},
-		{
-			Keys:    bson.D{{Key: "telegram_id", Value: 1}},
-			Options: options.Index().SetName("telegram_id").SetUnique(true),
-		},
+		// TODO:
+		// {
+		// 	Keys:    bson.D{{Key: "email", Value: 1}},
+		// 	Options: options.Index().SetName("email").SetUnique(true),
+		// },
+		// {
+		// 	Keys:    bson.D{{Key: "telegram_id", Value: 1}},
+		// 	Options: options.Index().SetName("telegram_id").SetUnique(true),
+		// },
 	})
 
 	// 用户喜欢的作品 (24小时过期)
@@ -203,6 +207,13 @@ func createIndex(ctx context.Context) {
 		{
 			Keys:    bson.D{{Key: "user_id", Value: 1}},
 			Options: options.Index().SetName("user_id"),
+		},
+	})
+
+	unauthUserCollection.Indexes().CreateMany(ctx, []mongo.IndexModel{
+		{
+			Keys:    bson.D{{Key: "created_at", Value: 1}},
+			Options: options.Index().SetExpireAfterSeconds(600).SetName("created_at"),
 		},
 	})
 }

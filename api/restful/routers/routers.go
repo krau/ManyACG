@@ -3,15 +3,19 @@ package routers
 import (
 	"ManyACG/api/restful/middleware"
 	"ManyACG/api/restful/routers/artwork"
+	"ManyACG/api/restful/routers/auth"
 	"ManyACG/api/restful/routers/bot"
 	"ManyACG/api/restful/routers/picture"
 	"ManyACG/api/restful/routers/tag"
+	"ManyACG/api/restful/routers/user"
 
 	jwt "github.com/appleboy/gin-jwt/v2"
 	"github.com/gin-gonic/gin"
 )
 
 func RegisterAllRouters(r *gin.RouterGroup, authMiddleware *jwt.GinJWTMiddleware) {
+	auth.RegisterRouter(r, authMiddleware)
+
 	r.Use(middleware.CheckKey)
 
 	artworkGroup := r.Group("/artwork")
@@ -26,4 +30,7 @@ func RegisterAllRouters(r *gin.RouterGroup, authMiddleware *jwt.GinJWTMiddleware
 
 	pictureGroup := r.Group("/picture")
 	picture.RegisterRouter(pictureGroup)
+
+	userGroup := r.Group("/user")
+	user.RegisterRouter(userGroup)
 }

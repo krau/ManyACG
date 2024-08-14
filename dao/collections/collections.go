@@ -11,9 +11,10 @@ const (
 	CachedArtworks string = "CachedArtworks"
 	EtcData        string = "EtcData"
 
-	Users     string = "Users"
-	Likes     string = "Likes"
-	Favorites string = "Favorites"
+	Users      string = "Users"
+	Likes      string = "Likes"
+	Favorites  string = "Favorites"
+	UnauthUser string = "UnauthUsers"
 )
 
 var AllCollections = []string{

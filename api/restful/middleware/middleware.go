@@ -66,3 +66,18 @@ func ValidatePictureID(ctx *gin.Context) {
 	ctx.Next()
 
 }
+
+func ValidateObjectID(ctx *gin.Context) {
+	id := ctx.Param("id")
+	objectID, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{
+			"status":  http.StatusBadRequest,
+			"message": "Invalid ID",
+		})
+		ctx.Abort()
+		return
+	}
+	ctx.Set("object_id", objectID)
+	ctx.Next()
+}

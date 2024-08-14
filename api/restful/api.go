@@ -1,7 +1,6 @@
 package restful
 
 import (
-	"ManyACG/api/restful/auth"
 	"ManyACG/api/restful/middleware"
 	"ManyACG/api/restful/routers"
 	"ManyACG/config"
@@ -36,7 +35,6 @@ func Run() {
 
 	middleware.Init()
 	v1 := r.Group("/api/v1")
-	auth.RegisterRouter(v1, middleware.JWTAuthMiddleware)
 	routers.RegisterAllRouters(v1, middleware.JWTAuthMiddleware)
 
 	if err := r.Run(config.Cfg.API.Address); err != nil {

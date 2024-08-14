@@ -17,9 +17,7 @@ var (
 )
 
 func CreateUser(ctx context.Context, user *model.UserModel) (*mongo.InsertOneResult, error) {
-	timeNow := primitive.NewDateTimeFromTime(time.Now())
-	user.CreatedAt = timeNow
-	user.UpdatedAt = timeNow
+	user.UpdatedAt = primitive.NewDateTimeFromTime(time.Now())
 	if user.Settings == nil {
 		user.Settings = &model.UserSettings{}
 	}
@@ -38,6 +36,15 @@ func GetUserByID(ctx context.Context, id primitive.ObjectID) (*model.UserModel, 
 func GetUserByUsername(ctx context.Context, username string) (*model.UserModel, error) {
 	user := &model.UserModel{}
 	err := userCollection.FindOne(ctx, bson.M{"username": username}).Decode(user)
+	if err != nil {
+		return nil, err
+	}
+	return user, nil
+}
+
+func GetUserByTelegramID(ctx context.Context, telegramID int64) (*model.UserModel, error) {
+	user := &model.UserModel{}
+	err := userCollection.FindOne(ctx, bson.M{"telegram_id": telegramID}).Decode(user)
 	if err != nil {
 		return nil, err
 	}
