@@ -43,7 +43,7 @@ func Start(ctx context.Context, bot *telego.Bot, message telego.Message) {
 			userID := message.From.ID
 			userModel, _ := service.GetUserByTelegramID(ctx, userID)
 			if userModel != nil {
-				bot.SendMessage(telegoutil.Messagef(message.Chat.ChatID(), "您的此 Tekegram 账号 ( %d ) 已经绑定了 ManyACG 账号 %s", userID, userModel.Username))
+				bot.SendMessage(telegoutil.Messagef(message.Chat.ChatID(), "您的此 Telegram 账号 ( %d ) 已经绑定了 ManyACG 账号 %s", userID, userModel.Username))
 				return
 			}
 			unauthUserID := args[0][5:]
@@ -58,7 +58,7 @@ func Start(ctx context.Context, bot *telego.Bot, message telego.Message) {
 				return
 			}
 			_, err = bot.SendMessage(telegoutil.Messagef(message.Chat.ChatID(),
-				"您的此 Tekegram 账号 ( %d ) 将与 ManyACG 账号 %s 绑定\n验证码: <code>%s</code>",
+				"您的此 Telegram 账号 ( %d ) 将与 ManyACG 账号 %s 绑定\n验证码: <code>%s</code>",
 				userID,
 				common.EscapeHTML(unauthUser.Username),
 				common.EscapeHTML(unauthUser.Code)).
