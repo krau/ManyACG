@@ -14,7 +14,7 @@ type ArtworkModel struct {
 	CreatedAt   primitive.DateTime `bson:"created_at"`
 	SourceType  types.SourceType   `bson:"source_type"`
 	SourceURL   string             `bson:"source_url"`
-	Likes       uint               `bson:"likes"`
+	LikeCount   uint               `bson:"like_count"`
 
 	ArtistID primitive.ObjectID   `bson:"artist_id"`
 	Tags     []primitive.ObjectID `bson:"tags"`

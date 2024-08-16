@@ -168,7 +168,7 @@ func UpdateArtworkTagsByID(ctx context.Context, id primitive.ObjectID, tags []pr
 }
 
 func IncrementArtworkLikeCountByID(ctx context.Context, id primitive.ObjectID) (*mongo.UpdateResult, error) {
-	return artworkCollection.UpdateOne(ctx, bson.M{"_id": id}, bson.M{"$inc": bson.M{"like_count": 1}})
+	return artworkCollection.UpdateOne(ctx, bson.M{"_id": id}, bson.M{"$inc": bson.M{"like_count": int64(1)}})
 }
 
 func DeleteArtworkByID(ctx context.Context, id primitive.ObjectID) (*mongo.DeleteResult, error) {

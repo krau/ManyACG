@@ -31,3 +31,7 @@ func GetUnauthUser(ctx *gin.Context) {
 		TelegramID: user.TelegramID,
 	})
 }
+
+func GetProfile(ctx *gin.Context) {
+
+}

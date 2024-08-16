@@ -55,7 +55,7 @@ func ConvertToArtwork(ctx context.Context, artworkModel *model.ArtworkModel, opt
 			Title:       artworkModel.Title,
 			Description: artworkModel.Description,
 			R18:         artworkModel.R18,
-			Likes:       artworkModel.Likes,
+			LikeCount:   artworkModel.LikeCount,
 			CreatedAt:   artworkModel.CreatedAt.Time(),
 			SourceType:  artworkModel.SourceType,
 			SourceURL:   artworkModel.SourceURL,
