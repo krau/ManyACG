@@ -29,13 +29,13 @@ type UserModel struct {
 	DeletedAt  primitive.DateTime `bson:"deleted_at,omitempty"`
 
 	// Settings
-	Settings *UserSettings `bson:"settings"`
+	Settings *UserSettings `bson:"settings" json:"settings"`
 }
 
 type UserSettings struct {
-	Language string `bson:"language"`
-	Theme    string `bson:"theme"`
-	R18      bool   `bson:"r18"`
+	Language string `bson:"language" json:"language"`
+	Theme    string `bson:"theme" json:"theme"`
+	R18      bool   `bson:"r18" json:"r18"`
 }
 
 type UnauthUserModel struct {

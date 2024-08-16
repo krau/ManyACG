@@ -56,3 +56,15 @@ func DeleteUnauthUser(ctx context.Context, id primitive.ObjectID) error {
 	_, err := dao.DeleteUnauthUser(ctx, id)
 	return err
 }
+
+func UpdateUserSettings(ctx context.Context, id primitive.ObjectID, settings *model.UserSettings) (*model.UserSettings, error) {
+	_, err := dao.UpdateUserSettings(ctx, id, settings)
+	if err != nil {
+		return nil, err
+	}
+	user, err := dao.GetUserByID(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	return user.Settings, nil
+}

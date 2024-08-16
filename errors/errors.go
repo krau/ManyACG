@@ -22,4 +22,7 @@ var (
 	ErrNotFoundUser    = errors.New("user not found")
 
 	ErrLikeExists = errors.New("like exists")
+
+	ErrSettingsNil = errors.New("settings is nil")
+	ErrSettingsKey = errors.New("settings key not found")
 )
