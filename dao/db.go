@@ -75,7 +75,6 @@ func createCollection(ctx context.Context) {
 	likeCollection = DB.Collection(collections.Likes)
 	DB.CreateCollection(ctx, collections.Favorites)
 	favoriteCollection = DB.Collection(collections.Favorites)
-
 	DB.CreateCollection(ctx, collections.UnauthUser)
 	unauthUserCollection = DB.Collection(collections.UnauthUser)
 }
@@ -207,6 +206,10 @@ func createIndex(ctx context.Context) {
 		{
 			Keys:    bson.D{{Key: "user_id", Value: 1}},
 			Options: options.Index().SetName("user_id"),
+		},
+		{
+			Keys:    bson.D{{Key: "artwork_id", Value: 1}, {Key: "user_id", Value: 1}},
+			Options: options.Index().SetName("artwork_id_user_id").SetUnique(true),
 		},
 	})
 

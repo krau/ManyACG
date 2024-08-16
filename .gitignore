@@ -3,3 +3,4 @@ logs/
 cache/
 .VSCodeCounter
 downloads/
+tmp/

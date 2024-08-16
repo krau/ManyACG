@@ -1,16 +1,15 @@
 package artwork
 
 import (
-	. "ManyACG/logger"
+	manyacgErrors "ManyACG/errors"
+	"ManyACG/model"
 	"ManyACG/service"
 	"ManyACG/types"
 	"errors"
 	"net/http"
 
-	jwt "github.com/appleboy/gin-jwt/v2"
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/bson/primitive"
-	"go.mongodb.org/mongo-driver/mongo"
 )
 
 func RandomArtworks(ctx *gin.Context) {
@@ -22,11 +21,18 @@ func RandomArtworks(ctx *gin.Context) {
 		})
 		return
 	}
+
+	hasKey := ctx.GetBool("auth")
 	r18Type := types.R18Type(request.R18)
-	artwork, err := service.GetRandomArtworks(ctx, r18Type, request.Limit)
-	isAuthorized := ctx.GetBool("auth")
+	if r18Type != types.R18TypeNone && !hasKey {
+		if !checkR18Permission(ctx) {
+			return
+		}
+	}
+
+	artworks, err := service.GetRandomArtworks(ctx, r18Type, request.Limit)
 	if err != nil {
-		if isAuthorized {
+		if hasKey {
 			ctx.JSON(http.StatusInternalServerError, &ArtworkResponse{
 				Status:  http.StatusInternalServerError,
 				Message: err.Error(),
@@ -35,19 +41,19 @@ func RandomArtworks(ctx *gin.Context) {
 		} else {
 			ctx.JSON(http.StatusInternalServerError, &ArtworkResponse{
 				Status:  http.StatusInternalServerError,
-				Message: "Failed to get artwork",
+				Message: "Failed to get artworks",
 			})
 			return
 		}
 	}
-	if len(artwork) == 0 {
+	if len(artworks) == 0 {
 		ctx.JSON(http.StatusNotFound, &ArtworkResponse{
 			Status:  http.StatusNotFound,
-			Message: "Artwork not found",
+			Message: "Artworks not found",
 		})
 		return
 	}
-	ctx.JSON(http.StatusOK, ResponseFromArtworks(artwork, isAuthorized))
+	ctx.JSON(http.StatusOK, ResponseFromArtworks(artworks, hasKey))
 }
 
 func GetArtwork(ctx *gin.Context) {
@@ -101,36 +107,7 @@ func GetLatestArtworks(ctx *gin.Context) {
 	hasKey := ctx.GetBool("auth")
 	r18Type := types.R18Type(request.R18)
 	if r18Type != types.R18TypeNone && !hasKey {
-		logged := ctx.GetBool("logged")
-		if !logged {
-			ctx.JSON(http.StatusUnauthorized, &ArtworkResponse{
-				Status:  http.StatusUnauthorized,
-				Message: "You need to login to view R18 artworks",
-			})
-			return
-		}
-		claims := ctx.MustGet("claims").(jwt.MapClaims)
-		username := claims["id"].(string)
-		user, err := service.GetUserByUsername(ctx, username)
-		if err != nil {
-			if errors.Is(err, mongo.ErrNoDocuments) {
-				ctx.JSON(http.StatusForbidden, &ArtworkResponse{
-					Status:  http.StatusForbidden,
-					Message: "Account not found",
-				})
-				return
-			}
-			Logger.Errorf("Failed to get user: %v", err)
-			ctx.JSON(http.StatusInternalServerError, &ArtworkResponse{
-				Status:  http.StatusInternalServerError,
-				Message: "Failed to get user",
-			})
-		}
-		if !user.Settings.R18 {
-			ctx.JSON(http.StatusBadRequest, &ArtworkResponse{
-				Status:  http.StatusBadRequest,
-				Message: "Your settings do not allow you to view R18 artworks",
-			})
+		if !checkR18Permission(ctx) {
 			return
 		}
 	}
@@ -159,4 +136,65 @@ func GetLatestArtworks(ctx *gin.Context) {
 		return
 	}
 	ctx.JSON(http.StatusOK, ResponseFromArtworks(artworks, hasKey))
+}
+
+func LikeArtwork(ctx *gin.Context) {
+	artworkID := ctx.MustGet("artwork_id").(primitive.ObjectID)
+	user := ctx.MustGet("user").(*model.UserModel)
+	userID := user.ID
+	err := service.CreateLike(ctx, userID, artworkID)
+	if err != nil {
+		if errors.Is(err, manyacgErrors.ErrLikeExists) {
+			ctx.JSON(http.StatusBadRequest, &ArtworkResponse{
+				Status:  http.StatusBadRequest,
+				Message: "You have liked this artwork today",
+			})
+			return
+		}
+		ctx.JSON(http.StatusInternalServerError, &ArtworkResponse{
+			Status:  http.StatusInternalServerError,
+			Message: err.Error(),
+		})
+		return
+	}
+	ctx.JSON(http.StatusOK, &ArtworkResponse{
+		Status:  http.StatusOK,
+		Message: "Success",
+	})
+}
+
+func FavoriteArtwork(ctx *gin.Context) {
+	artworkID := ctx.MustGet("artwork_id").(primitive.ObjectID)
+	user := ctx.MustGet("user").(*model.UserModel)
+	userID := user.ID
+	_, err := service.CreateFavorite(ctx, userID, artworkID)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, &ArtworkResponse{
+			Status:  http.StatusInternalServerError,
+			Message: err.Error(),
+		})
+		return
+	}
+	ctx.JSON(http.StatusOK, &ArtworkResponse{
+		Status:  http.StatusOK,
+		Message: "Success",
+	})
+}
+
+func UnfavoriteArtwork(ctx *gin.Context) {
+	artworkID := ctx.MustGet("artwork_id").(primitive.ObjectID)
+	user := ctx.MustGet("user").(*model.UserModel)
+	userID := user.ID
+	err := service.DeleteFavorite(ctx, userID, artworkID)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, &ArtworkResponse{
+			Status:  http.StatusInternalServerError,
+			Message: err.Error(),
+		})
+		return
+	}
+	ctx.JSON(http.StatusOK, &ArtworkResponse{
+		Status:  http.StatusOK,
+		Message: "Success",
+	})
 }

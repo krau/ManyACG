@@ -47,3 +47,14 @@ func ProcessPicturesAndUpdate(ctx context.Context, bot *telego.Bot, message *tel
 		))
 	}
 }
+
+func AddLikesField(ctx context.Context) error {
+	return dao.AddLikesField(ctx)
+}
+
+func Migrate(ctx context.Context) {
+	if err := AddLikesField(ctx); err != nil {
+		Logger.Errorf("Failed to add likes field: %v", err)
+	}
+	Logger.Noticef("Migration completed")
+}

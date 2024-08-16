@@ -10,13 +10,6 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
-type UnauthUserResponse struct {
-	ID         string `json:"id"`
-	Username   string `json:"username"`
-	TelegramID int64  `json:"telegram_id"`
-	// TODO:
-}
-
 func GetUnauthUser(ctx *gin.Context) {
 	objectID, ok := ctx.Get("object_id")
 	if !ok {

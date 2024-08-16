@@ -110,6 +110,11 @@ func JWTInitParamas() *jwt.GinJWTMiddleware {
 	}
 }
 
+/*
+用在一些可选登录接口上.
+
+如果登录了, 则会在 ctx 中设置 "logged" 为 true, 并设置 "claims" 为 jwt.MapClaims.
+*/
 func OptionalJWTMiddleware(ctx *gin.Context) {
 	token, err := JWTAuthMiddleware.ParseToken(ctx)
 	if err == nil && token.Valid {

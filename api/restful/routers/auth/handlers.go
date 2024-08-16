@@ -16,8 +16,8 @@ import (
 )
 
 type SendCodeRequest struct {
-	Username   string `json:"username" form:"username" binding:"required,min=4,max=20" msg:"Username must be between 4 and 20 characters"`
-	AuthMethod string `json:"auth_method" form:"auth_method" binding:"required,oneof=telegram" msg:"Auth method now only supports telegram"`
+	Username   string `json:"username" form:"username" binding:"required,min=4,max=20"`
+	AuthMethod string `json:"auth_method" form:"auth_method" binding:"required,oneof=telegram"`
 }
 
 func handleSendCode(c *gin.Context) {

@@ -17,4 +17,9 @@ var (
 	ErrIndexOOB            = errors.New("index out of bounds")
 
 	ErrStorageNotSupported = errors.New("storage not supported")
+
+	ErrNotFoundArtwork = errors.New("artwork not found")
+	ErrNotFoundUser    = errors.New("user not found")
+
+	ErrLikeExists = errors.New("like exists")
 )

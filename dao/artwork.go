@@ -139,7 +139,6 @@ func GetLatestArtworks(ctx context.Context, r18 types.R18Type, page, pageSize in
 	var artworks []*model.ArtworkModel
 	var cursor *mongo.Cursor
 	var err error
-	// opts := options.Find().SetSort(bson.M{"created_at": -1}).SetSkip((page - 1) * pageSize).SetLimit(pageSize)
 	opts := options.Find().SetSort(bson.M{"_id": -1}).SetSkip((page - 1) * pageSize).SetLimit(pageSize)
 	if r18 == types.R18TypeAll {
 		cursor, err = artworkCollection.Find(ctx, bson.M{}, opts)
@@ -166,6 +165,10 @@ func UpdateArtworkR18ByID(ctx context.Context, id primitive.ObjectID, r18 bool) 
 
 func UpdateArtworkTagsByID(ctx context.Context, id primitive.ObjectID, tags []primitive.ObjectID) (*mongo.UpdateResult, error) {
 	return artworkCollection.UpdateOne(ctx, bson.M{"_id": id}, bson.M{"$set": bson.M{"tags": tags}})
+}
+
+func IncrementArtworkLikeCountByID(ctx context.Context, id primitive.ObjectID) (*mongo.UpdateResult, error) {
+	return artworkCollection.UpdateOne(ctx, bson.M{"_id": id}, bson.M{"$inc": bson.M{"like_count": 1}})
 }
 
 func DeleteArtworkByID(ctx context.Context, id primitive.ObjectID) (*mongo.DeleteResult, error) {

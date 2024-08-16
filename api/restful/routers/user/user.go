@@ -7,5 +7,5 @@ import (
 )
 
 func RegisterRouter(r *gin.RouterGroup) {
-	r.GET("/unauth/:id", middleware.ValidateObjectID, GetUnauthUser)
+	r.GET("/unauth/:id", middleware.ValidateParamObjectID, GetUnauthUser)
 }

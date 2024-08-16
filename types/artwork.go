@@ -9,6 +9,7 @@ type Artwork struct {
 	Title       string     `json:"title" bson:"title"`
 	Description string     `json:"description" bson:"description"`
 	R18         bool       `json:"r18" bson:"r18"`
+	Likes       uint       `json:"likes" bson:"likes"`
 	CreatedAt   time.Time  `json:"created_at" bson:"created_at"`
 	SourceType  SourceType `json:"source_type" bson:"source_type"`
 	SourceURL   string     `json:"source_url" bson:"source_url"`

@@ -16,7 +16,6 @@ type FavoriteModel struct {
 	ID        primitive.ObjectID `bson:"_id,omitempty"`
 	ArtworkID primitive.ObjectID `bson:"artwork_id"`
 	UserID    primitive.ObjectID `bson:"user_id"`
-	DeletedAt primitive.DateTime `bson:"deleted_at"`
 }
 
 type UserModel struct {
@@ -27,7 +26,7 @@ type UserModel struct {
 	TelegramID int64              `bson:"telegram_id"`
 	Blocked    bool               `bson:"blocked"`
 	UpdatedAt  primitive.DateTime `bson:"updated_at"`
-	DeletedAt  primitive.DateTime `bson:"deleted_at"`
+	DeletedAt  primitive.DateTime `bson:"deleted_at,omitempty"`
 
 	// Settings
 	Settings *UserSettings `bson:"settings"`
@@ -45,6 +44,5 @@ type UnauthUserModel struct {
 	Username   string             `bson:"username"`
 	TelegramID int64              `bson:"telegram_id"`
 	Email      string             `bson:"email"`
-	CreatedAt  primitive.DateTime `bson:"created_at"`
 	AuthMethod types.AuthMethod   `bson:"auth_method"`
 }

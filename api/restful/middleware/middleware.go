@@ -67,7 +67,7 @@ func ValidatePictureID(ctx *gin.Context) {
 
 }
 
-func ValidateObjectID(ctx *gin.Context) {
+func ValidateParamObjectID(ctx *gin.Context) {
 	id := ctx.Param("id")
 	objectID, err := primitive.ObjectIDFromHex(id)
 	if err != nil {

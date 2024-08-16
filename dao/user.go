@@ -11,9 +11,7 @@ import (
 )
 
 var (
-	userCollection     *mongo.Collection
-	likeCollection     *mongo.Collection
-	favoriteCollection *mongo.Collection
+	userCollection *mongo.Collection
 )
 
 func CreateUser(ctx context.Context, user *model.UserModel) (*mongo.InsertOneResult, error) {
