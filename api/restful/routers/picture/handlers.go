@@ -21,8 +21,13 @@ func GetFile(ctx *gin.Context) {
 	if err != nil {
 		Logger.Errorf("Failed to get file: %v", err)
 		ctx.JSON(http.StatusInternalServerError, gin.H{
-			"status":  http.StatusInternalServerError,
-			"message": "Failed to get file",
+			"status": http.StatusInternalServerError,
+			"message": func() string {
+				if ctx.GetBool("auth") {
+					return err.Error()
+				}
+				return "Failed to get file"
+			}(),
 		})
 		return
 	}

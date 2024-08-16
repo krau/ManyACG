@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"ManyACG/api/restful/utils"
 	"ManyACG/common"
 	. "ManyACG/logger"
 	"ManyACG/model"
@@ -25,7 +26,7 @@ func handleSendCode(c *gin.Context) {
 	if err := c.ShouldBind(&request); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"status":  http.StatusBadRequest,
-			"message": err.Error(),
+			"message": utils.BindError(c, err),
 		})
 		return
 	}
@@ -110,7 +111,7 @@ func handleRegister(c *gin.Context) {
 	if err := c.ShouldBind(&register); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"status":  http.StatusBadRequest,
-			"message": err.Error(),
+			"message": utils.BindError(c, err),
 		})
 		return
 	}

@@ -1,6 +1,7 @@
 package artwork
 
 import (
+	"ManyACG/api/restful/utils"
 	"ManyACG/service"
 	"errors"
 	"net/http"
@@ -55,7 +56,7 @@ func validateArtworkIDMiddleware(ctx *gin.Context) {
 	if err := ctx.ShouldBind(&request); err != nil {
 		ctx.JSON(http.StatusBadRequest, &ArtworkResponse{
 			Status:  http.StatusBadRequest,
-			Message: err.Error(),
+			Message: utils.BindError(ctx, err),
 		})
 		ctx.Abort()
 		return

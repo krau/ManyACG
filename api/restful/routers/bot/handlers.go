@@ -24,9 +24,7 @@ func SendArtworkInfo(ctx *gin.Context) {
 	if err := ctx.ShouldBindJSON(&request); err != nil {
 		ctx.JSON(
 			http.StatusBadRequest,
-			gin.H{
-				"message": err.Error(),
-			},
+			gin.H{"message": err.Error()},
 		)
 		return
 	}

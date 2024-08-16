@@ -1,6 +1,7 @@
 package artwork
 
 import (
+	"ManyACG/api/restful/utils"
 	manyacgErrors "ManyACG/errors"
 	"ManyACG/model"
 	"ManyACG/service"
@@ -17,7 +18,7 @@ func RandomArtworks(ctx *gin.Context) {
 	if err := ctx.ShouldBind(&request); err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{
 			"status":  http.StatusBadRequest,
-			"message": err.Error(),
+			"message": utils.BindError(ctx, err),
 		})
 		return
 	}
@@ -32,19 +33,16 @@ func RandomArtworks(ctx *gin.Context) {
 
 	artworks, err := service.GetRandomArtworks(ctx, r18Type, request.Limit)
 	if err != nil {
-		if hasKey {
-			ctx.JSON(http.StatusInternalServerError, &ArtworkResponse{
-				Status:  http.StatusInternalServerError,
-				Message: err.Error(),
-			})
-			return
-		} else {
-			ctx.JSON(http.StatusInternalServerError, &ArtworkResponse{
-				Status:  http.StatusInternalServerError,
-				Message: "Failed to get artworks",
-			})
-			return
-		}
+		ctx.JSON(http.StatusInternalServerError, &ArtworkResponse{
+			Status: http.StatusInternalServerError,
+			Message: func() string {
+				if hasKey {
+					return err.Error()
+				}
+				return "Failed to get random artworks"
+			}(),
+		})
+		return
 	}
 	if len(artworks) == 0 {
 		ctx.JSON(http.StatusNotFound, &ArtworkResponse{
@@ -68,21 +66,17 @@ func GetArtwork(ctx *gin.Context) {
 	}
 
 	artwork, err := service.GetArtworkByID(ctx, objectID)
-	isAuthorized := ctx.GetBool("auth")
+	hasKey := ctx.GetBool("auth")
 	if err != nil {
-		if isAuthorized {
-			ctx.JSON(http.StatusInternalServerError, &ArtworkResponse{
-				Status:  http.StatusInternalServerError,
-				Message: err.Error(),
-			})
-			return
-		} else {
-			ctx.JSON(http.StatusInternalServerError, &ArtworkResponse{
-				Status:  http.StatusInternalServerError,
-				Message: "Failed to get artwork",
-			})
-			return
-		}
+		ctx.JSON(http.StatusInternalServerError, &ArtworkResponse{
+			Status: http.StatusInternalServerError,
+			Message: func() string {
+				if hasKey {
+					return err.Error()
+				}
+				return "Failed to get artwork"
+			}(),
+		})
 	}
 	if artwork == nil {
 		ctx.JSON(http.StatusNotFound, &ArtworkResponse{
@@ -91,7 +85,7 @@ func GetArtwork(ctx *gin.Context) {
 		})
 		return
 	}
-	ctx.JSON(http.StatusOK, ResponseFromArtwork(artwork, isAuthorized))
+	ctx.JSON(http.StatusOK, ResponseFromArtwork(artwork, hasKey))
 }
 
 func GetLatestArtworks(ctx *gin.Context) {
@@ -99,7 +93,7 @@ func GetLatestArtworks(ctx *gin.Context) {
 	if err := ctx.ShouldBind(&request); err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{
 			"status":  http.StatusBadRequest,
-			"message": err.Error(),
+			"message": utils.BindError(ctx, err),
 		})
 		return
 	}
@@ -114,19 +108,15 @@ func GetLatestArtworks(ctx *gin.Context) {
 
 	artworks, err := service.GetLatestArtworks(ctx, r18Type, request.Page, request.PageSize)
 	if err != nil {
-		if hasKey {
-			ctx.JSON(http.StatusInternalServerError, &ArtworkResponse{
-				Status:  http.StatusInternalServerError,
-				Message: err.Error(),
-			})
-			return
-		} else {
-			ctx.JSON(http.StatusInternalServerError, &ArtworkResponse{
-				Status:  http.StatusInternalServerError,
-				Message: "Failed to get artworks",
-			})
-			return
-		}
+		ctx.JSON(http.StatusInternalServerError, &ArtworkResponse{
+			Status: http.StatusInternalServerError,
+			Message: func() string {
+				if hasKey {
+					return err.Error()
+				}
+				return "Failed to get latest artworks"
+			}(),
+		})
 	}
 	if len(artworks) == 0 {
 		ctx.JSON(http.StatusNotFound, &ArtworkResponse{
@@ -152,8 +142,13 @@ func LikeArtwork(ctx *gin.Context) {
 			return
 		}
 		ctx.JSON(http.StatusInternalServerError, &ArtworkResponse{
-			Status:  http.StatusInternalServerError,
-			Message: err.Error(),
+			Status: http.StatusInternalServerError,
+			Message: func() string {
+				if ctx.GetBool("auth") {
+					return err.Error()
+				}
+				return "Failed to like artwork"
+			}(),
 		})
 		return
 	}
@@ -170,8 +165,13 @@ func FavoriteArtwork(ctx *gin.Context) {
 	_, err := service.CreateFavorite(ctx, userID, artworkID)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, &ArtworkResponse{
-			Status:  http.StatusInternalServerError,
-			Message: err.Error(),
+			Status: http.StatusInternalServerError,
+			Message: func() string {
+				if ctx.GetBool("auth") {
+					return err.Error()
+				}
+				return "Failed to favorite artwork"
+			}(),
 		})
 		return
 	}
@@ -188,8 +188,13 @@ func UnfavoriteArtwork(ctx *gin.Context) {
 	err := service.DeleteFavorite(ctx, userID, artworkID)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, &ArtworkResponse{
-			Status:  http.StatusInternalServerError,
-			Message: err.Error(),
+			Status: http.StatusInternalServerError,
+			Message: func() string {
+				if ctx.GetBool("auth") {
+					return err.Error()
+				}
+				return "Failed to unfavorite artwork"
+			}(),
 		})
 		return
 	}
