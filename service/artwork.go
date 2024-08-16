@@ -231,6 +231,10 @@ func GetArtworksByTags(ctx context.Context, tags [][]string, r18 types.R18Type, 
 	return artworks, nil
 }
 
+func GetArtworkCount(ctx context.Context, r18 types.R18Type) (int64, error) {
+	return dao.GetArtworkCount(ctx, r18)
+}
+
 // 使用tag名, 标题, 描述, 作者名, 作者用户名 综合查询
 //
 // 对于每个关键词, 只要tag名, 标题, 描述, 作者名, 作者用户名中有一个匹配即认为匹配成功

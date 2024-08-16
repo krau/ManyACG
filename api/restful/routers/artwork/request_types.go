@@ -14,3 +14,7 @@ type GetRandomArtworksRequest struct {
 type ArtworkIDRequest struct {
 	ArtworkID string `form:"artwork_id" binding:"required" json:"artwork_id"`
 }
+
+type R18Request struct {
+	R18 int `form:"r18,default=0" binding:"gte=0,lte=2" json:"r18"`
+}

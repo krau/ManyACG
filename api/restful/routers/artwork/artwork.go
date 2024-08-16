@@ -16,11 +16,18 @@ func RegisterRouter(r *gin.RouterGroup) {
 		"/list",
 		middleware.OptionalJWTMiddleware,
 		GetLatestArtworks)
+	r.GET("/count", GetArtworkCount)
 	r.POST("/like",
 		middleware.JWTAuthMiddleware.MiddlewareFunc(),
 		validateArtworkIDMiddleware,
 		checkArtworkAndUserMiddleware,
 		LikeArtwork)
+
+	r.GET("/favorite",
+		middleware.JWTAuthMiddleware.MiddlewareFunc(),
+		validateArtworkIDMiddleware,
+		checkArtworkAndUserMiddleware,
+		GetArtworkFavoriteStatus)
 	r.POST("/favorite",
 		middleware.JWTAuthMiddleware.MiddlewareFunc(),
 		validateArtworkIDMiddleware,

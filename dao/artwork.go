@@ -131,8 +131,11 @@ func GetArtworksByArtistID(ctx context.Context, artistID primitive.ObjectID, r18
 	return artworks, nil
 }
 
-func GetArtworkCount(ctx context.Context) (int64, error) {
-	return artworkCollection.CountDocuments(ctx, bson.M{})
+func GetArtworkCount(ctx context.Context, r18 types.R18Type) (int64, error) {
+	if r18 == types.R18TypeAll {
+		return artworkCollection.CountDocuments(ctx, bson.M{})
+	}
+	return artworkCollection.CountDocuments(ctx, bson.M{"r18": r18 == types.R18TypeOnly})
 }
 
 func GetLatestArtworks(ctx context.Context, r18 types.R18Type, page, pageSize int64) ([]*model.ArtworkModel, error) {

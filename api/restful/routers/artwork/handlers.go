@@ -3,6 +3,7 @@ package artwork
 import (
 	"ManyACG/api/restful/utils"
 	manyacgErrors "ManyACG/errors"
+	. "ManyACG/logger"
 	"ManyACG/model"
 	"ManyACG/service"
 	"ManyACG/types"
@@ -128,6 +129,32 @@ func GetLatestArtworks(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, ResponseFromArtworks(artworks, hasKey))
 }
 
+func GetArtworkCount(ctx *gin.Context) {
+	var request R18Request
+	if err := ctx.ShouldBind(&request); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{
+			"status":  http.StatusBadRequest,
+			"message": utils.BindError(ctx, err),
+		})
+		return
+	}
+	r18Type := types.R18Type(request.R18)
+	count, err := service.GetArtworkCount(ctx, r18Type)
+	if err != nil {
+		Logger.Error(err)
+		ctx.JSON(http.StatusInternalServerError, &ArtworkResponse{
+			Status:  http.StatusInternalServerError,
+			Message: "Failed to get artwork count",
+		})
+		return
+	}
+	ctx.JSON(http.StatusOK, &ArtworkResponse{
+		Status:  http.StatusOK,
+		Message: "Success",
+		Data:    count,
+	})
+}
+
 func LikeArtwork(ctx *gin.Context) {
 	artworkID := ctx.MustGet("artwork_id").(primitive.ObjectID)
 	user := ctx.MustGet("user").(*model.UserModel)
@@ -155,6 +182,30 @@ func LikeArtwork(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, &ArtworkResponse{
 		Status:  http.StatusOK,
 		Message: "Success",
+	})
+}
+
+func GetArtworkFavoriteStatus(ctx *gin.Context) {
+	artworkID := ctx.MustGet("artwork_id").(primitive.ObjectID)
+	user := ctx.MustGet("user").(*model.UserModel)
+	userID := user.ID
+	favorite, err := service.GetFavorite(ctx, userID, artworkID)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, &ArtworkResponse{
+			Status: http.StatusInternalServerError,
+			Message: func() string {
+				if ctx.GetBool("auth") {
+					return err.Error()
+				}
+				return "Failed to get favorite status"
+			}(),
+		})
+		return
+	}
+	ctx.JSON(http.StatusOK, &ArtworkResponse{
+		Status:  http.StatusOK,
+		Message: "Success",
+		Data:    favorite != nil,
 	})
 }
 

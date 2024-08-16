@@ -2,6 +2,7 @@ package service
 
 import (
 	"ManyACG/dao"
+	"ManyACG/types"
 	"context"
 )
 
@@ -14,7 +15,7 @@ type stats struct {
 }
 
 func GetDatabaseStats(ctx context.Context) (*stats, error) {
-	totalArtworks, err := dao.GetArtworkCount(ctx)
+	totalArtworks, err := dao.GetArtworkCount(ctx, types.R18TypeAll)
 	if err != nil {
 		return nil, err
 	}
