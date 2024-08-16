@@ -12,6 +12,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo"
 )
 
 func RandomArtworks(ctx *gin.Context) {
@@ -191,6 +192,14 @@ func GetArtworkFavoriteStatus(ctx *gin.Context) {
 	userID := user.ID
 	favorite, err := service.GetFavorite(ctx, userID, artworkID)
 	if err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			ctx.JSON(http.StatusOK, &ArtworkResponse{
+				Status:  http.StatusOK,
+				Message: "Success",
+				Data:    false,
+			})
+			return
+		}
 		ctx.JSON(http.StatusInternalServerError, &ArtworkResponse{
 			Status: http.StatusInternalServerError,
 			Message: func() string {
