@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"ManyACG/model"
+	"ManyACG/types"
 
 	"github.com/corona10/goimagehash"
 	"go.mongodb.org/mongo-driver/bson"
@@ -21,7 +22,7 @@ func CreatePictures(ctx context.Context, pictures []*model.PictureModel) (*mongo
 	var docs []interface{}
 	for _, picture := range pictures {
 		if picture.TelegramInfo == nil {
-			picture.TelegramInfo = &model.TelegramInfo{}
+			picture.TelegramInfo = &types.TelegramInfo{}
 		}
 		docs = append(docs, picture)
 	}
@@ -132,7 +133,7 @@ func GetPictureCount(ctx context.Context) (int64, error) {
 	return pictureCollection.CountDocuments(ctx, bson.M{})
 }
 
-func UpdatePictureTelegramInfoByID(ctx context.Context, id primitive.ObjectID, telegramInfo *model.TelegramInfo) (*mongo.UpdateResult, error) {
+func UpdatePictureTelegramInfoByID(ctx context.Context, id primitive.ObjectID, telegramInfo *types.TelegramInfo) (*mongo.UpdateResult, error) {
 	return pictureCollection.UpdateOne(ctx, bson.M{"_id": id}, bson.M{"$set": bson.M{"telegram_info": telegramInfo}})
 }
 

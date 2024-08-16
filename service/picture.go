@@ -39,7 +39,7 @@ func UpdatePictureTelegramInfo(ctx context.Context, picture *types.Picture, tele
 	}
 	defer session.EndSession(ctx)
 	_, err = session.WithTransaction(ctx, func(ctx mongo.SessionContext) (interface{}, error) {
-		_, err := dao.UpdatePictureTelegramInfoByID(ctx, pictureModel.ID, (*model.TelegramInfo)(telegramInfo))
+		_, err := dao.UpdatePictureTelegramInfoByID(ctx, pictureModel.ID, telegramInfo)
 		if err != nil {
 			return nil, err
 		}

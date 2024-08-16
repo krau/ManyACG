@@ -18,6 +18,7 @@ type ArtworkResponseData struct {
 	Description string             `json:"description"`
 	SourceURL   string             `json:"source_url"`
 	R18         bool               `json:"r18"`
+	LikeCount   uint               `json:"like_count"`
 	Tags        []string           `json:"tags"`
 	Artist      *types.Artist      `json:"artist"`
 	SourceType  types.SourceType   `json:"source_type"`
@@ -69,6 +70,7 @@ func ResponseDataFromArtwork(artwork *types.Artwork) *ArtworkResponseData {
 		Description: artwork.Description,
 		SourceURL:   artwork.SourceURL,
 		R18:         artwork.R18,
+		LikeCount:   artwork.LikeCount,
 		Tags:        artwork.Tags,
 		Artist:      artwork.Artist,
 		SourceType:  artwork.SourceType,

@@ -7,26 +7,26 @@ import (
 )
 
 type ArtworkModel struct {
-	ID          primitive.ObjectID `bson:"_id,omitempty"`
-	Title       string             `bson:"title"`
-	Description string             `bson:"description"`
-	R18         bool               `bson:"r18"`
-	CreatedAt   primitive.DateTime `bson:"created_at"`
-	SourceType  types.SourceType   `bson:"source_type"`
-	SourceURL   string             `bson:"source_url"`
-	LikeCount   uint               `bson:"like_count"`
+	ID          primitive.ObjectID `bson:"_id,omitempty" json:"id,omitempty"`
+	Title       string             `bson:"title" json:"title"`
+	Description string             `bson:"description" json:"description"`
+	R18         bool               `bson:"r18" json:"r18"`
+	CreatedAt   primitive.DateTime `bson:"created_at" json:"created_at"`
+	SourceType  types.SourceType   `bson:"source_type" json:"source_type"`
+	SourceURL   string             `bson:"source_url" json:"source_url"`
+	LikeCount   uint               `bson:"like_count" json:"like_count"`
 
-	ArtistID primitive.ObjectID   `bson:"artist_id"`
-	Tags     []primitive.ObjectID `bson:"tags"`
-	Pictures []primitive.ObjectID `bson:"pictures"`
+	ArtistID primitive.ObjectID   `bson:"artist_id" json:"artist_id"`
+	Tags     []primitive.ObjectID `bson:"tags" json:"tags"`
+	Pictures []primitive.ObjectID `bson:"pictures" json:"pictures"`
 }
 
 type ArtistModel struct {
-	ID       primitive.ObjectID `bson:"_id,omitempty"`
-	Name     string             `bson:"name"`
-	Type     types.SourceType   `bson:"type"`
-	UID      int                `bson:"uid"`
-	Username string             `bson:"username"`
+	ID       primitive.ObjectID `bson:"_id,omitempty" json:"id,omitempty"`
+	Name     string             `bson:"name" json:"name"`
+	Type     types.SourceType   `bson:"type" json:"type"`
+	UID      int                `bson:"uid" json:"uid"`
+	Username string             `bson:"username" json:"username"`
 }
 
 type TagModel struct {
@@ -36,49 +36,37 @@ type TagModel struct {
 }
 
 type PictureModel struct {
-	ID        primitive.ObjectID `bson:"_id,omitempty"`
-	ArtworkID primitive.ObjectID `bson:"artwork_id"`
-	Index     uint               `bson:"index"`
-	Thumbnail string             `bson:"thumbnail"`
-	Original  string             `bson:"original"`
-	Width     uint               `bson:"width"`
-	Height    uint               `bson:"height"`
-	Hash      string             `bson:"hash"`
-	BlurScore float64            `bson:"blur_score"`
+	ID        primitive.ObjectID `bson:"_id,omitempty" json:"id,omitempty"`
+	ArtworkID primitive.ObjectID `bson:"artwork_id" json:"artwork_id"`
+	Index     uint               `bson:"index" json:"index"`
+	Thumbnail string             `bson:"thumbnail" json:"thumbnail"`
+	Original  string             `bson:"original" json:"original"`
+	Width     uint               `bson:"width" json:"width"`
+	Height    uint               `bson:"height" json:"height"`
+	Hash      string             `bson:"hash" json:"hash"`
+	BlurScore float64            `bson:"blur_score" json:"blur_score"`
 
-	TelegramInfo *TelegramInfo `bson:"telegram_info"`
-	StorageInfo  *StorageInfo  `bson:"storage_info"`
-}
-
-type TelegramInfo struct {
-	PhotoFileID    string `bson:"photo_file_id"`
-	DocumentFileID string `bson:"document_file_id"`
-	MessageID      int    `bson:"message_id"`
-	MediaGroupID   string `bson:"media_group_id"`
-}
-
-type StorageInfo struct {
-	Type types.StorageType `bson:"type"`
-	Path string            `bson:"path"`
+	TelegramInfo *types.TelegramInfo `bson:"telegram_info" json:"telegram_info"`
+	StorageInfo  *types.StorageInfo  `bson:"storage_info" json:"storage_info"`
 }
 
 type DeletedModel struct {
-	ID        primitive.ObjectID `bson:"_id,omitempty"`
-	ArtworkID primitive.ObjectID `bson:"artwork_id"`
-	SourceURL string             `bson:"source_url"`
-	DeletedAt primitive.DateTime `bson:"deleted_at"`
+	ID        primitive.ObjectID `bson:"_id,omitempty" json:"id,omitempty"`
+	ArtworkID primitive.ObjectID `bson:"artwork_id" json:"artwork_id"`
+	SourceURL string             `bson:"source_url" json:"source_url"`
+	DeletedAt primitive.DateTime `bson:"deleted_at" json:"deleted_at"`
 }
 
 type CallbackDataModel struct {
-	ID        primitive.ObjectID `bson:"_id,omitempty"`
-	Data      string             `bson:"data"`
-	CreatedAt primitive.DateTime `bson:"created_at"`
+	ID        primitive.ObjectID `bson:"_id,omitempty" json:"id,omitempty"`
+	Data      string             `bson:"data" json:"data"`
+	CreatedAt primitive.DateTime `bson:"created_at" json:"created_at"`
 }
 
 type CachedArtworksModel struct {
-	ID        primitive.ObjectID  `bson:"_id,omitempty"`
-	SourceURL string              `bson:"source_url"`
-	CreatedAt primitive.DateTime  `bson:"created_at"`
-	Artwork   *types.Artwork      `bson:"artwork"`
-	Status    types.ArtworkStatus `bson:"status"`
+	ID        primitive.ObjectID  `bson:"_id,omitempty" json:"id,omitempty"`
+	SourceURL string              `bson:"source_url" json:"source_url"`
+	CreatedAt primitive.DateTime  `bson:"created_at" json:"created_at"`
+	Artwork   *types.Artwork      `bson:"artwork" json:"artwork"`
+	Status    types.ArtworkStatus `bson:"status" json:"status"`
 }

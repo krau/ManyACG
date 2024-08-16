@@ -1,8 +1,13 @@
 package cmd
 
 import (
+	"ManyACG/config"
+	"ManyACG/dao"
+	"ManyACG/logger"
 	"ManyACG/service"
 	"context"
+	"os"
+	"time"
 
 	"github.com/spf13/cobra"
 )
@@ -21,5 +26,17 @@ func init() {
 }
 
 func Migrate() {
+	config.InitConfig()
+	logger.InitLogger()
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	logger.Logger.Info("Start migrating")
+	dao.InitDB(ctx)
+	defer func() {
+		if err := dao.Client.Disconnect(ctx); err != nil {
+			logger.Logger.Fatal(err)
+			os.Exit(1)
+		}
+	}()
 	service.Migrate(context.Background())
 }

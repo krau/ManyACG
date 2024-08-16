@@ -114,8 +114,8 @@ func CreateArtwork(ctx context.Context, artwork *types.Artwork) (*types.Artwork,
 				Height:       picture.Height,
 				Hash:         picture.Hash,
 				BlurScore:    picture.BlurScore,
-				TelegramInfo: (*model.TelegramInfo)(picture.TelegramInfo),
-				StorageInfo:  (*model.StorageInfo)(picture.StorageInfo),
+				TelegramInfo: picture.TelegramInfo,
+				StorageInfo:  picture.StorageInfo,
 			}
 			pictureModels[i] = pictureModel
 		}
