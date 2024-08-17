@@ -33,6 +33,7 @@ type PictureResponse struct {
 	Hash      string  `json:"hash"`
 	BlurScore float64 `json:"blur_score"`
 	FileName  string  `json:"file_name"`
+	Thumbnail string  `json:"thumbnail"`
 }
 
 func ResponseFromArtwork(artwork *types.Artwork, isAuthorized bool) *ArtworkResponse {
@@ -60,6 +61,7 @@ func ResponseDataFromArtwork(artwork *types.Artwork) *ArtworkResponseData {
 			Index:     picture.Index,
 			Hash:      picture.Hash,
 			BlurScore: picture.BlurScore,
+			Thumbnail: picture.Thumbnail,
 			FileName:  filepath.Base(picture.StorageInfo.Path), // TODO:
 		}
 	}
