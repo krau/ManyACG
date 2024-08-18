@@ -4,22 +4,24 @@ import (
 	. "ManyACG/logger"
 	"ManyACG/service"
 	"net/http"
-	"strconv"
 
 	"github.com/gin-gonic/gin"
 )
 
+type GetRandomTagsRequest struct {
+	Limit int `form:"limit,default=20" binding:"gte=1,lte=200" json:"limit"`
+}
+
 func GetRandomTags(ctx *gin.Context) {
-	limitStr := ctx.DefaultQuery("limit", "20")
-	limit, err := strconv.Atoi(limitStr)
-	if err != nil || limit < 1 {
+	var request GetRandomTagsRequest
+	if err := ctx.ShouldBind(&request); err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{
 			"status":  http.StatusBadRequest,
-			"message": "Invalid limit value",
+			"message": "Invalid request",
 		})
 		return
 	}
-	tags, err := service.GetRandomTagModels(ctx, limit)
+	tags, err := service.GetRandomTagModels(ctx, request.Limit)
 	if err != nil {
 		Logger.Errorf("Failed to get tags: %v", err)
 		ctx.JSON(http.StatusInternalServerError, gin.H{
