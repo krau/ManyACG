@@ -44,6 +44,11 @@ func RegisterHandlers(hg *telegohandler.HandlerGroup) {
 
 	sourceURLGroup := hg.Group(telegohandler.AnyMessage())
 	sourceURLGroup.Use(func(bot *telego.Bot, update telego.Update, next telegohandler.Handler) {
+		if update.Message.ViaBot != nil {
+			if update.Message.ViaBot.Username == BotUsername {
+				return
+			}
+		}
 		sourceURL := utils.FindSourceURLForMessage(update.Message)
 		if sourceURL == "" {
 			return
