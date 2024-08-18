@@ -41,6 +41,9 @@ func RegisterHandlers(hg *telegohandler.HandlerGroup) {
 	hg.HandleCallbackQueryCtx(ArtworkPreview, telegohandler.CallbackDataContains("artwork_preview"))
 	hg.HandleInlineQueryCtx(InlineQuery)
 	hg.HandleMessageCtx(GetArtworkInfo, func(update telego.Update) bool {
+		if update.Message.ViaBot != nil && update.Message.ViaBot.Username == BotUsername {
+			return false
+		}
 		return utils.FindSourceURLForMessage(update.Message) != ""
 	})
 }
