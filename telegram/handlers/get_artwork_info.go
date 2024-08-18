@@ -13,7 +13,7 @@ import (
 
 func GetArtworkInfo(ctx context.Context, bot *telego.Bot, message telego.Message) {
 	hasPermission := CheckPermissionInGroup(ctx, message, types.PermissionGetArtworkInfo)
-	sourceURL := ctx.Value("sourceURL").(string)
+	sourceURL := utils.FindSourceURLForMessage(&message)
 	var waitMessageID int
 	if hasPermission {
 		go func() {

@@ -3,7 +3,6 @@ package handlers
 import (
 	"ManyACG/config"
 	"ManyACG/telegram/utils"
-	"context"
 
 	"github.com/mymmrac/telego"
 	"github.com/mymmrac/telego/telegohandler"
@@ -41,21 +40,7 @@ func RegisterHandlers(hg *telegohandler.HandlerGroup) {
 	hg.HandleCallbackQueryCtx(SearchPictureCallbackQuery, telegohandler.CallbackDataPrefix("search_picture"))
 	hg.HandleCallbackQueryCtx(ArtworkPreview, telegohandler.CallbackDataContains("artwork_preview"))
 	hg.HandleInlineQueryCtx(InlineQuery)
-
-	sourceURLGroup := hg.Group(telegohandler.AnyMessage())
-	sourceURLGroup.Use(func(bot *telego.Bot, update telego.Update, next telegohandler.Handler) {
-		if update.Message.ViaBot != nil {
-			if update.Message.ViaBot.Username == BotUsername {
-				return
-			}
-		}
-		sourceURL := utils.FindSourceURLForMessage(update.Message)
-		if sourceURL == "" {
-			return
-		}
-		ctx := context.WithValue(update.Context(), "sourceURL", sourceURL)
-		next(bot, update.WithContext(ctx))
+	hg.HandleMessageCtx(GetArtworkInfo, func(update telego.Update) bool {
+		return utils.FindSourceURLForMessage(update.Message) != ""
 	})
-
-	sourceURLGroup.HandleMessageCtx(GetArtworkInfo)
 }
