@@ -16,7 +16,6 @@ func Help(ctx context.Context, bot *telego.Bot, message telego.Message) {
 /search - 搜索相似图片
 /info - 计算图片信息
 /stats - 获取统计数据
-
 `
 
 	if IsChannelAvailable {

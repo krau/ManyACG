@@ -17,6 +17,7 @@ import (
 
 	"github.com/mymmrac/telego"
 	"github.com/mymmrac/telego/telegoutil"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
@@ -213,7 +214,12 @@ func afterCreate(ctx context.Context, artwork *types.Artwork, bot *telego.Bot, f
 		Logger.Errorf("error when getting artwork by URL: %s", err)
 		if sendNotify {
 			bot.SendMessage(telegoutil.Messagef(telegoutil.ID(fromID),
-				"刚刚发布的作品 [%s](%s) 后续处理失败\\: \n无法获取作品信息\\: %s", artworkTitleMarkdown, GetArtworkPostMessageURL(artwork.Pictures[0].TelegramInfo.MessageID, ChannelChatID), err).
+				"刚刚发布的作品 [%s](%s) 后续处理失败\\: \n无法获取作品信息\\: %s", artworkTitleMarkdown, func() string {
+					if artwork.Pictures[0].TelegramInfo.MessageID != 0 {
+						return GetArtworkPostMessageURL(artwork.Pictures[0].TelegramInfo.MessageID, ChannelChatID)
+					}
+					return artwork.SourceURL
+				}(), err).
 				WithParseMode(telego.ModeMarkdownV2))
 		}
 		return
@@ -252,20 +258,36 @@ func afterCreate(ctx context.Context, artwork *types.Artwork, bot *telego.Bot, f
 
 		text := fmt.Sprintf("*刚刚发布的作品 [%s](%s) 中第 %d 张图片搜索到有%d个相似图片*\n",
 			artworkTitleMarkdown,
-			common.EscapeMarkdown(GetArtworkPostMessageURL(picture.TelegramInfo.MessageID, ChannelChatID)),
+			common.EscapeMarkdown(func() string {
+				if picture.TelegramInfo.MessageID != 0 {
+					return GetArtworkPostMessageURL(picture.TelegramInfo.MessageID, ChannelChatID)
+				}
+				return artwork.SourceURL
+			}()),
 			picture.Index+1,
 			len(similarPictures))
 		text += common.EscapeMarkdown(fmt.Sprintf("该图像模糊度: %.2f\n搜索到的相似图片列表:\n\n", picture.BlurScore))
 		for _, similarPicture := range similarPictures {
-			artworkOfSimilarPicture, err := service.GetArtworkByMessageID(ctx, similarPicture.TelegramInfo.MessageID)
+			pictureObjectID, err := primitive.ObjectIDFromHex(similarPicture.ID)
 			if err != nil {
-				text += common.EscapeMarkdown(fmt.Sprintf("%s 模糊度: %.2f\n\n", GetArtworkPostMessageURL(picture.TelegramInfo.MessageID, ChannelChatID), similarPicture.BlurScore))
+				Logger.Errorf("invalid ObjectID: %s", similarPicture.ID)
+				continue
+			}
+
+			artworkOfSimilarPicture, err := service.GetArtworkByID(ctx, pictureObjectID)
+			if err != nil {
+				Logger.Warnf("error when getting artwork by ID: %s", err)
 				continue
 			}
 			text += fmt.Sprintf("[%s\\_%d](%s)  ",
 				common.EscapeMarkdown(artworkOfSimilarPicture.Title),
 				similarPicture.Index+1,
-				common.EscapeMarkdown(GetArtworkPostMessageURL(similarPicture.TelegramInfo.MessageID, ChannelChatID)))
+				common.EscapeMarkdown(func() string {
+					if similarPicture.TelegramInfo.MessageID != 0 {
+						return GetArtworkPostMessageURL(similarPicture.TelegramInfo.MessageID, ChannelChatID)
+					}
+					return artworkOfSimilarPicture.SourceURL
+				}()))
 			text += common.EscapeMarkdown(fmt.Sprintf("模糊度: %.2f\n\n", similarPicture.BlurScore))
 		}
 		text += "_模糊度使用原图文件计算得出, 越小图像质量越好_"

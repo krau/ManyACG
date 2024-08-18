@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"ManyACG/common"
+	. "ManyACG/logger"
 	"ManyACG/service"
 	"ManyACG/telegram/utils"
 	"ManyACG/types"
@@ -10,6 +11,7 @@ import (
 
 	"github.com/mymmrac/telego"
 	"github.com/mymmrac/telego/telegoutil"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 func SearchPicture(ctx context.Context, bot *telego.Bot, message telego.Message) {
@@ -66,8 +68,14 @@ func getSearchResult(ctx context.Context, hasPermission bool, fileBytes []byte) 
 	if len(pictures) > 0 {
 		text := fmt.Sprintf("找到%d张相似的图片\n\n", len(pictures))
 		for _, picture := range pictures {
-			artwork, err := service.GetArtworkByMessageID(ctx, picture.TelegramInfo.MessageID)
+			artworkObjectID, err := primitive.ObjectIDFromHex(picture.ArtworkID)
 			if err != nil {
+				Logger.Errorf("无效的ObjectID: %s", picture.ID)
+				continue
+			}
+			artwork, err := service.GetArtworkByID(ctx, artworkObjectID)
+			if err != nil {
+				Logger.Errorf("获取作品信息失败: %s", err)
 				continue
 			}
 			text += fmt.Sprintf("[%s\\_%d](%s)\n",
@@ -75,7 +83,7 @@ func getSearchResult(ctx context.Context, hasPermission bool, fileBytes []byte) 
 				picture.Index+1,
 				common.EscapeMarkdown(artwork.SourceURL),
 			)
-			if channelMessageAvailable {
+			if channelMessageAvailable && picture.TelegramInfo != nil && picture.TelegramInfo.MessageID != 0 {
 				text += fmt.Sprintf("[频道消息](%s)\n", utils.GetArtworkPostMessageURL(picture.TelegramInfo.MessageID, ChannelChatID))
 			}
 			text += common.EscapeMarkdown(fmt.Sprintf("模糊度: %.2f\n\n", picture.BlurScore))

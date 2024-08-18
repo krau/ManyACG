@@ -20,7 +20,7 @@ var (
 	BotUsername        string // 没有 @
 	ChannelChatID      telego.ChatID
 	GroupChatID        telego.ChatID // 附属群组
-	IsChannelAvailable bool
+	IsChannelAvailable bool          // 是否可以发布到频道
 )
 
 var (

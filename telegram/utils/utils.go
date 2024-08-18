@@ -218,7 +218,7 @@ func SendPictureFileByID(ctx context.Context, bot *telego.Bot, message telego.Me
 		WithReplyParameters(&telego.ReplyParameters{
 			MessageID: message.MessageID,
 		})
-	if IsChannelAvailable {
+	if IsChannelAvailable && picture.TelegramInfo != nil && picture.TelegramInfo.MessageID != 0 {
 		document.WithReplyMarkup(telegoutil.InlineKeyboard([]telego.InlineKeyboardButton{
 			telegoutil.InlineKeyboardButton("详情").WithURL(GetArtworkPostMessageURL(picture.TelegramInfo.MessageID, channelChatID)),
 		}))

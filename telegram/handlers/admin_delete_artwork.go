@@ -40,6 +40,11 @@ func DeletePicture(ctx context.Context, bot *telego.Bot, message telego.Message)
 		}
 		channelMessageID = originChannel.MessageID
 	}
+
+	if channelMessageID == 0 {
+		return
+	}
+
 	if cmd == "del" {
 		picture, err := service.GetPictureByMessageID(ctx, channelMessageID)
 		if err != nil {

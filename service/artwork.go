@@ -154,6 +154,7 @@ func GetArtworkByURL(ctx context.Context, sourceURL string, opts ...*adapter.Ada
 	return adapter.ConvertToArtwork(ctx, artworkModel, opts...)
 }
 
+// Deprecated: MessageID 现在可能为 0
 func GetArtworkByMessageID(ctx context.Context, messageID int, opts ...*adapter.AdapterOption) (*types.Artwork, error) {
 	pictureModel, err := dao.GetPictureByMessageID(ctx, messageID)
 	if err != nil {

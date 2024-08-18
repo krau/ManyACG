@@ -29,6 +29,7 @@ func CreatePictures(ctx context.Context, pictures []*model.PictureModel) (*mongo
 	return pictureCollection.InsertMany(ctx, docs)
 }
 
+// Deprecated: MessageID 现在可能为 0
 func GetPictureByMessageID(ctx context.Context, messageID int) (*model.PictureModel, error) {
 	var picture model.PictureModel
 	err := pictureCollection.FindOne(ctx, bson.M{"telegram_info.message_id": messageID}).Decode(&picture)

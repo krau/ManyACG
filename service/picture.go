@@ -12,6 +12,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
+// Deprecated: MessageID 现在可能为 0
 func GetPictureByMessageID(ctx context.Context, messageID int) (*types.Picture, error) {
 	pictureModel, err := dao.GetPictureByMessageID(ctx, messageID)
 	if err != nil {
@@ -52,7 +53,7 @@ func UpdatePictureTelegramInfo(ctx context.Context, picture *types.Picture, tele
 }
 
 /*
-	删除 Picture
+通过消息删除 Picture
 
 如果删除后 Artwork 中没有 Picture , 则也删除 Artwork
 
