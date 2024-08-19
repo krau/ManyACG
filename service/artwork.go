@@ -4,7 +4,9 @@ import (
 	"ManyACG/adapter"
 	"ManyACG/common"
 	"ManyACG/dao"
-	es "ManyACG/errors"
+	manyacgErrors "ManyACG/errors"
+
+	. "ManyACG/logger"
 	"ManyACG/model"
 	"ManyACG/types"
 	"context"
@@ -20,10 +22,10 @@ func CreateArtwork(ctx context.Context, artwork *types.Artwork) (*types.Artwork,
 		return nil, err
 	}
 	if artworkModel != nil {
-		return nil, es.ErrArtworkAlreadyExist
+		return nil, manyacgErrors.ErrArtworkAlreadyExist
 	}
 	if dao.CheckDeletedByURL(ctx, artwork.SourceURL) {
-		return nil, es.ErrArtworkDeleted
+		return nil, manyacgErrors.ErrArtworkDeleted
 	}
 
 	session, err := dao.Client.StartSession()
@@ -342,14 +344,21 @@ func DeleteArtworkByURL(ctx context.Context, sourceURL string) error {
 			SourceURL: sourceURL,
 			ArtworkID: artworkModel.ID,
 		})
+
 		if err != nil {
 			return nil, err
 		}
+
 		return nil, nil
 	})
 	if err != nil {
 		return err
 	}
+
+	if err := UpdateCachedArtworkStatusByURL(ctx, sourceURL, types.ArtworkStatusCached); err != nil {
+		Logger.Warnf("更新缓存作品状态失败: %s", err)
+	}
+
 	return nil
 }
 
@@ -386,5 +395,10 @@ func DeleteArtworkByID(ctx context.Context, id primitive.ObjectID) error {
 	if err != nil {
 		return err
 	}
+
+	if err := UpdateCachedArtworkStatusByURL(ctx, artworkModel.SourceURL, types.ArtworkStatusCached); err != nil {
+		Logger.Warnf("更新缓存作品状态失败: %s", err)
+	}
+
 	return nil
 }
