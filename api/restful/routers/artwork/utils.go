@@ -45,8 +45,8 @@ func checkR18Permission(ctx *gin.Context) bool {
 		return false
 	}
 	if !user.Settings.R18 {
-		ctx.JSON(http.StatusBadRequest, &ArtworkResponse{
-			Status:  http.StatusBadRequest,
+		ctx.JSON(http.StatusForbidden, &ArtworkResponse{
+			Status:  http.StatusForbidden,
 			Message: "Your settings do not allow you to view this artworks",
 		})
 		return false
