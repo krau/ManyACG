@@ -70,6 +70,13 @@ func GetArtwork(ctx *gin.Context) {
 	artwork, err := service.GetArtworkByID(ctx, objectID)
 	hasKey := ctx.GetBool("auth")
 	if err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			ctx.JSON(http.StatusNotFound, &ArtworkResponse{
+				Status:  http.StatusNotFound,
+				Message: "Artwork not found",
+			})
+			return
+		}
 		ctx.JSON(http.StatusInternalServerError, &ArtworkResponse{
 			Status: http.StatusInternalServerError,
 			Message: func() string {
@@ -79,6 +86,7 @@ func GetArtwork(ctx *gin.Context) {
 				return "Failed to get artwork"
 			}(),
 		})
+		return
 	}
 	if artwork == nil {
 		ctx.JSON(http.StatusNotFound, &ArtworkResponse{
