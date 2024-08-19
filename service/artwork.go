@@ -265,6 +265,14 @@ func UpdateArtworkR18ByURL(ctx context.Context, sourceURL string, r18 bool) erro
 	return nil
 }
 
+func UpdateArtworkR18ByID(ctx context.Context, id primitive.ObjectID, r18 bool) error {
+	_, err := dao.UpdateArtworkR18ByID(ctx, id, r18)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func UpdateArtworkTagsByURL(ctx context.Context, sourceURL string, tags []string) error {
 	artworkModel, err := dao.GetArtworkByURL(ctx, sourceURL)
 	if err != nil {

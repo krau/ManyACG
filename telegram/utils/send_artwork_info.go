@@ -63,7 +63,7 @@ func SendArtworkInfo(ctx context.Context, bot *telego.Bot, params *SendArtworkIn
 		caption += fmt.Sprintf("\n<i>这是一个在 %s 删除的作品\n如果发布则会取消删除</i>", common.EscapeHTML(deleteModel.DeletedAt.Time().Format("2006-01-02 15:04:05")))
 	}
 
-	replyMarkup, err := getArtworkInfoReplyMarkup(ctx, artwork, isCreated)
+	replyMarkup, err := getArtworkInfoReplyMarkup(ctx, artwork, isCreated, params.HasPermission)
 	if err != nil {
 		return fmt.Errorf("获取 ReplyMarkup 失败: %w", err)
 	}
@@ -129,9 +129,22 @@ func SendArtworkInfo(ctx context.Context, bot *telego.Bot, params *SendArtworkIn
 	return nil
 }
 
-func getArtworkInfoReplyMarkup(ctx context.Context, artwork *types.Artwork, isCreated bool) (telego.ReplyMarkup, error) {
+func getArtworkInfoReplyMarkup(ctx context.Context, artwork *types.Artwork, isCreated, hasPermission bool) (telego.ReplyMarkup, error) {
 	if isCreated {
-		return GetPostedPictureReplyMarkup(artwork, 0, ChannelChatID, BotUsername), nil
+		baseKeyboard := GetPostedPictureInlineKeyboardButton(artwork, 0, ChannelChatID, BotUsername)
+		if hasPermission {
+			return telegoutil.InlineKeyboard(
+				baseKeyboard,
+				[]telego.InlineKeyboardButton{
+					telegoutil.InlineKeyboardButton("更改R18").WithCallbackData("edit_artwork r18 " + artwork.ID + func() string {
+						if artwork.R18 {
+							return " 0"
+						}
+						return " 1"
+					}()),
+				},
+			), nil
+		}
 	}
 	cbId, err := service.CreateCallbackData(ctx, artwork.SourceURL)
 	if err != nil {

@@ -10,6 +10,7 @@ import (
 
 	"github.com/mymmrac/telego"
 	"github.com/mymmrac/telego/telegoutil"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 func SetArtworkR18(ctx context.Context, bot *telego.Bot, message telego.Message) {
@@ -94,4 +95,62 @@ func SetArtworkTags(ctx context.Context, bot *telego.Bot, message telego.Message
 		ParseMode: telego.ModeHTML,
 	})
 	utils.ReplyMessage(bot, message, "更新作品标签成功")
+}
+
+func EditArtworkR18(ctx context.Context, bot *telego.Bot, query telego.CallbackQuery) {
+	if !CheckPermissionForQuery(ctx, query, types.PermissionEditArtwork) {
+		bot.AnswerCallbackQuery(
+			&telego.AnswerCallbackQueryParams{
+				CallbackQueryID: query.ID,
+				Text:            "你没有编辑作品的权限",
+				ShowAlert:       true,
+				CacheTime:       60,
+			},
+		)
+		return
+	}
+	args := strings.Split(query.Data, " ")
+	// edit_artwork r18 id 1
+	if len(args) != 4 {
+		bot.AnswerCallbackQuery(
+			&telego.AnswerCallbackQueryParams{
+				CallbackQueryID: query.ID,
+				Text:            "参数错误",
+				ShowAlert:       true,
+				CacheTime:       60,
+			},
+		)
+		return
+	}
+	artworkID, err := primitive.ObjectIDFromHex(args[2])
+	if err != nil {
+		bot.AnswerCallbackQuery(
+			&telego.AnswerCallbackQueryParams{
+				CallbackQueryID: query.ID,
+				Text:            "无效的ID",
+				ShowAlert:       true,
+				CacheTime:       60,
+			},
+		)
+		return
+	}
+	r18 := args[3] == "1"
+	if err := service.UpdateArtworkR18ByID(ctx, artworkID, r18); err != nil {
+		bot.AnswerCallbackQuery(
+			&telego.AnswerCallbackQueryParams{
+				CallbackQueryID: query.ID,
+				Text:            "更新作品信息失败: " + err.Error(),
+				ShowAlert:       true,
+				CacheTime:       60,
+			},
+		)
+		return
+	}
+	bot.AnswerCallbackQuery(
+		&telego.AnswerCallbackQueryParams{
+			CallbackQueryID: query.ID,
+			Text:            "该作品 R18 已标记为 " + strconv.FormatBool(r18),
+			CacheTime:       2,
+		},
+	)
 }
