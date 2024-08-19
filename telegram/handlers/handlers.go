@@ -35,11 +35,12 @@ func RegisterHandlers(hg *telegohandler.HandlerGroup) {
 	hg.HandleMessageCtx(SetArtworkR18, telegohandler.CommandEqual("r18"))
 	hg.HandleMessageCtx(SetArtworkTags, telegohandler.Or(telegohandler.CommandEqual("tags"), telegohandler.CommandEqual("addtags"), telegohandler.CommandEqual("deltags")))
 	hg.HandleMessageCtx(PostArtworkCommand, telegohandler.CommandEqual("post"))
-	hg.HandleMessageCtx(BatchPostArtwork, telegohandler.CommandEqual("batch_post"))
+	// hg.HandleMessageCtx(BatchPostArtwork, telegohandler.CommandEqual("batch_post")) // TODO: 兼容无频道模式
 	hg.HandleCallbackQueryCtx(PostArtworkCallbackQuery, telegohandler.CallbackDataContains("post_artwork"))
 	hg.HandleCallbackQueryCtx(SearchPictureCallbackQuery, telegohandler.CallbackDataPrefix("search_picture"))
 	hg.HandleCallbackQueryCtx(ArtworkPreview, telegohandler.CallbackDataContains("artwork_preview"))
 	hg.HandleCallbackQueryCtx(EditArtworkR18, telegohandler.CallbackDataPrefix("edit_artwork r18"))
+	hg.HandleCallbackQueryCtx(DeleteArtworkCallbackQuery, telegohandler.CallbackDataPrefix("delete_artwork"))
 
 	hg.HandleInlineQueryCtx(InlineQuery)
 	hg.HandleMessageCtx(GetArtworkInfo, func(update telego.Update) bool {

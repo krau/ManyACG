@@ -142,6 +142,7 @@ func getArtworkInfoReplyMarkup(ctx context.Context, artwork *types.Artwork, isCr
 						}
 						return " 1"
 					}()),
+					telegoutil.InlineKeyboardButton("删除").WithCallbackData("delete_artwork " + artwork.ID),
 				},
 			), nil
 		}

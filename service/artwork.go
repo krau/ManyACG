@@ -352,3 +352,39 @@ func DeleteArtworkByURL(ctx context.Context, sourceURL string) error {
 	}
 	return nil
 }
+
+func DeleteArtworkByID(ctx context.Context, id primitive.ObjectID) error {
+	artworkModel, err := dao.GetArtworkByID(ctx, id)
+	if err != nil {
+		return err
+	}
+	session, err := dao.Client.StartSession()
+	if err != nil {
+		return err
+	}
+	defer session.EndSession(ctx)
+	_, err = session.WithTransaction(ctx, func(ctx mongo.SessionContext) (interface{}, error) {
+		_, err := dao.DeleteArtworkByID(ctx, id)
+		if err != nil {
+			return nil, err
+		}
+
+		_, err = dao.DeletePicturesByArtworkID(ctx, id)
+		if err != nil {
+			return nil, err
+		}
+
+		_, err = dao.CreateDeleted(ctx, &model.DeletedModel{
+			SourceURL: artworkModel.SourceURL,
+			ArtworkID: artworkModel.ID,
+		})
+		if err != nil {
+			return nil, err
+		}
+		return nil, nil
+	})
+	if err != nil {
+		return err
+	}
+	return nil
+}
