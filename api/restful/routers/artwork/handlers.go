@@ -87,6 +87,11 @@ func GetArtwork(ctx *gin.Context) {
 		})
 		return
 	}
+	if artwork.R18 && !hasKey {
+		if !checkR18Permission(ctx) {
+			return
+		}
+	}
 	ctx.JSON(http.StatusOK, ResponseFromArtwork(artwork, hasKey))
 }
 

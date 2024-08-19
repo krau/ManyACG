@@ -14,12 +14,15 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
+// 检查是否能查看 R18 作品 (仅适用于使用了 OptionalJWTMiddleware 的路由)
+//
+// 在内部做响应处理，如果不能查看则返回 false
 func checkR18Permission(ctx *gin.Context) bool {
 	logged := ctx.GetBool("logged")
 	if !logged {
 		ctx.JSON(http.StatusUnauthorized, &ArtworkResponse{
 			Status:  http.StatusUnauthorized,
-			Message: "You need to login to view R18 artworks",
+			Message: "You need to login to view this artworks",
 		})
 		return false
 	}
@@ -44,7 +47,7 @@ func checkR18Permission(ctx *gin.Context) bool {
 	if !user.Settings.R18 {
 		ctx.JSON(http.StatusBadRequest, &ArtworkResponse{
 			Status:  http.StatusBadRequest,
-			Message: "Your settings do not allow you to view R18 artworks",
+			Message: "Your settings do not allow you to view this artworks",
 		})
 		return false
 	}
