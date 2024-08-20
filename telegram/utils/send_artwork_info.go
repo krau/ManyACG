@@ -146,6 +146,7 @@ func getArtworkInfoReplyMarkup(ctx context.Context, artwork *types.Artwork, isCr
 				},
 			), nil
 		}
+		return telegoutil.InlineKeyboard(baseKeyboard), nil
 	}
 	cbId, err := service.CreateCallbackData(ctx, artwork.SourceURL)
 	if err != nil {
