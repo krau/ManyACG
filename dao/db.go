@@ -215,8 +215,8 @@ func createIndex(ctx context.Context) {
 
 	unauthUserCollection.Indexes().CreateMany(ctx, []mongo.IndexModel{
 		{
-			Keys:    bson.D{{Key: "created_at", Value: 1}},
-			Options: options.Index().SetExpireAfterSeconds(600).SetName("created_at"),
+			Keys:    bson.D{{Key: "updated_at", Value: 1}},
+			Options: options.Index().SetExpireAfterSeconds(600).SetName("updated_at"),
 		},
 		{
 			Keys:    bson.D{{Key: "username", Value: 1}},
