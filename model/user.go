@@ -45,4 +45,5 @@ type UnauthUserModel struct {
 	TelegramID int64              `bson:"telegram_id"`
 	Email      string             `bson:"email"`
 	AuthMethod types.AuthMethod   `bson:"auth_method"`
+	CreatedAt  primitive.DateTime `bson:"created_at"`
 }
