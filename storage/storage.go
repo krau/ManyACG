@@ -49,7 +49,7 @@ func SaveAll(ctx context.Context, artwork *types.Artwork, picture *types.Picture
 		return nil, err
 	}
 	defer func() {
-		go common.PurgeFileAfter(filePath, time.Duration(config.Cfg.Storage.CacheTTL))
+		go common.PurgeFileAfter(filePath, time.Duration(config.Cfg.Storage.CacheTTL)*time.Second)
 	}()
 	originalStorageFileName, err := sources.GetFileName(artwork, picture)
 	if err != nil {
