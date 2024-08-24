@@ -48,6 +48,9 @@ func SaveAll(ctx context.Context, artwork *types.Artwork, picture *types.Picture
 	if err := common.MkFile(filePath, originalBytes); err != nil {
 		return nil, err
 	}
+	defer func() {
+		go common.PurgeFileAfter(filePath, time.Duration(config.Cfg.Storage.CacheTTL))
+	}()
 	originalStorageFileName, err := sources.GetFileName(artwork, picture)
 	if err != nil {
 		return nil, err
