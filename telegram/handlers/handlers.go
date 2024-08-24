@@ -31,7 +31,8 @@ func RegisterHandlers(hg *telegohandler.HandlerGroup) {
 
 	hg.HandleMessageCtx(SetAdmin, telegohandler.CommandEqual("set_admin"))
 	hg.HandleMessageCtx(DeletePicture, telegohandler.Or(telegohandler.CommandEqual("del"), telegohandler.CommandEqual("delete")))
-	hg.HandleMessageCtx(ProcessOldPictures, telegohandler.CommandEqual("process_pictures"))
+	hg.HandleMessageCtx(ProcessPicturesHashAndSize, telegohandler.CommandEqual("process_pictures_hashsize"))
+	hg.HandleMessageCtx(ProcessPicturesStorage, telegohandler.CommandEqual("process_pictures_storage"))
 	hg.HandleMessageCtx(SetArtworkR18, telegohandler.CommandEqual("r18"))
 	hg.HandleMessageCtx(SetArtworkTags, telegohandler.Or(telegohandler.CommandEqual("tags"), telegohandler.CommandEqual("addtags"), telegohandler.CommandEqual("deltags")))
 	hg.HandleMessageCtx(PostArtworkCommand, telegohandler.CommandEqual("post"))

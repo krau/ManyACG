@@ -103,7 +103,22 @@ func DeletePictureByMessageID(ctx context.Context, messageID int) error {
 	return nil
 }
 
-func ProcessPictureAndUpdate(ctx context.Context, picture *types.Picture) error {
+func GetPicturesByHashHammingDistance(ctx context.Context, hash string, distance int) ([]*types.Picture, error) {
+	if hash == "" {
+		return nil, nil
+	}
+	pictures, err := dao.GetPicturesByHashHammingDistance(ctx, hash, distance)
+	if err != nil {
+		return nil, err
+	}
+	var result []*types.Picture
+	for _, picture := range pictures {
+		result = append(result, picture.ToPicture())
+	}
+	return result, nil
+}
+
+func ProcessPictureHashAndSizeAndUpdate(ctx context.Context, picture *types.Picture) error {
 	pictureModel, err := dao.GetPictureByOriginal(ctx, picture.Original)
 	if err != nil {
 		return err
@@ -149,19 +164,4 @@ func ProcessPictureAndUpdate(ctx context.Context, picture *types.Picture) error 
 		return err
 	}
 	return nil
-}
-
-func GetPicturesByHashHammingDistance(ctx context.Context, hash string, distance int) ([]*types.Picture, error) {
-	if hash == "" {
-		return nil, nil
-	}
-	pictures, err := dao.GetPicturesByHashHammingDistance(ctx, hash, distance)
-	if err != nil {
-		return nil, err
-	}
-	var result []*types.Picture
-	for _, picture := range pictures {
-		result = append(result, picture.ToPicture())
-	}
-	return result, nil
 }

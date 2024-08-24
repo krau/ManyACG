@@ -74,7 +74,6 @@ func GetPicturesByHash(ctx context.Context, hash string) ([]*model.PictureModel,
 	全库遍历搜索
 
 1k 个图像每次搜索在 i7-12700h 上耗时 7ms 左右
-TODO: 优化搜索速度和内存占用
 */
 func GetPicturesByHashHammingDistance(ctx context.Context, hashStr string, distance int) ([]*model.PictureModel, error) {
 	filter := bson.M{
@@ -117,8 +116,21 @@ func GetPicturesByHashHammingDistance(ctx context.Context, hashStr string, dista
 	return pictures, nil
 }
 
-func GetNotProcessedPictures(ctx context.Context) ([]*model.PictureModel, error) {
+func GetNoHashPictures(ctx context.Context) ([]*model.PictureModel, error) {
 	cursor, err := pictureCollection.Find(ctx, bson.M{"hash": ""})
+	if err != nil {
+		return nil, err
+	}
+	var pictures []*model.PictureModel
+	err = cursor.All(ctx, &pictures)
+	if err != nil {
+		return nil, err
+	}
+	return pictures, nil
+}
+
+func GetNoRegularAndThumbPictures(ctx context.Context) ([]*model.PictureModel, error) {
+	cursor, err := pictureCollection.Find(ctx, bson.M{"storage_info.regular": nil, "storage_info.thumb": nil})
 	if err != nil {
 		return nil, err
 	}
@@ -144,6 +156,10 @@ func UpdatePictureHashAndBlurScoreByID(ctx context.Context, id primitive.ObjectI
 
 func UpdatePictureSizeByID(ctx context.Context, id primitive.ObjectID, width, height int) (*mongo.UpdateResult, error) {
 	return pictureCollection.UpdateOne(ctx, bson.M{"_id": id}, bson.M{"$set": bson.M{"width": width, "height": height}})
+}
+
+func UpdatePictureStorageInfoByID(ctx context.Context, id primitive.ObjectID, storageInfo *types.StorageInfo) (*mongo.UpdateResult, error) {
+	return pictureCollection.UpdateOne(ctx, bson.M{"_id": id}, bson.M{"$set": bson.M{"storage_info": storageInfo}})
 }
 
 func DeletePicturesByIDs(ctx context.Context, ids []primitive.ObjectID) (*mongo.DeleteResult, error) {

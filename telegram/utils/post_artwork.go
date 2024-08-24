@@ -202,7 +202,7 @@ func PostAndCreateArtwork(ctx context.Context, artwork *types.Artwork, bot *tele
 
 func afterCreate(ctx context.Context, artwork *types.Artwork, bot *telego.Bot, fromID int64, _ int) {
 	for _, picture := range artwork.Pictures {
-		if err := service.ProcessPictureAndUpdate(ctx, picture); err != nil {
+		if err := service.ProcessPictureHashAndSizeAndUpdate(ctx, picture); err != nil {
 			Logger.Warnf("error when processing %d of artwork %s: %s", picture.Index, artwork.Title, err)
 		}
 	}

@@ -16,17 +16,31 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
-func ProcessOldPictures(ctx context.Context, bot *telego.Bot, message telego.Message) {
+func ProcessPicturesHashAndSize(ctx context.Context, bot *telego.Bot, message telego.Message) {
 	userAdmin, err := service.GetAdminByUserID(ctx, message.From.ID)
 	if err != nil {
 		utils.ReplyMessage(bot, message, "获取管理员信息失败: "+err.Error())
 		return
 	}
 	if userAdmin != nil && !userAdmin.SuperAdmin {
-		utils.ReplyMessage(bot, message, "你没有权限处理旧图片")
+		utils.ReplyMessage(bot, message, "你没有权限处理图片信息")
 		return
 	}
-	go service.ProcessPicturesAndUpdate(context.TODO(), bot, &message)
+	go service.ProcessPicturesHashAndSizeAndUpdate(context.TODO(), bot, &message)
+	utils.ReplyMessage(bot, message, "开始处理了")
+}
+
+func ProcessPicturesStorage(ctx context.Context, bot *telego.Bot, message telego.Message) {
+	userAdmin, err := service.GetAdminByUserID(ctx, message.From.ID)
+	if err != nil {
+		utils.ReplyMessage(bot, message, "获取管理员信息失败: "+err.Error())
+		return
+	}
+	if userAdmin != nil && !userAdmin.SuperAdmin {
+		utils.ReplyMessage(bot, message, "你没有权限处理图片的存储信息")
+		return
+	}
+	go service.StoragePicturesRegularAndThumbAndUpdate(context.TODO(), bot, &message)
 	utils.ReplyMessage(bot, message, "开始处理了")
 }
 

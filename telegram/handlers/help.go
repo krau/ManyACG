@@ -39,7 +39,8 @@ Inline 查询支持同样的参数格式.
 /addtags - 添加作品标签
 /deltags - 删除作品标签
 /fetch - 手动开始一次抓取
-/process_pictures - 处理无哈希的图片
+/process_pictures_hashsize - 处理无哈希和尺寸的图片
+/process_pictures_storage - 处理图片存储(生成缩略图, 迁移用)
 
 发送作品链接可以获取信息或发布到频道
 `

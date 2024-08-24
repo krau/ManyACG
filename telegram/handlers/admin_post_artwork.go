@@ -143,7 +143,7 @@ func PostArtworkCallbackQuery(ctx context.Context, bot *telego.Bot, query telego
 		}
 		go func() {
 			for _, picture := range artwork.Pictures {
-				if err := service.ProcessPictureAndUpdate(context.TODO(), picture); err != nil {
+				if err := service.ProcessPictureHashAndSizeAndUpdate(context.TODO(), picture); err != nil {
 					Logger.Warnf("处理图片失败: %s", err)
 				}
 			}
@@ -261,7 +261,7 @@ func PostArtworkCommand(ctx context.Context, bot *telego.Bot, message telego.Mes
 		}
 		go func() {
 			for _, picture := range artwork.Pictures {
-				if err := service.ProcessPictureAndUpdate(context.TODO(), picture); err != nil {
+				if err := service.ProcessPictureHashAndSizeAndUpdate(context.TODO(), picture); err != nil {
 					Logger.Warnf("处理图片失败: %s", err)
 				}
 			}

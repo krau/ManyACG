@@ -118,6 +118,14 @@ func SaveAll(ctx context.Context, artwork *types.Artwork, picture *types.Picture
 	}, nil
 }
 
+func Save(ctx context.Context, filePath string, storagePath string, storageType types.StorageType) (*types.StorageDetail, error) {
+	if storage, ok := Storages[storageType]; ok {
+		return storage.Save(ctx, filePath, storagePath)
+	} else {
+		return nil, fmt.Errorf("%w: %s", manyacgErrors.ErrStorageUnkown, storageType)
+	}
+}
+
 func GetFile(ctx context.Context, detail *types.StorageDetail) ([]byte, error) {
 	if storage, ok := Storages[detail.Type]; ok {
 		return storage.GetFile(ctx, detail)
