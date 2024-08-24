@@ -78,18 +78,18 @@ func getInputMediaPhotos(ctx context.Context, artwork *types.Artwork, start, end
 		fileBytes := common.GetReqCachedFile(picture.Original)
 		if fileBytes == nil {
 			var err error
-			fileBytes, err = storage.GetFile(ctx, picture.StorageInfo)
+			fileBytes, err = storage.GetFile(ctx, picture.StorageInfo.Original)
 			if err != nil {
 				Logger.Errorf("failed to get file: %s", err)
 				return nil, err
 			}
 		}
-		fileBytes, err := common.CompressImageWithCache(fileBytes, 10, 2560, picture.Original)
+		fileBytes, err := common.CompressImageToJPEG(fileBytes, 10, 2560, picture.Original)
 		if err != nil {
 			Logger.Errorf("failed to compress image: %s", err)
 			return nil, err
 		}
-		photo := telegoutil.MediaPhoto(telegoutil.File(telegoutil.NameReader(bytes.NewReader(fileBytes), picture.StorageInfo.Path)))
+		photo := telegoutil.MediaPhoto(telegoutil.File(telegoutil.NameReader(bytes.NewReader(fileBytes), picture.StorageInfo.Original.Path)))
 		if i == 0 {
 			photo = photo.WithCaption(GetArtworkHTMLCaption(artwork)).WithParseMode(telego.ModeHTML)
 		}
@@ -136,7 +136,7 @@ func PostAndCreateArtwork(ctx context.Context, artwork *types.Artwork, bot *tele
 				),
 			})
 		}
-		info, err := storage.GetStorage().SavePicture(ctx, artwork, picture)
+		info, err := storage.SaveAll(ctx, artwork, picture)
 		if err != nil {
 			Logger.Errorf("saving picture %d of artwork %s: %s", i, artwork.Title, err)
 			return fmt.Errorf("saving picture %d of artwork %s: %w", i, artwork.Title, err)

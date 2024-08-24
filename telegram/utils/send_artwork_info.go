@@ -177,7 +177,7 @@ func updateLinkPreview(ctx context.Context, targetMessage *telego.Message, artwo
 	if err != nil {
 		return err
 	}
-	fileBytes, err = common.CompressImageWithCache(fileBytes, 10, 2560, artwork.Pictures[pictureIndex].Original)
+	fileBytes, err = common.CompressImageToJPEG(fileBytes, 10, 2560, artwork.Pictures[pictureIndex].Original)
 	if err != nil {
 		return err
 	}

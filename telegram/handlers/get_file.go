@@ -110,12 +110,12 @@ func getArtworkFiles(ctx context.Context, bot *telego.Bot, message telego.Messag
 		if alreadyCached {
 			file = telegoutil.FileFromID(picture.TelegramInfo.DocumentFileID)
 		} else {
-			data, err := storage.GetFile(ctx, picture.StorageInfo)
+			data, err := storage.GetFile(ctx, picture.StorageInfo.Original)
 			if err != nil {
 				utils.ReplyMessage(bot, message, "获取文件失败: "+err.Error())
 				return
 			}
-			file = telegoutil.File(telegoutil.NameReader(bytes.NewReader(data), filepath.Base(picture.StorageInfo.Path)))
+			file = telegoutil.File(telegoutil.NameReader(bytes.NewReader(data), filepath.Base(picture.StorageInfo.Original.Path)))
 		}
 		documentMessage, err := bot.SendDocument(telegoutil.Document(message.Chat.ChatID(), file).
 			WithReplyParameters(&telego.ReplyParameters{

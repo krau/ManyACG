@@ -63,7 +63,7 @@ func StartScheduler(ctx context.Context) {
 
 			saveSuccess := true
 			for i, picture := range artwork.Pictures {
-				info, err := storage.GetStorage().SavePicture(ctx, artwork, picture)
+				info, err := storage.SaveAll(ctx, artwork, picture)
 				if err != nil {
 					Logger.Errorf("saving picture %d of artwork %s: %s", i, artwork.Title, err)
 					saveSuccess = false

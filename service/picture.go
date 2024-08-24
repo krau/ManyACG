@@ -114,7 +114,7 @@ func ProcessPictureAndUpdate(ctx context.Context, picture *types.Picture) error 
 	}
 	defer session.EndSession(ctx)
 	_, err = session.WithTransaction(ctx, func(ctx mongo.SessionContext) (interface{}, error) {
-		fileBytes, err := storage.GetFile(ctx, picture.StorageInfo)
+		fileBytes, err := storage.GetFile(ctx, picture.StorageInfo.Original)
 		if err != nil {
 			return nil, err
 		}

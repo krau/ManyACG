@@ -13,8 +13,8 @@ func (picture *PictureModel) ToPicture() *types.Picture {
 		Height:       picture.Height,
 		Hash:         picture.Hash,
 		BlurScore:    picture.BlurScore,
-		TelegramInfo: (*types.TelegramInfo)(picture.TelegramInfo),
-		StorageInfo:  (*types.StorageInfo)(picture.StorageInfo),
+		TelegramInfo: picture.TelegramInfo,
+		StorageInfo:  picture.StorageInfo,
 	}
 }
 

@@ -62,7 +62,7 @@ func ResponseDataFromArtwork(artwork *types.Artwork) *ArtworkResponseData {
 			Hash:      picture.Hash,
 			BlurScore: picture.BlurScore,
 			Thumbnail: picture.Thumbnail,
-			FileName:  filepath.Base(picture.StorageInfo.Path), // TODO:
+			FileName:  filepath.Base(picture.StorageInfo.Original.Path), // TODO:
 		}
 	}
 	return &ArtworkResponseData{

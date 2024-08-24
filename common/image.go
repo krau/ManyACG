@@ -18,6 +18,7 @@ import (
 	. "ManyACG/logger"
 
 	"github.com/corona10/goimagehash"
+	ffmpeg "github.com/u2takey/ffmpeg-go"
 )
 
 func GetImagePhash(b []byte) (string, error) {
@@ -96,7 +97,14 @@ func ResizeImage(img image.Image, width, height uint) image.Image {
 	return resizedImg
 }
 
-func CompressImage(input []byte, maxSizeMB, maxEdgeLength uint) ([]byte, error) {
+func CompressImageToJPEG(input []byte, maxSizeMB, maxEdgeLength uint, cacheKey string) ([]byte, error) {
+	if cacheKey != "" {
+		cachePath := config.Cfg.Storage.CacheDir + "/image/" + ReplaceFileNameInvalidChar(cacheKey)
+		data, err := os.ReadFile(cachePath)
+		if err == nil {
+			return data, nil
+		}
+	}
 	img, _, err := image.Decode(bytes.NewReader(input))
 	if err != nil {
 		return nil, err
@@ -138,31 +146,17 @@ func CompressImage(input []byte, maxSizeMB, maxEdgeLength uint) ([]byte, error) 
 			break
 		}
 	}
-	return buf.Bytes(), nil
-}
-
-func CompressImageWithCache(input []byte, maxSizeMB, maxEdgeLength uint, cacheKey string) ([]byte, error) {
 	if cacheKey != "" {
-		cachePath := config.Cfg.Storage.CacheDir + "/image/" + ReplaceFileNameInvalidChar(cacheKey)
-		data, err := os.ReadFile(cachePath)
-		if err == nil {
-			return data, nil
-		}
-	}
-	output, err := CompressImage(input, maxSizeMB, maxEdgeLength)
-	if err != nil {
-		return nil, err
-	}
-	if cacheKey != "" {
-		if err := MkFile(config.Cfg.Storage.CacheDir+"/image/"+ReplaceFileNameInvalidChar(cacheKey), output); err != nil {
+		if err := MkFile(config.Cfg.Storage.CacheDir+"/image/"+ReplaceFileNameInvalidChar(cacheKey), buf.Bytes()); err != nil {
 			Logger.Errorf("failed to save cache file: %s", err)
 		} else {
 			go PurgeFileAfter(config.Cfg.Storage.CacheDir+"/image/"+ReplaceFileNameInvalidChar(cacheKey), time.Duration(config.Cfg.Storage.CacheTTL)*time.Second)
 		}
 	}
-	return output, nil
+	return buf.Bytes(), nil
 }
 
+// 宽高
 func GetImageSize(b []byte) (int, int, error) {
 	r := bytes.NewReader(b)
 	img, _, err := image.DecodeConfig(r)
@@ -170,4 +164,31 @@ func GetImageSize(b []byte) (int, int, error) {
 		return 0, 0, err
 	}
 	return img.Width, img.Height, nil
+}
+
+// 使用 ffmpeg 压缩图片
+func CompressImageByFFmpeg(inputPath, outputPath string, maxEdgeLength uint, quality uint) error {
+	file, err := os.Open(inputPath)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+	img, _, err := image.DecodeConfig(file)
+	if err != nil {
+		return err
+	}
+	var vfKwArg ffmpeg.KwArgs
+	if img.Width > int(maxEdgeLength) || img.Height > int(maxEdgeLength) {
+		if img.Width > img.Height {
+			vfKwArg = ffmpeg.KwArgs{"vf": fmt.Sprintf("scale=%d:-1", maxEdgeLength)}
+		} else {
+			vfKwArg = ffmpeg.KwArgs{"vf": fmt.Sprintf("scale=-1:%d", maxEdgeLength)}
+		}
+	}
+	qualityArg := ffmpeg.KwArgs{"q": quality}
+	if err := ffmpeg.Input(inputPath).Output(outputPath, vfKwArg, qualityArg).OverWriteOutput().Run(); err != nil {
+		Logger.Errorf("failed to compress image: %s", err)
+		return err
+	}
+	return nil
 }

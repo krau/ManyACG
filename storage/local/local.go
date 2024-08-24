@@ -4,7 +4,6 @@ import (
 	"ManyACG/common"
 	"ManyACG/config"
 	. "ManyACG/logger"
-	"ManyACG/sources"
 	"ManyACG/types"
 	"context"
 	"os"
@@ -29,37 +28,28 @@ func (l *Local) Init() {
 	}
 }
 
-func (l *Local) SavePicture(ctx context.Context, artwork *types.Artwork, picture *types.Picture) (*types.StorageInfo, error) {
-	Logger.Debugf("Saving picture %d of artwork %s", picture.Index, artwork.Title)
-	fileName, err := sources.GetFileName(artwork, picture)
+func (l *Local) Save(ctx context.Context, filePath string, storagePath string) (*types.StorageDetail, error) {
+	Logger.Debugf("saving file %s", filePath)
+	storagePath = basePath + storagePath
+	fileBytes, err := os.ReadFile(filePath)
 	if err != nil {
+		Logger.Errorf("failed to read file: %s", err)
 		return nil, err
 	}
-	artistName := common.ReplaceFileNameInvalidChar(artwork.Artist.Username)
-	fileDir := basePath + "/" + string(artwork.SourceType) + "/" + artistName + "/"
-	fileBytes, err := common.DownloadWithCache(ctx, picture.Original, nil)
-	if err != nil {
-		Logger.Errorf("Failed to download file: %s", err)
+	if err := common.MkFile(storagePath, fileBytes); err != nil {
+		Logger.Errorf("failed to write file: %s", err)
 		return nil, err
 	}
-	filePath := fileDir + fileName
-	if err := common.MkFile(filePath, fileBytes); err != nil {
-		Logger.Errorf("Failed to write file: %s", err)
-		return nil, err
-	}
-	Logger.Infof("Picture %d of artwork %s saved to %s", picture.Index, artwork.Title, filePath)
-	storageInfo := &types.StorageInfo{
+	return &types.StorageDetail{
 		Type: types.StorageTypeLocal,
-		Path: filePath,
-	}
-	fileBytes = nil
-	return storageInfo, nil
+		Path: storagePath,
+	}, nil
 }
 
-func (l *Local) GetFile(ctx context.Context, info *types.StorageInfo) ([]byte, error) {
-	return os.ReadFile(info.Path)
+func (l *Local) GetFile(ctx context.Context, detail *types.StorageDetail) ([]byte, error) {
+	return os.ReadFile(detail.Path)
 }
 
-func (l *Local) DeletePicture(ctx context.Context, info *types.StorageInfo) error {
-	return common.PurgeFile(info.Path)
+func (l *Local) Delete(ctx context.Context, detail *types.StorageDetail) error {
+	return common.PurgeFile(detail.Path)
 }

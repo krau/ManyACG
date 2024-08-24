@@ -50,6 +50,12 @@ type TelegramInfo struct {
 }
 
 type StorageInfo struct {
+	Original *StorageDetail `json:"original" bson:"original"`
+	Regular  *StorageDetail `json:"regular" bson:"regular"`
+	Thumb    *StorageDetail `json:"thumb" bson:"thumb"`
+}
+
+type StorageDetail struct {
 	Type StorageType `json:"type" bson:"type"`
 	Path string      `json:"path" bson:"path"`
 }

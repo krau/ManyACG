@@ -48,13 +48,15 @@ func ProcessPicturesAndUpdate(ctx context.Context, bot *telego.Bot, message *tel
 	}
 }
 
-func AddLikeCountField(ctx context.Context) error {
-	return dao.AddLikeCountToArtwork(ctx)
-}
-
 func Migrate(ctx context.Context) {
-	if err := AddLikeCountField(ctx); err != nil {
+	Logger.Noticef("Starting migration")
+	Logger.Infof("Adding likes field")
+	if err := dao.AddLikeCountToArtwork(ctx); err != nil {
 		Logger.Errorf("Failed to add likes field: %v", err)
+	}
+	Logger.Infof("Migrating storage info")
+	if err := dao.MigrateStorageInfo(ctx); err != nil {
+		Logger.Errorf("Failed to migrate storage info: %v", err)
 	}
 	Logger.Noticef("Migration completed")
 }

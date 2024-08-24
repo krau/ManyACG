@@ -110,7 +110,7 @@ func PostArtworkCallbackQuery(ctx context.Context, bot *telego.Bot, query telego
 					},
 				),
 			})
-			info, err := storage.GetStorage().SavePicture(ctx, artwork, picture)
+			info, err := storage.SaveAll(ctx, artwork, picture)
 			if err != nil {
 				Logger.Errorf("保存第 %d 张图片失败: %s", i, err)
 				bot.EditMessageCaption(&telego.EditMessageCaptionParams{
@@ -148,7 +148,7 @@ func PostArtworkCallbackQuery(ctx context.Context, bot *telego.Bot, query telego
 				}
 			}
 		}()
-		Logger.Infof("Post artwork %s", artwork.Title)
+		Logger.Infof("Posted artwork %s", artwork.Title)
 	}
 
 	artwork, err = service.GetArtworkByURL(ctx, sourceURL)
@@ -234,7 +234,7 @@ func PostArtworkCommand(ctx context.Context, bot *telego.Bot, message telego.Mes
 				MessageID: msg.MessageID,
 				Text:      fmt.Sprintf("正在保存图片 %d/%d", i+1, len(artwork.Pictures)),
 			})
-			info, err := storage.GetStorage().SavePicture(ctx, artwork, picture)
+			info, err := storage.SaveAll(ctx, artwork, picture)
 			if err != nil {
 				bot.EditMessageText(&telego.EditMessageTextParams{
 					ChatID:    message.Chat.ChatID(),
@@ -529,7 +529,7 @@ func downloadAndCompressArtwork(ctx context.Context, artwork *types.Artwork, sta
 			Logger.Warnf("下载图片失败: %s", err)
 			continue
 		}
-		_, err = common.CompressImageWithCache(fileBytes, 10, 2560, picture.Original)
+		_, err = common.CompressImageToJPEG(fileBytes, 10, 2560, picture.Original)
 		if err != nil {
 			Logger.Warnf("压缩图片失败: %s", err)
 		}

@@ -16,7 +16,7 @@ var (
 	ErrSourceNotSupported  = errors.New("source not supported")
 	ErrIndexOOB            = errors.New("index out of bounds")
 
-	ErrStorageNotSupported = errors.New("storage not supported")
+	ErrStorageUnkown = errors.New("unknown storage")
 
 	ErrNotFoundArtwork = errors.New("artwork not found")
 	ErrNotFoundUser    = errors.New("user not found")

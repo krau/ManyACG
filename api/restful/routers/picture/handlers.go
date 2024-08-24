@@ -17,7 +17,7 @@ func GetThumb(ctx *gin.Context) {
 
 func GetFile(ctx *gin.Context) {
 	picture := ctx.MustGet("picture").(*types.Picture)
-	data, err := storage.GetFile(ctx, picture.StorageInfo)
+	data, err := storage.GetFile(ctx, picture.StorageInfo.Original)
 	if err != nil {
 		Logger.Errorf("Failed to get file: %v", err)
 		ctx.JSON(http.StatusInternalServerError, gin.H{

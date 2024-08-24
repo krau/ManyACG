@@ -60,7 +60,7 @@ func DeletePicture(ctx context.Context, bot *telego.Bot, message telego.Message)
 		utils.ReplyMessage(bot, message, fmt.Sprintf("在数据库中已删除消息id为 %d 的图片", channelMessageID))
 		bot.DeleteMessage(telegoutil.Delete(ChannelChatID, channelMessageID))
 
-		if err := storage.DeletePicture(ctx, picture.StorageInfo); err != nil {
+		if err := storage.DeleteAll(ctx, picture.StorageInfo); err != nil {
 			Logger.Warnf("删除图片失败: %s", err)
 			bot.SendMessage(telegoutil.Message(telegoutil.ID(message.From.ID), "在存储中删除图片文件失败: "+err.Error()))
 		}
@@ -90,7 +90,7 @@ func DeletePicture(ctx context.Context, bot *telego.Bot, message telego.Message)
 		})
 	}
 	for _, picture := range artwork.Pictures {
-		if err := storage.DeletePicture(ctx, picture.StorageInfo); err != nil {
+		if err := storage.DeleteAll(ctx, picture.StorageInfo); err != nil {
 			Logger.Warnf("删除图片失败: %s", err)
 			bot.SendMessage(telegoutil.Message(telegoutil.ID(message.From.ID), "删除图片失败: "+err.Error()))
 		}
@@ -144,7 +144,7 @@ func DeleteArtworkCallbackQuery(ctx context.Context, bot *telego.Bot, query tele
 	}
 
 	for _, picture := range artwork.Pictures {
-		if err := storage.DeletePicture(ctx, picture.StorageInfo); err != nil {
+		if err := storage.DeleteAll(ctx, picture.StorageInfo); err != nil {
 			Logger.Warnf("删除图片失败: %s", err)
 			bot.AnswerCallbackQuery(telegoutil.CallbackQuery(query.ID).WithText("从存储中删除图片失败: " + err.Error()))
 		}

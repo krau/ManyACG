@@ -107,7 +107,9 @@ func CreateArtwork(ctx context.Context, artwork *types.Artwork) (*types.Artwork,
 		// 创建 Picture
 		pictureModels := make([]*model.PictureModel, len(artwork.Pictures))
 		for i, picture := range artwork.Pictures {
+			pictureID, _ := primitive.ObjectIDFromHex(picture.ID)
 			pictureModel := &model.PictureModel{
+				ID:           pictureID,
 				Index:        picture.Index,
 				ArtworkID:    res.InsertedID.(primitive.ObjectID),
 				Thumbnail:    picture.Thumbnail,

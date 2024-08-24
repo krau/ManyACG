@@ -4,7 +4,6 @@ import (
 	"ManyACG/common"
 	"ManyACG/config"
 	. "ManyACG/logger"
-	"ManyACG/sources"
 	"ManyACG/types"
 	"context"
 	"os"
@@ -33,74 +32,52 @@ func (w *Webdav) Init() {
 	}
 }
 
-func (w *Webdav) SavePicture(ctx context.Context, artwork *types.Artwork, picture *types.Picture) (*types.StorageInfo, error) {
-	Logger.Debugf("saving picture %d of artwork %s", picture.Index, artwork.Title)
-	fileName, err := sources.GetFileName(artwork, picture)
-	if err != nil {
-		return nil, err
-	}
-	artistName := common.ReplaceFileNameInvalidChar(artwork.Artist.Username)
-	fileDir := basePath + "/" + string(artwork.SourceType) + "/" + artistName + "/"
-	if err := Client.MkdirAll(fileDir, os.ModePerm); err != nil {
+func (w *Webdav) Save(ctx context.Context, filePath string, storagePath string) (*types.StorageDetail, error) {
+	Logger.Debugf("saving file %s", filePath)
+	storagePath = basePath + storagePath
+	storageDir := filepath.Dir(storagePath)
+	if err := Client.MkdirAll(storageDir, os.ModePerm); err != nil {
 		Logger.Errorf("failed to create directory: %s", err)
 		return nil, ErrFailedMkdirAll
 	}
-	fileBytes, err := common.DownloadWithCache(ctx, picture.Original, nil)
+
+	fileBytes, err := os.ReadFile(filePath)
 	if err != nil {
-		Logger.Errorf("failed to download file: %s", err)
-		return nil, ErrFailedDownload
+		Logger.Errorf("failed to read file: %s", err)
+		return nil, err
 	}
-	filePath := fileDir + fileName
-	if err := Client.Write(filePath, fileBytes, os.ModePerm); err != nil {
+
+	if err := Client.Write(storagePath, fileBytes, os.ModePerm); err != nil {
 		Logger.Errorf("failed to write file: %s", err)
 		return nil, ErrFailedWrite
 	}
-	Logger.Infof("picture %d of artwork %s saved to %s", picture.Index, artwork.Title, filePath)
-	storageInfo := &types.StorageInfo{
+
+	cachePath := strings.TrimSuffix(config.Cfg.Storage.CacheDir, "/") + "/" + filepath.Base(storagePath)
+	go common.MkCache(cachePath, fileBytes, time.Duration(config.Cfg.Storage.CacheTTL)*time.Second)
+
+	return &types.StorageDetail{
 		Type: types.StorageTypeWebdav,
-		Path: filePath,
-	}
-	if config.Cfg.Storage.CacheDir == "" {
-		return storageInfo, nil
-	}
-	cachePath := strings.TrimSuffix(config.Cfg.Storage.CacheDir, "/") + "/" + filepath.Base(filePath)
-	if err := common.MkFile(cachePath, fileBytes); err != nil {
-		Logger.Warnf("failed to save cache file: %s", err)
-	} else {
-		go common.PurgeFileAfter(cachePath, time.Duration(config.Cfg.Storage.CacheTTL)*time.Second)
-	}
-	fileBytes = nil
-	return storageInfo, nil
+		Path: storagePath,
+	}, nil
 }
 
-func (w *Webdav) GetFile(ctx context.Context, info *types.StorageInfo) ([]byte, error) {
-	Logger.Debugf("Getting file %s", info.Path)
-	if config.Cfg.Storage.CacheDir != "" {
-		return w.getFileWithCache(ctx, info)
-	}
-	return Client.Read(info.Path)
-}
-
-func (w *Webdav) getFileWithCache(_ context.Context, info *types.StorageInfo) ([]byte, error) {
-	cachePath := strings.TrimSuffix(config.Cfg.Storage.CacheDir, "/") + "/" + filepath.Base(info.Path)
+func (w *Webdav) GetFile(ctx context.Context, detail *types.StorageDetail) ([]byte, error) {
+	Logger.Debugf("Getting file %s", detail.Path)
+	cachePath := strings.TrimSuffix(config.Cfg.Storage.CacheDir, "/") + "/" + filepath.Base(detail.Path)
 	data, err := os.ReadFile(cachePath)
 	if err == nil {
 		return data, nil
 	}
-	data, err = Client.Read(info.Path)
+	data, err = Client.Read(detail.Path)
 	if err != nil {
 		Logger.Errorf("failed to read file: %s", err)
 		return nil, ErrReadFile
 	}
-	if err := common.MkFile(cachePath, data); err != nil {
-		Logger.Errorf("failed to save cache file: %s", err)
-	} else {
-		go common.PurgeFileAfter(cachePath, time.Duration(config.Cfg.Storage.CacheTTL)*time.Second)
-	}
+	go common.MkCache(cachePath, data, time.Duration(config.Cfg.Storage.CacheTTL)*time.Second)
 	return data, nil
 }
 
-func (w *Webdav) DeletePicture(ctx context.Context, info *types.StorageInfo) error {
-	Logger.Debugf("deleting file %s", info.Path)
-	return Client.Remove(info.Path)
+func (w *Webdav) Delete(ctx context.Context, detail *types.StorageDetail) error {
+	Logger.Debugf("deleting file %s", detail.Path)
+	return Client.Remove(detail.Path)
 }

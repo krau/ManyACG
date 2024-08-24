@@ -61,3 +61,11 @@ func PurgeFileAfter(path string, td time.Duration) {
 		PurgeFile(path)
 	})
 }
+
+func MkCache(path string, data []byte, td time.Duration) {
+	if err := MkFile(path, data); err != nil {
+		Logger.Errorf("failed to save cache file: %s", err)
+	} else {
+		go PurgeFileAfter(path, td)
+	}
+}
