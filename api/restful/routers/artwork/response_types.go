@@ -1,6 +1,7 @@
 package artwork
 
 import (
+	"ManyACG/config"
 	"ManyACG/types"
 	"path/filepath"
 )
@@ -34,6 +35,7 @@ type PictureResponse struct {
 	BlurScore float64 `json:"blur_score"`
 	FileName  string  `json:"file_name"`
 	Thumbnail string  `json:"thumbnail"`
+	Regular   string  `json:"regular"`
 }
 
 func ResponseFromArtwork(artwork *types.Artwork, isAuthorized bool) *ArtworkResponse {
@@ -54,6 +56,17 @@ func ResponseFromArtwork(artwork *types.Artwork, isAuthorized bool) *ArtworkResp
 func ResponseDataFromArtwork(artwork *types.Artwork) *ArtworkResponseData {
 	pictures := make([]*PictureResponse, len(artwork.Pictures))
 	for i, picture := range artwork.Pictures {
+		var thumbnail, regular string
+		if picture.StorageInfo.Thumb.Type == types.StorageTypeAlist {
+			thumbnail = config.Cfg.Storage.Alist.URL + "/d" + picture.StorageInfo.Thumb.Path
+		} else {
+			thumbnail = picture.Thumbnail
+		}
+		if picture.StorageInfo.Regular.Type == types.StorageTypeAlist {
+			regular = config.Cfg.Storage.Alist.URL + "/d" + picture.StorageInfo.Regular.Path
+		} else {
+			regular = picture.Thumbnail
+		}
 		pictures[i] = &PictureResponse{
 			ID:        picture.ID,
 			Width:     picture.Width,
@@ -61,8 +74,9 @@ func ResponseDataFromArtwork(artwork *types.Artwork) *ArtworkResponseData {
 			Index:     picture.Index,
 			Hash:      picture.Hash,
 			BlurScore: picture.BlurScore,
-			Thumbnail: picture.Thumbnail,
-			FileName:  filepath.Base(picture.StorageInfo.Original.Path), // TODO:
+			FileName:  filepath.Base(picture.StorageInfo.Original.Path),
+			Thumbnail: thumbnail,
+			Regular:   regular,
 		}
 	}
 	return &ArtworkResponseData{
