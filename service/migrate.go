@@ -94,7 +94,7 @@ func StoragePictureRegularAndThumbAndUpdate(ctx context.Context, picture *model.
 		defer func() {
 			common.PurgeFile(regularPath)
 		}()
-		basePath := fmt.Sprintf("/%s/%s", artwork.SourceType, common.ReplaceFileNameInvalidChar(artwork.Artist.Username))
+		basePath := fmt.Sprintf("%s/%s", artwork.SourceType, common.ReplaceFileNameInvalidChar(artwork.Artist.Username))
 		regularStoragePath := fmt.Sprintf("/regular/%s/%s", basePath, picture.ID.Hex()+"_regular.webp")
 		regularDetail, err := storage.Save(ctx, regularPath, regularStoragePath, types.StorageType(config.Cfg.Storage.RegularType))
 		if err != nil {
