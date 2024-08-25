@@ -140,7 +140,7 @@ func (a *Alist) Delete(ctx context.Context, detail *types.StorageDetail) error {
 	}
 	go func() {
 		_, err = reqClient.R().SetBodyJsonMarshal(map[string]string{
-			"src_dir": "/",
+			"src_dir": config.Cfg.Storage.Alist.Path,
 		}).Post("/api/fs/remove_empty_directory")
 		if err != nil {
 			Logger.Warnf("failed to remove empty directory: %s", err)
