@@ -8,5 +8,5 @@ import (
 
 func RegisterRouter(r *gin.RouterGroup) {
 	r.GET("/thumb/:id", middleware.ValidatePictureID, GetThumb)
-	r.GET("/file/:id", middleware.JWTAuthMiddleware.MiddlewareFunc(), middleware.ValidatePictureID, GetFile)
+	r.GET("/file/:id", middleware.ValidatePictureID, GetFile)
 }
