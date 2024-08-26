@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"ManyACG/common"
 	"ManyACG/config"
 	. "ManyACG/logger"
 	"ManyACG/service"
@@ -71,11 +72,7 @@ func ValidateParamObjectID(ctx *gin.Context) {
 	id := ctx.Param("id")
 	objectID, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{
-			"status":  http.StatusBadRequest,
-			"message": "Invalid ID",
-		})
-		ctx.Abort()
+		common.GinErrorResponse(ctx, err, http.StatusBadRequest, "Invalid ID")
 		return
 	}
 	ctx.Set("object_id", objectID)

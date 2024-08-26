@@ -2,6 +2,7 @@ package routers
 
 import (
 	"ManyACG/api/restful/middleware"
+	"ManyACG/api/restful/routers/artist"
 	"ManyACG/api/restful/routers/artwork"
 	"ManyACG/api/restful/routers/auth"
 	"ManyACG/api/restful/routers/bot"
@@ -33,4 +34,7 @@ func RegisterAllRouters(r *gin.RouterGroup, authMiddleware *jwt.GinJWTMiddleware
 
 	userGroup := r.Group("/user")
 	user.RegisterRouter(userGroup)
+
+	artistGroup := r.Group("/artist")
+	artist.RegisterRouter(artistGroup)
 }
