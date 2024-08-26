@@ -68,7 +68,7 @@ func CreateArtwork(ctx context.Context, artwork *types.Artwork) (*types.Artwork,
 
 		// 创建 Artist
 		var artistId primitive.ObjectID
-		artistModel, err := dao.GetArtistByUID(ctx, artwork.Artist.UID)
+		artistModel, err := dao.GetArtistByUserName(ctx, artwork.Artist.Username, artwork.SourceType)
 		if err != nil && !errors.Is(err, mongo.ErrNoDocuments) {
 			return nil, err
 		}

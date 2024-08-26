@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"ManyACG/model"
+	"ManyACG/types"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -24,29 +25,11 @@ func GetArtistByID(ctx context.Context, id primitive.ObjectID) (*model.ArtistMod
 	return &artist, nil
 }
 
-func GetArtistByUID(ctx context.Context, uid int) (*model.ArtistModel, error) {
+func GetArtistByUserName(ctx context.Context, username string, sourceType types.SourceType) (*model.ArtistModel, error) {
 	var artist model.ArtistModel
-	if err := artistCollection.FindOne(ctx, bson.M{"uid": uid}).Decode(&artist); err != nil {
+	if err := artistCollection.FindOne(ctx, bson.M{"username": username, "type": string(sourceType)}).Decode(&artist); err != nil {
 		return nil, err
 	}
-	return &artist, nil
-}
-
-func GetArtistByName(ctx context.Context, name string) (*model.ArtistModel, error) {
-	var artist model.ArtistModel
-	if err := artistCollection.FindOne(ctx, bson.M{"name": name}).Decode(&artist); err != nil {
-		return nil, err
-	}
-
-	return &artist, nil
-}
-
-func GetArtistByUserName(ctx context.Context, username string) (*model.ArtistModel, error) {
-	var artist model.ArtistModel
-	if err := artistCollection.FindOne(ctx, bson.M{"username": username}).Decode(&artist); err != nil {
-		return nil, err
-	}
-
 	return &artist, nil
 }
 
@@ -88,8 +71,4 @@ func QueryArtistsByUserName(ctx context.Context, username string) ([]*model.Arti
 		return nil, mongo.ErrNoDocuments
 	}
 	return artists, nil
-}
-
-func UpdateArtistByUID(ctx context.Context, uid int, artist *model.ArtistModel) (*mongo.UpdateResult, error) {
-	return artistCollection.UpdateOne(ctx, bson.M{"uid": uid}, bson.M{"$set": artist})
 }
