@@ -1,7 +1,7 @@
 package artwork
 
 import (
-	"ManyACG/api/restful/utils"
+	"ManyACG/common"
 	"ManyACG/service"
 	"errors"
 	"net/http"
@@ -20,9 +20,9 @@ import (
 func checkR18Permission(ctx *gin.Context) bool {
 	logged := ctx.GetBool("logged")
 	if !logged {
-		ctx.JSON(http.StatusUnauthorized, &ArtworkResponse{
+		ctx.JSON(http.StatusUnauthorized, common.RestfulCommonResponse[any]{
 			Status:  http.StatusUnauthorized,
-			Message: "You need to login to view this artworks",
+			Message: "You must log in to view R18 content",
 		})
 		return false
 	}
@@ -31,23 +31,23 @@ func checkR18Permission(ctx *gin.Context) bool {
 	user, err := service.GetUserByUsername(ctx, username)
 	if err != nil {
 		if errors.Is(err, mongo.ErrNoDocuments) {
-			ctx.JSON(http.StatusForbidden, &ArtworkResponse{
+			ctx.JSON(http.StatusForbidden, common.RestfulCommonResponse[any]{
 				Status:  http.StatusForbidden,
 				Message: "Account not found",
 			})
 			return false
 		}
 		Logger.Errorf("Failed to get user: %v", err)
-		ctx.JSON(http.StatusInternalServerError, &ArtworkResponse{
+		ctx.JSON(http.StatusInternalServerError, common.RestfulCommonResponse[any]{
 			Status:  http.StatusInternalServerError,
 			Message: "Failed to get user",
 		})
 		return false
 	}
 	if !user.Settings.R18 {
-		ctx.JSON(http.StatusForbidden, &ArtworkResponse{
+		ctx.JSON(http.StatusForbidden, common.RestfulCommonResponse[any]{
 			Status:  http.StatusForbidden,
-			Message: "Your settings do not allow you to view this artworks",
+			Message: "Your settings do not allow you to view R18 content",
 		})
 		return false
 	}
@@ -57,20 +57,12 @@ func checkR18Permission(ctx *gin.Context) bool {
 func validateArtworkIDMiddleware(ctx *gin.Context) {
 	var request ArtworkIDRequest
 	if err := ctx.ShouldBind(&request); err != nil {
-		ctx.JSON(http.StatusBadRequest, &ArtworkResponse{
-			Status:  http.StatusBadRequest,
-			Message: utils.BindError(ctx, err),
-		})
-		ctx.Abort()
+		common.GinBindError(ctx, err)
 		return
 	}
 	objectID, err := primitive.ObjectIDFromHex(request.ArtworkID)
 	if err != nil {
-		ctx.JSON(http.StatusBadRequest, &ArtworkResponse{
-			Status:  http.StatusBadRequest,
-			Message: "Invalid Artwork ID",
-		})
-		ctx.Abort()
+		common.GinErrorResponse(ctx, err, http.StatusBadRequest, "Invalid artwork ID")
 		return
 	}
 	ctx.Set("artwork_id", objectID)
@@ -83,19 +75,11 @@ func checkArtworkAndUserMiddleware(ctx *gin.Context) {
 	_, err := service.GetArtworkByID(ctx, artworkID)
 	if err != nil {
 		if errors.Is(err, mongo.ErrNoDocuments) {
-			ctx.JSON(http.StatusBadRequest, &ArtworkResponse{
-				Status:  http.StatusBadRequest,
-				Message: "Artwork not found",
-			})
-			ctx.Abort()
+			common.GinErrorResponse(ctx, err, http.StatusBadRequest, "Artwork not found")
 			return
 		}
 		Logger.Errorf("Failed to get artwork: %v", err)
-		ctx.JSON(http.StatusInternalServerError, &ArtworkResponse{
-			Status:  http.StatusInternalServerError,
-			Message: "Failed to get artwork",
-		})
-		ctx.Abort()
+		common.GinErrorResponse(ctx, err, http.StatusInternalServerError, "Failed to get artwork")
 		return
 	}
 
@@ -103,20 +87,12 @@ func checkArtworkAndUserMiddleware(ctx *gin.Context) {
 	username := claims["id"].(string)
 	user, err := service.GetUserByUsername(ctx, username)
 	if errors.Is(err, mongo.ErrNoDocuments) {
-		ctx.JSON(http.StatusBadRequest, &ArtworkResponse{
-			Status:  http.StatusBadRequest,
-			Message: "User not found",
-		})
-		ctx.Abort()
+		common.GinErrorResponse(ctx, err, http.StatusForbidden, "Account not found")
 		return
 	}
 	if err != nil {
 		Logger.Errorf("Failed to get user: %v", err)
-		ctx.JSON(http.StatusInternalServerError, &ArtworkResponse{
-			Status:  http.StatusInternalServerError,
-			Message: "Failed to get user",
-		})
-		ctx.Abort()
+		common.GinErrorResponse(ctx, err, http.StatusInternalServerError, "Failed to get user")
 		return
 	}
 	ctx.Set("user", user)

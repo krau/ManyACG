@@ -106,20 +106,15 @@ func GetArtworksByTags(ctx context.Context, tags [][]primitive.ObjectID, r18 typ
 	return artworks, nil
 }
 
-func GetArtworksByArtistID(ctx context.Context, artistID primitive.ObjectID, r18 types.R18Type, limit int) ([]*model.ArtworkModel, error) {
+func GetArtworksByArtistID(ctx context.Context, artistID primitive.ObjectID, r18 types.R18Type, page, pageSize int64) ([]*model.ArtworkModel, error) {
 	var artworks []*model.ArtworkModel
 	var cursor *mongo.Cursor
 	var err error
+	opts := options.Find().SetSort(bson.M{"_id": -1}).SetSkip((page - 1) * pageSize).SetLimit(pageSize)
 	if r18 == types.R18TypeAll {
-		cursor, err = artworkCollection.Aggregate(ctx, mongo.Pipeline{
-			bson.D{{Key: "$match", Value: bson.M{"artist_id": artistID}}},
-			bson.D{{Key: "$sample", Value: bson.M{"size": limit}}},
-		})
+		cursor, err = artworkCollection.Find(ctx, bson.M{"artist_id": artistID}, opts)
 	} else {
-		cursor, err = artworkCollection.Aggregate(ctx, mongo.Pipeline{
-			bson.D{{Key: "$match", Value: bson.M{"artist_id": artistID, "r18": r18 == types.R18TypeOnly}}},
-			bson.D{{Key: "$sample", Value: bson.M{"size": limit}}},
-		})
+		cursor, err = artworkCollection.Find(ctx, bson.M{"artist_id": artistID, "r18": r18 == types.R18TypeOnly}, opts)
 	}
 	if err != nil {
 		return nil, err

@@ -1,9 +1,8 @@
 package artwork
 
 import (
-	"ManyACG/api/restful/utils"
+	"ManyACG/common"
 	manyacgErrors "ManyACG/errors"
-	. "ManyACG/logger"
 	"ManyACG/model"
 	"ManyACG/service"
 	"ManyACG/types"
@@ -18,10 +17,7 @@ import (
 func RandomArtworks(ctx *gin.Context) {
 	var request GetRandomArtworksRequest
 	if err := ctx.ShouldBind(&request); err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{
-			"status":  http.StatusBadRequest,
-			"message": utils.BindError(ctx, err),
-		})
+		common.GinBindError(ctx, err)
 		return
 	}
 
@@ -35,22 +31,11 @@ func RandomArtworks(ctx *gin.Context) {
 
 	artworks, err := service.GetRandomArtworks(ctx, r18Type, request.Limit)
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, &ArtworkResponse{
-			Status: http.StatusInternalServerError,
-			Message: func() string {
-				if hasKey {
-					return err.Error()
-				}
-				return "Failed to get random artworks"
-			}(),
-		})
+		common.GinErrorResponse(ctx, err, http.StatusInternalServerError, "Failed to get random artworks")
 		return
 	}
 	if len(artworks) == 0 {
-		ctx.JSON(http.StatusNotFound, &ArtworkResponse{
-			Status:  http.StatusNotFound,
-			Message: "Artworks not found",
-		})
+		common.GinErrorResponse(ctx, err, http.StatusNotFound, "Artworks not found")
 		return
 	}
 	ctx.JSON(http.StatusOK, ResponseFromArtworks(artworks, hasKey))
@@ -60,10 +45,7 @@ func GetArtwork(ctx *gin.Context) {
 	id := ctx.Param("id")
 	objectID, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
-		ctx.JSON(http.StatusBadRequest, &ArtworkResponse{
-			Status:  http.StatusBadRequest,
-			Message: "Invalid ID",
-		})
+		common.GinErrorResponse(ctx, err, http.StatusBadRequest, "Invalid artwork ID")
 		return
 	}
 
@@ -71,28 +53,14 @@ func GetArtwork(ctx *gin.Context) {
 	hasKey := ctx.GetBool("auth")
 	if err != nil {
 		if errors.Is(err, mongo.ErrNoDocuments) {
-			ctx.JSON(http.StatusNotFound, &ArtworkResponse{
-				Status:  http.StatusNotFound,
-				Message: "Artwork not found",
-			})
+			common.GinErrorResponse(ctx, err, http.StatusNotFound, "Artwork not found")
 			return
 		}
-		ctx.JSON(http.StatusInternalServerError, &ArtworkResponse{
-			Status: http.StatusInternalServerError,
-			Message: func() string {
-				if hasKey {
-					return err.Error()
-				}
-				return "Failed to get artwork"
-			}(),
-		})
+		common.GinErrorResponse(ctx, err, http.StatusInternalServerError, "Failed to get artwork")
 		return
 	}
 	if artwork == nil {
-		ctx.JSON(http.StatusNotFound, &ArtworkResponse{
-			Status:  http.StatusNotFound,
-			Message: "Artwork not found",
-		})
+		common.GinErrorResponse(ctx, err, http.StatusNotFound, "Artwork not found")
 		return
 	}
 	if artwork.R18 && !hasKey {
@@ -103,13 +71,10 @@ func GetArtwork(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, ResponseFromArtwork(artwork, hasKey))
 }
 
-func GetLatestArtworks(ctx *gin.Context) {
-	var request GetLatestArtworksRequest
+func GetArtworkList(ctx *gin.Context) {
+	var request GetArtworkListRequest
 	if err := ctx.ShouldBind(&request); err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{
-			"status":  http.StatusBadRequest,
-			"message": utils.BindError(ctx, err),
-		})
+		common.GinBindError(ctx, err)
 		return
 	}
 
@@ -121,23 +86,31 @@ func GetLatestArtworks(ctx *gin.Context) {
 		}
 	}
 
-	artworks, err := service.GetLatestArtworks(ctx, r18Type, request.Page, request.PageSize)
-	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, &ArtworkResponse{
-			Status: http.StatusInternalServerError,
-			Message: func() string {
-				if hasKey {
-					return err.Error()
-				}
-				return "Failed to get latest artworks"
-			}(),
-		})
+	if request.ArtistID != "" {
+		artistID, err := primitive.ObjectIDFromHex(request.ArtistID)
+		if err != nil {
+			common.GinErrorResponse(ctx, err, http.StatusBadRequest, "Invalid artist ID")
+		}
+		artworks, err := service.GetArtworksByArtistID(ctx, artistID, r18Type, request.Page, request.PageSize)
+		if err != nil {
+			common.GinErrorResponse(ctx, err, http.StatusInternalServerError, "Failed to get artworks by artist")
+		}
+		if len(artworks) == 0 {
+			common.GinErrorResponse(ctx, err, http.StatusNotFound, "Artworks not found")
+			return
+		}
+		ctx.JSON(http.StatusOK, ResponseFromArtworks(artworks, hasKey))
+		return
 	}
+
+	artworks, err := service.GetLatestArtworks(ctx, r18Type, request.Page, request.PageSize)
+
+	if err != nil {
+		common.GinErrorResponse(ctx, err, http.StatusInternalServerError, "Failed to get artwork list")
+	}
+
 	if len(artworks) == 0 {
-		ctx.JSON(http.StatusNotFound, &ArtworkResponse{
-			Status:  http.StatusNotFound,
-			Message: "Artworks not found",
-		})
+		common.GinErrorResponse(ctx, err, http.StatusNotFound, "Artworks not found")
 		return
 	}
 	ctx.JSON(http.StatusOK, ResponseFromArtworks(artworks, hasKey))
@@ -146,23 +119,16 @@ func GetLatestArtworks(ctx *gin.Context) {
 func GetArtworkCount(ctx *gin.Context) {
 	var request R18Request
 	if err := ctx.ShouldBind(&request); err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{
-			"status":  http.StatusBadRequest,
-			"message": utils.BindError(ctx, err),
-		})
+		common.GinBindError(ctx, err)
 		return
 	}
 	r18Type := types.R18Type(request.R18)
 	count, err := service.GetArtworkCount(ctx, r18Type)
 	if err != nil {
-		Logger.Error(err)
-		ctx.JSON(http.StatusInternalServerError, &ArtworkResponse{
-			Status:  http.StatusInternalServerError,
-			Message: "Failed to get artwork count",
-		})
+		common.GinErrorResponse(ctx, err, http.StatusInternalServerError, "Failed to get artwork count")
 		return
 	}
-	ctx.JSON(http.StatusOK, &ArtworkResponse{
+	ctx.JSON(http.StatusOK, &common.RestfulCommonResponse[int64]{
 		Status:  http.StatusOK,
 		Message: "Success",
 		Data:    count,
@@ -176,24 +142,13 @@ func LikeArtwork(ctx *gin.Context) {
 	err := service.CreateLike(ctx, userID, artworkID)
 	if err != nil {
 		if errors.Is(err, manyacgErrors.ErrLikeExists) {
-			ctx.JSON(http.StatusBadRequest, &ArtworkResponse{
-				Status:  http.StatusBadRequest,
-				Message: "You have liked this artwork today",
-			})
+			common.GinErrorResponse(ctx, err, http.StatusBadRequest, "You have liked this artwork today")
 			return
 		}
-		ctx.JSON(http.StatusInternalServerError, &ArtworkResponse{
-			Status: http.StatusInternalServerError,
-			Message: func() string {
-				if ctx.GetBool("auth") {
-					return err.Error()
-				}
-				return "Failed to like artwork"
-			}(),
-		})
+		common.GinErrorResponse(ctx, err, http.StatusInternalServerError, "Failed to like artwork")
 		return
 	}
-	ctx.JSON(http.StatusOK, &ArtworkResponse{
+	ctx.JSON(http.StatusOK, &common.RestfulCommonResponse[any]{
 		Status:  http.StatusOK,
 		Message: "Success",
 	})
@@ -206,25 +161,17 @@ func GetArtworkFavoriteStatus(ctx *gin.Context) {
 	favorite, err := service.GetFavorite(ctx, userID, artworkID)
 	if err != nil {
 		if errors.Is(err, mongo.ErrNoDocuments) {
-			ctx.JSON(http.StatusOK, &ArtworkResponse{
+			ctx.JSON(http.StatusOK, &common.RestfulCommonResponse[bool]{
 				Status:  http.StatusOK,
 				Message: "Success",
 				Data:    false,
 			})
 			return
 		}
-		ctx.JSON(http.StatusInternalServerError, &ArtworkResponse{
-			Status: http.StatusInternalServerError,
-			Message: func() string {
-				if ctx.GetBool("auth") {
-					return err.Error()
-				}
-				return "Failed to get favorite status"
-			}(),
-		})
+		common.GinErrorResponse(ctx, err, http.StatusInternalServerError, "Failed to get favorite status")
 		return
 	}
-	ctx.JSON(http.StatusOK, &ArtworkResponse{
+	ctx.JSON(http.StatusOK, &common.RestfulCommonResponse[bool]{
 		Status:  http.StatusOK,
 		Message: "Success",
 		Data:    favorite != nil,
@@ -237,18 +184,10 @@ func FavoriteArtwork(ctx *gin.Context) {
 	userID := user.ID
 	_, err := service.CreateFavorite(ctx, userID, artworkID)
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, &ArtworkResponse{
-			Status: http.StatusInternalServerError,
-			Message: func() string {
-				if ctx.GetBool("auth") {
-					return err.Error()
-				}
-				return "Failed to favorite artwork"
-			}(),
-		})
+		common.GinErrorResponse(ctx, err, http.StatusInternalServerError, "Failed to favorite artwork")
 		return
 	}
-	ctx.JSON(http.StatusOK, &ArtworkResponse{
+	ctx.JSON(http.StatusOK, &common.RestfulCommonResponse[any]{
 		Status:  http.StatusOK,
 		Message: "Success",
 	})
@@ -260,18 +199,10 @@ func UnfavoriteArtwork(ctx *gin.Context) {
 	userID := user.ID
 	err := service.DeleteFavorite(ctx, userID, artworkID)
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, &ArtworkResponse{
-			Status: http.StatusInternalServerError,
-			Message: func() string {
-				if ctx.GetBool("auth") {
-					return err.Error()
-				}
-				return "Failed to unfavorite artwork"
-			}(),
-		})
+		common.GinErrorResponse(ctx, err, http.StatusInternalServerError, "Failed to unfavorite artwork")
 		return
 	}
-	ctx.JSON(http.StatusOK, &ArtworkResponse{
+	ctx.JSON(http.StatusOK, &common.RestfulCommonResponse[any]{
 		Status:  http.StatusOK,
 		Message: "Success",
 	})

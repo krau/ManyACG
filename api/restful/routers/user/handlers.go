@@ -1,6 +1,7 @@
 package user
 
 import (
+	"ManyACG/common"
 	. "ManyACG/logger"
 	"ManyACG/model"
 	"ManyACG/service"
@@ -16,16 +17,16 @@ import (
 func GetUnauthUser(ctx *gin.Context) {
 	objectID, ok := ctx.Get("object_id")
 	if !ok {
-		ctx.JSON(http.StatusBadRequest, gin.H{"message": "invalid object id"})
+		ctx.JSON(http.StatusBadRequest, common.RestfulCommonResponse[any]{Status: http.StatusBadRequest, Message: "invalid object id"})
 		return
 	}
 	user, err := service.GetUnauthUserByID(ctx, objectID.(primitive.ObjectID))
 	if err != nil {
 		if errors.Is(err, mongo.ErrNoDocuments) {
-			ctx.JSON(http.StatusNotFound, gin.H{"message": "user not found"})
+			common.GinErrorResponse(ctx, err, http.StatusNotFound, "user not found")
 			return
 		}
-		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "failed to get user"})
+		common.GinErrorResponse(ctx, err, http.StatusInternalServerError, "failed to get user")
 		return
 	}
 	ctx.JSON(http.StatusOK, &UnauthUserResponse{
@@ -48,16 +49,12 @@ func GetProfile(ctx *gin.Context) {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "failed to get user"})
 		return
 	}
-	ctx.JSON(http.StatusOK, gin.H{
-		"status":  http.StatusOK,
-		"message": "success",
-		"data": &UserResponse{
-			Username:   user.Username,
-			Email:      user.Email,
-			TelegramID: user.TelegramID,
-			Settings:   user.Settings,
-		},
-	})
+	ctx.JSON(http.StatusOK, common.RestfulCommonResponse[*UserResponseData]{Status: http.StatusOK, Message: "success", Data: &UserResponseData{
+		Username:   user.Username,
+		Email:      user.Email,
+		TelegramID: user.TelegramID,
+		Settings:   user.Settings,
+	}})
 
 }
 
@@ -65,7 +62,7 @@ func UpdateSettings(ctx *gin.Context) {
 	var settings UserSettingsRequest
 	if err := ctx.ShouldBind(&settings); err != nil {
 		Logger.Errorf("failed to bind json: %v", err)
-		ctx.JSON(http.StatusBadRequest, gin.H{"message": "invalid request"})
+		common.GinBindError(ctx, err)
 		return
 	}
 
@@ -75,22 +72,18 @@ func UpdateSettings(ctx *gin.Context) {
 	user, err := service.GetUserByUsername(ctx, username)
 	if err != nil {
 		if errors.Is(err, mongo.ErrNoDocuments) {
-			ctx.JSON(http.StatusNotFound, gin.H{"message": "user not found"})
+			common.GinErrorResponse(ctx, err, http.StatusNotFound, "user not found")
 			return
 		}
 		Logger.Errorf("failed to get user: %v", err)
-		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "failed to get user"})
+		common.GinErrorResponse(ctx, err, http.StatusInternalServerError, "failed to get user")
 		return
 	}
 	res, err := service.UpdateUserSettings(ctx, user.ID, (*model.UserSettings)(&settings))
 	if err != nil {
 		Logger.Errorf("failed to update user settings: %v", err)
-		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "failed to update user settings"})
+		common.GinErrorResponse(ctx, err, http.StatusInternalServerError, "failed to update user settings")
 		return
 	}
-	ctx.JSON(http.StatusOK, gin.H{
-		"status":  http.StatusOK,
-		"message": "success",
-		"data":    res,
-	})
+	ctx.JSON(http.StatusOK, common.RestfulCommonResponse[*model.UserSettings]{Status: http.StatusOK, Message: "success", Data: res})
 }

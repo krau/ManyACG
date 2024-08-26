@@ -1,6 +1,7 @@
 package bot
 
 import (
+	"ManyACG/common"
 	"ManyACG/config"
 	"ManyACG/telegram"
 	tgUtils "ManyACG/telegram/utils"
@@ -15,17 +16,12 @@ import (
 
 func SendArtworkInfo(ctx *gin.Context) {
 	if config.Cfg.Telegram.Token == "" {
-		ctx.JSON(http.StatusInternalServerError, gin.H{
-			"message": "telegram bot is not set",
-		})
+		ctx.JSON(http.StatusServiceUnavailable, common.RestfulCommonResponse[any]{Status: http.StatusServiceUnavailable, Message: "Telegram bot is not available"})
 		return
 	}
 	var request SendArtworkInfoRequest
 	if err := ctx.ShouldBindJSON(&request); err != nil {
-		ctx.JSON(
-			http.StatusBadRequest,
-			gin.H{"message": err.Error()},
-		)
+		common.GinBindError(ctx, err)
 		return
 	}
 	var chatID telego.ChatID
@@ -46,7 +42,5 @@ func SendArtworkInfo(ctx *gin.Context) {
 			Logger.Error(err)
 		}
 	}()
-	ctx.JSON(http.StatusOK, gin.H{
-		"message": "task created",
-	})
+	ctx.JSON(http.StatusOK, common.RestfulCommonResponse[any]{Status: http.StatusOK, Message: "Task created"})
 }

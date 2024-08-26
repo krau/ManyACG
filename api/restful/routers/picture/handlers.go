@@ -1,6 +1,7 @@
 package picture
 
 import (
+	"ManyACG/common"
 	. "ManyACG/logger"
 	"ManyACG/storage"
 	"ManyACG/types"
@@ -10,25 +11,12 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func GetThumb(ctx *gin.Context) {
-	picture := ctx.MustGet("picture").(*types.Picture)
-	ctx.Redirect(http.StatusFound, picture.Thumbnail)
-}
-
 func GetFile(ctx *gin.Context) {
 	picture := ctx.MustGet("picture").(*types.Picture)
 	data, err := storage.GetFile(ctx, picture.StorageInfo.Original)
 	if err != nil {
 		Logger.Errorf("Failed to get file: %v", err)
-		ctx.JSON(http.StatusInternalServerError, gin.H{
-			"status": http.StatusInternalServerError,
-			"message": func() string {
-				if ctx.GetBool("auth") {
-					return err.Error()
-				}
-				return "Failed to get file"
-			}(),
-		})
+		common.GinErrorResponse(ctx, err, http.StatusInternalServerError, "Failed to get file")
 		return
 	}
 	mimeType := mimetype.Detect(data)

@@ -15,14 +15,13 @@ func RegisterRouter(r *gin.RouterGroup) {
 	r.Match([]string{http.MethodGet, http.MethodPost},
 		"/list",
 		middleware.OptionalJWTMiddleware,
-		GetLatestArtworks)
+		GetArtworkList)
 	r.GET("/count", GetArtworkCount)
 	r.POST("/like",
 		middleware.JWTAuthMiddleware.MiddlewareFunc(),
 		validateArtworkIDMiddleware,
 		checkArtworkAndUserMiddleware,
 		LikeArtwork)
-
 	r.GET("/favorite",
 		middleware.JWTAuthMiddleware.MiddlewareFunc(),
 		validateArtworkIDMiddleware,

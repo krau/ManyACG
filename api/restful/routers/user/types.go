@@ -9,7 +9,7 @@ type UnauthUserResponse struct {
 	// TODO:
 }
 
-type UserResponse struct {
+type UserResponseData struct {
 	Username   string `json:"username"`
 	Email      string `json:"email"`
 	TelegramID int64  `json:"telegram_id"`

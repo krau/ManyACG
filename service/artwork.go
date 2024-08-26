@@ -240,6 +240,14 @@ func GetArtworkCount(ctx context.Context, r18 types.R18Type) (int64, error) {
 	return dao.GetArtworkCount(ctx, r18)
 }
 
+func GetArtworksByArtistID(ctx context.Context, artistID primitive.ObjectID, r18 types.R18Type, page, pageSize int64, convertOpts ...*adapter.AdapterOption) ([]*types.Artwork, error) {
+	artworkModels, err := dao.GetArtworksByArtistID(ctx, artistID, r18, page, pageSize)
+	if err != nil {
+		return nil, err
+	}
+	return adapter.ConvertToArtworks(ctx, artworkModels, convertOpts...)
+}
+
 // 使用tag名, 标题, 描述, 作者名, 作者用户名 综合查询
 //
 // 对于每个关键词, 只要tag名, 标题, 描述, 作者名, 作者用户名中有一个匹配即认为匹配成功

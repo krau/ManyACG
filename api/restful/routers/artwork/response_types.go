@@ -1,16 +1,12 @@
 package artwork
 
 import (
+	"ManyACG/common"
 	"ManyACG/config"
 	"ManyACG/types"
+	"net/http"
 	"path/filepath"
 )
-
-type ArtworkResponse struct {
-	Status  int    `json:"status"`
-	Message string `json:"message"`
-	Data    any    `json:"data,omitempty"`
-}
 
 type ArtworkResponseData struct {
 	ID          string             `json:"id"`
@@ -38,16 +34,16 @@ type PictureResponse struct {
 	Regular   string  `json:"regular"`
 }
 
-func ResponseFromArtwork(artwork *types.Artwork, isAuthorized bool) *ArtworkResponse {
+func ResponseFromArtwork(artwork *types.Artwork, isAuthorized bool) *common.RestfulCommonResponse[any] {
 	if isAuthorized {
-		return &ArtworkResponse{
-			Status:  200,
+		return &common.RestfulCommonResponse[any]{
+			Status:  http.StatusOK,
 			Message: "Success",
 			Data:    artwork,
 		}
 	}
-	return &ArtworkResponse{
-		Status:  200,
+	return &common.RestfulCommonResponse[any]{
+		Status:  http.StatusOK,
 		Message: "Success",
 		Data:    ResponseDataFromArtwork(artwork),
 	}
@@ -94,10 +90,10 @@ func ResponseDataFromArtwork(artwork *types.Artwork) *ArtworkResponseData {
 	}
 }
 
-func ResponseFromArtworks(artworks []*types.Artwork, isAuthorized bool) *ArtworkResponse {
+func ResponseFromArtworks(artworks []*types.Artwork, isAuthorized bool) *common.RestfulCommonResponse[any] {
 	if isAuthorized {
-		return &ArtworkResponse{
-			Status:  200,
+		return &common.RestfulCommonResponse[any]{
+			Status:  http.StatusOK,
 			Message: "Success",
 			Data:    artworks,
 		}
@@ -106,8 +102,8 @@ func ResponseFromArtworks(artworks []*types.Artwork, isAuthorized bool) *Artwork
 	for _, artwork := range artworks {
 		responses = append(responses, ResponseDataFromArtwork(artwork))
 	}
-	return &ArtworkResponse{
-		Status:  200,
+	return &common.RestfulCommonResponse[any]{
+		Status:  http.StatusOK,
 		Message: "Success",
 		Data:    responses,
 	}

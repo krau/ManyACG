@@ -1,7 +1,9 @@
 package tag
 
 import (
+	"ManyACG/common"
 	. "ManyACG/logger"
+	"ManyACG/model"
 	"ManyACG/service"
 	"net/http"
 
@@ -15,31 +17,18 @@ type GetRandomTagsRequest struct {
 func GetRandomTags(ctx *gin.Context) {
 	var request GetRandomTagsRequest
 	if err := ctx.ShouldBind(&request); err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{
-			"status":  http.StatusBadRequest,
-			"message": "Invalid request",
-		})
+		common.GinBindError(ctx, err)
 		return
 	}
 	tags, err := service.GetRandomTagModels(ctx, request.Limit)
 	if err != nil {
 		Logger.Errorf("Failed to get tags: %v", err)
-		ctx.JSON(http.StatusInternalServerError, gin.H{
-			"status":  http.StatusInternalServerError,
-			"message": "Failed to get tags",
-		})
+		common.GinErrorResponse(ctx, err, http.StatusInternalServerError, "Failed to get random tags")
 		return
 	}
 	if len(tags) == 0 {
-		ctx.JSON(http.StatusNotFound, gin.H{
-			"status":  http.StatusNotFound,
-			"message": "Tags not found",
-		})
+		ctx.JSON(http.StatusNotFound, common.RestfulCommonResponse[any]{Status: http.StatusNotFound, Message: "Tags not found"})
 		return
 	}
-	ctx.JSON(http.StatusOK, gin.H{
-		"status":  http.StatusOK,
-		"message": "Success",
-		"tags":    tags,
-	})
+	ctx.JSON(http.StatusOK, common.RestfulCommonResponse[[]*model.TagModel]{Status: http.StatusOK, Message: "Success", Data: tags})
 }
