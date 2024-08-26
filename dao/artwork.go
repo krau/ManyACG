@@ -151,8 +151,12 @@ func GetLatestArtworks(ctx context.Context, r18 types.R18Type, page, pageSize in
 		return nil, err
 	}
 	return artworks, nil
-
 }
+
+func GetArtworkCountByArtistID(ctx context.Context, artistID primitive.ObjectID) (int64, error) {
+	return artworkCollection.CountDocuments(ctx, bson.M{"artist_id": artistID})
+}
+
 func UpdateArtworkPicturesByID(ctx context.Context, id primitive.ObjectID, pictures []primitive.ObjectID) (*mongo.UpdateResult, error) {
 	return artworkCollection.UpdateOne(ctx, bson.M{"_id": id}, bson.M{"$set": bson.M{"pictures": pictures}})
 }

@@ -8,4 +8,5 @@ import (
 
 func RegisterRouter(r *gin.RouterGroup) {
 	r.GET("/:id", middleware.ValidateParamObjectID, GetArtist)
+	r.GET("/:id/artwork_count", middleware.ValidateParamObjectID, GetArtistArtworkCount)
 }
