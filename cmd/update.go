@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"ManyACG/common"
 	"log"
 
 	"github.com/blang/semver"
@@ -22,14 +23,14 @@ func init() {
 }
 
 func Update() {
-	v := semver.MustParse(Version)
+	v := semver.MustParse(common.Version)
 	latest, err := selfupdate.UpdateSelf(v, "krau/ManyACG")
 	if err != nil {
 		log.Println("Binary update failed:", err)
 		return
 	}
 	if latest.Version.Equals(v) {
-		log.Println("Current binary is the latest version", Version)
+		log.Println("Current binary is the latest version", common.Version)
 	} else {
 		log.Println("Successfully updated to version", latest.Version)
 		log.Println("Release note:\n", latest.ReleaseNotes)

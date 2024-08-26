@@ -1,14 +1,11 @@
 package cmd
 
 import (
+	"ManyACG/common"
 	"fmt"
 	"runtime"
 
 	"github.com/spf13/cobra"
-)
-
-const (
-	Version string = "0.20.3"
 )
 
 var VersionCmd = &cobra.Command{
@@ -25,5 +22,5 @@ func init() {
 }
 
 func ShowVersion() {
-	fmt.Printf("ManyACG version %s %s/%s", Version, runtime.GOOS, runtime.GOARCH)
+	fmt.Printf("ManyACG version %s %s/%s", common.Version, runtime.GOOS, runtime.GOARCH)
 }

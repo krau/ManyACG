@@ -171,13 +171,21 @@ func StoragePicturesRegularAndThumbAndUpdate(ctx context.Context, bot *telego.Bo
 
 func Migrate(ctx context.Context) {
 	Logger.Noticef("Starting migration")
-	Logger.Infof("Adding likes field")
-	if err := dao.AddLikeCountToArtwork(ctx); err != nil {
-		Logger.Errorf("Failed to add likes field: %v", err)
+
+	// Logger.Infof("Adding likes field")
+	// if err := dao.AddLikeCountToArtwork(ctx); err != nil {
+	// 	Logger.Errorf("Failed to add likes field: %v", err)
+	// }
+
+	// Logger.Infof("Migrating storage info")
+	// if err := dao.MigrateStorageInfo(ctx); err != nil {
+	// 	Logger.Errorf("Failed to migrate storage info: %v", err)
+	// }
+
+	Logger.Infof("Tidying artist")
+	if err := dao.TidyArtist(ctx); err != nil {
+		Logger.Errorf("Failed to tidy artist: %v", err)
 	}
-	Logger.Infof("Migrating storage info")
-	if err := dao.MigrateStorageInfo(ctx); err != nil {
-		Logger.Errorf("Failed to migrate storage info: %v", err)
-	}
+
 	Logger.Noticef("Migration completed")
 }

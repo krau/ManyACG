@@ -1,10 +1,13 @@
 package dao
 
 import (
+	"ManyACG/model"
 	"context"
 	"fmt"
 
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo"
 )
 
 func AddLikeCountToArtwork(ctx context.Context) error {
@@ -93,5 +96,104 @@ func MigrateStorageInfo(ctx context.Context) error {
 	}
 
 	return nil
+}
 
+func TidyArtist(ctx context.Context) error {
+	// 清理没有任何 artwork 的 artist (遍历 artists )
+	if err := cleanNoArtworkArtists(ctx); err != nil {
+		return fmt.Errorf("failed to clean no artwork artists: %w", err)
+	}
+
+	// 通过 source type 和 username 合并相同的 artist, 同时更改对应的 artwork 为合并后的同一个 (主要针对 twitter , 因为原先没发现它的 uid 会改变)
+	if err := mergeDupArtist(ctx); err != nil {
+		return fmt.Errorf("failed to merge duplicate artists: %w", err)
+	}
+
+	return nil
+}
+
+func cleanNoArtworkArtists(ctx context.Context) error {
+	fmt.Println("Cleaning artists without any artwork")
+	cursor, err := artistCollection.Find(ctx, bson.M{})
+	if err != nil {
+		return fmt.Errorf("failed to find artists: %w", err)
+	}
+	defer cursor.Close(ctx)
+	var artistsToDelete []primitive.ObjectID
+	for cursor.Next(ctx) {
+		var artist model.ArtistModel
+		if err := cursor.Decode(&artist); err != nil {
+			return fmt.Errorf("failed to decode artist: %w", err)
+		}
+		count, err := artworkCollection.CountDocuments(ctx, bson.M{"artist_id": artist.ID})
+		if err != nil {
+			return fmt.Errorf("failed to count artwork: %w", err)
+		}
+
+		if count == 0 {
+			artistsToDelete = append(artistsToDelete, artist.ID)
+		}
+	}
+
+	if len(artistsToDelete) == 0 {
+		fmt.Println("No artist to delete")
+		return nil
+	}
+
+	res, err := artistCollection.DeleteMany(ctx, bson.M{"_id": bson.M{"$in": artistsToDelete}})
+	if err != nil {
+		return fmt.Errorf("failed to delete artists: %w", err)
+	}
+	fmt.Printf("Deleted %d artists\n", res.DeletedCount)
+	return nil
+}
+
+func mergeDupArtist(ctx context.Context) error {
+	fmt.Println("Merging duplicate artists")
+	pipeline := mongo.Pipeline{
+		{{Key: "$group", Value: bson.D{
+			{Key: "_id", Value: bson.D{{Key: "type", Value: "$type"}, {Key: "username", Value: "$username"}}},
+			{Key: "ids", Value: bson.D{{Key: "$push", Value: "$_id"}}},
+			{Key: "first", Value: bson.D{{Key: "$first", Value: "$$ROOT"}}},
+			{Key: "count", Value: bson.D{{Key: "$sum", Value: 1}}},
+		}}},
+		{{Key: "$match", Value: bson.D{
+			{Key: "count", Value: bson.D{{Key: "$gt", Value: 1}}},
+		}}},
+	}
+	cursor, err := artistCollection.Aggregate(ctx, pipeline)
+	if err != nil {
+		return fmt.Errorf("failed to aggregate artists: %w", err)
+	}
+	defer cursor.Close(ctx)
+
+	for cursor.Next(ctx) {
+		var result struct {
+			ID    bson.M               `bson:"_id"`
+			IDs   []primitive.ObjectID `bson:"ids"`
+			First model.ArtistModel    `bson:"first"`
+			Count int                  `bson:"count"`
+		}
+		if err := cursor.Decode(&result); err != nil {
+			return fmt.Errorf("failed to decode result: %w", err)
+		}
+
+		mainArtistID := result.First.ID
+
+		artistsToDelete := result.IDs[1:]
+		res, err := artworkCollection.UpdateMany(ctx, bson.M{"artist_id": bson.M{"$in": artistsToDelete}}, bson.M{"$set": bson.M{"artist_id": mainArtistID}})
+		if err != nil {
+			return fmt.Errorf("failed to update artworks: %w", err)
+		}
+		fmt.Printf("Updated %d artworks\n", res.ModifiedCount)
+
+		delRes, err := artistCollection.DeleteMany(ctx, bson.M{"_id": bson.M{"$in": artistsToDelete}})
+		if err != nil {
+			return fmt.Errorf("failed to delete artists: %w", err)
+		}
+		fmt.Printf("Deleted %d artists\n", delRes.DeletedCount)
+		fmt.Printf("Merged %d artists into %s\n", result.Count, result.First.Username)
+	}
+
+	return nil
 }
