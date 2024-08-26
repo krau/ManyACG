@@ -63,7 +63,7 @@ func (a *Alist) Save(ctx context.Context, filePath string, storagePath string) (
 	resp, err := reqClient.R().SetContext(ctx).SetFileBytes("file", filepath.Base(storagePath), fileBytes).
 		SetHeaders(map[string]string{
 			"File-Path": url.PathEscape(storagePath),
-			"As-Task":   "false",
+			"As-Task":   "true",
 		}).Put("/api/fs/form")
 	if err != nil {
 		Logger.Errorf("failed to save file: %s", err)
