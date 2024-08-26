@@ -66,6 +66,9 @@ func PostArtworkCallbackQuery(ctx context.Context, bot *telego.Bot, query telego
 		})
 		return
 	}
+
+	// defer
+
 	if err := service.UpdateCachedArtworkStatusByURL(ctx, sourceURL, types.ArtworkStatusPosting); err != nil {
 		Logger.Errorf("更新缓存作品状态失败: %s", err)
 	}
@@ -97,71 +100,83 @@ func PostArtworkCallbackQuery(ctx context.Context, bot *telego.Bot, query telego
 				MessageID: query.Message.GetMessageID(),
 				Caption:   "发布失败: " + err.Error() + "\n" + time.Now().Format("2006-01-02 15:04:05"),
 			})
+			if err := service.UpdateCachedArtworkStatusByURL(ctx, sourceURL, types.ArtworkStatusCached); err != nil {
+				Logger.Warnf("更新缓存作品状态失败: %s", err)
+			}
 			return
 		}
 	} else {
-		for i, picture := range artwork.Pictures {
+		createArtworkWithoutChannel := func() error {
+			for i, picture := range artwork.Pictures {
+				bot.EditMessageCaption(&telego.EditMessageCaptionParams{
+					ChatID:    telegoutil.ID(query.Message.GetChat().ID),
+					MessageID: query.Message.GetMessageID(),
+					ReplyMarkup: telegoutil.InlineKeyboard(
+						[]telego.InlineKeyboardButton{
+							telegoutil.InlineKeyboardButton(fmt.Sprintf("正在保存图片 %d/%d", i+1, len(artwork.Pictures))).WithCallbackData("noop"),
+						},
+					),
+				})
+				info, err := storage.SaveAll(ctx, artwork, picture)
+				if err != nil {
+					Logger.Errorf("保存第 %d 张图片失败: %s", i, err)
+					bot.EditMessageCaption(&telego.EditMessageCaptionParams{
+						ChatID:    telegoutil.ID(query.Message.GetChat().ID),
+						MessageID: query.Message.GetMessageID(),
+						Caption:   "保存图片失败: " + err.Error(),
+					})
+					return err
+				}
+				artwork.Pictures[i].StorageInfo = info
+			}
 			bot.EditMessageCaption(&telego.EditMessageCaptionParams{
 				ChatID:    telegoutil.ID(query.Message.GetChat().ID),
 				MessageID: query.Message.GetMessageID(),
 				ReplyMarkup: telegoutil.InlineKeyboard(
 					[]telego.InlineKeyboardButton{
-						telegoutil.InlineKeyboardButton(fmt.Sprintf("正在保存图片 %d/%d", i+1, len(artwork.Pictures))).WithCallbackData("noop"),
+						telegoutil.InlineKeyboardButton("图片保存完成, 正在发布...").WithCallbackData("noop"),
 					},
 				),
 			})
-			info, err := storage.SaveAll(ctx, artwork, picture)
+			artwork, err := service.CreateArtwork(ctx, artwork)
 			if err != nil {
-				Logger.Errorf("保存第 %d 张图片失败: %s", i, err)
+				Logger.Errorf("创建作品失败: %s", err)
 				bot.EditMessageCaption(&telego.EditMessageCaptionParams{
 					ChatID:    telegoutil.ID(query.Message.GetChat().ID),
 					MessageID: query.Message.GetMessageID(),
-					Caption:   "保存图片失败: " + err.Error(),
+					Caption:   "创建作品失败: " + err.Error(),
 				})
-				return
+				return err
 			}
-			artwork.Pictures[i].StorageInfo = info
+			go func() {
+				for _, picture := range artwork.Pictures {
+					if err := service.ProcessPictureHashAndSizeAndUpdate(context.TODO(), picture); err != nil {
+						Logger.Warnf("处理图片失败: %s", err)
+					}
+				}
+			}()
+			Logger.Infof("Posted artwork %s", artwork.Title)
+			artwork, err = service.GetArtworkByURL(ctx, sourceURL)
+			if err != nil {
+				Logger.Errorf("获取发布后的作品信息失败: %s", err)
+				bot.EditMessageCaption(&telego.EditMessageCaptionParams{
+					ChatID:      telegoutil.ID(query.Message.GetChat().ID),
+					MessageID:   query.Message.GetMessageID(),
+					Caption:     "发布成功, 但获取作品信息失败: " + err.Error(),
+					ReplyMarkup: nil,
+				})
+				return err
+			}
+			return nil
 		}
-		bot.EditMessageCaption(&telego.EditMessageCaptionParams{
-			ChatID:    telegoutil.ID(query.Message.GetChat().ID),
-			MessageID: query.Message.GetMessageID(),
-			ReplyMarkup: telegoutil.InlineKeyboard(
-				[]telego.InlineKeyboardButton{
-					telegoutil.InlineKeyboardButton("图片保存完成, 正在发布...").WithCallbackData("noop"),
-				},
-			),
-		})
-		artwork, err := service.CreateArtwork(ctx, artwork)
-		if err != nil {
-			Logger.Errorf("创建作品失败: %s", err)
-			bot.EditMessageCaption(&telego.EditMessageCaptionParams{
-				ChatID:    telegoutil.ID(query.Message.GetChat().ID),
-				MessageID: query.Message.GetMessageID(),
-				Caption:   "创建作品失败: " + err.Error(),
-			})
+		if err := createArtworkWithoutChannel(); err != nil {
+			if err := service.UpdateCachedArtworkStatusByURL(ctx, sourceURL, types.ArtworkStatusCached); err != nil {
+				Logger.Errorf("更新缓存作品状态失败: %s", err)
+			}
 			return
 		}
-		go func() {
-			for _, picture := range artwork.Pictures {
-				if err := service.ProcessPictureHashAndSizeAndUpdate(context.TODO(), picture); err != nil {
-					Logger.Warnf("处理图片失败: %s", err)
-				}
-			}
-		}()
-		Logger.Infof("Posted artwork %s", artwork.Title)
 	}
 
-	artwork, err = service.GetArtworkByURL(ctx, sourceURL)
-	if err != nil {
-		Logger.Errorf("获取发布后的作品信息失败: %s", err)
-		bot.EditMessageCaption(&telego.EditMessageCaptionParams{
-			ChatID:      telegoutil.ID(query.Message.GetChat().ID),
-			MessageID:   query.Message.GetMessageID(),
-			Caption:     "发布成功, 但获取作品信息失败: " + err.Error(),
-			ReplyMarkup: nil,
-		})
-		return
-	}
 	if err := service.UpdateCachedArtworkStatusByURL(ctx, sourceURL, types.ArtworkStatusPosted); err != nil {
 		Logger.Errorf("更新缓存作品状态失败: %s", err)
 	}
