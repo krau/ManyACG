@@ -93,14 +93,18 @@ func (resp *KemonoPostResp) ToArtwork() (*types.Artwork, error) {
 		if isDuplicate {
 			continue
 		}
+		thumbnailURL := thumbnailsBaseURL + attachment.Path
 		pictures = append(pictures, &types.Picture{
 			Index:     uint(i),
-			Thumbnail: fileURL,
+			Thumbnail: thumbnailURL,
 			Original:  fileURL,
 			Width:     0,
 			Height:    0,
 		})
 		i++
+	}
+	if len(pictures) == 0 {
+		return nil, ErrInvalidKemonoPostURL
 	}
 	artwork := &types.Artwork{
 		Title:       resp.Title,
