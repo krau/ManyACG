@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"time"
 
+	"ManyACG/config"
 	. "ManyACG/logger"
 
 	"github.com/imroc/req/v3"
@@ -28,7 +29,7 @@ func getJwtToken() (string, error) {
 
 func refreshJwtToken(client *req.Client) {
 	for {
-		time.Sleep(time.Hour * 24)
+		time.Sleep(time.Duration(config.Cfg.Storage.Alist.TokenExpire) * time.Second)
 		token, err := getJwtToken()
 		if err != nil {
 			Logger.Errorf("Failed to refresh jwt token: %v", err)

@@ -31,4 +31,5 @@ type StorageAlistConfig struct {
 	Password     string `toml:"password" mapstructure:"password" json:"password" yaml:"password"`
 	Path         string `toml:"path" mapstructure:"path" json:"path" yaml:"path"`
 	PathPassword string `toml:"path_password" mapstructure:"path_password" json:"path_password" yaml:"path_password"`
+	TokenExpire  int    `toml:"token_expire" mapstructure:"token_expire" json:"token_expire" yaml:"token_expire"`
 }
