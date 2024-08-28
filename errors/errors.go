@@ -25,4 +25,6 @@ var (
 
 	ErrSettingsNil = errors.New("settings is nil")
 	ErrSettingsKey = errors.New("settings key not found")
+
+	ErrChatIDNotSet = errors.New("chat id not set")
 )

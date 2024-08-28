@@ -276,8 +276,8 @@ func RunPolling() {
 	if !config.Cfg.Debug {
 		botHandler.Use(telegohandler.PanicRecovery())
 	}
-
 	botHandler.Use(messageLogger)
+
 	baseGroup := botHandler.BaseGroup()
 	handlers.RegisterHandlers(baseGroup)
 	botHandler.Start()

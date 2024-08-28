@@ -2,14 +2,14 @@ package utils
 
 import (
 	"ManyACG/common"
-	"ManyACG/errors"
+	manyacgErrors "ManyACG/errors"
 	. "ManyACG/logger"
 	"ManyACG/service"
 	"ManyACG/sources"
 	"ManyACG/types"
 	"bytes"
 	"context"
-	es "errors"
+	"errors"
 	"fmt"
 
 	"github.com/mymmrac/telego"
@@ -46,7 +46,7 @@ func SendArtworkInfo(ctx context.Context, bot *telego.Bot, params *SendArtworkIn
 		if !params.HasPermission {
 			return nil
 		}
-		if !es.Is(err, mongo.ErrNoDocuments) {
+		if !errors.Is(err, mongo.ErrNoDocuments) {
 			return fmt.Errorf("获取作品信息失败: %w", err)
 		}
 		cachedArtwork, err := service.GetCachedArtworkByURLWithCache(ctx, params.SourceURL)
@@ -74,6 +74,9 @@ func SendArtworkInfo(ctx context.Context, bot *telego.Bot, params *SendArtworkIn
 	}
 	caption += fmt.Sprintf("\n%s", params.AppendCaption)
 	if params.ChatID == nil {
+		if GroupChatID.ID == 0 && GroupChatID.Username == "" {
+			return manyacgErrors.ErrChatIDNotSet
+		}
 		params.ChatID = &GroupChatID
 	}
 	photo := telegoutil.Photo(*params.ChatID, *inputFile).
@@ -86,7 +89,7 @@ func SendArtworkInfo(ctx context.Context, bot *telego.Bot, params *SendArtworkIn
 		photo.WithHasSpoiler()
 	}
 	if bot == nil {
-		return errors.ErrNilBot
+		return manyacgErrors.ErrNilBot
 	}
 	msg, err := bot.SendPhoto(photo)
 	if err != nil {
@@ -170,7 +173,7 @@ func getArtworkInfoReplyMarkup(ctx context.Context, artwork *types.Artwork, isCr
 
 func updateLinkPreview(ctx context.Context, targetMessage *telego.Message, artwork *types.Artwork, bot *telego.Bot, pictureIndex uint, photoParams *telego.SendPhotoParams) error {
 	if pictureIndex >= uint(len(artwork.Pictures)) {
-		return errors.ErrIndexOOB
+		return manyacgErrors.ErrIndexOOB
 	}
 	var inputFile telego.InputFile
 	fileBytes, err := common.DownloadWithCache(ctx, artwork.Pictures[pictureIndex].Original, nil)

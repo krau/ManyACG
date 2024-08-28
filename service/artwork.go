@@ -146,8 +146,8 @@ func CreateArtwork(ctx context.Context, artwork *types.Artwork) (*types.Artwork,
 	if err != nil {
 		return nil, err
 	}
-	artwork.CreatedAt = result.(*model.ArtworkModel).CreatedAt.Time()
-	return artwork, nil
+	artworkModel = result.(*model.ArtworkModel)
+	return adapter.ConvertToArtwork(ctx, artworkModel)
 }
 
 func GetArtworkByURL(ctx context.Context, sourceURL string, opts ...*adapter.AdapterOption) (*types.Artwork, error) {

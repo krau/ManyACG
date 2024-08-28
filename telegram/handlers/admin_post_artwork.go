@@ -67,8 +67,6 @@ func PostArtworkCallbackQuery(ctx context.Context, bot *telego.Bot, query telego
 		return
 	}
 
-	// defer
-
 	if err := service.UpdateCachedArtworkStatusByURL(ctx, sourceURL, types.ArtworkStatusPosting); err != nil {
 		Logger.Errorf("更新缓存作品状态失败: %s", err)
 	}
@@ -106,6 +104,7 @@ func PostArtworkCallbackQuery(ctx context.Context, bot *telego.Bot, query telego
 			return
 		}
 	} else {
+		var err error
 		createArtworkWithoutChannel := func() error {
 			for i, picture := range artwork.Pictures {
 				bot.EditMessageCaption(&telego.EditMessageCaptionParams{
@@ -138,7 +137,7 @@ func PostArtworkCallbackQuery(ctx context.Context, bot *telego.Bot, query telego
 					},
 				),
 			})
-			artwork, err := service.CreateArtwork(ctx, artwork)
+			artwork, err = service.CreateArtwork(ctx, artwork)
 			if err != nil {
 				Logger.Errorf("创建作品失败: %s", err)
 				bot.EditMessageCaption(&telego.EditMessageCaptionParams{
@@ -156,17 +155,6 @@ func PostArtworkCallbackQuery(ctx context.Context, bot *telego.Bot, query telego
 				}
 			}()
 			Logger.Infof("Posted artwork %s", artwork.Title)
-			artwork, err = service.GetArtworkByURL(ctx, sourceURL)
-			if err != nil {
-				Logger.Errorf("获取发布后的作品信息失败: %s", err)
-				bot.EditMessageCaption(&telego.EditMessageCaptionParams{
-					ChatID:      telegoutil.ID(query.Message.GetChat().ID),
-					MessageID:   query.Message.GetMessageID(),
-					Caption:     "发布成功, 但获取作品信息失败: " + err.Error(),
-					ReplyMarkup: nil,
-				})
-				return err
-			}
 			return nil
 		}
 		if err := createArtworkWithoutChannel(); err != nil {
@@ -243,6 +231,7 @@ func PostArtworkCommand(ctx context.Context, bot *telego.Bot, message telego.Mes
 			return
 		}
 	} else {
+		var err error
 		for i, picture := range artwork.Pictures {
 			bot.EditMessageText(&telego.EditMessageTextParams{
 				ChatID:    message.Chat.ChatID(),
@@ -265,7 +254,7 @@ func PostArtworkCommand(ctx context.Context, bot *telego.Bot, message telego.Mes
 			MessageID: msg.MessageID,
 			Text:      "图片保存完成, 正在发布...",
 		})
-		artwork, err := service.CreateArtwork(ctx, artwork)
+		artwork, err = service.CreateArtwork(ctx, artwork)
 		if err != nil {
 			bot.EditMessageText(&telego.EditMessageTextParams{
 				ChatID:    message.Chat.ChatID(),
@@ -283,11 +272,6 @@ func PostArtworkCommand(ctx context.Context, bot *telego.Bot, message telego.Mes
 		}()
 	}
 
-	artwork, err = service.GetArtworkByURL(ctx, sourceURL)
-	if err != nil {
-		utils.ReplyMessage(bot, message, "获取发布后的作品信息失败: "+err.Error())
-		return
-	}
 	bot.SendMessage(telegoutil.Message(telegoutil.ID(message.Chat.ID), "发布成功: "+artwork.Title).
 		WithReplyParameters(&telego.ReplyParameters{
 			ChatID:    message.Chat.ChatID(),

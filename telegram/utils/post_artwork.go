@@ -184,7 +184,7 @@ func PostAndCreateArtwork(ctx context.Context, artwork *types.Artwork, bot *tele
 		}
 	}
 
-	_, err = service.CreateArtwork(ctx, artwork)
+	artwork, err = service.CreateArtwork(ctx, artwork)
 	if err != nil {
 		go func() {
 			if bot.DeleteMessages(&telego.DeleteMessagesParams{
@@ -208,13 +208,13 @@ func afterCreate(ctx context.Context, artwork *types.Artwork, bot *telego.Bot, f
 	}
 	runtime.GC()
 	sendNotify := fromID != 0 && bot != nil
-	artworkID, err := service.GetArtworkIDByPicture(ctx, artwork.Pictures[0])
+	artworkID, err := primitive.ObjectIDFromHex(artwork.ID)
 	artworkTitleMarkdown := common.EscapeMarkdown(artwork.Title)
 	if err != nil {
-		Logger.Errorf("error when getting artwork by URL: %s", err)
+		Logger.Errorf("invalid ObjectID: %s", artwork.ID)
 		if sendNotify {
 			bot.SendMessage(telegoutil.Messagef(telegoutil.ID(fromID),
-				"刚刚发布的作品 [%s](%s) 后续处理失败\\: \n无法获取作品信息\\: %s", artworkTitleMarkdown, func() string {
+				"刚刚发布的作品 [%s](%s) 后续处理失败\\: \n无效的ObjectID\\: %s", artworkTitleMarkdown, func() string {
 					if artwork.Pictures[0].TelegramInfo.MessageID != 0 {
 						return GetArtworkPostMessageURL(artwork.Pictures[0].TelegramInfo.MessageID, ChannelChatID)
 					}
@@ -226,7 +226,12 @@ func afterCreate(ctx context.Context, artwork *types.Artwork, bot *telego.Bot, f
 	}
 
 	for _, picture := range artwork.Pictures {
-		picture, err = service.GetPictureByMessageID(ctx, picture.TelegramInfo.MessageID)
+		pictureID, err := primitive.ObjectIDFromHex(picture.ID)
+		if err != nil {
+			Logger.Errorf("invalid ObjectID: %s", picture.ID)
+			continue
+		}
+		picture, err = service.GetPictureByID(ctx, pictureID)
 		if err != nil {
 			Logger.Warnf("error when getting picture by message ID: %s", err)
 			continue
@@ -238,9 +243,9 @@ func afterCreate(ctx context.Context, artwork *types.Artwork, bot *telego.Bot, f
 		}
 		similarPictures := make([]*types.Picture, 0)
 		for _, resPicture := range resPictures {
-			resArtworkID, err := service.GetArtworkIDByPicture(ctx, resPicture)
+			resArtworkID, err := primitive.ObjectIDFromHex(resPicture.ArtworkID)
 			if err != nil {
-				Logger.Warnf("error when getting artwork ID by picture: %s", err)
+				Logger.Warnf("invalid ObjectID: %s", resPicture.ArtworkID)
 				continue
 			}
 			if resArtworkID == artworkID {
