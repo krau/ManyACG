@@ -171,7 +171,7 @@ func PostArtworkCallbackQuery(ctx context.Context, bot *telego.Bot, query telego
 	bot.EditMessageCaption(&telego.EditMessageCaptionParams{
 		ChatID:      telegoutil.ID(query.Message.GetChat().ID),
 		MessageID:   query.Message.GetMessageID(),
-		Caption:     "发布成功: " + artwork.Title + "\n发布时间: " + artwork.CreatedAt.Format("2006-01-02 15:04:05"),
+		Caption:     "发布成功: " + artwork.Title,
 		ReplyMarkup: utils.GetPostedPictureReplyMarkup(artwork, 0, ChannelChatID, BotUsername),
 	})
 }
