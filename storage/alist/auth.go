@@ -35,7 +35,7 @@ func refreshJwtToken(client *req.Client) {
 			Logger.Errorf("Failed to refresh jwt token: %v", err)
 			continue
 		}
-		client.SetCommonBearerAuthToken(token)
+		client.SetCommonHeader("Authorization", token)
 		Logger.Info("Refreshed Alist jwt token")
 	}
 }
