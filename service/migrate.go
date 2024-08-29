@@ -237,6 +237,12 @@ func FixTwitterArtists(ctx context.Context, bot *telego.Bot, message *telego.Mes
 			ScreenName string `json:"screen_name"`
 		} `json:"user"`
 	}
+
+	// 创建一个集合，用于存储失败文档id
+	if err := dao.DB.CreateCollection(ctx, "failedArtists"); err != nil {
+		Logger.Errorf("Failed to create collection: %v", err)
+	}
+	failedCollection := dao.DB.Collection("failedArtists")
 	failed, count := 0, 0
 	for cursor.Next(ctx) {
 		count++
@@ -246,30 +252,36 @@ func FixTwitterArtists(ctx context.Context, bot *telego.Bot, message *telego.Mes
 			failed++
 			continue
 		}
-		resp, err := client.R().Get(apiBase + artist.Username)
-		if err != nil {
-			Logger.Errorf("Failed to get artist: %v", err)
-			failed++
-			continue
+		updateArtist := func() error {
+			resp, err := client.R().Get(apiBase + artist.Username)
+			if err != nil {
+				Logger.Errorf("Failed to get artist: %v", err)
+				return err
+			}
+			var artistResp ArtistResp
+			if err := json.Unmarshal(resp.Bytes(), &artistResp); err != nil {
+				Logger.Errorf("Failed to unmarshal artist: %v", err)
+				return err
+			}
+			if artistResp.Code != 200 {
+				Logger.Errorf("Failed to get artist: %v", artistResp.Message)
+				return fmt.Errorf("failed to get artist: %s", artistResp.Message)
+			}
+			artist.UID = artistResp.User.ID
+			artist.Name = artistResp.User.Name
+			if _, err := dao.UpdateArtist(ctx, &artist); err != nil {
+				Logger.Errorf("Failed to update artist: %v", err)
+				return err
+			}
+			return nil
 		}
-		var artistResp ArtistResp
-		if err := json.Unmarshal(resp.Bytes(), &artistResp); err != nil {
-			Logger.Errorf("Failed to unmarshal artist: %v", err)
-			failed++
-			continue
-		}
-		if artistResp.Code != 200 {
-			Logger.Errorf("Failed to get artist: %v", artistResp.Message)
-			failed++
-			continue
-		}
-		artist.UID = artistResp.User.ID
-		artist.Name = artistResp.User.Name
-		if _, err := dao.UpdateArtist(ctx, &artist); err != nil {
-			Logger.Errorf("Failed to update artist: %v", err)
+		if err := updateArtist(); err != nil {
+			if _, err := failedCollection.InsertOne(ctx, artist); err != nil {
+				Logger.Errorf("Failed to insert failed artist: %v", err)
+			}
 			failed++
 		}
-		time.Sleep(3 * time.Second)
+		time.Sleep(1 * time.Second)
 	}
 	Logger.Infof("Processed %d artists, %d failed", count, failed)
 	if sendMessage {
