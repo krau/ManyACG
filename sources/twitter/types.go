@@ -71,7 +71,7 @@ func (resp *FxTwitterApiResp) ToArtwork() (*types.Artwork, error) {
 		})
 	}
 
-	uid, err := strconv.Atoi(tweet.ID)
+	uid, err := strconv.Atoi(tweet.Author.ID)
 	if err != nil {
 		return nil, err
 	}
