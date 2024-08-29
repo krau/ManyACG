@@ -1,9 +1,11 @@
 package handlers
 
 import (
+	"ManyACG/common"
 	"ManyACG/service"
 	"ManyACG/telegram/utils"
 	"context"
+	"fmt"
 
 	"github.com/mymmrac/telego"
 )
@@ -43,7 +45,9 @@ Inline 查询支持同样的参数格式.
 /process_pictures_storage - 处理图片存储(生成缩略图, 迁移用)
 
 发送作品链接可以获取信息或发布到频道
+
 `
 	}
+	helpText += fmt.Sprintf("版本: %s", common.Version)
 	utils.ReplyMessage(bot, message, helpText)
 }
