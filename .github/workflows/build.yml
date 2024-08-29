@@ -39,10 +39,17 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Extract version from Git Ref
+        id: extract_version
+        run: |
+          VERSION=$(echo "${{ github.ref }}" | sed 's/refs\/tags\/v//')
+          echo "VERSION=${VERSION}" >> $GITHUB_ENV
+
       - name: Release Go Binary
         uses: wangyoucao577/go-release-action@v1
         with:
-          pre_command: export CGO_ENABLED=0
+          pre_command: export
           goos: ${{ matrix.goos }}
           goarch: ${{ matrix.goarch }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
@@ -52,7 +59,9 @@ jobs:
             config.example.toml
           ldflags: >-
             -s -w
-            -X "common.Version=${{ github.ref }}"
+            -X "ManyACG/common.Version=${{ env.VERSION }}"
             -X "common.BuildTime=${{ format(github.event.repository.updated_at, 'yyyy-MM-dd HH:mm:ss') }}"
             -X "common.Commit=${{ github.sha }}"
           binary_name: ManyACG
+        env:
+          VERSION: ${{ env.VERSION }}
