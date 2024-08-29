@@ -60,8 +60,8 @@ jobs:
           ldflags: >-
             -s -w
             -X "ManyACG/common.Version=${{ env.VERSION }}"
-            -X "common.BuildTime=${{ format(github.event.repository.updated_at, 'yyyy-MM-dd HH:mm:ss') }}"
-            -X "common.Commit=${{ github.sha }}"
+            -X "ManyACG/common.BuildTime=${{ format(github.event.repository.updated_at, 'yyyy-MM-dd HH:mm:ss') }}"
+            -X "ManyACG/common.Commit=${{ github.sha }}"
           binary_name: ManyACG
         env:
           VERSION: ${{ env.VERSION }}
