@@ -103,8 +103,7 @@ func TidyArtist(ctx context.Context) error {
 	if err := cleanNoArtworkArtists(ctx); err != nil {
 		return fmt.Errorf("failed to clean no artwork artists: %w", err)
 	}
-
-	// 通过 source type 和 username 合并相同的 artist, 同时更改对应的 artwork 为合并后的同一个 (主要针对 twitter , 因为原先没发现它的 uid 会改变)
+	// 通过 source type 和 username 合并相同的 artist, 同时更改对应的 artwork 为合并后的同一个
 	if err := mergeDupArtist(ctx); err != nil {
 		return fmt.Errorf("failed to merge duplicate artists: %w", err)
 	}

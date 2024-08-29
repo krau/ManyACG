@@ -131,6 +131,14 @@ func createIndex(ctx context.Context) {
 			Keys:    bson.D{{Key: "name", Value: 1}},
 			Options: options.Index().SetName("name"),
 		},
+		{
+			Keys:    bson.D{{Key: "uid", Value: 1}},
+			Options: options.Index().SetName("uid"),
+		},
+		{
+			Keys:    bson.D{{Key: "username", Value: 1}, {Key: "type", Value: 1}},
+			Options: options.Index().SetName("username_type").SetUnique(true),
+		},
 	})
 
 	// 管理员 (deprecated)

@@ -70,7 +70,6 @@ func Start(ctx context.Context, bot *telego.Bot, message telego.Message) {
 			}
 			unauthUser.TelegramID = userID
 			service.UpdateUnauthUser(ctx, objectID, unauthUser)
-
 		}
 		return
 	}

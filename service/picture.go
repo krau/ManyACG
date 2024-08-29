@@ -71,7 +71,7 @@ func DeletePictureByMessageID(ctx context.Context, messageID int) error {
 	}
 	defer session.EndSession(ctx)
 	_, err = session.WithTransaction(ctx, func(ctx mongo.SessionContext) (interface{}, error) {
-		_, err = dao.DeleteArtworkPicturesByID(ctx, pictureModel.ArtworkID, []primitive.ObjectID{pictureModel.ID})
+		_, err = dao.DeletePicturesByArtworkID(ctx, pictureModel.ArtworkID)
 		if err != nil {
 			return nil, err
 		}

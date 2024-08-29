@@ -67,13 +67,18 @@ func CreateArtwork(ctx context.Context, artwork *types.Artwork) (*types.Artwork,
 		tagIDs = resultTags
 
 		// 创建 Artist
-		var artistId primitive.ObjectID
-		artistModel, err := dao.GetArtistByUserName(ctx, artwork.Artist.Username, artwork.SourceType)
+		artistModel, err := dao.GetArtistByUID(ctx, int64(artwork.Artist.UID), artwork.Artist.Type)
 		if err != nil && !errors.Is(err, mongo.ErrNoDocuments) {
 			return nil, err
 		}
+		var artistId primitive.ObjectID
 		if artistModel != nil {
 			artistModel.Name = artwork.Artist.Name
+			artistModel.Username = artwork.Artist.Username
+			_, err = dao.UpdateArtist(ctx, artistModel)
+			if err != nil {
+				return nil, err
+			}
 			artistId = artistModel.ID
 		} else {
 			artistModel = &model.ArtistModel{
@@ -107,7 +112,15 @@ func CreateArtwork(ctx context.Context, artwork *types.Artwork) (*types.Artwork,
 		// 创建 Picture
 		pictureModels := make([]*model.PictureModel, len(artwork.Pictures))
 		for i, picture := range artwork.Pictures {
-			pictureID, _ := primitive.ObjectIDFromHex(picture.ID)
+			var pictureID primitive.ObjectID
+			if picture.ID != "" {
+				pictureID, err = primitive.ObjectIDFromHex(picture.ID)
+				if err != nil {
+					return nil, err
+				}
+			} else {
+				pictureID = primitive.NewObjectID()
+			}
 			pictureModel := &model.PictureModel{
 				ID:           pictureID,
 				Index:        picture.Index,

@@ -72,3 +72,15 @@ func QueryArtistsByUserName(ctx context.Context, username string) ([]*model.Arti
 	}
 	return artists, nil
 }
+
+func GetArtistByUID(ctx context.Context, uid int64, sourceType types.SourceType) (*model.ArtistModel, error) {
+	var artist model.ArtistModel
+	if err := artistCollection.FindOne(ctx, bson.M{"uid": uid, "type": string(sourceType)}).Decode(&artist); err != nil {
+		return nil, err
+	}
+	return &artist, nil
+}
+
+func UpdateArtist(ctx context.Context, artist *model.ArtistModel) (*mongo.UpdateResult, error) {
+	return artistCollection.UpdateOne(ctx, bson.M{"_id": artist.ID}, bson.M{"$set": artist})
+}
