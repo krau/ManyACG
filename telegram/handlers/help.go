@@ -49,6 +49,6 @@ Inline 查询支持同样的参数格式.
 
 `
 	}
-	helpText += fmt.Sprintf("版本: %s", common.Version)
+	helpText += fmt.Sprintf("版本: %s, 构建日期 %s, 提交 %s", common.Version, common.BuildTime, common.Commit)
 	utils.ReplyMessage(bot, message, helpText)
 }
