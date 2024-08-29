@@ -196,3 +196,17 @@ func mergeDupArtist(ctx context.Context) error {
 
 	return nil
 }
+
+func ConvertArtistUIDToString(ctx context.Context) error {
+	pipeline := []bson.M{
+		{
+			"$set": bson.M{
+				"uid": bson.M{
+					"$toString": "$uid",
+				},
+			},
+		},
+	}
+	_, err := artistCollection.UpdateMany(ctx, bson.M{}, pipeline)
+	return err
+}

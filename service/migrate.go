@@ -9,11 +9,15 @@ import (
 	"ManyACG/storage"
 	"ManyACG/types"
 	"context"
+	"encoding/json"
 	"fmt"
 	"path/filepath"
+	"time"
 
+	"github.com/imroc/req/v3"
 	"github.com/mymmrac/telego"
 	"github.com/mymmrac/telego/telegoutil"
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
@@ -169,6 +173,115 @@ func StoragePicturesRegularAndThumbAndUpdate(ctx context.Context, bot *telego.Bo
 	}
 }
 
+func FixTwitterArtists(ctx context.Context, bot *telego.Bot, message *telego.Message) {
+	client := req.C().ImpersonateChrome().SetCommonRetryCount(3).
+		SetCommonRetryBackoffInterval(1*time.Second, 5*time.Second).
+		SetCommonRetryFixedInterval(2 * time.Second).
+		EnableDebugLog()
+	if config.Cfg.Source.Proxy != "" {
+		client.SetProxyURL(config.Cfg.Source.Proxy)
+	}
+	sendMessage := bot != nil && message != nil
+
+	collection := dao.DB.Collection("Artists")
+	if collection == nil {
+		Logger.Errorf("Failed to get collection")
+		if sendMessage {
+			bot.SendMessage(telegoutil.Messagef(
+				message.Chat.ChatID(),
+				"Failed to get collection",
+			))
+		}
+		return
+	}
+	total, err := collection.CountDocuments(ctx, bson.M{"type": "twitter"})
+	if err != nil {
+		Logger.Errorf("Failed to count artists: %v", err)
+		if sendMessage {
+			bot.SendMessage(telegoutil.Messagef(
+				message.Chat.ChatID(),
+				"Failed to count artists: %s",
+				err.Error(),
+			))
+		}
+		return
+	}
+	Logger.Infof("Found %d artists", total)
+	if sendMessage {
+		bot.SendMessage(telegoutil.Messagef(
+			message.Chat.ChatID(),
+			"Found %d artists",
+			total,
+		))
+	}
+	cursor, err := collection.Find(ctx, bson.M{"type": "twitter"})
+	if err != nil {
+		Logger.Errorf("Failed to find artists: %v", err)
+		if sendMessage {
+			bot.SendMessage(telegoutil.Messagef(
+				message.Chat.ChatID(),
+				"Failed to find artists: %s",
+				err.Error(),
+			))
+		}
+		return
+	}
+	defer cursor.Close(ctx)
+	apiBase := fmt.Sprintf("https://api.%s/", config.Cfg.Source.Twitter.FxTwitterDomain)
+	type ArtistResp struct {
+		Code    int    `json:"code"`
+		Message string `json:"message"`
+		User    struct {
+			ID         string `json:"id"`
+			Name       string `json:"name"`
+			ScreenName string `json:"screen_name"`
+		} `json:"user"`
+	}
+	failed, count := 0, 0
+	for cursor.Next(ctx) {
+		count++
+		var artist model.ArtistModel
+		if err := cursor.Decode(&artist); err != nil {
+			Logger.Errorf("Failed to decode artist: %v", err)
+			failed++
+			continue
+		}
+		resp, err := client.R().Get(apiBase + artist.Username)
+		if err != nil {
+			Logger.Errorf("Failed to get artist: %v", err)
+			failed++
+			continue
+		}
+		var artistResp ArtistResp
+		if err := json.Unmarshal(resp.Bytes(), &artistResp); err != nil {
+			Logger.Errorf("Failed to unmarshal artist: %v", err)
+			failed++
+			continue
+		}
+		if artistResp.Code != 200 {
+			Logger.Errorf("Failed to get artist: %v", artistResp.Message)
+			failed++
+			continue
+		}
+		artist.UID = artistResp.User.ID
+		artist.Name = artistResp.User.Name
+		if _, err := dao.UpdateArtist(ctx, &artist); err != nil {
+			Logger.Errorf("Failed to update artist: %v", err)
+			failed++
+		}
+		time.Sleep(3 * time.Second)
+	}
+	Logger.Infof("Processed %d artists, %d failed", count, failed)
+	if sendMessage {
+		bot.SendMessage(telegoutil.Messagef(
+			message.Chat.ChatID(),
+			"Processed %d artists, %d failed",
+			count,
+			failed,
+		))
+	}
+}
+
 func Migrate(ctx context.Context) {
 	Logger.Noticef("Starting migration")
 
@@ -182,9 +295,14 @@ func Migrate(ctx context.Context) {
 	// 	Logger.Errorf("Failed to migrate storage info: %v", err)
 	// }
 
-	Logger.Infof("Tidying artist")
-	if err := dao.TidyArtist(ctx); err != nil {
-		Logger.Errorf("Failed to tidy artist: %v", err)
+	// Logger.Infof("Tidying artist")
+	// if err := dao.TidyArtist(ctx); err != nil {
+	// 	Logger.Errorf("Failed to tidy artist: %v", err)
+	// }
+
+	Logger.Infof("Convert artist uid to string")
+	if err := dao.ConvertArtistUIDToString(ctx); err != nil {
+		Logger.Errorf("Failed to convert artist uid to string: %v", err)
 	}
 
 	Logger.Noticef("Migration completed")

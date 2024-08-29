@@ -22,7 +22,7 @@ type Artist struct {
 	ID       string     `json:"id" bson:"_id"`
 	Name     string     `json:"name" bson:"name"`
 	Type     SourceType `json:"type" bson:"type"`
-	UID      int        `json:"uid" bson:"uid"`
+	UID      string     `json:"uid" bson:"uid"`
 	Username string     `json:"username" bson:"username"`
 }
 

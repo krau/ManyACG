@@ -44,6 +44,20 @@ func ProcessPicturesStorage(ctx context.Context, bot *telego.Bot, message telego
 	utils.ReplyMessage(bot, message, "开始处理了")
 }
 
+func FixTwitterArtists(ctx context.Context, bot *telego.Bot, message telego.Message) {
+	userAdmin, err := service.GetAdminByUserID(ctx, message.From.ID)
+	if err != nil {
+		utils.ReplyMessage(bot, message, "获取管理员信息失败: "+err.Error())
+		return
+	}
+	if userAdmin != nil && !userAdmin.SuperAdmin {
+		utils.ReplyMessage(bot, message, "你没有权限修复Twitter作者信息")
+		return
+	}
+	go service.FixTwitterArtists(context.TODO(), bot, &message)
+	utils.ReplyMessage(bot, message, "开始处理了")
+}
+
 func SetAdmin(ctx context.Context, bot *telego.Bot, message telego.Message) {
 	userAdmin, err := service.GetAdminByUserID(ctx, message.From.ID)
 	if err != nil {

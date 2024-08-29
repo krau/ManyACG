@@ -11,7 +11,7 @@ var (
 	fakeArtist              = &types.Artist{
 		Name:     "Danbooru",
 		Username: "Danbooru",
-		UID:      1,
+		UID:      "1",
 		Type:     types.SourceTypeDanbooru,
 	}
 	ErrInvalidDanbooruPostURL = errors.New("invalid danbooru post url")

@@ -73,7 +73,7 @@ func QueryArtistsByUserName(ctx context.Context, username string) ([]*model.Arti
 	return artists, nil
 }
 
-func GetArtistByUID(ctx context.Context, uid int64, sourceType types.SourceType) (*model.ArtistModel, error) {
+func GetArtistByUID(ctx context.Context, uid string, sourceType types.SourceType) (*model.ArtistModel, error) {
 	var artist model.ArtistModel
 	if err := artistCollection.FindOne(ctx, bson.M{"uid": uid, "type": string(sourceType)}).Decode(&artist); err != nil {
 		return nil, err

@@ -43,6 +43,7 @@ Inline 查询支持同样的参数格式.
 /fetch - 手动开始一次抓取
 /process_pictures_hashsize - 处理无哈希和尺寸的图片
 /process_pictures_storage - 处理图片存储(生成缩略图, 迁移用)
+/fix_twitter_artists - 修复Twitter作者信息(更新所有推特作品的作者信息)
 
 发送作品链接可以获取信息或发布到频道
 

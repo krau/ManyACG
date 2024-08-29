@@ -6,7 +6,6 @@ import (
 	"encoding/xml"
 	"errors"
 	"regexp"
-	"strconv"
 	"strings"
 )
 
@@ -130,11 +129,6 @@ func (resp *PixivAjaxResp) ToArtwork() (*types.Artwork, error) {
 			tags = append(tags[:i], tags[i+1:]...)
 		}
 	}
-
-	uid, err := strconv.Atoi(resp.Body.UserId)
-	if err != nil {
-		return nil, err
-	}
 	return &types.Artwork{
 		Title:       resp.Body.IlustTitle,
 		Description: htmlRe.ReplaceAllString(strings.ReplaceAll(resp.Body.Description, "<br />", "\n"), ""),
@@ -144,7 +138,7 @@ func (resp *PixivAjaxResp) ToArtwork() (*types.Artwork, error) {
 		Artist: &types.Artist{
 			Name:     resp.Body.Username,
 			Type:     types.SourceTypePixiv,
-			UID:      uid,
+			UID:      resp.Body.UserId,
 			Username: resp.Body.UserAccount,
 		},
 		Tags:     tags,

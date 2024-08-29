@@ -4,7 +4,6 @@ import (
 	"ManyACG/types"
 	"errors"
 	"fmt"
-	"strconv"
 )
 
 type FxTwitterApiResp struct {
@@ -70,11 +69,6 @@ func (resp *FxTwitterApiResp) ToArtwork() (*types.Artwork, error) {
 			Height:    uint(photo.Height),
 		})
 	}
-
-	uid, err := strconv.Atoi(tweet.Author.ID)
-	if err != nil {
-		return nil, err
-	}
 	tweetPath := GetTweetPath(tweet.URL)
 	if tweetPath == "" {
 		return nil, ErrInvalidURL
@@ -90,7 +84,7 @@ func (resp *FxTwitterApiResp) ToArtwork() (*types.Artwork, error) {
 			Name:     tweet.Author.Name,
 			Username: tweet.Author.Username,
 			Type:     types.SourceTypeTwitter,
-			UID:      uid,
+			UID:      tweet.Author.ID,
 		},
 		Pictures: pictures,
 		Tags:     nil, // TODO

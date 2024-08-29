@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"net/http"
 	"regexp"
-	"strconv"
 	"strings"
 )
 
@@ -43,15 +42,11 @@ func (resp *KemonoPostResp) ToArtwork() (*types.Artwork, error) {
 	if err != nil {
 		return nil, err
 	}
-	creatorIdInt, err := strconv.Atoi(creatorResp.ID)
-	if err != nil {
-		return nil, err
-	}
 	artist := &types.Artist{
 		Type:     types.SourceTypeKemono,
 		Name:     creatorResp.Name,
 		Username: resp.Service + "_" + creatorResp.PubilcID,
-		UID:      creatorIdInt,
+		UID:      creatorResp.ID,
 	}
 	pictures := make([]*types.Picture, 0)
 	if isImage(resp.File.Path) {

@@ -20,7 +20,7 @@ var artwork = &types.Artwork{
 	Artist: &types.Artist{
 		Name:     "飴玉コン6/30サンクリ",
 		Type:     types.SourceTypePixiv,
-		UID:      1992163,
+		UID:      "1992163",
 		Username: "wakasa3426",
 	},
 	Tags: []string{

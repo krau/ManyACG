@@ -25,7 +25,7 @@ type ArtistModel struct {
 	ID       primitive.ObjectID `bson:"_id,omitempty" json:"id,omitempty"`
 	Name     string             `bson:"name" json:"name"`
 	Type     types.SourceType   `bson:"type" json:"type"`
-	UID      int                `bson:"uid" json:"uid"`
+	UID      string             `bson:"uid" json:"uid"`
 	Username string             `bson:"username" json:"username"`
 }
 

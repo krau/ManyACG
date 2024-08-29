@@ -6,6 +6,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strconv"
 	"time"
 )
 
@@ -107,7 +108,7 @@ func (resp *BilibiliApiResp) ToArtwork() (*types.Artwork, error) {
 			Name:     author.Name,
 			Username: author.Name,
 			Type:     types.SourceTypeBilibili,
-			UID:      author.Mid,
+			UID:      strconv.Itoa(author.Mid),
 		},
 		Pictures: pictures,
 		Tags:     nil,
