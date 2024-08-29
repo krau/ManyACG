@@ -111,7 +111,7 @@ func (resp *BilibiliApiResp) ToArtwork() (*types.Artwork, error) {
 			UID:      strconv.Itoa(author.Mid),
 		},
 		Pictures: pictures,
-		Tags:     nil,
+		Tags:     common.ExtractTagsFromText(summary.Text),
 	}
 	timeOutCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()

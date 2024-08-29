@@ -115,3 +115,21 @@ func GenerateRandomString(length int, charset ...string) string {
 	}
 	return string(b)
 }
+
+func ExtractTagsFromText(text string) []string {
+	// 正则表达式匹配标签，\p{Zs} 匹配所有空格字符，包括全角空格
+	re := regexp.MustCompile(`(?:^|[\p{Zs}\s.,!?(){}[\]<>\"\'，。！？（）：；、])#([\p{L}\d_]+)`)
+
+	// 找到所有匹配的标签
+	matches := re.FindAllStringSubmatch(text, -1)
+
+	// 提取标签内容，不包含 # 号
+	tags := make([]string, 0)
+	for _, match := range matches {
+		if len(match) > 1 {
+			tags = append(tags, match[1])
+		}
+	}
+
+	return tags
+}

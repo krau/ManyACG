@@ -99,3 +99,42 @@ func TestGenerateRandomString(t *testing.T) {
 		}
 	}
 }
+
+func TestExtractTagsFromText(t *testing.T) {
+	tests := []struct {
+		text     string
+		expected []string
+	}{
+		{
+			text: `初音ミクHappy 16th Birthday -Dear Creators-
+			✨エンドイラスト公開！✨
+			https://piapro.net/miku16thbd/
+			#初音ミク #miku16th`,
+			expected: []string{"初音ミク", "miku16th"},
+		},
+		{
+			text: `ひっつきむし
+			#創作百合`,
+			expected: []string{"創作百合"},
+		},
+		{
+			text:     `#創作百合 #原创`,
+			expected: []string{"創作百合", "原创"},
+		},
+		{
+			text:     `プラニャ　#ブルアカ`,
+			expected: []string{"ブルアカ"},
+		},
+		{
+			text:     `原神是一款#开放世界#冒险游戏，由中国著名游戏公司#miHoYo开发。`,
+			expected: []string{},
+		},
+	}
+
+	for _, test := range tests {
+		result := ExtractTagsFromText(test.text)
+		if !reflect.DeepEqual(result, test.expected) {
+			t.Fatalf("ExtractTagsFromText(%s) = %v, expected %v", test.text, result, test.expected)
+		}
+	}
+}

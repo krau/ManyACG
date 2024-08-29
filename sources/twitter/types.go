@@ -1,9 +1,11 @@
 package twitter
 
 import (
+	"ManyACG/common"
 	"ManyACG/types"
 	"errors"
 	"fmt"
+	"strings"
 )
 
 type FxTwitterApiResp struct {
@@ -74,9 +76,27 @@ func (resp *FxTwitterApiResp) ToArtwork() (*types.Artwork, error) {
 		return nil, ErrInvalidURL
 	}
 
+	title := tweetPath
+	tags := common.ExtractTagsFromText(tweet.Text)
+	var desc string
+
+	if tweet.Text != "" {
+		textLines := strings.Split(tweet.Text, "\n")
+		textLineLen := len(textLines)
+		firstLine := textLines[0]
+		if len(firstLine) <= 114 {
+			title = firstLine
+			if textLineLen > 1 {
+				desc = strings.Join(textLines[1:textLineLen-1], "\n")
+			}
+		} else {
+			desc = strings.Join(textLines[:textLineLen-1], "\n")
+		}
+	}
+
 	return &types.Artwork{
-		Title:       tweetPath,
-		Description: tweet.Text,
+		Title:       title,
+		Description: desc,
 		SourceType:  types.SourceTypeTwitter,
 		SourceURL:   tweet.URL,
 		R18:         false, // TODO
@@ -87,6 +107,6 @@ func (resp *FxTwitterApiResp) ToArtwork() (*types.Artwork, error) {
 			UID:      tweet.Author.ID,
 		},
 		Pictures: pictures,
-		Tags:     nil, // TODO
+		Tags:     tags,
 	}, nil
 }
