@@ -45,6 +45,5 @@ Inline 查询支持同样的参数格式.
 发送作品链接可以获取信息或发布到频道
 `
 	}
-	helpText += "源码: https://github.com/krau/ManyACG"
 	utils.ReplyMessage(bot, message, helpText)
 }

@@ -277,13 +277,13 @@ func checkDuplicate(ctx context.Context, artwork *types.Artwork, bot *telego.Bot
 			len(similarPictures))
 		text += common.EscapeMarkdown(fmt.Sprintf("该图像模糊度: %.2f\n搜索到的相似图片列表:\n\n", picture.BlurScore))
 		for _, similarPicture := range similarPictures {
-			pictureObjectID, err := primitive.ObjectIDFromHex(similarPicture.ID)
+			objectID, err := primitive.ObjectIDFromHex(similarPicture.ArtworkID)
 			if err != nil {
-				Logger.Errorf("invalid ObjectID: %s", similarPicture.ID)
+				Logger.Errorf("invalid ObjectID: %s", similarPicture.ArtworkID)
 				continue
 			}
 
-			artworkOfSimilarPicture, err := service.GetArtworkByID(ctx, pictureObjectID)
+			artworkOfSimilarPicture, err := service.GetArtworkByID(ctx, objectID)
 			if err != nil {
 				Logger.Warnf("error when getting artwork by ID: %s", err)
 				continue
