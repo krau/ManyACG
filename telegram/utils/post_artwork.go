@@ -196,17 +196,21 @@ func PostAndCreateArtwork(ctx context.Context, artwork *types.Artwork, bot *tele
 		}()
 		return fmt.Errorf("error when creating artwork %s: %w", artwork.SourceURL, err)
 	}
-	go afterCreate(context.TODO(), artwork, bot, fromID, messageID)
+	go afterCreate(context.TODO(), artwork, bot, fromID)
 	return nil
 }
 
-func afterCreate(ctx context.Context, artwork *types.Artwork, bot *telego.Bot, fromID int64, _ int) {
+func afterCreate(ctx context.Context, artwork *types.Artwork, bot *telego.Bot, fromID int64) {
 	for _, picture := range artwork.Pictures {
 		if err := service.ProcessPictureHashAndSizeAndUpdate(ctx, picture); err != nil {
 			Logger.Warnf("error when processing %d of artwork %s: %s", picture.Index, artwork.Title, err)
 		}
 	}
 	runtime.GC()
+	checkDuplicate(ctx, artwork, bot, fromID)
+}
+
+func checkDuplicate(ctx context.Context, artwork *types.Artwork, bot *telego.Bot, fromID int64) {
 	sendNotify := fromID != 0 && bot != nil
 	artworkID, err := primitive.ObjectIDFromHex(artwork.ID)
 	artworkTitleMarkdown := common.EscapeMarkdown(artwork.Title)
