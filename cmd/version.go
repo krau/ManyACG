@@ -22,5 +22,6 @@ func init() {
 }
 
 func ShowVersion() {
-	fmt.Printf("ManyACG version %s %s/%s", common.Version, runtime.GOOS, runtime.GOARCH)
+	fmt.Printf("ManyACG version: %s %s/%s\nBuildTime: %s, Commit: %s\n",
+		common.Version, runtime.GOOS, runtime.GOARCH, common.BuildTime, common.Commit)
 }

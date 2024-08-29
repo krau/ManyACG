@@ -50,5 +50,9 @@ jobs:
             LICENSE
             README.md
             config.example.toml
-          ldflags: -s -w
+          ldflags: >-
+            -s -w
+            -X "common.Version=${{ github.ref }}"
+            -X "common.BuildTime=${{ format(github.event.repository.updated_at, 'yyyy-MM-dd HH:mm:ss') }}"
+            -X "common.Commit=${{ github.sha }}"
           binary_name: ManyACG
