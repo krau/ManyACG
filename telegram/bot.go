@@ -30,7 +30,7 @@ var (
 			Description: "开始涩涩",
 		},
 		{
-			Command:     "file",
+			Command:     "file <index>",
 			Description: "获取原图文件",
 		},
 		{
@@ -69,12 +69,8 @@ var (
 			Description: "设置管理员",
 		},
 		{
-			Command:     "del",
-			Description: "删除图片",
-		},
-		{
 			Command:     "delete",
-			Description: "删除图片对应的作品",
+			Description: "删除作品",
 		},
 		{
 			Command:     "r18",

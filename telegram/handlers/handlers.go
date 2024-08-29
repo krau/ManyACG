@@ -30,7 +30,7 @@ func RegisterHandlers(hg *telegohandler.HandlerGroup) {
 	hg.HandleMessageCtx(GetStats, telegohandler.CommandEqual("stats"), mentionIsBot)
 
 	hg.HandleMessageCtx(SetAdmin, telegohandler.CommandEqual("set_admin"))
-	hg.HandleMessageCtx(DeletePicture, telegohandler.Or(telegohandler.CommandEqual("del"), telegohandler.CommandEqual("delete")))
+	hg.HandleMessageCtx(DeleteArtwork, telegohandler.CommandEqual("delete"))
 	hg.HandleMessageCtx(ProcessPicturesHashAndSize, telegohandler.CommandEqual("process_pictures_hashsize"))
 	hg.HandleMessageCtx(ProcessPicturesStorage, telegohandler.CommandEqual("process_pictures_storage"))
 	hg.HandleMessageCtx(SetArtworkR18, telegohandler.CommandEqual("r18"))

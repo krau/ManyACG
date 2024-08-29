@@ -186,9 +186,6 @@ func FindSourceURLForMessage(message *telego.Message) string {
 			text += entity.URL + " "
 		}
 	}
-	if message.From.ID == 777000 {
-		return sources.FindSourceURL(text)
-	}
 	for _, entity := range message.CaptionEntities {
 		if entity.Type == telego.EntityTypeTextLink {
 			text += entity.URL + " "

@@ -344,21 +344,17 @@ func DeleteArtworkByURL(ctx context.Context, sourceURL string) error {
 		if err != nil {
 			return nil, err
 		}
-
 		_, err = dao.DeletePicturesByArtworkID(ctx, artworkModel.ID)
 		if err != nil {
 			return nil, err
 		}
-
 		_, err = dao.CreateDeleted(ctx, &model.DeletedModel{
 			SourceURL: sourceURL,
 			ArtworkID: artworkModel.ID,
 		})
-
 		if err != nil {
 			return nil, err
 		}
-
 		return nil, nil
 	})
 	if err != nil {

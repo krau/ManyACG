@@ -59,6 +59,7 @@ func UpdatePictureTelegramInfo(ctx context.Context, picture *types.Picture, tele
 
 不会对存储进行操作
 */
+// Deprecated: MessageID 现在不唯一且可能为 0
 func DeletePictureByMessageID(ctx context.Context, messageID int) error {
 	pictureModel, err := dao.GetPictureByMessageID(ctx, messageID)
 	if err != nil {

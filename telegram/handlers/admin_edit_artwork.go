@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"ManyACG/service"
+	"ManyACG/sources"
 	"ManyACG/telegram/utils"
 	"ManyACG/types"
 	"context"
@@ -18,19 +19,23 @@ func SetArtworkR18(ctx context.Context, bot *telego.Bot, message telego.Message)
 		utils.ReplyMessage(bot, message, "你没有编辑作品的权限")
 		return
 	}
-	messageOrigin, ok := utils.GetMessageOriginChannelArtworkPost(ctx, bot, message)
-	if !ok {
-		utils.ReplyMessage(bot, message, "请回复一条频道的图片消息")
+	var sourceURL string
+	if message.ReplyToMessage != nil {
+		sourceURL = utils.FindSourceURLForMessage(message.ReplyToMessage)
+	} else {
+		sourceURL = sources.FindSourceURL(message.Text)
+	}
+	if sourceURL == "" {
+		utils.ReplyMessage(bot, message, "请回复一条消息, 或者指定作品链接")
 		return
 	}
 
-	artwork, err := service.GetArtworkByMessageID(ctx, messageOrigin.MessageID)
+	artwork, err := service.GetArtworkByURL(ctx, sourceURL)
 	if err != nil {
 		utils.ReplyMessage(bot, message, "获取作品信息失败: "+err.Error())
 		return
 	}
-
-	if err := service.UpdateArtworkR18ByURL(ctx, artwork.SourceURL, !artwork.R18); err != nil {
+	if err := service.UpdateArtworkR18ByURL(ctx, sourceURL, !artwork.R18); err != nil {
 		utils.ReplyMessage(bot, message, "更新作品信息失败: "+err.Error())
 		return
 	}
@@ -42,44 +47,61 @@ func SetArtworkTags(ctx context.Context, bot *telego.Bot, message telego.Message
 		utils.ReplyMessage(bot, message, "你没有编辑作品的权限")
 		return
 	}
-	messageOrigin, ok := utils.GetMessageOriginChannelArtworkPost(ctx, bot, message)
-	if !ok {
-		utils.ReplyMessage(bot, message, "请回复一条频道的图片消息")
+
+	var sourceURL string
+	if message.ReplyToMessage != nil {
+		sourceURL = utils.FindSourceURLForMessage(message.ReplyToMessage)
+	} else {
+		sourceURL = sources.FindSourceURL(message.Text)
+	}
+	if sourceURL == "" {
+		utils.ReplyMessage(bot, message, "请回复一条消息, 或者指定作品链接")
 		return
 	}
 
-	artwork, err := service.GetArtworkByMessageID(ctx, messageOrigin.MessageID)
+	artwork, err := service.GetArtworkByURL(ctx, sourceURL)
 	if err != nil {
 		utils.ReplyMessage(bot, message, "获取作品信息失败: "+err.Error())
 		return
 	}
 
 	cmd, _, args := telegoutil.ParseCommand(message.Text)
-	if len(args) == 0 {
-		utils.ReplyMessage(bot, message, "请提供标签, 以空格分隔.\n不存在的标签将自动创建")
-		return
+	var argTags []string
+	if message.ReplyToMessage != nil {
+		if len(args) == 0 {
+			utils.ReplyMessage(bot, message, "请提供标签, 用空格分隔")
+			return
+		}
+		argTags = args
+	} else {
+		if len(args) <= 1 {
+			utils.ReplyMessage(bot, message, "请在链接后提供标签, 用空格分隔")
+			return
+		}
+		argTags = args[1:]
 	}
-	tags := make([]string, 0)
+
+	newTags := make([]string, 0)
 	switch cmd {
 	case "tags":
-		tags = args
+		newTags = argTags
 	case "addtags":
-		tags = append(artwork.Tags, args...)
+		newTags = append(artwork.Tags, argTags...)
 	case "deltags":
-		tags = artwork.Tags[:]
-		for _, arg := range args {
-			for i, tag := range tags {
+		newTags = artwork.Tags[:]
+		for _, arg := range argTags {
+			for i, tag := range newTags {
 				if tag == arg {
-					tags = append(tags[:i], tags[i+1:]...)
+					newTags = append(newTags[:i], newTags[i+1:]...)
 					break
 				}
 			}
 		}
 	}
-	for i, tag := range tags {
-		tags[i] = strings.TrimPrefix(tag, "#")
+	for i, tag := range newTags {
+		newTags[i] = strings.TrimPrefix(tag, "#")
 	}
-	if err := service.UpdateArtworkTagsByURL(ctx, artwork.SourceURL, tags); err != nil {
+	if err := service.UpdateArtworkTagsByURL(ctx, artwork.SourceURL, newTags); err != nil {
 		utils.ReplyMessage(bot, message, "更新作品标签失败: "+err.Error())
 		return
 	}
