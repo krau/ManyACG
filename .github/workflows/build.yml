@@ -56,7 +56,6 @@ jobs:
           extra_files: |
             LICENSE
             README.md
-            config.example.toml
           ldflags: >-
             -s -w
             -X "ManyACG/common.Version=${{ env.VERSION }}"
