@@ -16,10 +16,6 @@ func GetArtistByID(ctx context.Context, artistID primitive.ObjectID) (*types.Art
 	return artist.ToArtist(), nil
 }
 
-func GetArtistArtworkCount(ctx context.Context, artistID primitive.ObjectID) (int64, error) {
-	return dao.GetArtworkCountByArtistID(ctx, artistID)
-}
-
 func GetArtistByUID(ctx context.Context, uid string, sourceType types.SourceType) (*types.Artist, error) {
 	artist, err := dao.GetArtistByUID(ctx, uid, sourceType)
 	if err != nil {
