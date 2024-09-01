@@ -34,7 +34,6 @@ Inline 查询支持同样的参数格式.
 	isAdmin, _ := service.IsAdmin(ctx, message.From.ID)
 	if isAdmin {
 		helpText += `/set_admin - 设置|删除管理员
-/del - 删除图片 <消息id>
 /delete - 删除整个作品
 /r18 - 设置作品R18标记
 /tags - 更新作品标签(覆盖原有标签)

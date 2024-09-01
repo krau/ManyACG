@@ -2,6 +2,7 @@ package utils
 
 import (
 	"ManyACG/common"
+	"ManyACG/config"
 	"ManyACG/errors"
 	"ManyACG/service"
 	"ManyACG/sources"
@@ -145,7 +146,7 @@ func GetPostedPictureInlineKeyboardButton(artwork *types.Artwork, index uint, ch
 	}
 	if (channelChatID.ID == 0 && channelChatID.Username == "") || (artwork.Pictures[index].TelegramInfo == nil || artwork.Pictures[index].TelegramInfo.MessageID == 0) {
 		return []telego.InlineKeyboardButton{
-			telegoutil.InlineKeyboardButton("详情").WithURL(artwork.SourceURL),
+			telegoutil.InlineKeyboardButton("详情").WithURL(config.Cfg.API.SiteURL + "/artwork/" + artwork.ID),
 			telegoutil.InlineKeyboardButton("原图").WithURL(GetDeepLinkForFile(artwork.Pictures[index].ID, botUsername)),
 		}
 	}

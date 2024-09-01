@@ -92,10 +92,6 @@ var (
 			Command:     "post",
 			Description: "发布作品 <url>",
 		},
-		{
-			Command:     "process_pictures",
-			Description: "处理无哈希的图片",
-		},
 	}
 )
 

@@ -10,6 +10,7 @@ import (
 	"ManyACG/types"
 	"context"
 	"errors"
+	"fmt"
 	"math/rand"
 	"strings"
 
@@ -53,10 +54,11 @@ func RandomPicture(ctx context.Context, bot *telego.Bot, message telego.Message)
 		}
 		file = telegoutil.FileFromURL(photoURL)
 	}
+	caption := fmt.Sprintf("[%s](%s)", common.EscapeHTML(artwork[0].Title), artwork[0].SourceURL)
 	photo := telegoutil.Photo(message.Chat.ChatID(), file).
 		WithReplyParameters(&telego.ReplyParameters{
 			MessageID: message.MessageID,
-		}).WithCaption(artwork[0].Title).WithReplyMarkup(
+		}).WithCaption(caption).WithParseMode(telego.ModeHTML).WithReplyMarkup(
 		telegoutil.InlineKeyboard(utils.GetPostedPictureInlineKeyboardButton(artwork[0], 0, ChannelChatID, BotUsername)),
 	)
 	if artwork[0].R18 {
