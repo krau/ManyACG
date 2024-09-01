@@ -1,6 +1,7 @@
 package artwork
 
 import (
+	"ManyACG/adapter"
 	"ManyACG/common"
 	manyacgErrors "ManyACG/errors"
 	"ManyACG/model"
@@ -56,7 +57,7 @@ func RandomArtworkPreview(ctx *gin.Context) {
 			return
 		}
 	}
-	artwork, err := service.GetRandomArtworks(ctx, r18Type, 1)
+	artwork, err := service.GetRandomArtworks(ctx, r18Type, 1, adapter.OnlyLoadPicture())
 	if err != nil {
 		common.GinErrorResponse(ctx, err, http.StatusInternalServerError, "Failed to get random artwork")
 		return
@@ -125,7 +126,7 @@ func GetArtworkList(ctx *gin.Context) {
 		if err != nil {
 			common.GinErrorResponse(ctx, err, http.StatusBadRequest, "Invalid artist ID")
 		}
-		artworks, err := service.GetArtworksByArtistID(ctx, artistID, r18Type, request.Page, request.PageSize)
+		artworks, err := service.GetArtworksByArtistID(ctx, artistID, r18Type, request.Page, request.PageSize, adapter.OnlyLoadPicture())
 		if err != nil {
 			common.GinErrorResponse(ctx, err, http.StatusInternalServerError, "Failed to get artworks by artist")
 		}
@@ -137,7 +138,7 @@ func GetArtworkList(ctx *gin.Context) {
 		return
 	}
 
-	artworks, err := service.GetLatestArtworks(ctx, r18Type, request.Page, request.PageSize)
+	artworks, err := service.GetLatestArtworks(ctx, r18Type, request.Page, request.PageSize, adapter.OnlyLoadPicture())
 
 	if err != nil {
 		common.GinErrorResponse(ctx, err, http.StatusInternalServerError, "Failed to get artwork list")
