@@ -58,7 +58,7 @@ func RandomPicture(ctx context.Context, bot *telego.Bot, message telego.Message)
 	photo := telegoutil.Photo(message.Chat.ChatID(), file).
 		WithReplyParameters(&telego.ReplyParameters{
 			MessageID: message.MessageID,
-		}).WithCaption(caption).WithParseMode(telego.ModeHTML).WithReplyMarkup(
+		}).WithCaption(caption).WithParseMode(telego.ModeMarkdownV2).WithReplyMarkup(
 		telegoutil.InlineKeyboard(utils.GetPostedPictureInlineKeyboardButton(artwork[0], 0, ChannelChatID, BotUsername)),
 	)
 	if artwork[0].R18 {
