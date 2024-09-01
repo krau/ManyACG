@@ -13,10 +13,17 @@ func RegisterRouter(r *gin.RouterGroup) {
 		middleware.OptionalJWTMiddleware,
 		RandomArtworks)
 	r.Match([]string{http.MethodGet, http.MethodPost},
+		"/random/preview",
+		middleware.OptionalJWTMiddleware,
+		RandomArtworkPreview)
+	r.Match([]string{http.MethodGet, http.MethodPost},
 		"/list",
 		middleware.OptionalJWTMiddleware,
 		GetArtworkList)
 	r.GET("/count", GetArtworkCount)
+	r.GET("/:id",
+		middleware.OptionalJWTMiddleware,
+		GetArtwork)
 	r.POST("/like",
 		middleware.JWTAuthMiddleware.MiddlewareFunc(),
 		validateArtworkIDMiddleware,
@@ -37,7 +44,4 @@ func RegisterRouter(r *gin.RouterGroup) {
 		validateArtworkIDMiddleware,
 		checkArtworkAndUserMiddleware,
 		UnfavoriteArtwork)
-	r.GET("/:id",
-		middleware.OptionalJWTMiddleware,
-		GetArtwork)
 }

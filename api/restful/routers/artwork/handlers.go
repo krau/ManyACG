@@ -5,10 +5,12 @@ import (
 	manyacgErrors "ManyACG/errors"
 	"ManyACG/model"
 	"ManyACG/service"
+	"ManyACG/storage"
 	"ManyACG/types"
 	"errors"
 	"net/http"
 
+	"github.com/gabriel-vasile/mimetype"
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -39,6 +41,38 @@ func RandomArtworks(ctx *gin.Context) {
 		return
 	}
 	ctx.JSON(http.StatusOK, ResponseFromArtworks(artworks, hasKey))
+}
+
+func RandomArtworkPreview(ctx *gin.Context) {
+	var request GetRandomArtworksRequest
+	if err := ctx.ShouldBind(&request); err != nil {
+		common.GinBindError(ctx, err)
+		return
+	}
+	hasKey := ctx.GetBool("auth")
+	r18Type := types.R18Type(request.R18)
+	if r18Type != types.R18TypeNone && !hasKey {
+		if !checkR18Permission(ctx) {
+			return
+		}
+	}
+	artwork, err := service.GetRandomArtworks(ctx, r18Type, 1)
+	if err != nil {
+		common.GinErrorResponse(ctx, err, http.StatusInternalServerError, "Failed to get random artwork")
+		return
+	}
+	if len(artwork) == 0 {
+		common.GinErrorResponse(ctx, err, http.StatusNotFound, "Artwork not found")
+		return
+	}
+
+	data, err := storage.GetFile(ctx, artwork[0].Pictures[0].StorageInfo.Regular)
+	if err != nil {
+		common.GinErrorResponse(ctx, err, http.StatusInternalServerError, "Failed to get file")
+		return
+	}
+	mimeType := mimetype.Detect(data)
+	ctx.Data(http.StatusOK, mimeType.String(), data)
 }
 
 func GetArtwork(ctx *gin.Context) {
