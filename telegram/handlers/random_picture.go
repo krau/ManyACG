@@ -54,7 +54,7 @@ func RandomPicture(ctx context.Context, bot *telego.Bot, message telego.Message)
 		}
 		file = telegoutil.FileFromURL(photoURL)
 	}
-	caption := fmt.Sprintf("[%s](%s)", common.EscapeHTML(artwork[0].Title), artwork[0].SourceURL)
+	caption := fmt.Sprintf("[%s](%s)", common.EscapeMarkdown(artwork[0].Title), artwork[0].SourceURL)
 	photo := telegoutil.Photo(message.Chat.ChatID(), file).
 		WithReplyParameters(&telego.ReplyParameters{
 			MessageID: message.MessageID,
