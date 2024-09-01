@@ -31,6 +31,7 @@ type PictureResponse struct {
 	Hash      string  `json:"hash"`
 	BlurScore float64 `json:"blur_score"`
 	FileName  string  `json:"file_name"`
+	MessageID int     `json:"message_id"`
 	Thumbnail string  `json:"thumbnail"`
 	Regular   string  `json:"regular"`
 }
@@ -72,6 +73,7 @@ func ResponseDataFromArtwork(artwork *types.Artwork) *ArtworkResponseData {
 			Hash:      picture.Hash,
 			BlurScore: picture.BlurScore,
 			FileName:  filepath.Base(picture.StorageInfo.Original.Path),
+			MessageID: picture.TelegramInfo.MessageID,
 			Thumbnail: thumbnail,
 			Regular:   regular,
 		}
