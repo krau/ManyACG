@@ -3,6 +3,7 @@ package artwork
 import (
 	"ManyACG/adapter"
 	"ManyACG/common"
+	"ManyACG/config"
 	manyacgErrors "ManyACG/errors"
 	"ManyACG/model"
 	"ManyACG/service"
@@ -10,6 +11,7 @@ import (
 	"ManyACG/types"
 	"errors"
 	"net/http"
+	"strings"
 
 	"github.com/gabriel-vasile/mimetype"
 	"github.com/gin-gonic/gin"
@@ -67,13 +69,22 @@ func RandomArtworkPreview(ctx *gin.Context) {
 		return
 	}
 
-	data, err := storage.GetFile(ctx, artwork[0].Pictures[0].StorageInfo.Regular)
-	if err != nil {
-		common.GinErrorResponse(ctx, err, http.StatusInternalServerError, "Failed to get file")
-		return
+	picture := artwork[0].Pictures[0]
+
+	switch picture.StorageInfo.Regular.Type {
+	case types.StorageTypeLocal:
+		ctx.File(picture.StorageInfo.Regular.Path)
+	case types.StorageTypeAlist:
+		ctx.Redirect(http.StatusFound, config.Cfg.Storage.Alist.CdnURL+strings.TrimPrefix(picture.StorageInfo.Regular.Path, config.Cfg.Storage.Alist.Path))
+	default:
+		data, err := storage.GetFile(ctx, picture.StorageInfo.Regular)
+		if err != nil {
+			common.GinErrorResponse(ctx, err, http.StatusInternalServerError, "Failed to get file")
+			return
+		}
+		mimeType := mimetype.Detect(data)
+		ctx.Data(http.StatusOK, mimeType.String(), data)
 	}
-	mimeType := mimetype.Detect(data)
-	ctx.Data(http.StatusOK, mimeType.String(), data)
 }
 
 func GetArtwork(ctx *gin.Context) {
