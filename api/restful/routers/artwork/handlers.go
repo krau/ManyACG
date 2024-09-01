@@ -126,7 +126,10 @@ func GetArtworkList(ctx *gin.Context) {
 		if err != nil {
 			common.GinErrorResponse(ctx, err, http.StatusBadRequest, "Invalid artist ID")
 		}
-		artworks, err := service.GetArtworksByArtistID(ctx, artistID, r18Type, request.Page, request.PageSize, adapter.OnlyLoadPicture())
+		artworks, err := service.GetArtworksByArtistID(ctx, artistID, r18Type, request.Page, request.PageSize, &adapter.AdapterOption{
+			LoadArtist:  true,
+			LoadPicture: true,
+		})
 		if err != nil {
 			common.GinErrorResponse(ctx, err, http.StatusInternalServerError, "Failed to get artworks by artist")
 		}
@@ -138,7 +141,10 @@ func GetArtworkList(ctx *gin.Context) {
 		return
 	}
 
-	artworks, err := service.GetLatestArtworks(ctx, r18Type, request.Page, request.PageSize, adapter.OnlyLoadPicture())
+	artworks, err := service.GetLatestArtworks(ctx, r18Type, request.Page, request.PageSize, &adapter.AdapterOption{
+		LoadArtist:  true,
+		LoadPicture: true,
+	})
 
 	if err != nil {
 		common.GinErrorResponse(ctx, err, http.StatusInternalServerError, "Failed to get artwork list")
