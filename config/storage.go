@@ -27,6 +27,7 @@ type StorageLocalConfig struct {
 type StorageAlistConfig struct {
 	Enable       bool   `toml:"enable" mapstructure:"enable" json:"enable" yaml:"enable"`
 	URL          string `toml:"url" mapstructure:"url" json:"url" yaml:"url"`
+	CdnURL       string `toml:"cdn_url" mapstructure:"cdn_url" json:"cdn_url" yaml:"cdn_url"`
 	Username     string `toml:"username" mapstructure:"username" json:"username" yaml:"username"`
 	Password     string `toml:"password" mapstructure:"password" json:"password" yaml:"password"`
 	Path         string `toml:"path" mapstructure:"path" json:"path" yaml:"path"`

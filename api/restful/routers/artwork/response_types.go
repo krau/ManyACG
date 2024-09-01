@@ -54,12 +54,12 @@ func ResponseDataFromArtwork(artwork *types.Artwork) *ArtworkResponseData {
 	for i, picture := range artwork.Pictures {
 		var thumbnail, regular string
 		if picture.StorageInfo.Thumb.Type == types.StorageTypeAlist {
-			thumbnail = config.Cfg.Storage.Alist.URL + "/d" + picture.StorageInfo.Thumb.Path
+			thumbnail = config.Cfg.Storage.Alist.CdnURL + picture.StorageInfo.Thumb.Path
 		} else {
 			thumbnail = picture.Thumbnail
 		}
 		if picture.StorageInfo.Regular.Type == types.StorageTypeAlist {
-			regular = config.Cfg.Storage.Alist.URL + "/d" + picture.StorageInfo.Regular.Path
+			regular = config.Cfg.Storage.Alist.CdnURL + picture.StorageInfo.Regular.Path
 		} else {
 			regular = picture.Thumbnail
 		}
