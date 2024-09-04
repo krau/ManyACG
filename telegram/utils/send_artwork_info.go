@@ -175,6 +175,13 @@ func updateLinkPreview(ctx context.Context, targetMessage *telego.Message, artwo
 	if pictureIndex >= uint(len(artwork.Pictures)) {
 		return manyacgErrors.ErrIndexOOB
 	}
+
+	defer func() {
+		if err := recover(); err != nil {
+			Logger.Fatalf("Panic recovered: %v", err)
+		}
+	}()
+
 	var inputFile telego.InputFile
 	fileBytes, err := common.DownloadWithCache(ctx, artwork.Pictures[pictureIndex].Original, nil)
 	if err != nil {
@@ -191,20 +198,15 @@ func updateLinkPreview(ctx context.Context, targetMessage *telego.Message, artwo
 	var replyMarkup *telego.InlineKeyboardMarkup
 
 	cachedArtwork, err := service.GetCachedArtworkByURL(ctx, artwork.SourceURL)
-	if err == nil {
-		if cachedArtwork.Status == types.ArtworkStatusPosted {
-			replyMarkup = GetPostedPictureReplyMarkup(artwork, pictureIndex, ChannelChatID, BotUsername)
-		} else if cachedArtwork.Status == types.ArtworkStatusCached {
-			replyMarkup = targetMessage.ReplyMarkup
-		} else {
-			mediaPhoto.WithCaption(photoParams.Caption + "\n<i>正在发布...</i>").WithParseMode(telego.ModeHTML)
-		}
-	} else {
-		artwork, err := service.GetArtworkByURL(ctx, artwork.SourceURL)
-		if err != nil {
-			return err
-		}
+	if err != nil {
+		return err
+	}
+	if cachedArtwork.Status == types.ArtworkStatusPosted {
 		replyMarkup = GetPostedPictureReplyMarkup(artwork, pictureIndex, ChannelChatID, BotUsername)
+	} else if cachedArtwork.Status == types.ArtworkStatusCached {
+		replyMarkup = targetMessage.ReplyMarkup
+	} else {
+		mediaPhoto.WithCaption(photoParams.Caption + "\n<i>正在发布...</i>").WithParseMode(telego.ModeHTML)
 	}
 	msg, err := bot.EditMessageMedia(&telego.EditMessageMediaParams{
 		ChatID:      targetMessage.Chat.ChatID(),
