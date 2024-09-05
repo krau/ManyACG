@@ -3,6 +3,7 @@ package dao
 import (
 	"ManyACG/model"
 	"context"
+	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -12,7 +13,7 @@ import (
 var unauthUserCollection *mongo.Collection
 
 func CreateUnauthUser(ctx context.Context, user *model.UnauthUserModel) (*mongo.InsertOneResult, error) {
-	user.CreatedAt = primitive.NewDateTimeFromTime(user.CreatedAt.Time())
+	user.CreatedAt = primitive.NewDateTimeFromTime(time.Now())
 	return unauthUserCollection.InsertOne(ctx, user)
 }
 
