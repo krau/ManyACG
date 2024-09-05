@@ -12,6 +12,7 @@ import (
 var unauthUserCollection *mongo.Collection
 
 func CreateUnauthUser(ctx context.Context, user *model.UnauthUserModel) (*mongo.InsertOneResult, error) {
+	user.CreatedAt = primitive.NewDateTimeFromTime(user.CreatedAt.Time())
 	return unauthUserCollection.InsertOne(ctx, user)
 }
 
