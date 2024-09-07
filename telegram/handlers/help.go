@@ -36,10 +36,12 @@ Inline 查询支持同样的参数格式.
 		helpText += `/set_admin - 设置|删除管理员
 /delete - 删除整个作品
 /r18 - 设置作品R18标记
+/title - 设置作品标题
 /tags - 更新作品标签(覆盖原有标签)
 /addtags - 添加作品标签
 /deltags - 删除作品标签
 /fetch - 手动开始一次抓取
+
 /process_pictures_hashsize - 处理无哈希和尺寸的图片
 /process_pictures_storage - 处理图片存储(生成缩略图, 迁移用)
 /fix_twitter_artists - 修复Twitter作者信息(更新所有推特作品的作者信息)

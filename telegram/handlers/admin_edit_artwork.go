@@ -110,12 +110,14 @@ func SetArtworkTags(ctx context.Context, bot *telego.Bot, message telego.Message
 		utils.ReplyMessage(bot, message, "获取更新后的作品信息失败: "+err.Error())
 		return
 	}
-	bot.EditMessageCaption(&telego.EditMessageCaptionParams{
-		ChatID:    ChannelChatID,
-		MessageID: artwork.Pictures[0].TelegramInfo.MessageID,
-		Caption:   utils.GetArtworkHTMLCaption(artwork),
-		ParseMode: telego.ModeHTML,
-	})
+	if artwork.Pictures[0].TelegramInfo.MessageID != 0 {
+		bot.EditMessageCaption(&telego.EditMessageCaptionParams{
+			ChatID:    ChannelChatID,
+			MessageID: artwork.Pictures[0].TelegramInfo.MessageID,
+			Caption:   utils.GetArtworkHTMLCaption(artwork),
+			ParseMode: telego.ModeHTML,
+		})
+	}
 	utils.ReplyMessage(bot, message, "更新作品标签成功")
 }
 
@@ -175,4 +177,63 @@ func EditArtworkR18(ctx context.Context, bot *telego.Bot, query telego.CallbackQ
 			CacheTime:       2,
 		},
 	)
+}
+
+func EditArtworkTitle(ctx context.Context, bot *telego.Bot, message telego.Message) {
+	if !CheckPermissionInGroup(ctx, message, types.PermissionEditArtwork) {
+		utils.ReplyMessage(bot, message, "你没有编辑作品的权限")
+		return
+	}
+
+	var sourceURL string
+	if message.ReplyToMessage != nil {
+		sourceURL = utils.FindSourceURLForMessage(message.ReplyToMessage)
+	} else {
+		sourceURL = sources.FindSourceURL(message.Text)
+	}
+	if sourceURL == "" {
+		utils.ReplyMessage(bot, message, "请回复一条消息, 或者指定作品链接")
+		return
+	}
+
+	artwork, err := service.GetArtworkByURL(ctx, sourceURL)
+	if err != nil {
+		utils.ReplyMessage(bot, message, "获取作品信息失败: "+err.Error())
+		return
+	}
+
+	_, _, args := telegoutil.ParseCommand(message.Text)
+	var titleSlice []string
+	if message.ReplyToMessage != nil {
+		if len(args) == 0 {
+			utils.ReplyMessage(bot, message, "请提供标题")
+			return
+		}
+		titleSlice = args
+	} else {
+		if len(args) <= 1 {
+			utils.ReplyMessage(bot, message, "请在链接后提供标题")
+			return
+		}
+		titleSlice = args[1:]
+	}
+	title := strings.Join(titleSlice, " ")
+	if err := service.UpdateArtworkTitleByURL(ctx, artwork.SourceURL, title); err != nil {
+		utils.ReplyMessage(bot, message, "更新作品标题失败: "+err.Error())
+		return
+	}
+	artwork, err = service.GetArtworkByURL(ctx, artwork.SourceURL)
+	if err != nil {
+		utils.ReplyMessage(bot, message, "获取更新后的作品信息失败: "+err.Error())
+		return
+	}
+	if artwork.Pictures[0].TelegramInfo.MessageID != 0 {
+		bot.EditMessageCaption(&telego.EditMessageCaptionParams{
+			ChatID:    ChannelChatID,
+			MessageID: artwork.Pictures[0].TelegramInfo.MessageID,
+			Caption:   utils.GetArtworkHTMLCaption(artwork),
+			ParseMode: telego.ModeHTML,
+		})
+	}
+	utils.ReplyMessage(bot, message, "更新作品标题成功")
 }

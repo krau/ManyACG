@@ -342,6 +342,18 @@ func UpdateArtworkTagsByURL(ctx context.Context, sourceURL string, tags []string
 	return nil
 }
 
+func UpdateArtworkTitleByURL(ctx context.Context, sourceURL, title string) error {
+	artworkModel, err := dao.GetArtworkByURL(ctx, sourceURL)
+	if err != nil {
+		return err
+	}
+	_, err = dao.UpdateArtworkTitleByID(ctx, artworkModel.ID, title)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func DeleteArtworkByURL(ctx context.Context, sourceURL string) error {
 	artworkModel, err := dao.GetArtworkByURL(ctx, sourceURL)
 	if err != nil {

@@ -77,6 +77,10 @@ var (
 			Description: "设置作品 R18",
 		},
 		{
+			Command:     "title",
+			Description: "设置作品标题",
+		},
+		{
 			Command:     "tags",
 			Description: "设置作品标签(覆盖)",
 		},
