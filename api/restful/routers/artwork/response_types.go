@@ -6,7 +6,6 @@ import (
 	"ManyACG/types"
 	"net/http"
 	"path/filepath"
-	"strings"
 )
 
 type ArtworkResponseData struct {
@@ -56,12 +55,12 @@ func ResponseDataFromArtwork(artwork *types.Artwork) *ArtworkResponseData {
 	for i, picture := range artwork.Pictures {
 		var thumbnail, regular string
 		if picture.StorageInfo.Thumb.Type == types.StorageTypeAlist {
-			thumbnail = config.Cfg.Storage.Alist.CdnURL + strings.TrimPrefix(picture.StorageInfo.Thumb.Path, config.Cfg.Storage.Alist.Path)
+			thumbnail = config.Cfg.Storage.Alist.CdnURL + common.TrimPrefixes(picture.StorageInfo.Thumb.Path, config.Cfg.Storage.Alist.CdnTrimPaths...)
 		} else {
 			thumbnail = picture.Thumbnail
 		}
 		if picture.StorageInfo.Regular.Type == types.StorageTypeAlist {
-			regular = config.Cfg.Storage.Alist.CdnURL + strings.TrimPrefix(picture.StorageInfo.Regular.Path, config.Cfg.Storage.Alist.Path)
+			regular = config.Cfg.Storage.Alist.CdnURL + common.TrimPrefixes(picture.StorageInfo.Regular.Path, config.Cfg.Storage.Alist.CdnTrimPaths...)
 		} else {
 			regular = picture.Thumbnail
 		}

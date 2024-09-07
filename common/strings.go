@@ -133,3 +133,10 @@ func ExtractTagsFromText(text string) []string {
 
 	return tags
 }
+
+func TrimPrefixes(s string, prefixes ...string) string {
+	for _, prefix := range prefixes {
+		s = strings.TrimPrefix(s, prefix)
+	}
+	return s
+}
