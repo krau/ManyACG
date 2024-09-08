@@ -3,7 +3,6 @@ package artwork
 import (
 	"ManyACG/adapter"
 	"ManyACG/common"
-	"ManyACG/config"
 	manyacgErrors "ManyACG/errors"
 	"ManyACG/model"
 	"ManyACG/service"
@@ -74,7 +73,7 @@ func RandomArtworkPreview(ctx *gin.Context) {
 	case types.StorageTypeLocal:
 		ctx.File(picture.StorageInfo.Regular.Path)
 	case types.StorageTypeAlist:
-		ctx.Redirect(http.StatusFound, config.Cfg.Storage.Alist.CdnURL+common.TrimPrefixes(picture.StorageInfo.Regular.Path, config.Cfg.Storage.Alist.CdnTrimPaths...))
+		ctx.Redirect(http.StatusFound, common.ApplyPathRule(picture.StorageInfo.Regular.Path))
 	default:
 		data, err := storage.GetFile(ctx, picture.StorageInfo.Regular)
 		if err != nil {

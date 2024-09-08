@@ -2,7 +2,6 @@ package artwork
 
 import (
 	"ManyACG/common"
-	"ManyACG/config"
 	"ManyACG/types"
 	"net/http"
 	"path/filepath"
@@ -55,12 +54,12 @@ func ResponseDataFromArtwork(artwork *types.Artwork) *ArtworkResponseData {
 	for i, picture := range artwork.Pictures {
 		var thumbnail, regular string
 		if picture.StorageInfo.Thumb.Type == types.StorageTypeAlist {
-			thumbnail = config.Cfg.Storage.Alist.CdnURL + common.TrimPrefixes(picture.StorageInfo.Thumb.Path, config.Cfg.Storage.Alist.CdnTrimPaths...)
+			thumbnail = common.ApplyPathRule(picture.StorageInfo.Thumb.Path)
 		} else {
 			thumbnail = picture.Thumbnail
 		}
 		if picture.StorageInfo.Regular.Type == types.StorageTypeAlist {
-			regular = config.Cfg.Storage.Alist.CdnURL + common.TrimPrefixes(picture.StorageInfo.Regular.Path, config.Cfg.Storage.Alist.CdnTrimPaths...)
+			regular = common.ApplyPathRule(picture.StorageInfo.Regular.Path)
 		} else {
 			regular = picture.Thumbnail
 		}

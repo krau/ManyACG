@@ -1,6 +1,7 @@
 package common
 
 import (
+	"ManyACG/config"
 	"math/rand"
 	"regexp"
 	"strings"
@@ -130,13 +131,14 @@ func ExtractTagsFromText(text string) []string {
 			tags = append(tags, match[1])
 		}
 	}
-
 	return tags
 }
 
-func TrimPrefixes(s string, prefixes ...string) string {
-	for _, prefix := range prefixes {
-		s = strings.TrimPrefix(s, prefix)
+func ApplyPathRule(path string) string {
+	for _, rule := range config.Cfg.API.PathRules {
+		if strings.HasPrefix(path, rule.Path) {
+			return rule.JoinPrefix + strings.TrimPrefix(path, rule.TrimPrefix)
+		}
 	}
-	return s
+	return path
 }

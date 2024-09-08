@@ -25,13 +25,11 @@ type StorageLocalConfig struct {
 }
 
 type StorageAlistConfig struct {
-	Enable       bool     `toml:"enable" mapstructure:"enable" json:"enable" yaml:"enable"`
-	URL          string   `toml:"url" mapstructure:"url" json:"url" yaml:"url"`
-	CdnURL       string   `toml:"cdn_url" mapstructure:"cdn_url" json:"cdn_url" yaml:"cdn_url"`
-	CdnTrimPaths []string `toml:"cdn_trim_paths" mapstructure:"cdn_trim_paths" json:"cdn_trim_paths" yaml:"cdn_trim_paths"`
-	Username     string   `toml:"username" mapstructure:"username" json:"username" yaml:"username"`
-	Password     string   `toml:"password" mapstructure:"password" json:"password" yaml:"password"`
-	Path         string   `toml:"path" mapstructure:"path" json:"path" yaml:"path"`
-	PathPassword string   `toml:"path_password" mapstructure:"path_password" json:"path_password" yaml:"path_password"`
-	TokenExpire  int      `toml:"token_expire" mapstructure:"token_expire" json:"token_expire" yaml:"token_expire"`
+	Enable       bool   `toml:"enable" mapstructure:"enable" json:"enable" yaml:"enable"`
+	URL          string `toml:"url" mapstructure:"url" json:"url" yaml:"url"`
+	Username     string `toml:"username" mapstructure:"username" json:"username" yaml:"username"`
+	Password     string `toml:"password" mapstructure:"password" json:"password" yaml:"password"`
+	Path         string `toml:"path" mapstructure:"path" json:"path" yaml:"path"`
+	PathPassword string `toml:"path_password" mapstructure:"path_password" json:"path_password" yaml:"path_password"`
+	TokenExpire  int    `toml:"token_expire" mapstructure:"token_expire" json:"token_expire" yaml:"token_expire"`
 }
