@@ -2,7 +2,9 @@ package common
 
 import (
 	"ManyACG/config"
+	. "ManyACG/logger"
 	"math/rand"
+	"net/url"
 	"regexp"
 	"strings"
 )
@@ -137,7 +139,12 @@ func ExtractTagsFromText(text string) []string {
 func ApplyPathRule(path string) string {
 	for _, rule := range config.Cfg.API.PathRules {
 		if strings.HasPrefix(path, rule.Path) {
-			return rule.JoinPrefix + strings.TrimPrefix(path, rule.TrimPrefix)
+			parsedUrl, err := url.JoinPath(rule.JoinPrefix, strings.TrimPrefix(path, rule.TrimPrefix))
+			if err != nil {
+				Logger.Errorf("Failed to parse url: %s", err)
+				return rule.JoinPrefix + strings.TrimPrefix(path, rule.TrimPrefix)
+			}
+			return parsedUrl
 		}
 	}
 	return path
