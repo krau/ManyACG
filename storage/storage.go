@@ -55,7 +55,7 @@ func SaveAll(ctx context.Context, artwork *types.Artwork, picture *types.Picture
 	if err != nil {
 		return nil, err
 	}
-	originalStoragePath := fmt.Sprintf("/%s/%s/%s", artwork.SourceType, common.ReplaceFileNameInvalidChar(artwork.Artist.Username), originalStorageFileName)
+	originalStoragePath := fmt.Sprintf("/%s/%s/%s", artwork.SourceType, artwork.Artist.UID, originalStorageFileName)
 	originalStorage, ok := Storages[types.StorageType(config.Cfg.Storage.OriginalType)]
 	if !ok {
 		Logger.Fatalf("Unknown storage type: %s", config.Cfg.Storage.OriginalType)
@@ -84,7 +84,7 @@ func SaveAll(ctx context.Context, artwork *types.Artwork, picture *types.Picture
 			picture.ID = primitive.NewObjectID().Hex()
 		}
 		regularStorageFileName := picture.ID + "_regular.webp"
-		regularStoragePath := fmt.Sprintf("/regular/%s/%s/%s", artwork.SourceType, common.ReplaceFileNameInvalidChar(artwork.Artist.Username), regularStorageFileName)
+		regularStoragePath := fmt.Sprintf("/regular/%s/%s/%s", artwork.SourceType, artwork.Artist.UID, regularStorageFileName)
 
 		regularDetail, err = regularStorage.Save(ctx, regularOutputPath, regularStoragePath)
 		if err != nil {
@@ -107,7 +107,7 @@ func SaveAll(ctx context.Context, artwork *types.Artwork, picture *types.Picture
 			picture.ID = primitive.NewObjectID().Hex()
 		}
 		thumbStorageFileName := picture.ID + "_thumb.webp"
-		thumbStoragePath := fmt.Sprintf("/thumb/%s/%s/%s", artwork.SourceType, common.ReplaceFileNameInvalidChar(artwork.Artist.Username), thumbStorageFileName)
+		thumbStoragePath := fmt.Sprintf("/thumb/%s/%s/%s", artwork.SourceType, artwork.Artist.UID, thumbStorageFileName)
 
 		thumbDetail, err = thumbStorage.Save(ctx, thumbOutputPath, thumbStoragePath)
 		if err != nil {
