@@ -58,6 +58,7 @@ func JWTInitParamas() *jwt.GinJWTMiddleware {
 				"message": message,
 			})
 		},
+		TokenLookup: "header:Authorization,cookie:TOKEN",
 
 		// 设置自定义 payload
 		PayloadFunc: func(data interface{}) jwt.MapClaims {
