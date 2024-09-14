@@ -14,6 +14,11 @@ import (
 )
 
 func CheckKey(ctx *gin.Context) {
+	if config.Cfg.Debug {
+		ctx.Set("auth", true)
+		ctx.Next()
+		return
+	}
 	keyHeader := ctx.GetHeader("X-API-KEY")
 	if keyHeader == config.Cfg.API.Key {
 		ctx.Set("auth", true)

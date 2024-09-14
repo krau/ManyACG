@@ -1,10 +1,16 @@
 package adapter
 
 import (
+	"ManyACG/common"
+	"ManyACG/config"
 	"ManyACG/dao"
 	"ManyACG/model"
 	"ManyACG/types"
 	"context"
+	"fmt"
+	"sync"
+
+	"github.com/gorilla/feeds"
 )
 
 func GetArtworkModelTags(ctx context.Context, artworkModel *model.ArtworkModel) ([]string, error) {
@@ -125,4 +131,31 @@ func ConvertToArtworks(ctx context.Context, artworkModels []*model.ArtworkModel,
 		}
 	}
 	return artworks, nil
+}
+
+func ConvertToFeedItems(ctx context.Context, artworks []*types.Artwork) []*feeds.Item {
+	items := make([]*feeds.Item, len(artworks))
+	var wg sync.WaitGroup
+	for i, artwork := range artworks {
+		wg.Add(1)
+		go func(i int, artwork *types.Artwork) {
+			defer wg.Done()
+			item := &feeds.Item{
+				Title:       artwork.Title,
+				Link:        &feeds.Link{Href: config.Cfg.API.SiteURL + "/artwork/" + artwork.ID},
+				Description: artwork.Description,
+				Author:      &feeds.Author{Name: artwork.Artist.Name},
+				Created:     artwork.CreatedAt,
+				Id:          fmt.Sprintf("%s/artwork/%s", config.Cfg.API.SiteURL, artwork.ID),
+				Content: `
+				<h3>` + artwork.Title + `</h3><br/>
+				<p><img src="` + common.ApplyPathRule(artwork.Pictures[0].StorageInfo.Regular.Path) + `" /></p><br/>
+				<p>` + artwork.Description + `</p>
+				`,
+			}
+			items[i] = item
+		}(i, artwork)
+	}
+	wg.Wait()
+	return items
 }

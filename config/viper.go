@@ -32,10 +32,13 @@ func InitConfig() {
 
 	viper.SetDefault("api.enable", false)
 	viper.SetDefault("api.address", "0.0.0.0:39080")
-	viper.SetDefault("api.auth", false)
+	viper.SetDefault("api.site_name", "ManyACG")
+	viper.SetDefault("api.site_title", "ManyACG - ACG Picture Collection")
+	viper.SetDefault("api.site_description", "Many illustrations and pictures of ACG")
+	viper.SetDefault("api.site_email", "acg@unv.app")
 
 	viper.SetDefault("fetcher.max_concurrent", 5)
-	viper.SetDefault("fetcher.limit", 30)
+	viper.SetDefault("fetcher.limit", 50)
 
 	viper.SetDefault("log.level", "TRACE")
 	viper.SetDefault("log.file_path", "logs/ManyACG.log")
@@ -50,7 +53,9 @@ func InitConfig() {
 
 	viper.SetDefault("storage.cache_dir", "./cache")
 	viper.SetDefault("storage.cache_ttl", 86400)
-	viper.SetDefault("storage.default", "local")
+	viper.SetDefault("storage.original_type", "local")
+	viper.SetDefault("storage.regular_type", "local")
+	viper.SetDefault("storage.thumb_type", "local")
 	viper.SetDefault("storage.local.enable", true)
 	viper.SetDefault("storage.local.path", "./manyacg")
 	viper.SetDefault("storage.alist.token_expire", 86400)

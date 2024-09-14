@@ -11,6 +11,7 @@ require (
 	github.com/gin-gonic/gin v1.10.0
 	github.com/google/uuid v1.6.0
 	github.com/gookit/slog v0.5.6
+	github.com/gorilla/feeds v1.2.0
 	github.com/rhysd/go-github-selfupdate v1.2.3
 	github.com/spf13/cobra v1.8.1
 	github.com/spf13/viper v1.19.0
