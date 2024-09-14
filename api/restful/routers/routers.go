@@ -23,7 +23,7 @@ func RegisterAllRouters(r *gin.RouterGroup, authMiddleware *jwt.GinJWTMiddleware
 		r.Use(middleware.KeyRequired)
 	}
 
-	r.GET("/atom", middleware.KeyRequired, GenerateAtom)
+	r.GET("/atom", GenerateAtom)
 
 	artworkGroup := r.Group("/artwork")
 	artwork.RegisterRouter(artworkGroup)
