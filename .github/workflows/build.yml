@@ -61,6 +61,6 @@ jobs:
             -X "ManyACG/common.Version=${{ env.VERSION }}"
             -X "ManyACG/common.BuildTime=${{ format(github.event.repository.updated_at, 'yyyy-MM-dd HH:mm:ss') }}"
             -X "ManyACG/common.Commit=${{ github.sha }}"
-          binary_name: ManyACG
+          binary_name: manyacg
         env:
           VERSION: ${{ env.VERSION }}
