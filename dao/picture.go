@@ -71,9 +71,7 @@ func GetPicturesByHash(ctx context.Context, hash string) ([]*model.PictureModel,
 }
 
 /*
-	全库遍历搜索
-
-1k 个图像每次搜索在 i7-12700h 上耗时 7ms 左右
+全库遍历搜索
 */
 func GetPicturesByHashHammingDistance(ctx context.Context, hashStr string, distance int) ([]*model.PictureModel, error) {
 	filter := bson.M{
@@ -146,6 +144,10 @@ func GetPictureCount(ctx context.Context) (int64, error) {
 	return pictureCollection.CountDocuments(ctx, bson.M{})
 }
 
+func UpdatePictureIndexByID(ctx context.Context, id primitive.ObjectID, index uint) (*mongo.UpdateResult, error) {
+	return pictureCollection.UpdateOne(ctx, bson.M{"_id": id}, bson.M{"$set": bson.M{"index": index}})
+}
+
 func UpdatePictureTelegramInfoByID(ctx context.Context, id primitive.ObjectID, telegramInfo *types.TelegramInfo) (*mongo.UpdateResult, error) {
 	return pictureCollection.UpdateOne(ctx, bson.M{"_id": id}, bson.M{"$set": bson.M{"telegram_info": telegramInfo}})
 }
@@ -162,10 +164,10 @@ func UpdatePictureStorageInfoByID(ctx context.Context, id primitive.ObjectID, st
 	return pictureCollection.UpdateOne(ctx, bson.M{"_id": id}, bson.M{"$set": bson.M{"storage_info": storageInfo}})
 }
 
-func DeletePicturesByIDs(ctx context.Context, ids []primitive.ObjectID) (*mongo.DeleteResult, error) {
-	return pictureCollection.DeleteMany(ctx, bson.M{"_id": bson.M{"$in": ids}})
-}
-
 func DeletePicturesByArtworkID(ctx context.Context, artworkID primitive.ObjectID) (*mongo.DeleteResult, error) {
 	return pictureCollection.DeleteMany(ctx, bson.M{"artwork_id": artworkID})
+}
+
+func DeletePictureByID(ctx context.Context, id primitive.ObjectID) (*mongo.DeleteResult, error) {
+	return pictureCollection.DeleteOne(ctx, bson.M{"_id": id})
 }

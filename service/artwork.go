@@ -354,28 +354,25 @@ func UpdateArtworkTitleByURL(ctx context.Context, sourceURL, title string) error
 	return nil
 }
 
-func DeleteArtworkByURL(ctx context.Context, sourceURL string) error {
-	artworkModel, err := dao.GetArtworkByURL(ctx, sourceURL)
-	if err != nil {
-		return err
-	}
+func deleteArtwork(ctx context.Context, id primitive.ObjectID, sourceURL string) error {
 	session, err := dao.Client.StartSession()
 	if err != nil {
 		return err
 	}
 	defer session.EndSession(ctx)
+
 	_, err = session.WithTransaction(ctx, func(ctx mongo.SessionContext) (interface{}, error) {
-		_, err := dao.DeleteArtworkByID(ctx, artworkModel.ID)
+		_, err := dao.DeleteArtworkByID(ctx, id)
 		if err != nil {
 			return nil, err
 		}
-		_, err = dao.DeletePicturesByArtworkID(ctx, artworkModel.ID)
+		_, err = dao.DeletePicturesByArtworkID(ctx, id)
 		if err != nil {
 			return nil, err
 		}
 		_, err = dao.CreateDeleted(ctx, &model.DeletedModel{
 			SourceURL: sourceURL,
-			ArtworkID: artworkModel.ID,
+			ArtworkID: id,
 		})
 		if err != nil {
 			return nil, err
@@ -393,8 +390,25 @@ func DeleteArtworkByURL(ctx context.Context, sourceURL string) error {
 	return nil
 }
 
+func DeleteArtworkByURL(ctx context.Context, sourceURL string) error {
+	artworkModel, err := dao.GetArtworkByURL(ctx, sourceURL)
+	if err != nil {
+		return err
+	}
+	return deleteArtwork(ctx, artworkModel.ID, sourceURL)
+}
+
 func DeleteArtworkByID(ctx context.Context, id primitive.ObjectID) error {
 	artworkModel, err := dao.GetArtworkByID(ctx, id)
+	if err != nil {
+		return err
+	}
+	return deleteArtwork(ctx, id, artworkModel.SourceURL)
+}
+
+// 用于删除图片后重整 artwork 的 picture 的 index
+func TidyArtworkPictureIndexByID(ctx context.Context, artworkID primitive.ObjectID) error {
+	artworkModel, err := dao.GetArtworkByID(ctx, artworkID)
 	if err != nil {
 		return err
 	}
@@ -403,33 +417,13 @@ func DeleteArtworkByID(ctx context.Context, id primitive.ObjectID) error {
 		return err
 	}
 	defer session.EndSession(ctx)
-	_, err = session.WithTransaction(ctx, func(ctx mongo.SessionContext) (interface{}, error) {
-		_, err := dao.DeleteArtworkByID(ctx, id)
-		if err != nil {
-			return nil, err
-		}
-
-		_, err = dao.DeletePicturesByArtworkID(ctx, id)
-		if err != nil {
-			return nil, err
-		}
-
-		_, err = dao.CreateDeleted(ctx, &model.DeletedModel{
-			SourceURL: artworkModel.SourceURL,
-			ArtworkID: artworkModel.ID,
-		})
-		if err != nil {
-			return nil, err
+	_, err = session.WithTransaction(ctx, func(ctx mongo.SessionContext) (any, error) {
+		for i, pictureID := range artworkModel.Pictures {
+			if _, err := dao.UpdatePictureIndexByID(ctx, pictureID, uint(i)); err != nil {
+				return nil, err
+			}
 		}
 		return nil, nil
 	})
-	if err != nil {
-		return err
-	}
-
-	if err := UpdateCachedArtworkStatusByURL(ctx, artworkModel.SourceURL, types.ArtworkStatusCached); err != nil {
-		Logger.Warnf("更新缓存作品状态失败: %s", err)
-	}
-
-	return nil
+	return err
 }

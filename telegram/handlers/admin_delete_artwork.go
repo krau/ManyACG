@@ -8,6 +8,8 @@ import (
 	"ManyACG/telegram/utils"
 	"ManyACG/types"
 	"context"
+	"fmt"
+	"strconv"
 	"strings"
 
 	"github.com/mymmrac/telego"
@@ -21,6 +23,7 @@ func DeleteArtwork(ctx context.Context, bot *telego.Bot, message telego.Message)
 		return
 	}
 	var sourceURL string
+
 	if message.ReplyToMessage != nil {
 		sourceURL = utils.FindSourceURLForMessage(message.ReplyToMessage)
 	} else {
@@ -30,21 +33,59 @@ func DeleteArtwork(ctx context.Context, bot *telego.Bot, message telego.Message)
 		utils.ReplyMessage(bot, message, "请回复一条消息, 或者指定作品链接")
 		return
 	}
-
 	artwork, err := service.GetArtworkByURL(ctx, sourceURL)
 	if err != nil {
 		utils.ReplyMessage(bot, message, "获取作品信息失败: "+err.Error())
 		return
 	}
-	if err := service.DeleteArtworkByURL(ctx, sourceURL); err != nil {
-		utils.ReplyMessage(bot, message, "删除作品失败: "+err.Error())
+	cmd, _, args := telegoutil.ParseCommand(message.Text)
+
+	if cmd == "delete" {
+		if err := service.DeleteArtworkByURL(ctx, sourceURL); err != nil {
+			utils.ReplyMessage(bot, message, "删除作品失败: "+err.Error())
+			return
+		}
+		utils.ReplyMessage(bot, message, "在数据库中已删除该作品")
+		for _, picture := range artwork.Pictures {
+			if err := storage.DeleteAll(ctx, picture.StorageInfo); err != nil {
+				Logger.Errorf("删除图片失败: %s", err)
+			}
+		}
 		return
 	}
-	utils.ReplyMessage(bot, message, "在数据库中已删除该作品")
-	for _, picture := range artwork.Pictures {
-		if err := storage.DeleteAll(ctx, picture.StorageInfo); err != nil {
-			Logger.Errorf("删除图片失败: %s", err)
-		}
+
+	if len(args) == 0 {
+		utils.ReplyMessage(bot, message, "请提供要删除的图片需要 (从1开始)")
+		return
+	}
+
+	pictureIndex := 0
+	pictureIndexStr := args[len(args)-1]
+	pictureIndex, err = strconv.Atoi(pictureIndexStr)
+	if err != nil {
+		utils.ReplyMessage(bot, message, fmt.Sprintf("参数错误, 请指定要删除的图片序号 (从1开始)\nerror: %s", err))
+		return
+	}
+	if pictureIndex <= 0 || pictureIndex > len(artwork.Pictures) {
+		utils.ReplyMessage(bot, message, "请输入正确的图片序号, 从1开始")
+		return
+	}
+
+	pictureIndex--
+
+	picture := artwork.Pictures[pictureIndex]
+	pictureID, err := primitive.ObjectIDFromHex(picture.ID)
+	if err != nil {
+		utils.ReplyMessage(bot, message, fmt.Sprintf("删除失败, 无效的ID\nerror: %s", err))
+		return
+	}
+	if err := service.DeletePictureByID(ctx, pictureID); err != nil {
+		utils.ReplyMessage(bot, message, fmt.Sprintf("删除失败\nerror: %s", err))
+		return
+	}
+	utils.ReplyMessage(bot, message, "在数据库中已删除该图片")
+	if err := storage.DeleteAll(ctx, picture.StorageInfo); err != nil {
+		Logger.Errorf("删除图片失败: %s", err)
 	}
 }
 
@@ -80,25 +121,10 @@ func DeleteArtworkCallbackQuery(ctx context.Context, bot *telego.Bot, query tele
 
 	bot.AnswerCallbackQuery(telegoutil.CallbackQuery(query.ID).WithText("在数据库中已删除该作品").WithCacheTime(60))
 
-	artworkMessageIDs := make([]int, len(artwork.Pictures))
-	for _, picture := range artwork.Pictures {
-		if picture.TelegramInfo == nil || picture.TelegramInfo.MessageID == 0 {
-			continue
-		}
-		artworkMessageIDs = append(artworkMessageIDs, picture.TelegramInfo.MessageID)
-	}
-	if len(artworkMessageIDs) > 0 {
-		bot.DeleteMessages(&telego.DeleteMessagesParams{
-			ChatID:     ChannelChatID,
-			MessageIDs: artworkMessageIDs,
-		})
-	}
-
 	for _, picture := range artwork.Pictures {
 		if err := storage.DeleteAll(ctx, picture.StorageInfo); err != nil {
 			Logger.Warnf("删除图片失败: %s", err)
 			bot.AnswerCallbackQuery(telegoutil.CallbackQuery(query.ID).WithText("从存储中删除图片失败: " + err.Error()))
 		}
 	}
-
 }

@@ -14,7 +14,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-func SetArtworkR18(ctx context.Context, bot *telego.Bot, message telego.Message) {
+func ToggleArtworkR18(ctx context.Context, bot *telego.Bot, message telego.Message) {
 	if !CheckPermissionInGroup(ctx, message, types.PermissionEditArtwork) {
 		utils.ReplyMessage(bot, message, "你没有编辑作品的权限")
 		return

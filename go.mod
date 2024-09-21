@@ -6,6 +6,7 @@ require (
 	github.com/appleboy/gin-jwt/v2 v2.9.2
 	github.com/blang/semver v3.5.1+incompatible
 	github.com/corona10/goimagehash v1.1.0
+	github.com/duke-git/lancet/v2 v2.3.2
 	github.com/gabriel-vasile/mimetype v1.4.5
 	github.com/gin-contrib/cors v1.7.2
 	github.com/gin-gonic/gin v1.10.0

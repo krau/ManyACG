@@ -8,6 +8,8 @@ import (
 	"ManyACG/types"
 	"context"
 
+	"github.com/duke-git/lancet/v2/slice"
+
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 )
@@ -75,10 +77,6 @@ func DeletePictureByMessageID(ctx context.Context, messageID int) error {
 		if err != nil {
 			return nil, err
 		}
-		_, err = dao.DeletePicturesByIDs(ctx, []primitive.ObjectID{pictureModel.ID})
-		if err != nil {
-			return nil, err
-		}
 		artworkModel, err := dao.GetArtworkByID(ctx, pictureModel.ArtworkID)
 		if err != nil {
 			return nil, err
@@ -102,6 +100,46 @@ func DeletePictureByMessageID(ctx context.Context, messageID int) error {
 		return err
 	}
 	return nil
+}
+
+// 删除单张图片, 如果删除后对应的 artwork 中没有图片, 则也删除 artwork
+//
+// 删除后对 artwork 的 pictures 的 index 进行重整
+func DeletePictureByID(ctx context.Context, id primitive.ObjectID) error {
+	toDeletePictureModel, err := dao.GetPictureByID(ctx, id)
+	if err != nil {
+		return err
+	}
+	artworkModel, err := dao.GetArtworkByID(ctx, toDeletePictureModel.ArtworkID)
+	if err != nil {
+		return err
+	}
+	session, err := dao.Client.StartSession()
+	if err != nil {
+		return err
+	}
+	defer session.EndSession(ctx)
+	_, err = session.WithTransaction(ctx, func(ctx mongo.SessionContext) (any, error) {
+		if len(artworkModel.Pictures) == 1 {
+			err := deleteArtwork(ctx, artworkModel.ID, artworkModel.SourceURL)
+			return nil, err
+		}
+
+		_, err := dao.DeletePictureByID(ctx, id)
+		if err != nil {
+			return nil, err
+		}
+
+		newPictureIDs := slice.Filter(artworkModel.Pictures, func(index int, item primitive.ObjectID) bool {
+			return item.Hex() != toDeletePictureModel.ID.Hex()
+		})
+
+		if _, err := dao.UpdateArtworkPicturesByID(ctx, artworkModel.ID, newPictureIDs); err != nil {
+			return nil, err
+		}
+		return nil, TidyArtworkPictureIndexByID(ctx, artworkModel.ID)
+	})
+	return err
 }
 
 func GetPicturesByHashHammingDistance(ctx context.Context, hash string, distance int) ([]*types.Picture, error) {

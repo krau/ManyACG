@@ -30,12 +30,12 @@ func RegisterHandlers(hg *telegohandler.HandlerGroup) {
 	hg.HandleMessageCtx(GetStats, telegohandler.CommandEqual("stats"), mentionIsBot)
 
 	hg.HandleMessageCtx(SetAdmin, telegohandler.CommandEqual("set_admin"))
-	hg.HandleMessageCtx(DeleteArtwork, telegohandler.CommandEqual("delete"))
+	hg.HandleMessageCtx(DeleteArtwork, telegohandler.Or(telegohandler.CommandEqual("delete"), telegohandler.CommandEqual("del")))
 	hg.HandleMessageCtx(ProcessPicturesHashAndSize, telegohandler.CommandEqual("process_pictures_hashsize"))
 	hg.HandleMessageCtx(ProcessPicturesStorage, telegohandler.CommandEqual("process_pictures_storage"))
 	hg.HandleMessageCtx(FixTwitterArtists, telegohandler.CommandEqual("fix_twitter_artists"))
 
-	hg.HandleMessageCtx(SetArtworkR18, telegohandler.CommandEqual("r18"))
+	hg.HandleMessageCtx(ToggleArtworkR18, telegohandler.CommandEqual("r18"))
 	hg.HandleMessageCtx(SetArtworkTags, telegohandler.Or(telegohandler.CommandEqual("tags"), telegohandler.CommandEqual("addtags"), telegohandler.CommandEqual("deltags")))
 	hg.HandleMessageCtx(EditArtworkTitle, telegohandler.CommandEqual("title"))
 	hg.HandleMessageCtx(PostArtworkCommand, telegohandler.CommandEqual("post"))
