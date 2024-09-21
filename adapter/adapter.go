@@ -8,6 +8,7 @@ import (
 	"ManyACG/types"
 	"context"
 	"fmt"
+	"html"
 	"sync"
 
 	"github.com/gorilla/feeds"
@@ -146,12 +147,25 @@ func ConvertToFeedItems(ctx context.Context, artworks []*types.Artwork) []*feeds
 				Description: artwork.Description,
 				Author:      &feeds.Author{Name: artwork.Artist.Name},
 				Created:     artwork.CreatedAt,
+				Updated:     artwork.CreatedAt,
 				Id:          fmt.Sprintf("%s/artwork/%s", config.Cfg.API.SiteURL, artwork.ID),
-				Content: `
-				<h3>` + artwork.Title + `</h3><br/>
-				<p><img src="` + common.ApplyPathRule(artwork.Pictures[0].StorageInfo.Regular.Path) + `" /></p><br/>
-				<p>` + artwork.Description + `</p>
-				`,
+				Content: fmt.Sprintf(`
+        <article>
+            <h2>%s</h2>
+            <figure>
+                <img src="%s" alt="%s" />
+            </figure>
+            <p>%s</p>
+            <p>Artist: %s</p>
+            <p>Created: %s</p>
+        </article>
+    `,
+					html.EscapeString(artwork.Title),
+					html.EscapeString(common.ApplyPathRule(artwork.Pictures[0].StorageInfo.Regular.Path)),
+					html.EscapeString(artwork.Title),
+					html.EscapeString(artwork.Description),
+					html.EscapeString(artwork.Artist.Name),
+					artwork.CreatedAt.Format("2006-01-02 15:04:05")),
 			}
 			items[i] = item
 		}(i, artwork)
