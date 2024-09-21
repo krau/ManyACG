@@ -1,6 +1,6 @@
 module ManyACG
 
-go 1.22.6
+go 1.22.7
 
 require (
 	github.com/appleboy/gin-jwt/v2 v2.9.2
