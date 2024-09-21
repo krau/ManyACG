@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"regexp"
 
+	"github.com/duke-git/lancet/v2/random"
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/mongo"
 	"golang.org/x/crypto/bcrypt"
@@ -56,7 +57,7 @@ func handleSendCode(c *gin.Context) {
 		return
 	}
 	authMethod := types.AuthMethod(request.AuthMethod)
-	code := common.GenerateRandomString(6, "0123456789")
+	code := random.RandNumeral(6)
 	unauthUser, err := service.CreateUnauthUser(c, &model.UnauthUserModel{
 		Username:   request.Username,
 		AuthMethod: authMethod,

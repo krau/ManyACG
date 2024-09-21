@@ -3,42 +3,41 @@ package common
 import (
 	"ManyACG/config"
 	. "ManyACG/logger"
+	"html"
 	"math/rand"
 	"net/url"
 	"regexp"
 	"strings"
 )
 
-func ReplaceFileNameInvalidChar(fileName string) string {
-	return strings.NewReplacer(
-		" ", "_",
-		"/", "_",
-		"\\", "_",
-		":", "_",
-		"*", "_",
-		"?", "_",
-		"\"", "_",
-		"<", "_",
-		">", "_",
-		"|", "_",
-		"%", "_",
-		"#", "_",
-		"+", "_",
-	).Replace(fileName)
+var fileNameEscaper = strings.NewReplacer(
+	" ", "_",
+	"/", "_",
+	"\\", "_",
+	":", "_",
+	"*", "_",
+	"?", "_",
+	"\"", "_",
+	"<", "_",
+	">", "_",
+	"|", "_",
+	"%", "_",
+	"#", "_",
+	"+", "_",
+)
+
+func EscapeFileName(fileName string) string {
+	return fileNameEscaper.Replace(fileName)
 }
 
+var markdownRe = regexp.MustCompile("([" + regexp.QuoteMeta(`\_*[]()~`+"`"+`>#+-=|{}.!`) + "])")
+
 func EscapeMarkdown(text string) string {
-	escapeChars := `\_*[]()~` + "`" + `>#+-=|{}.!`
-	re := regexp.MustCompile("([" + regexp.QuoteMeta(escapeChars) + "])")
-	return re.ReplaceAllString(text, "\\$1")
+	return markdownRe.ReplaceAllString(text, "\\$1")
 }
 
 func EscapeHTML(text string) string {
-	return strings.NewReplacer(
-		"<", "&lt;",
-		">", "&gt;",
-		"&", "&amp;",
-	).Replace(text)
+	return html.EscapeString(text)
 }
 
 // 解析字符串为二维数组, 如果以字符串以引号包裹, 则无视分隔符
@@ -87,19 +86,6 @@ func ParseStringTo2DArray(str, sep, sep2 string) [][]string {
 		result = append(result, row)
 	}
 
-	return result
-}
-
-// 去除字符串切片中的重复元素
-func RemoveDuplicateStringSlice(s []string) []string {
-	encountered := map[string]bool{}
-	result := []string{}
-	for _, str := range s {
-		if !encountered[str] {
-			encountered[str] = true
-			result = append(result, str)
-		}
-	}
 	return result
 }
 

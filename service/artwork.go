@@ -2,7 +2,6 @@ package service
 
 import (
 	"ManyACG/adapter"
-	"ManyACG/common"
 	"ManyACG/dao"
 	manyacgErrors "ManyACG/errors"
 
@@ -12,6 +11,7 @@ import (
 	"context"
 	"errors"
 
+	"github.com/duke-git/lancet/v2/slice"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 )
@@ -309,7 +309,7 @@ func UpdateArtworkTagsByURL(ctx context.Context, sourceURL string, tags []string
 		return err
 	}
 	defer session.EndSession(ctx)
-	tags = common.RemoveDuplicateStringSlice(tags)
+	tags = slice.Unique(tags)
 	tagIDs := make([]primitive.ObjectID, len(tags))
 	_, err = session.WithTransaction(ctx, func(ctx mongo.SessionContext) (interface{}, error) {
 		for i, tag := range tags {

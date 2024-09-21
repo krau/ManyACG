@@ -99,7 +99,7 @@ func ResizeImage(img image.Image, width, height uint) image.Image {
 
 func CompressImageToJPEG(input []byte, maxSizeMB, maxEdgeLength uint, cacheKey string) ([]byte, error) {
 	if cacheKey != "" {
-		cachePath := config.Cfg.Storage.CacheDir + "/image/" + ReplaceFileNameInvalidChar(cacheKey)
+		cachePath := config.Cfg.Storage.CacheDir + "/image/" + EscapeFileName(cacheKey)
 		data, err := os.ReadFile(cachePath)
 		if err == nil {
 			return data, nil
@@ -147,10 +147,10 @@ func CompressImageToJPEG(input []byte, maxSizeMB, maxEdgeLength uint, cacheKey s
 		}
 	}
 	if cacheKey != "" {
-		if err := MkFile(config.Cfg.Storage.CacheDir+"/image/"+ReplaceFileNameInvalidChar(cacheKey), buf.Bytes()); err != nil {
+		if err := MkFile(config.Cfg.Storage.CacheDir+"/image/"+EscapeFileName(cacheKey), buf.Bytes()); err != nil {
 			Logger.Errorf("failed to save cache file: %s", err)
 		} else {
-			go PurgeFileAfter(config.Cfg.Storage.CacheDir+"/image/"+ReplaceFileNameInvalidChar(cacheKey), time.Duration(config.Cfg.Storage.CacheTTL)*time.Second)
+			go PurgeFileAfter(config.Cfg.Storage.CacheDir+"/image/"+EscapeFileName(cacheKey), time.Duration(config.Cfg.Storage.CacheTTL)*time.Second)
 		}
 	}
 	return buf.Bytes(), nil

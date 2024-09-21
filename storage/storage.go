@@ -44,7 +44,7 @@ func SaveAll(ctx context.Context, artwork *types.Artwork, picture *types.Picture
 	if err != nil {
 		return nil, err
 	}
-	filePath := config.Cfg.Storage.CacheDir + "/" + common.ReplaceFileNameInvalidChar(picture.Original)
+	filePath := config.Cfg.Storage.CacheDir + "/" + common.EscapeFileName(picture.Original)
 	if err := common.MkFile(filePath, originalBytes); err != nil {
 		return nil, err
 	}

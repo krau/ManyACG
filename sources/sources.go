@@ -88,7 +88,7 @@ func GetFileName(artwork *types.Artwork, picture *types.Picture) (string, error)
 		return "", errors.ErrSourceNotSupported
 	}
 	fileName := sourcesNotInit[artwork.SourceType].GetFileName(artwork, picture)
-	return common.ReplaceFileNameInvalidChar(fileName), nil
+	return common.EscapeFileName(fileName), nil
 }
 
 func FindSourceURL(text string) string {

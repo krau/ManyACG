@@ -22,7 +22,7 @@ func DownloadWithCache(ctx context.Context, url string, client *req.Client) ([]b
 	if client == nil {
 		client = Client
 	}
-	cachePath := config.Cfg.Storage.CacheDir + "/req/" + ReplaceFileNameInvalidChar(url)
+	cachePath := config.Cfg.Storage.CacheDir + "/req/" + EscapeFileName(url)
 	data, err := os.ReadFile(cachePath)
 	if err == nil {
 		Logger.Debugf("Cache hit: %s", url)
@@ -47,7 +47,7 @@ func DownloadWithCache(ctx context.Context, url string, client *req.Client) ([]b
 }
 
 func GetReqCachedFile(path string) []byte {
-	cachePath := config.Cfg.Storage.CacheDir + "/req/" + ReplaceFileNameInvalidChar(path)
+	cachePath := config.Cfg.Storage.CacheDir + "/req/" + EscapeFileName(path)
 	data, err := os.ReadFile(cachePath)
 	if err != nil {
 		return nil

@@ -69,10 +69,10 @@ func BenchmarkParseStringTo2DArray(b *testing.B) {
 	}
 }
 
-func BenchmarkReplaceFileNameInvalidChar(b *testing.B) {
+func BenchmarkEscapeFileName(b *testing.B) {
 	fileName := strings.Repeat("test file/name\\with:illegal*chars?\"<>|%#+", 100)
 	for i := 0; i < b.N; i++ {
-		ReplaceFileNameInvalidChar(fileName)
+		EscapeFileName(fileName)
 	}
 }
 
