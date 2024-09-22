@@ -64,9 +64,9 @@ func GetArtworksByR18(ctx context.Context, r18 types.R18Type, limit int) ([]*mod
 	return artworks, nil
 }
 
-func GetArtworksByTags(ctx context.Context, tags [][]primitive.ObjectID, r18 types.R18Type, limit int) ([]*model.ArtworkModel, error) {
+func GetArtworksByTags(ctx context.Context, tags [][]primitive.ObjectID, r18 types.R18Type, page, pageSize int64) ([]*model.ArtworkModel, error) {
 	if len(tags) == 0 {
-		return GetArtworksByR18(ctx, r18, limit)
+		return GetArtworksByR18(ctx, r18, int(pageSize))
 	}
 	var artworks []*model.ArtworkModel
 	var cursor *mongo.Cursor
@@ -84,13 +84,17 @@ func GetArtworksByTags(ctx context.Context, tags [][]primitive.ObjectID, r18 typ
 	if r18 == types.R18TypeAll {
 		cursor, err = artworkCollection.Aggregate(ctx, mongo.Pipeline{
 			bson.D{{Key: "$match", Value: match}},
-			bson.D{{Key: "$sample", Value: bson.M{"size": limit}}},
+			bson.D{{Key: "$sort", Value: bson.M{"_id": -1}}},
+			bson.D{{Key: "$skip", Value: (page - 1) * pageSize}},
+			bson.D{{Key: "$limit", Value: pageSize}},
 		})
 	} else {
 		cursor, err = artworkCollection.Aggregate(ctx, mongo.Pipeline{
 			bson.D{{Key: "$match", Value: bson.M{"r18": r18 == types.R18TypeOnly}}},
 			bson.D{{Key: "$match", Value: match}},
-			bson.D{{Key: "$sample", Value: bson.M{"size": limit}}},
+			bson.D{{Key: "$sort", Value: bson.M{"_id": -1}}},
+			bson.D{{Key: "$skip", Value: (page - 1) * pageSize}},
+			bson.D{{Key: "$limit", Value: pageSize}},
 		})
 	}
 	if err != nil {

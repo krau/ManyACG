@@ -223,9 +223,9 @@ func GetLatestArtworks(ctx context.Context, r18 types.R18Type, page, pageSize in
 // 通过标签获取作品, 标签名使用全字匹配
 //
 // tags: 二维数组, tags = [["tag1", "tag2"], ["tag3", "tag4"]] 表示 (tag1 || tag2) && (tag3 || tag4)
-func GetArtworksByTags(ctx context.Context, tags [][]string, r18 types.R18Type, limit int, convertOpts ...*adapter.AdapterOption) ([]*types.Artwork, error) {
+func GetArtworksByTags(ctx context.Context, tags [][]string, r18 types.R18Type, page, pageSize int64, convertOpts ...*adapter.AdapterOption) ([]*types.Artwork, error) {
 	if len(tags) == 0 {
-		return GetRandomArtworks(ctx, r18, limit)
+		return GetRandomArtworks(ctx, r18, int(pageSize))
 	}
 	tagIDs := make([][]primitive.ObjectID, len(tags))
 	for i, tagGroup := range tags {
@@ -238,7 +238,7 @@ func GetArtworksByTags(ctx context.Context, tags [][]string, r18 types.R18Type, 
 			tagIDs[i][j] = tagModel.ID
 		}
 	}
-	artworkModels, err := dao.GetArtworksByTags(ctx, tagIDs, r18, limit)
+	artworkModels, err := dao.GetArtworksByTags(ctx, tagIDs, r18, page, pageSize)
 	if err != nil {
 		return nil, err
 	}
