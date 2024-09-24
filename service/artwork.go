@@ -330,6 +330,7 @@ func UpdateArtworkTagsByURL(ctx context.Context, sourceURL string, tags []string
 			}
 			tagIDs[i] = res.InsertedID.(primitive.ObjectID)
 		}
+		tagIDs = slice.Unique(tagIDs)
 		_, err = dao.UpdateArtworkTagsByID(ctx, artworkModel.ID, tagIDs)
 		if err != nil {
 			return nil, err
