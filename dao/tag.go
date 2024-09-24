@@ -33,7 +33,7 @@ func GetTagByID(ctx context.Context, id primitive.ObjectID) (*model.TagModel, er
 
 func GetTagByName(ctx context.Context, name string) (*model.TagModel, error) {
 	var tag model.TagModel
-	if err := tagCollection.FindOne(ctx, bson.M{"name": primitive.Regex{Pattern: `^` + name + "$", Options: "i"}}).Decode(&tag); err != nil {
+	if err := tagCollection.FindOne(ctx, bson.M{"name": name}).Decode(&tag); err != nil {
 		return nil, err
 	}
 	return &tag, nil
