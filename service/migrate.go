@@ -294,28 +294,9 @@ func FixTwitterArtists(ctx context.Context, bot *telego.Bot, message *telego.Mes
 	}
 }
 
-func Migrate(ctx context.Context) {
-	Logger.Noticef("Starting migration")
-
-	// Logger.Infof("Adding likes field")
-	// if err := dao.AddLikeCountToArtwork(ctx); err != nil {
-	// 	Logger.Errorf("Failed to add likes field: %v", err)
-	// }
-
-	// Logger.Infof("Migrating storage info")
-	// if err := dao.MigrateStorageInfo(ctx); err != nil {
-	// 	Logger.Errorf("Failed to migrate storage info: %v", err)
-	// }
-
-	// Logger.Infof("Tidying artist")
-	// if err := dao.TidyArtist(ctx); err != nil {
-	// 	Logger.Errorf("Failed to tidy artist: %v", err)
-	// }
-
-	Logger.Infof("Convert artist uid to string")
-	if err := dao.ConvertArtistUIDToString(ctx); err != nil {
-		Logger.Errorf("Failed to convert artist uid to string: %v", err)
+func TidyArtist(ctx context.Context) {
+	Logger.Infof("Tidying artist")
+	if err := dao.TidyArtist(ctx); err != nil {
+		Logger.Errorf("Failed to tidy artist: %v", err)
 	}
-
-	Logger.Noticef("Migration completed")
 }
