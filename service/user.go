@@ -20,6 +20,10 @@ func GetUserByTelegramID(ctx context.Context, telegramID int64) (*model.UserMode
 	return dao.GetUserByTelegramID(ctx, telegramID)
 }
 
+func GetUserByEmail(ctx context.Context, email string) (*model.UserModel, error) {
+	return dao.GetUserByEmail(ctx, email)
+}
+
 func CreateUser(ctx context.Context, user *model.UserModel) (*model.UserModel, error) {
 	res, err := dao.CreateUser(ctx, user)
 	if err != nil {

@@ -3,6 +3,6 @@ package types
 type AuthMethod string
 
 const (
-	// AuthMethodEmail    AuthMethod = "email" // TODO:
+	AuthMethodEmail    AuthMethod = "email"
 	AuthMethodTelegram AuthMethod = "telegram"
 )

@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"ManyACG/api/restful"
+	"ManyACG/common"
 	"ManyACG/config"
 	"ManyACG/dao"
 	"ManyACG/fetcher"
@@ -19,6 +20,7 @@ import (
 
 func Run() {
 	config.InitConfig()
+	common.Init()
 	logger.InitLogger()
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()

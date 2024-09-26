@@ -49,6 +49,15 @@ func GetUserByTelegramID(ctx context.Context, telegramID int64) (*model.UserMode
 	return user, nil
 }
 
+func GetUserByEmail(ctx context.Context, email string) (*model.UserModel, error) {
+	user := &model.UserModel{}
+	err := userCollection.FindOne(ctx, bson.M{"email": email}).Decode(user)
+	if err != nil {
+		return nil, err
+	}
+	return user, nil
+}
+
 func UpdateUserSettings(ctx context.Context, id primitive.ObjectID, settings *model.UserSettings) (*mongo.UpdateResult, error) {
 	// if settings == nil {
 	// 	return nil, manyacgErrors.ErrSettingsNil

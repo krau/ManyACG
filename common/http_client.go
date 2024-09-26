@@ -13,7 +13,7 @@ import (
 
 var Client *req.Client
 
-func init() {
+func initHttpClient() {
 	c := req.C().ImpersonateChrome().SetCommonRetryCount(2).SetTLSHandshakeTimeout(time.Second * 10)
 	Client = c
 }

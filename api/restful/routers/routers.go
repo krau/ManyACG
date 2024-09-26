@@ -16,12 +16,13 @@ import (
 )
 
 func RegisterAllRouters(r *gin.RouterGroup, authMiddleware *jwt.GinJWTMiddleware) {
-	auth.RegisterRouter(r, authMiddleware)
-
 	r.Use(middleware.CheckKey)
+
 	if config.Cfg.API.MustKey {
 		r.Use(middleware.KeyRequired)
 	}
+
+	auth.RegisterRouter(r, authMiddleware)
 
 	r.GET("/atom", GenerateAtom)
 

@@ -2,6 +2,7 @@ package auth
 
 import (
 	"ManyACG/common"
+	"ManyACG/config"
 	. "ManyACG/logger"
 	"ManyACG/model"
 	"ManyACG/service"
@@ -11,14 +12,17 @@ import (
 	"regexp"
 
 	"github.com/duke-git/lancet/v2/random"
+	lancetValidator "github.com/duke-git/lancet/v2/validator"
 	"github.com/gin-gonic/gin"
+	"github.com/resend/resend-go/v2"
 	"go.mongodb.org/mongo-driver/mongo"
 	"golang.org/x/crypto/bcrypt"
 )
 
 type SendCodeRequest struct {
 	Username   string `json:"username" form:"username" binding:"required,min=4,max=20"`
-	AuthMethod string `json:"auth_method" form:"auth_method" binding:"required,oneof=telegram"`
+	AuthMethod string `json:"auth_method" form:"auth_method" binding:"required,oneof=telegram email"`
+	Email      string `json:"email" form:"email" binding:"omitempty,email"`
 }
 
 func handleSendCode(c *gin.Context) {
@@ -46,6 +50,7 @@ func handleSendCode(c *gin.Context) {
 		})
 		return
 	}
+
 	unauthUserInDB, err := service.GetUnauthUserByUsername(c, request.Username)
 	if err != nil && !errors.Is(err, mongo.ErrNoDocuments) {
 		Logger.Errorf("Failed to get user: %v", err)
@@ -53,14 +58,36 @@ func handleSendCode(c *gin.Context) {
 		return
 	}
 	if unauthUserInDB != nil {
-		common.GinErrorResponse(c, err, http.StatusConflict, "User already exists")
+		common.GinErrorResponse(c, errors.New("user already exists"), http.StatusConflict, "User already exists")
 		return
 	}
 	authMethod := types.AuthMethod(request.AuthMethod)
+
+	// TODO: refactor this
+	if authMethod == types.AuthMethodEmail {
+		if request.Email == "" {
+			c.JSON(http.StatusBadRequest, common.RestfulCommonResponse[any]{Status: http.StatusBadRequest, Message: "Email is required"})
+			return
+		}
+		if !lancetValidator.IsEmail(request.Email) {
+			c.JSON(http.StatusBadRequest, common.RestfulCommonResponse[any]{Status: http.StatusBadRequest, Message: "Invalid email"})
+			return
+		}
+		if _, err := service.GetUserByEmail(c, request.Email); err == nil {
+			c.JSON(http.StatusConflict, common.RestfulCommonResponse[any]{Status: http.StatusConflict, Message: "Email already exists"})
+			return
+		}
+		if common.ResendClient == nil {
+			c.JSON(http.StatusInternalServerError, common.RestfulCommonResponse[any]{Status: http.StatusInternalServerError, Message: "Sorry, not supported yet"})
+			return
+		}
+	}
+
 	code := random.RandNumeral(6)
 	unauthUser, err := service.CreateUnauthUser(c, &model.UnauthUserModel{
 		Username:   request.Username,
 		AuthMethod: authMethod,
+		Email:      request.Email,
 		Code:       code,
 	})
 	if err != nil {
@@ -69,23 +96,42 @@ func handleSendCode(c *gin.Context) {
 		return
 	}
 
-	// Telegram auth method needs user to /start the bot to get the code
-	c.JSON(http.StatusOK, gin.H{
-		"status":  http.StatusOK,
-		"message": "Code sent",
-		"data": gin.H{
-			"id": unauthUser.ID.Hex(), // ID of the unauth user, used to generate the deep link
-		},
-	})
+	switch authMethod {
+	case types.AuthMethodTelegram:
+		// Telegram auth method needs user to /start the bot to get the code
+		c.JSON(http.StatusOK, gin.H{
+			"status":  http.StatusOK,
+			"message": "Code generated",
+			"data": gin.H{
+				"id": unauthUser.ID.Hex(), // ID of the unauth user, used to generate the deep link
+			},
+		})
+	case types.AuthMethodEmail:
+		_, err = common.ResendClient.Emails.Send(&resend.SendEmailRequest{
+			From:    config.Cfg.Auth.Resend.From,
+			To:      []string{request.Email},
+			Subject: config.Cfg.Auth.Resend.Subject,
+			Text:    "你的验证码是: " + code + ".\n\n请在 10 分钟内使用, 请勿泄露给他人",
+		})
+		if err != nil {
+			Logger.Errorf("Failed to send email: %v", err)
+			common.GinErrorResponse(c, err, http.StatusInternalServerError, "Failed to send email")
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{
+			"status":  http.StatusOK,
+			"message": "Code sent to <" + request.Email + ">",
+		})
+	}
 }
 
 type RegisterRequest struct {
 	Username   string `json:"username" form:"username" binding:"required,min=4,max=20" msg:"Username must be between 4 and 20 characters"`
 	Password   string `json:"password" form:"password" binding:"required,min=6,max=32" msg:"Password must be between 6 and 32 characters"`
-	AuthMethod string `json:"auth_method" form:"auth_method" binding:"required,oneof=telegram" msg:"Auth method now only supports telegram"`
+	AuthMethod string `json:"auth_method" form:"auth_method" binding:"required,oneof=telegram email" msg:"Auth method now only supports telegram"`
 	Code       string `json:"code" form:"code" binding:"required,min=6,max=6" msg:"Code must be 6 characters"`
-	TelegramID int64  `json:"telegram_id" form:"telegram_id"`
-	// Email      string `json:"email" form:"email" binding:"omitempty,email" msg:"Invalid email"`
+	TelegramID int64  `json:"telegram_id" form:"telegram_id" binding:"omitempty" msg:"Invalid telegram ID"`
+	Email      string `json:"email" form:"email" binding:"omitempty,email" msg:"Invalid email"`
 }
 
 func handleRegister(c *gin.Context) {
@@ -107,7 +153,7 @@ func handleRegister(c *gin.Context) {
 		return
 	}
 	if user != nil {
-		common.GinErrorResponse(c, err, http.StatusConflict, "User already exists")
+		common.GinErrorResponse(c, errors.New("user already exists"), http.StatusConflict, "User already exists")
 		return
 	}
 
@@ -129,6 +175,16 @@ func handleRegister(c *gin.Context) {
 		c.JSON(http.StatusUnauthorized, common.RestfulCommonResponse[any]{Status: http.StatusUnauthorized, Message: "Telegram ID does not match"})
 		return
 	}
+	if unauthUser.AuthMethod == types.AuthMethodEmail {
+		if unauthUser.Email != register.Email {
+			c.JSON(http.StatusUnauthorized, common.RestfulCommonResponse[any]{Status: http.StatusUnauthorized, Message: "Email does not match"})
+			return
+		}
+		if _, err := service.GetUserByEmail(c, register.Email); err == nil {
+			c.JSON(http.StatusConflict, common.RestfulCommonResponse[any]{Status: http.StatusConflict, Message: "Email already exists"})
+			return
+		}
+	}
 
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(register.Password), bcrypt.DefaultCost)
 	if err != nil {
@@ -140,6 +196,7 @@ func handleRegister(c *gin.Context) {
 		Username:   register.Username,
 		Password:   string(hashedPassword),
 		TelegramID: register.TelegramID,
+		Email:      register.Email,
 	})
 	if err != nil {
 		Logger.Errorf("Failed to create user: %v", err)

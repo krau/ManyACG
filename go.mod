@@ -1,6 +1,8 @@
 module ManyACG
 
-go 1.22.7
+go 1.23
+
+toolchain go1.23.1
 
 require (
 	github.com/appleboy/gin-jwt/v2 v2.9.2
@@ -13,6 +15,7 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/gookit/slog v0.5.6
 	github.com/gorilla/feeds v1.2.0
+	github.com/resend/resend-go/v2 v2.12.0
 	github.com/rhysd/go-github-selfupdate v1.2.3
 	github.com/spf13/cobra v1.8.1
 	github.com/spf13/viper v1.19.0
