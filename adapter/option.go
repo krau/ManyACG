@@ -1,46 +1,46 @@
 package adapter
 
 type AdapterOption struct {
-	LoadTag     bool
-	LoadArtist  bool
-	LoadPicture bool
+	LoadTag          bool
+	LoadArtist       bool
+	LoadPicture      bool
+	OnlyIndexPicture bool
 }
 
-func (o *AdapterOption) WithLoadTag(loadTag bool) *AdapterOption {
-	o.LoadTag = loadTag
+func (o *AdapterOption) WithLoadTag() *AdapterOption {
+	o.LoadTag = true
 	return o
 }
 
-func (o *AdapterOption) WithLoadArtist(loadArtist bool) *AdapterOption {
-	o.LoadArtist = loadArtist
+func (o *AdapterOption) WithLoadArtist() *AdapterOption {
+	o.LoadArtist = true
 	return o
 }
 
-func (o *AdapterOption) WithLoadPicture(loadPicture bool) *AdapterOption {
-	o.LoadPicture = loadPicture
+func (o *AdapterOption) WithLoadPicture() *AdapterOption {
+	o.LoadPicture = true
+	return o
+}
+
+func (o *AdapterOption) WithOnlyIndexPicture() *AdapterOption {
+	o.OnlyIndexPicture = true
 	return o
 }
 
 func OnlyLoadTag() *AdapterOption {
 	return &AdapterOption{
-		LoadTag:     true,
-		LoadArtist:  false,
-		LoadPicture: false,
+		LoadTag: true,
 	}
 }
 
 func OnlyLoadArtist() *AdapterOption {
 	return &AdapterOption{
-		LoadTag:     false,
-		LoadArtist:  true,
-		LoadPicture: false,
+		LoadArtist: true,
 	}
 }
 
 func OnlyLoadPicture() *AdapterOption {
 	return &AdapterOption{
-		LoadTag:     false,
-		LoadArtist:  false,
 		LoadPicture: true,
 	}
 }
@@ -54,11 +54,7 @@ func LoadAll() *AdapterOption {
 }
 
 func LoadNone() *AdapterOption {
-	return &AdapterOption{
-		LoadTag:     false,
-		LoadArtist:  false,
-		LoadPicture: false,
-	}
+	return &AdapterOption{}
 }
 
 func MergeOptions(opts ...*AdapterOption) *AdapterOption {
@@ -72,6 +68,9 @@ func MergeOptions(opts ...*AdapterOption) *AdapterOption {
 		}
 		if opt.LoadPicture {
 			result.LoadPicture = true
+		}
+		if opt.OnlyIndexPicture {
+			result.OnlyIndexPicture = true
 		}
 	}
 	return result

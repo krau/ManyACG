@@ -278,6 +278,18 @@ func QueryArtworksByTexts(ctx context.Context, texts [][]string, r18 types.R18Ty
 	return artworks, nil
 }
 
+func QueryArtworksByTextsPage(ctx context.Context, texts [][]string, r18 types.R18Type, page, pageSize int64, convertOpts ...*adapter.AdapterOption) ([]*types.Artwork, error) {
+	artworkModels, err := dao.QueryArtworksByTextsPage(ctx, texts, r18, page, pageSize)
+	if err != nil {
+		return nil, err
+	}
+	artworks, err := adapter.ConvertToArtworks(ctx, artworkModels, convertOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return artworks, nil
+}
+
 func UpdateArtworkR18ByURL(ctx context.Context, sourceURL string, r18 bool) error {
 	artworkModel, err := dao.GetArtworkByURL(ctx, sourceURL)
 	if err != nil {

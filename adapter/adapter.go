@@ -38,8 +38,16 @@ func GetArtworkModelPictures(ctx context.Context, artworkModel *model.ArtworkMod
 	return pictures, nil
 }
 
+func GetArtworkModelIndexPicture(ctx context.Context, artworkModel *model.ArtworkModel) (*types.Picture, error) {
+	pictureModel, err := dao.GetPictureByID(ctx, artworkModel.Pictures[0])
+	if err != nil {
+		return nil, err
+	}
+	return pictureModel.ToPicture(), nil
+}
+
 func ConvertToArtwork(ctx context.Context, artworkModel *model.ArtworkModel, opts ...*AdapterOption) (*types.Artwork, error) {
-	var tags []string
+	tags := make([]string, 0)
 	var pictures []*types.Picture
 	var artist *types.Artist
 	var err error
@@ -90,6 +98,13 @@ func ConvertToArtwork(ctx context.Context, artworkModel *model.ArtworkModel, opt
 			return nil, err
 		}
 		artist = artistModel.ToArtist()
+	}
+	if option.OnlyIndexPicture && !option.LoadPicture {
+		indexPicture, err := GetArtworkModelIndexPicture(ctx, artworkModel)
+		if err != nil {
+			return nil, err
+		}
+		pictures = []*types.Picture{indexPicture}
 	}
 	return &types.Artwork{
 		ID:          artworkModel.ID.Hex(),

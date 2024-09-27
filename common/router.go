@@ -1,6 +1,7 @@
 package common
 
 import (
+	"errors"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -17,6 +18,9 @@ type RestfulCommonResponse[T any] struct {
 // }
 
 func GinErrorResponse(ctx *gin.Context, err error, status int, message string) {
+	if err == nil {
+		err = errors.New(message)
+	}
 	if ctx.GetBool("auth") {
 		ctx.JSON(status, &RestfulCommonResponse[any]{
 			Status:  status,

@@ -14,12 +14,67 @@ func QueryArtworksByTexts(ctx context.Context, texts [][]string, r18 types.R18Ty
 	if len(texts) == 0 {
 		return GetArtworksByR18(ctx, r18, limit)
 	}
-	var artworks []*model.ArtworkModel
-	var cursor *mongo.Cursor
-	var err error
-	var andConditions []bson.M
 
-	for _, textGroup := range texts {
+	query := &artworkTextsQuery{
+		Texts: texts,
+		R18:   r18,
+		Limit: limit,
+	}
+	pipeline := query.buildPipeline(ctx)
+	cursor, err := artworkCollection.Aggregate(ctx, pipeline)
+
+	if err != nil {
+		return nil, err
+	}
+	var artworks []*model.ArtworkModel
+
+	err = cursor.All(ctx, &artworks)
+	if err != nil {
+		return nil, err
+	}
+	if len(artworks) == 0 {
+		return nil, mongo.ErrNoDocuments
+	}
+	return artworks, nil
+}
+
+func QueryArtworksByTextsPage(ctx context.Context, texts [][]string, r18 types.R18Type, page, pageSize int64) ([]*model.ArtworkModel, error) {
+	if len(texts) == 0 {
+		return GetArtworksByR18(ctx, r18, int(pageSize))
+	}
+	query := &artworkTextsQuery{
+		Texts:    texts,
+		R18:      r18,
+		Page:     page,
+		PageSize: pageSize,
+	}
+	pipeline := query.buildPipeline(ctx)
+	cursor, err := artworkCollection.Aggregate(ctx, pipeline)
+	if err != nil {
+		return nil, err
+	}
+	var artworks []*model.ArtworkModel
+	err = cursor.All(ctx, &artworks)
+	if err != nil {
+		return nil, err
+	}
+	if len(artworks) == 0 {
+		return nil, mongo.ErrNoDocuments
+	}
+	return artworks, nil
+}
+
+type artworkTextsQuery struct {
+	Texts    [][]string
+	R18      types.R18Type
+	Limit    int
+	Page     int64
+	PageSize int64
+}
+
+func (q *artworkTextsQuery) buildPipeline(ctx context.Context) []bson.M {
+	var andConditions []bson.M
+	for _, textGroup := range q.Texts {
 		var orConditions []bson.M
 		tagIDs := getTagIDs(ctx, textGroup)
 		if len(tagIDs) > 0 {
@@ -42,29 +97,23 @@ func QueryArtworksByTexts(ctx context.Context, texts [][]string, r18 types.R18Ty
 	}
 
 	match := bson.M{"$and": andConditions}
-	if r18 == types.R18TypeAll {
-		cursor, err = artworkCollection.Aggregate(ctx, mongo.Pipeline{
-			bson.D{{Key: "$match", Value: match}},
-			bson.D{{Key: "$sample", Value: bson.M{"size": limit}}},
-		})
-	} else {
-		match["r18"] = r18 == types.R18TypeOnly
-		cursor, err = artworkCollection.Aggregate(ctx, mongo.Pipeline{
-			bson.D{{Key: "$match", Value: match}},
-			bson.D{{Key: "$sample", Value: bson.M{"size": limit}}},
-		})
+	if q.R18 != types.R18TypeAll {
+		match["r18"] = q.R18 == types.R18TypeOnly
 	}
-	if err != nil {
-		return nil, err
+
+	// 如果没有分页返回 limit 条数据
+	if q.Page <= 0 && q.PageSize <= 0 {
+		return []bson.M{
+			{"$match": match},
+			{"$sample": bson.M{"size": q.Limit}},
+		}
 	}
-	err = cursor.All(ctx, &artworks)
-	if err != nil {
-		return nil, err
+
+	return []bson.M{
+		{"$match": match},
+		{"$skip": (q.Page - 1) * q.PageSize},
+		{"$limit": q.PageSize},
 	}
-	if len(artworks) == 0 {
-		return nil, mongo.ErrNoDocuments
-	}
-	return artworks, nil
 }
 
 func getTagIDs(ctx context.Context, tags []string) []primitive.ObjectID {

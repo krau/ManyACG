@@ -12,6 +12,7 @@ var (
 	ErrNoAvailableFile  = errors.New("no available file")
 
 	ErrNilArtwork          = errors.New("artwork is nil")
+	ErrNotFoundArtworks    = errors.New("artworks not found")
 	ErrArtworkAlreadyExist = errors.New("artwork already exists")
 	ErrSourceNotSupported  = errors.New("source not supported")
 	ErrIndexOOB            = errors.New("index out of bounds")
