@@ -200,6 +200,10 @@ func getArtworkListByTag(ctx *gin.Context, tag string, r18Type types.R18Type, pa
 func getArtworkListByKeyword(ctx *gin.Context, keywordSlice [][]string, r18Type types.R18Type, page, pageSize int64, adapterOption ...*adapter.AdapterOption) {
 	artworks, err := service.QueryArtworksByTextsPage(ctx, keywordSlice, r18Type, page, pageSize, adapterOption...)
 	if err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			common.GinErrorResponse(ctx, err, http.StatusNotFound, "Artworks not found")
+			return
+		}
 		common.GinErrorResponse(ctx, err, http.StatusInternalServerError, "Failed to get artworks by keyword")
 		return
 	}
