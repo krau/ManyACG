@@ -3,6 +3,7 @@ package middleware
 import (
 	"ManyACG/config"
 	. "ManyACG/logger"
+	"ManyACG/model"
 	"ManyACG/service"
 	"os"
 	"time"
@@ -13,8 +14,10 @@ import (
 )
 
 type Login struct {
-	Username string `json:"username" binding:"required"`
-	Password string `json:"password" binding:"required"`
+	Username   string `json:"username" binding:"min=4,max=20"`
+	TelegramID int64  `json:"telegram_id" binding:"omitempty"`
+	Email      string `json:"email" binding:"omitempty,email"`
+	Password   string `json:"password" binding:"required"`
 }
 
 type User struct {
@@ -91,21 +94,40 @@ func JWTInitParamas() *jwt.GinJWTMiddleware {
 			return true
 		},
 
+		// Must return user data as user identifier, it will be stored in Claim Array.
 		Authenticator: func(c *gin.Context) (interface{}, error) {
 			loginInfo := Login{}
 			if err := c.ShouldBind(&loginInfo); err != nil {
+				Logger.Errorf("Failed to bind login info: %v", err)
 				return "", jwt.ErrMissingLoginValues
 			}
+			if loginInfo.Username == "" && loginInfo.Email == "" && loginInfo.TelegramID == 0 {
+				return nil, jwt.ErrMissingLoginValues
+			}
 
-			user, err := service.GetUserByUsername(c, loginInfo.Username)
-			if err != nil {
+			var user *model.UserModel
+			if loginInfo.TelegramID != 0 {
+				user, _ = service.GetUserByTelegramID(c, loginInfo.TelegramID)
+				if user != nil {
+					loginInfo.Username = user.Username
+				}
+			}
+			if loginInfo.Email != "" {
+				user, _ = service.GetUserByEmail(c, loginInfo.Email)
+				if user != nil {
+					loginInfo.Username = user.Username
+				}
+			}
+			if loginInfo.Username != "" {
+				user, _ = service.GetUserByUsername(c, loginInfo.Username)
+			}
+			if user == nil {
 				return nil, jwt.ErrFailedAuthentication
 			}
 
 			if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(loginInfo.Password)); err != nil {
 				return nil, jwt.ErrFailedAuthentication
 			}
-
 			return loginInfo, nil
 		},
 	}
