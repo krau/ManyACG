@@ -1,12 +1,13 @@
 package middleware
 
 import (
-	"ManyACG/common"
-	"ManyACG/config"
-	. "ManyACG/logger"
-	"ManyACG/service"
 	"errors"
 	"net/http"
+
+	"github.com/krau/ManyACG/common"
+	"github.com/krau/ManyACG/config"
+	. "github.com/krau/ManyACG/logger"
+	"github.com/krau/ManyACG/service"
 
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/bson/primitive"

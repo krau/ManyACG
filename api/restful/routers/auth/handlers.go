@@ -1,15 +1,16 @@
 package auth
 
 import (
-	"ManyACG/common"
-	"ManyACG/config"
-	. "ManyACG/logger"
-	"ManyACG/model"
-	"ManyACG/service"
-	"ManyACG/types"
 	"errors"
 	"net/http"
 	"regexp"
+
+	"github.com/krau/ManyACG/common"
+	"github.com/krau/ManyACG/config"
+	. "github.com/krau/ManyACG/logger"
+	"github.com/krau/ManyACG/model"
+	"github.com/krau/ManyACG/service"
+	"github.com/krau/ManyACG/types"
 
 	"github.com/duke-git/lancet/v2/random"
 	lancetValidator "github.com/duke-git/lancet/v2/validator"

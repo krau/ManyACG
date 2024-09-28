@@ -1,9 +1,10 @@
 package utils
 
 import (
-	"ManyACG/types"
 	"testing"
 	"time"
+
+	"github.com/krau/ManyACG/types"
 )
 
 var artwork = &types.Artwork{

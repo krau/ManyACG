@@ -1,7 +1,6 @@
 package common
 
 import (
-	"ManyACG/config"
 	"bytes"
 	"fmt"
 	"image"
@@ -13,9 +12,11 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/krau/ManyACG/config"
+
 	"golang.org/x/image/draw"
 
-	. "ManyACG/logger"
+	. "github.com/krau/ManyACG/logger"
 
 	"github.com/corona10/goimagehash"
 	ffmpeg "github.com/u2takey/ffmpeg-go"

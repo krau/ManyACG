@@ -1,9 +1,10 @@
 package bilibili
 
 import (
-	. "ManyACG/logger"
 	"encoding/json"
 	"fmt"
+
+	. "github.com/krau/ManyACG/logger"
 )
 
 func getDynamicID(url string) string {

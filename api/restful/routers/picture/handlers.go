@@ -1,11 +1,12 @@
 package picture
 
 import (
-	"ManyACG/common"
-	. "ManyACG/logger"
-	"ManyACG/storage"
-	"ManyACG/types"
 	"net/http"
+
+	"github.com/krau/ManyACG/common"
+	. "github.com/krau/ManyACG/logger"
+	"github.com/krau/ManyACG/storage"
+	"github.com/krau/ManyACG/types"
 
 	"github.com/gabriel-vasile/mimetype"
 	"github.com/gin-gonic/gin"

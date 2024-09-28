@@ -1,13 +1,14 @@
 package bot
 
 import (
-	"ManyACG/common"
-	"ManyACG/config"
-	"ManyACG/telegram"
-	tgUtils "ManyACG/telegram/utils"
 	"net/http"
 
-	. "ManyACG/logger"
+	"github.com/krau/ManyACG/common"
+	"github.com/krau/ManyACG/config"
+	"github.com/krau/ManyACG/telegram"
+	tgUtils "github.com/krau/ManyACG/telegram/utils"
+
+	. "github.com/krau/ManyACG/logger"
 
 	"github.com/gin-gonic/gin"
 	"github.com/mymmrac/telego"

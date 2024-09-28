@@ -1,13 +1,14 @@
 package routers
 
 import (
-	"ManyACG/adapter"
-	"ManyACG/common"
-	"ManyACG/config"
-	"ManyACG/service"
-	"ManyACG/types"
 	"net/http"
 	"time"
+
+	"github.com/krau/ManyACG/adapter"
+	"github.com/krau/ManyACG/common"
+	"github.com/krau/ManyACG/config"
+	"github.com/krau/ManyACG/service"
+	"github.com/krau/ManyACG/types"
 
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/feeds"

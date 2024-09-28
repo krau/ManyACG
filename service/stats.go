@@ -1,9 +1,10 @@
 package service
 
 import (
-	"ManyACG/dao"
-	"ManyACG/types"
 	"context"
+
+	"github.com/krau/ManyACG/dao"
+	"github.com/krau/ManyACG/types"
 )
 
 type stats struct {

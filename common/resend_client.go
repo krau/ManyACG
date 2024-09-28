@@ -1,7 +1,7 @@
 package common
 
 import (
-	"ManyACG/config"
+	"github.com/krau/ManyACG/config"
 
 	"github.com/resend/resend-go/v2"
 )

@@ -1,8 +1,9 @@
 package cmd
 
 import (
-	"ManyACG/common"
 	"log"
+
+	"github.com/krau/ManyACG/common"
 
 	"github.com/blang/semver"
 	"github.com/rhysd/go-github-selfupdate/selfupdate"

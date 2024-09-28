@@ -1,11 +1,12 @@
 package bilibili
 
 import (
-	"ManyACG/config"
-	"ManyACG/types"
 	"fmt"
 	"path/filepath"
 	"regexp"
+
+	"github.com/krau/ManyACG/config"
+	"github.com/krau/ManyACG/types"
 
 	"github.com/imroc/req/v3"
 )

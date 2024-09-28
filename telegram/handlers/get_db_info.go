@@ -1,11 +1,12 @@
 package handlers
 
 import (
-	. "ManyACG/logger"
-	"ManyACG/service"
-	"ManyACG/telegram/utils"
 	"context"
 	"fmt"
+
+	. "github.com/krau/ManyACG/logger"
+	"github.com/krau/ManyACG/service"
+	"github.com/krau/ManyACG/telegram/utils"
 
 	"github.com/mymmrac/telego"
 )

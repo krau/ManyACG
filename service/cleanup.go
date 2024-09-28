@@ -1,9 +1,10 @@
 package service
 
 import (
-	"ManyACG/dao"
 	"context"
 	"fmt"
+
+	"github.com/krau/ManyACG/dao"
 )
 
 func Cleanup(ctx context.Context) error {

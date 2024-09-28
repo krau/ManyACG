@@ -1,6 +1,6 @@
 package model
 
-import "ManyACG/types"
+import "github.com/krau/ManyACG/types"
 
 type AdminModel struct {
 	UserID      int64              `bson:"user_id" json:"user_id"`

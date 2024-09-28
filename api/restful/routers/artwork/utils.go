@@ -1,12 +1,13 @@
 package artwork
 
 import (
-	"ManyACG/common"
-	"ManyACG/service"
 	"errors"
 	"net/http"
 
-	. "ManyACG/logger"
+	"github.com/krau/ManyACG/common"
+	"github.com/krau/ManyACG/service"
+
+	. "github.com/krau/ManyACG/logger"
 
 	jwt "github.com/appleboy/gin-jwt/v2"
 	"github.com/gin-gonic/gin"

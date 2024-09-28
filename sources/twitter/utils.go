@@ -1,11 +1,12 @@
 package twitter
 
 import (
-	"ManyACG/common"
-	. "ManyACG/logger"
 	"encoding/json"
 	"regexp"
 	"strings"
+
+	"github.com/krau/ManyACG/common"
+	. "github.com/krau/ManyACG/logger"
 )
 
 var (

@@ -1,13 +1,14 @@
 package bilibili
 
 import (
-	"ManyACG/common"
-	"ManyACG/types"
 	"context"
 	"errors"
 	"fmt"
 	"strconv"
 	"time"
+
+	"github.com/krau/ManyACG/common"
+	"github.com/krau/ManyACG/types"
 )
 
 type BilibiliApiResp struct {

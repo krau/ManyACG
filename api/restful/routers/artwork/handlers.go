@@ -1,15 +1,16 @@
 package artwork
 
 import (
-	"ManyACG/adapter"
-	"ManyACG/common"
-	manyacgErrors "ManyACG/errors"
-	"ManyACG/model"
-	"ManyACG/service"
-	"ManyACG/storage"
-	"ManyACG/types"
 	"errors"
 	"net/http"
+
+	"github.com/krau/ManyACG/adapter"
+	"github.com/krau/ManyACG/common"
+	manyacgErrors "github.com/krau/ManyACG/errors"
+	"github.com/krau/ManyACG/model"
+	"github.com/krau/ManyACG/service"
+	"github.com/krau/ManyACG/storage"
+	"github.com/krau/ManyACG/types"
 
 	"github.com/gabriel-vasile/mimetype"
 	"github.com/gin-gonic/gin"

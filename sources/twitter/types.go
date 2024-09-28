@@ -1,11 +1,12 @@
 package twitter
 
 import (
-	"ManyACG/common"
-	"ManyACG/types"
 	"errors"
 	"fmt"
 	"strings"
+
+	"github.com/krau/ManyACG/common"
+	"github.com/krau/ManyACG/types"
 )
 
 type FxTwitterApiResp struct {

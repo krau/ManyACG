@@ -1,6 +1,6 @@
 package model
 
-import "ManyACG/types"
+import "github.com/krau/ManyACG/types"
 
 func (picture *PictureModel) ToPicture() *types.Picture {
 	return &types.Picture{

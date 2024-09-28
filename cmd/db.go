@@ -1,13 +1,14 @@
 package cmd
 
 import (
-	"ManyACG/config"
-	"ManyACG/dao"
-	"ManyACG/logger"
-	"ManyACG/service"
 	"context"
 	"os"
 	"time"
+
+	"github.com/krau/ManyACG/config"
+	"github.com/krau/ManyACG/dao"
+	"github.com/krau/ManyACG/logger"
+	"github.com/krau/ManyACG/service"
 
 	"github.com/spf13/cobra"
 )

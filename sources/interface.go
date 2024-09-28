@@ -1,9 +1,10 @@
 package sources
 
 import (
-	"ManyACG/config"
-	"ManyACG/types"
 	"regexp"
+
+	"github.com/krau/ManyACG/config"
+	"github.com/krau/ManyACG/types"
 )
 
 type Source interface {

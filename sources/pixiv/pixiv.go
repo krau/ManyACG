@@ -1,14 +1,15 @@
 package pixiv
 
 import (
-	"ManyACG/config"
-	"ManyACG/types"
 	"errors"
 	"fmt"
 	"net/http"
 	"path/filepath"
 	"regexp"
 	"strings"
+
+	"github.com/krau/ManyACG/config"
+	"github.com/krau/ManyACG/types"
 
 	"github.com/imroc/req/v3"
 )

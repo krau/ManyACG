@@ -1,11 +1,12 @@
 package service
 
 import (
-	"ManyACG/dao"
-	manyacgErrors "ManyACG/errors"
-	"ManyACG/model"
 	"context"
 	"errors"
+
+	"github.com/krau/ManyACG/dao"
+	manyacgErrors "github.com/krau/ManyACG/errors"
+	"github.com/krau/ManyACG/model"
 
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"

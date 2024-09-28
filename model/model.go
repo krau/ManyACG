@@ -1,7 +1,7 @@
 package model
 
 import (
-	"ManyACG/types"
+	"github.com/krau/ManyACG/types"
 
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )

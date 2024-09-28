@@ -1,8 +1,8 @@
 package handlers
 
 import (
-	"ManyACG/config"
-	"ManyACG/telegram/utils"
+	"github.com/krau/ManyACG/config"
+	"github.com/krau/ManyACG/telegram/utils"
 
 	"github.com/mymmrac/telego"
 	"github.com/mymmrac/telego/telegohandler"

@@ -1,15 +1,16 @@
 package adapter
 
 import (
-	"ManyACG/common"
-	"ManyACG/config"
-	"ManyACG/dao"
-	"ManyACG/model"
-	"ManyACG/types"
 	"context"
 	"fmt"
 	"html"
 	"sync"
+
+	"github.com/krau/ManyACG/common"
+	"github.com/krau/ManyACG/config"
+	"github.com/krau/ManyACG/dao"
+	"github.com/krau/ManyACG/model"
+	"github.com/krau/ManyACG/types"
 
 	"github.com/gorilla/feeds"
 )

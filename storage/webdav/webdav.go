@@ -1,15 +1,16 @@
 package webdav
 
 import (
-	"ManyACG/common"
-	"ManyACG/config"
-	. "ManyACG/logger"
-	"ManyACG/types"
 	"context"
 	"os"
 	"path/filepath"
 	"strings"
 	"time"
+
+	"github.com/krau/ManyACG/common"
+	"github.com/krau/ManyACG/config"
+	. "github.com/krau/ManyACG/logger"
+	"github.com/krau/ManyACG/types"
 
 	"github.com/studio-b12/gowebdav"
 )

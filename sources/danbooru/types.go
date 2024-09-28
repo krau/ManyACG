@@ -1,9 +1,10 @@
 package danbooru
 
 import (
-	"ManyACG/types"
 	"strconv"
 	"strings"
+
+	"github.com/krau/ManyACG/types"
 )
 
 type DanbooruJsonResp struct {

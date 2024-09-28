@@ -1,13 +1,14 @@
 package pixiv
 
 import (
-	"ManyACG/config"
-	. "ManyACG/logger"
-	"ManyACG/types"
 	"encoding/json"
 	"encoding/xml"
 	"strings"
 	"time"
+
+	"github.com/krau/ManyACG/config"
+	. "github.com/krau/ManyACG/logger"
+	"github.com/krau/ManyACG/types"
 )
 
 func GetPid(url string) string {

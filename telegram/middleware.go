@@ -1,7 +1,7 @@
 package telegram
 
 import (
-	. "ManyACG/logger"
+	. "github.com/krau/ManyACG/logger"
 
 	"github.com/mymmrac/telego"
 	"github.com/mymmrac/telego/telegohandler"

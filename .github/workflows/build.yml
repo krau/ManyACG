@@ -58,9 +58,9 @@ jobs:
             README.md
           ldflags: >-
             -s -w
-            -X "ManyACG/common.Version=${{ env.VERSION }}"
-            -X "ManyACG/common.BuildTime=${{ format(github.event.repository.updated_at, 'yyyy-MM-dd HH:mm:ss') }}"
-            -X "ManyACG/common.Commit=${{ github.sha }}"
+            -X "github.com/krau/ManyACG/common.Version=${{ env.VERSION }}"
+            -X "github.com/krau/ManyACG/common.BuildTime=${{ format(github.event.repository.updated_at, 'yyyy-MM-dd HH:mm:ss') }}"
+            -X "github.com/krau/ManyACG/common.Commit=${{ github.sha }}"
           binary_name: manyacg
         env:
           VERSION: ${{ env.VERSION }}

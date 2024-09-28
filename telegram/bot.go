@@ -1,14 +1,15 @@
 package telegram
 
 import (
-	"ManyACG/config"
-	"ManyACG/service"
-	"ManyACG/telegram/handlers"
-	"ManyACG/telegram/utils"
 	"context"
 	"os"
 
-	. "ManyACG/logger"
+	"github.com/krau/ManyACG/config"
+	"github.com/krau/ManyACG/service"
+	"github.com/krau/ManyACG/telegram/handlers"
+	"github.com/krau/ManyACG/telegram/utils"
+
+	. "github.com/krau/ManyACG/logger"
 
 	"github.com/mymmrac/telego"
 	"github.com/mymmrac/telego/telegohandler"

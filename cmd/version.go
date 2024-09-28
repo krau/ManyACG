@@ -1,9 +1,10 @@
 package cmd
 
 import (
-	"ManyACG/common"
 	"fmt"
 	"runtime"
+
+	"github.com/krau/ManyACG/common"
 
 	"github.com/spf13/cobra"
 )

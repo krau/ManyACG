@@ -1,13 +1,6 @@
 package handlers
 
 import (
-	"ManyACG/common"
-	. "ManyACG/logger"
-	"ManyACG/service"
-	"ManyACG/sources"
-	"ManyACG/storage"
-	"ManyACG/telegram/utils"
-	"ManyACG/types"
 	"bufio"
 	"bytes"
 	"context"
@@ -16,6 +9,14 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/krau/ManyACG/common"
+	. "github.com/krau/ManyACG/logger"
+	"github.com/krau/ManyACG/service"
+	"github.com/krau/ManyACG/sources"
+	"github.com/krau/ManyACG/storage"
+	"github.com/krau/ManyACG/telegram/utils"
+	"github.com/krau/ManyACG/types"
 
 	"github.com/mymmrac/telego"
 	"github.com/mymmrac/telego/telegoutil"

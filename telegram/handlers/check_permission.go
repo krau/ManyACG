@@ -1,9 +1,10 @@
 package handlers
 
 import (
-	"ManyACG/service"
-	"ManyACG/types"
 	"context"
+
+	"github.com/krau/ManyACG/service"
+	"github.com/krau/ManyACG/types"
 
 	"github.com/mymmrac/telego"
 )

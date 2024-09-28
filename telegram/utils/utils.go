@@ -1,20 +1,21 @@
 package utils
 
 import (
-	"ManyACG/common"
-	"ManyACG/config"
-	"ManyACG/errors"
-	"ManyACG/service"
-	"ManyACG/sources"
-	"ManyACG/storage"
-	"ManyACG/types"
 	"bytes"
 	"context"
 	"fmt"
 	"path/filepath"
 	"strings"
 
-	. "ManyACG/logger"
+	"github.com/krau/ManyACG/common"
+	"github.com/krau/ManyACG/config"
+	"github.com/krau/ManyACG/errors"
+	"github.com/krau/ManyACG/service"
+	"github.com/krau/ManyACG/sources"
+	"github.com/krau/ManyACG/storage"
+	"github.com/krau/ManyACG/types"
+
+	. "github.com/krau/ManyACG/logger"
 
 	"github.com/mymmrac/telego"
 	"github.com/mymmrac/telego/telegoutil"

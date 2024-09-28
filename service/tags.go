@@ -1,9 +1,10 @@
 package service
 
 import (
-	"ManyACG/dao"
-	"ManyACG/model"
 	"context"
+
+	"github.com/krau/ManyACG/dao"
+	"github.com/krau/ManyACG/model"
 )
 
 func GetRandomTags(ctx context.Context, limit int) ([]string, error) {

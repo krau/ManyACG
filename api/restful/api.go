@@ -1,12 +1,13 @@
 package restful
 
 import (
-	"ManyACG/api/restful/middleware"
-	"ManyACG/api/restful/routers"
-	"ManyACG/config"
-	. "ManyACG/logger"
 	"fmt"
 	"os"
+
+	"github.com/krau/ManyACG/api/restful/middleware"
+	"github.com/krau/ManyACG/api/restful/routers"
+	"github.com/krau/ManyACG/config"
+	. "github.com/krau/ManyACG/logger"
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"

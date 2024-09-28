@@ -1,11 +1,12 @@
 package service
 
 import (
-	"ManyACG/dao"
 	"context"
 	"errors"
 
-	. "ManyACG/logger"
+	"github.com/krau/ManyACG/dao"
+
+	. "github.com/krau/ManyACG/logger"
 
 	"go.mongodb.org/mongo-driver/mongo"
 )

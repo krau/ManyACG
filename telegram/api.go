@@ -1,9 +1,10 @@
 package telegram
 
 import (
-	"ManyACG/telegram/utils"
-	"ManyACG/types"
 	"context"
+
+	"github.com/krau/ManyACG/telegram/utils"
+	"github.com/krau/ManyACG/types"
 
 	"github.com/mymmrac/telego"
 )

@@ -1,12 +1,13 @@
 package pixiv
 
 import (
-	"ManyACG/config"
-	"ManyACG/types"
 	"encoding/xml"
 	"errors"
 	"regexp"
 	"strings"
+
+	"github.com/krau/ManyACG/config"
+	"github.com/krau/ManyACG/types"
 )
 
 type PixivRss struct {

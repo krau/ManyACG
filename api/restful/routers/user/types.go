@@ -1,6 +1,6 @@
 package user
 
-import "ManyACG/model"
+import "github.com/krau/ManyACG/model"
 
 type UnauthUserResponse struct {
 	ID         string `json:"id"`

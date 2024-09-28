@@ -1,12 +1,13 @@
 package service
 
 import (
-	"ManyACG/dao"
-	"ManyACG/errors"
-	"ManyACG/model"
-	"ManyACG/sources"
-	"ManyACG/types"
 	"context"
+
+	"github.com/krau/ManyACG/dao"
+	"github.com/krau/ManyACG/errors"
+	"github.com/krau/ManyACG/model"
+	"github.com/krau/ManyACG/sources"
+	"github.com/krau/ManyACG/types"
 )
 
 func CreateCachedArtwork(ctx context.Context, artwork *types.Artwork, status types.ArtworkStatus) error {

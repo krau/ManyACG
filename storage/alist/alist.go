@@ -1,10 +1,6 @@
 package alist
 
 import (
-	"ManyACG/common"
-	"ManyACG/config"
-	. "ManyACG/logger"
-	"ManyACG/types"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -14,6 +10,11 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
+
+	"github.com/krau/ManyACG/common"
+	"github.com/krau/ManyACG/config"
+	. "github.com/krau/ManyACG/logger"
+	"github.com/krau/ManyACG/types"
 
 	"github.com/imroc/req/v3"
 )

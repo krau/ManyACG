@@ -1,12 +1,13 @@
 package user
 
 import (
-	"ManyACG/common"
-	. "ManyACG/logger"
-	"ManyACG/model"
-	"ManyACG/service"
 	"errors"
 	"net/http"
+
+	"github.com/krau/ManyACG/common"
+	. "github.com/krau/ManyACG/logger"
+	"github.com/krau/ManyACG/model"
+	"github.com/krau/ManyACG/service"
 
 	jwt "github.com/appleboy/gin-jwt/v2"
 	"github.com/gin-gonic/gin"

@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"time"
 
-	. "ManyACG/logger"
+	. "github.com/krau/ManyACG/logger"
 )
 
 // 创建文件, 自动创建目录

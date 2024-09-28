@@ -1,12 +1,13 @@
 package service
 
 import (
-	"ManyACG/common"
-	"ManyACG/dao"
-	"ManyACG/model"
-	"ManyACG/storage"
-	"ManyACG/types"
 	"context"
+
+	"github.com/krau/ManyACG/common"
+	"github.com/krau/ManyACG/dao"
+	"github.com/krau/ManyACG/model"
+	"github.com/krau/ManyACG/storage"
+	"github.com/krau/ManyACG/types"
 
 	"github.com/duke-git/lancet/v2/slice"
 

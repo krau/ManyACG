@@ -1,15 +1,15 @@
 package routers
 
 import (
-	"ManyACG/api/restful/middleware"
-	"ManyACG/api/restful/routers/artist"
-	"ManyACG/api/restful/routers/artwork"
-	"ManyACG/api/restful/routers/auth"
-	"ManyACG/api/restful/routers/bot"
-	"ManyACG/api/restful/routers/picture"
-	"ManyACG/api/restful/routers/tag"
-	"ManyACG/api/restful/routers/user"
-	"ManyACG/config"
+	"github.com/krau/ManyACG/api/restful/middleware"
+	"github.com/krau/ManyACG/api/restful/routers/artist"
+	"github.com/krau/ManyACG/api/restful/routers/artwork"
+	"github.com/krau/ManyACG/api/restful/routers/auth"
+	"github.com/krau/ManyACG/api/restful/routers/bot"
+	"github.com/krau/ManyACG/api/restful/routers/picture"
+	"github.com/krau/ManyACG/api/restful/routers/tag"
+	"github.com/krau/ManyACG/api/restful/routers/user"
+	"github.com/krau/ManyACG/config"
 
 	jwt "github.com/appleboy/gin-jwt/v2"
 	"github.com/gin-gonic/gin"

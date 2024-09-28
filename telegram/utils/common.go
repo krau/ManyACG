@@ -1,7 +1,7 @@
 package utils
 
 import (
-	"ManyACG/config"
+	"github.com/krau/ManyACG/config"
 
 	"github.com/mymmrac/telego"
 )

@@ -1,8 +1,9 @@
 package storage
 
 import (
-	"ManyACG/types"
 	"context"
+
+	"github.com/krau/ManyACG/types"
 )
 
 type Storage interface {

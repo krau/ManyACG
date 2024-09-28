@@ -1,10 +1,11 @@
 package artwork
 
 import (
-	"ManyACG/common"
-	"ManyACG/types"
 	"net/http"
 	"path/filepath"
+
+	"github.com/krau/ManyACG/common"
+	"github.com/krau/ManyACG/types"
 )
 
 type ArtworkResponseData struct {

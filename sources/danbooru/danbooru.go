@@ -1,15 +1,16 @@
 package danbooru
 
 import (
-	"ManyACG/common"
-	"ManyACG/config"
-	. "ManyACG/logger"
-	"ManyACG/types"
 	"encoding/json"
 	"errors"
 	"path/filepath"
 	"regexp"
 	"strings"
+
+	"github.com/krau/ManyACG/common"
+	"github.com/krau/ManyACG/config"
+	. "github.com/krau/ManyACG/logger"
+	"github.com/krau/ManyACG/types"
 )
 
 type Danbooru struct{}

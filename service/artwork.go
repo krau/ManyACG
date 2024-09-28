@@ -1,15 +1,16 @@
 package service
 
 import (
-	"ManyACG/adapter"
-	"ManyACG/dao"
-	manyacgErrors "ManyACG/errors"
+	"github.com/krau/ManyACG/adapter"
+	"github.com/krau/ManyACG/dao"
+	manyacgErrors "github.com/krau/ManyACG/errors"
 
-	. "ManyACG/logger"
-	"ManyACG/model"
-	"ManyACG/types"
 	"context"
 	"errors"
+
+	. "github.com/krau/ManyACG/logger"
+	"github.com/krau/ManyACG/model"
+	"github.com/krau/ManyACG/types"
 
 	"github.com/duke-git/lancet/v2/slice"
 	"go.mongodb.org/mongo-driver/bson/primitive"

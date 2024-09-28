@@ -1,18 +1,19 @@
 package sources
 
 import (
-	"ManyACG/common"
-	"ManyACG/config"
-	"ManyACG/errors"
-	. "ManyACG/logger"
-	"ManyACG/sources/bilibili"
-	"ManyACG/sources/danbooru"
-	"ManyACG/sources/kemono"
-	"ManyACG/sources/pixiv"
-	"ManyACG/sources/twitter"
-	"ManyACG/types"
 	"regexp"
 	"strings"
+
+	"github.com/krau/ManyACG/common"
+	"github.com/krau/ManyACG/config"
+	"github.com/krau/ManyACG/errors"
+	. "github.com/krau/ManyACG/logger"
+	"github.com/krau/ManyACG/sources/bilibili"
+	"github.com/krau/ManyACG/sources/danbooru"
+	"github.com/krau/ManyACG/sources/kemono"
+	"github.com/krau/ManyACG/sources/pixiv"
+	"github.com/krau/ManyACG/sources/twitter"
+	"github.com/krau/ManyACG/types"
 )
 
 var (

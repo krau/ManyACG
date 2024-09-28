@@ -1,8 +1,9 @@
 package artwork
 
 import (
-	"ManyACG/api/restful/middleware"
 	"net/http"
+
+	"github.com/krau/ManyACG/api/restful/middleware"
 
 	"github.com/gin-gonic/gin"
 )

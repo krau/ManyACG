@@ -6,8 +6,8 @@ import (
 	"net/http"
 	"time"
 
-	"ManyACG/config"
-	. "ManyACG/logger"
+	"github.com/krau/ManyACG/config"
+	. "github.com/krau/ManyACG/logger"
 
 	"github.com/imroc/req/v3"
 )

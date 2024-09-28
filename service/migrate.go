@@ -1,18 +1,19 @@
 package service
 
 import (
-	"ManyACG/common"
-	"ManyACG/config"
-	"ManyACG/dao"
-	. "ManyACG/logger"
-	"ManyACG/model"
-	"ManyACG/storage"
-	"ManyACG/types"
 	"context"
 	"encoding/json"
 	"fmt"
 	"path/filepath"
 	"time"
+
+	"github.com/krau/ManyACG/common"
+	"github.com/krau/ManyACG/config"
+	"github.com/krau/ManyACG/dao"
+	. "github.com/krau/ManyACG/logger"
+	"github.com/krau/ManyACG/model"
+	"github.com/krau/ManyACG/storage"
+	"github.com/krau/ManyACG/types"
 
 	"github.com/imroc/req/v3"
 	"github.com/mymmrac/telego"

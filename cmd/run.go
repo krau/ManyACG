@@ -1,21 +1,22 @@
 package cmd
 
 import (
-	"ManyACG/api/restful"
-	"ManyACG/common"
-	"ManyACG/config"
-	"ManyACG/dao"
-	"ManyACG/fetcher"
-	"ManyACG/logger"
-	"ManyACG/service"
-	"ManyACG/sources"
-	"ManyACG/storage"
-	"ManyACG/telegram"
 	"context"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
+
+	"github.com/krau/ManyACG/api/restful"
+	"github.com/krau/ManyACG/common"
+	"github.com/krau/ManyACG/config"
+	"github.com/krau/ManyACG/dao"
+	"github.com/krau/ManyACG/fetcher"
+	"github.com/krau/ManyACG/logger"
+	"github.com/krau/ManyACG/service"
+	"github.com/krau/ManyACG/sources"
+	"github.com/krau/ManyACG/storage"
+	"github.com/krau/ManyACG/telegram"
 )
 
 func Run() {

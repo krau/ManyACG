@@ -8,8 +8,8 @@ import (
 )
 
 var rootCmd = &cobra.Command{
-	Use:   "ManyACG",
-	Short: "ManyACG",
+	Use:   "github.com/krau/ManyACG",
+	Short: "github.com/krau/ManyACG",
 	Long:  "A Telegram bot for ACG channel.",
 	Run: func(cmd *cobra.Command, args []string) {
 		Run()

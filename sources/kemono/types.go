@@ -1,12 +1,13 @@
 package kemono
 
 import (
-	. "ManyACG/logger"
-	"ManyACG/types"
 	"fmt"
 	"net/http"
 	"regexp"
 	"strings"
+
+	. "github.com/krau/ManyACG/logger"
+	"github.com/krau/ManyACG/types"
 )
 
 type KemonoPostResp struct {

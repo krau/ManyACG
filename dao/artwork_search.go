@@ -1,9 +1,10 @@
 package dao
 
 import (
-	"ManyACG/model"
-	"ManyACG/types"
 	"context"
+
+	"github.com/krau/ManyACG/model"
+	"github.com/krau/ManyACG/types"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"

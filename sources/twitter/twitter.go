@@ -1,12 +1,13 @@
 package twitter
 
 import (
-	"ManyACG/config"
-	"ManyACG/types"
 	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
+
+	"github.com/krau/ManyACG/config"
+	"github.com/krau/ManyACG/types"
 )
 
 type Twitter struct{}

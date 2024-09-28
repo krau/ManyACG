@@ -1,7 +1,7 @@
 package picture
 
 import (
-	"ManyACG/api/restful/middleware"
+	"github.com/krau/ManyACG/api/restful/middleware"
 
 	"github.com/gin-gonic/gin"
 )

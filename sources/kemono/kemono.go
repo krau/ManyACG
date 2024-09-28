@@ -1,15 +1,16 @@
 package kemono
 
 import (
-	"ManyACG/config"
-	. "ManyACG/logger"
-	"ManyACG/types"
 	"encoding/json"
 	"errors"
 	"net/http"
 	"path/filepath"
 	"regexp"
 	"strconv"
+
+	"github.com/krau/ManyACG/config"
+	. "github.com/krau/ManyACG/logger"
+	"github.com/krau/ManyACG/types"
 )
 
 type Kemono struct{}

@@ -1,13 +1,14 @@
 package common
 
 import (
-	"ManyACG/config"
-	. "ManyACG/logger"
 	"html"
 	"math/rand"
 	"net/url"
 	"regexp"
 	"strings"
+
+	"github.com/krau/ManyACG/config"
+	. "github.com/krau/ManyACG/logger"
 )
 
 var fileNameEscaper = strings.NewReplacer(

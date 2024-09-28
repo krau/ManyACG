@@ -1,9 +1,10 @@
 package danbooru
 
 import (
-	"ManyACG/types"
 	"errors"
 	"regexp"
+
+	"github.com/krau/ManyACG/types"
 )
 
 var (

@@ -1,7 +1,7 @@
 package main
 
 import (
-	"ManyACG/cmd"
+	"github.com/krau/ManyACG/cmd"
 )
 
 func main() {

@@ -3,8 +3,8 @@ package dao
 import (
 	"context"
 
-	"ManyACG/model"
-	"ManyACG/types"
+	"github.com/krau/ManyACG/model"
+	"github.com/krau/ManyACG/types"
 
 	"github.com/corona10/goimagehash"
 	"go.mongodb.org/mongo-driver/bson"

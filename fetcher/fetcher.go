@@ -1,17 +1,18 @@
 package fetcher
 
 import (
-	"ManyACG/config"
-	"ManyACG/errors"
-	. "ManyACG/logger"
-	"ManyACG/service"
-	"ManyACG/sources"
-	"ManyACG/storage"
-	"ManyACG/telegram"
-	"ManyACG/types"
 	"context"
 	es "errors"
 	"time"
+
+	"github.com/krau/ManyACG/config"
+	"github.com/krau/ManyACG/errors"
+	. "github.com/krau/ManyACG/logger"
+	"github.com/krau/ManyACG/service"
+	"github.com/krau/ManyACG/sources"
+	"github.com/krau/ManyACG/storage"
+	"github.com/krau/ManyACG/telegram"
+	"github.com/krau/ManyACG/types"
 
 	"go.mongodb.org/mongo-driver/mongo"
 )

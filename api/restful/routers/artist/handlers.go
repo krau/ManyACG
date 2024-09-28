@@ -1,11 +1,12 @@
 package artist
 
 import (
-	"ManyACG/common"
-	"ManyACG/service"
-	"ManyACG/types"
 	"errors"
 	"net/http"
+
+	"github.com/krau/ManyACG/common"
+	"github.com/krau/ManyACG/service"
+	"github.com/krau/ManyACG/types"
 
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/bson/primitive"

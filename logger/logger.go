@@ -1,7 +1,7 @@
 package logger
 
 import (
-	"ManyACG/config"
+	"github.com/krau/ManyACG/config"
 
 	"github.com/gookit/slog"
 	"github.com/gookit/slog/handler"
@@ -14,7 +14,7 @@ func InitLogger() {
 	if Logger != nil {
 		return
 	}
-	slog.DefaultChannelName = "ManyACG"
+	slog.DefaultChannelName = "github.com/krau/ManyACG"
 	Logger = slog.New()
 	logLevel := slog.LevelByName(config.Cfg.Log.Level)
 	logFilePath := config.Cfg.Log.FilePath

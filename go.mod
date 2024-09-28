@@ -1,4 +1,4 @@
-module ManyACG
+module github.com/krau/ManyACG
 
 go 1.23
 
