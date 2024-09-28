@@ -4,14 +4,14 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/gin-gonic/gin"
+	"github.com/gorilla/feeds"
 	"github.com/krau/ManyACG/adapter"
 	"github.com/krau/ManyACG/common"
 	"github.com/krau/ManyACG/config"
+	. "github.com/krau/ManyACG/logger"
 	"github.com/krau/ManyACG/service"
 	"github.com/krau/ManyACG/types"
-
-	"github.com/gin-gonic/gin"
-	"github.com/gorilla/feeds"
 )
 
 func GenerateAtom(ctx *gin.Context) {
@@ -30,6 +30,7 @@ func GenerateAtom(ctx *gin.Context) {
 	}
 	atom, err := feed.ToAtom()
 	if err != nil {
+		Logger.Errorf("Failed to generate Atom feed: %v", err)
 		common.GinErrorResponse(ctx, err, http.StatusInternalServerError, "Failed to generate Atom feed")
 		return
 	}

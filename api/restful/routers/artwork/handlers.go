@@ -14,6 +14,7 @@ import (
 
 	"github.com/gabriel-vasile/mimetype"
 	"github.com/gin-gonic/gin"
+	. "github.com/krau/ManyACG/logger"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 )
@@ -35,6 +36,11 @@ func RandomArtworks(ctx *gin.Context) {
 
 	artworks, err := service.GetRandomArtworks(ctx, r18Type, request.Limit)
 	if err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			common.GinErrorResponse(ctx, err, http.StatusNotFound, "Artworks not found")
+			return
+		}
+		Logger.Errorf("Failed to get random artworks: %v", err)
 		common.GinErrorResponse(ctx, err, http.StatusInternalServerError, "Failed to get random artworks")
 		return
 	}
@@ -60,6 +66,10 @@ func RandomArtworkPreview(ctx *gin.Context) {
 	}
 	artwork, err := service.GetRandomArtworks(ctx, r18Type, 1, adapter.OnlyLoadPicture())
 	if err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			common.GinErrorResponse(ctx, err, http.StatusNotFound, "Artwork not found")
+			return
+		}
 		common.GinErrorResponse(ctx, err, http.StatusInternalServerError, "Failed to get random artwork")
 		return
 	}
@@ -162,6 +172,10 @@ func GetArtworkList(ctx *gin.Context) {
 
 	artworks, err := service.GetLatestArtworks(ctx, r18Type, request.Page, request.PageSize, adapterOption)
 	if err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			common.GinErrorResponse(ctx, err, http.StatusNotFound, "Artworks not found")
+			return
+		}
 		common.GinErrorResponse(ctx, err, http.StatusInternalServerError, "Failed to get artwork list")
 		return
 	}
@@ -175,6 +189,10 @@ func GetArtworkList(ctx *gin.Context) {
 func getArtworkListByArtist(ctx *gin.Context, artistID primitive.ObjectID, r18Type types.R18Type, page, pageSize int64, adapterOption ...*adapter.AdapterOption) {
 	artworks, err := service.GetArtworksByArtistID(ctx, artistID, r18Type, page, pageSize, adapterOption...)
 	if err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			common.GinErrorResponse(ctx, err, http.StatusNotFound, "Artworks not found")
+			return
+		}
 		common.GinErrorResponse(ctx, err, http.StatusInternalServerError, "Failed to get artworks by artist")
 		return
 	}
@@ -188,6 +206,10 @@ func getArtworkListByArtist(ctx *gin.Context, artistID primitive.ObjectID, r18Ty
 func getArtworkListByTag(ctx *gin.Context, tag string, r18Type types.R18Type, page, pageSize int64, adapterOption ...*adapter.AdapterOption) {
 	artworks, err := service.GetArtworksByTags(ctx, [][]string{{tag}}, r18Type, page, pageSize, adapterOption...)
 	if err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			common.GinErrorResponse(ctx, err, http.StatusNotFound, "Artworks not found")
+			return
+		}
 		common.GinErrorResponse(ctx, err, http.StatusInternalServerError, "Failed to get artworks by tag")
 		return
 	}
@@ -224,6 +246,7 @@ func GetArtworkCount(ctx *gin.Context) {
 	r18Type := types.R18Type(request.R18)
 	count, err := service.GetArtworkCount(ctx, r18Type)
 	if err != nil {
+		Logger.Errorf("Failed to get artwork count: %v", err)
 		common.GinErrorResponse(ctx, err, http.StatusInternalServerError, "Failed to get artwork count")
 		return
 	}
