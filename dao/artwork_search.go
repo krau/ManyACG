@@ -102,16 +102,19 @@ func (q *artworkTextsQuery) buildPipeline(ctx context.Context) []bson.M {
 		match["r18"] = q.R18 == types.R18TypeOnly
 	}
 
+	sort := bson.M{"_id": -1}
 	// 如果没有分页返回 limit 条数据
 	if q.Page <= 0 && q.PageSize <= 0 {
 		return []bson.M{
 			{"$match": match},
+			{"$sort": sort},
 			{"$sample": bson.M{"size": q.Limit}},
 		}
 	}
 
 	return []bson.M{
 		{"$match": match},
+		{"$sort": sort},
 		{"$skip": (q.Page - 1) * q.PageSize},
 		{"$limit": q.PageSize},
 	}
