@@ -73,40 +73,27 @@ func GetArtworksByTags(ctx context.Context, tags [][]primitive.ObjectID, r18 typ
 	var cursor *mongo.Cursor
 	var err error
 	match := bson.M{}
-	var orConditions []bson.M
+	var andCondition []bson.M
 	for _, tagGroup := range tags {
-		var orCondition []bson.M
-		for _, tag := range tagGroup {
-			orCondition = append(orCondition, bson.M{"tags": tag})
-		}
-		orConditions = append(orConditions, bson.M{"$or": orCondition})
+		andCondition = append(andCondition, bson.M{"$or": bson.A{bson.M{"tags": bson.M{"$in": tagGroup}}}})
 	}
-	match["$and"] = orConditions
-	if r18 == types.R18TypeAll {
-		cursor, err = artworkCollection.Aggregate(ctx, mongo.Pipeline{
-			bson.D{{Key: "$match", Value: match}},
-			bson.D{{Key: "$sort", Value: bson.M{"_id": -1}}},
-			bson.D{{Key: "$skip", Value: (page - 1) * pageSize}},
-			bson.D{{Key: "$limit", Value: pageSize}},
-		})
-	} else {
-		cursor, err = artworkCollection.Aggregate(ctx, mongo.Pipeline{
-			bson.D{{Key: "$match", Value: bson.M{"r18": r18 == types.R18TypeOnly}}},
-			bson.D{{Key: "$match", Value: match}},
-			bson.D{{Key: "$sort", Value: bson.M{"_id": -1}}},
-			bson.D{{Key: "$skip", Value: (page - 1) * pageSize}},
-			bson.D{{Key: "$limit", Value: pageSize}},
-		})
+	match["$and"] = andCondition
+	if r18 != types.R18TypeAll {
+		match["r18"] = r18 == types.R18TypeOnly
 	}
+	cursor, err = artworkCollection.Aggregate(ctx, mongo.Pipeline{
+		bson.D{{Key: "$match", Value: match}},
+		bson.D{{Key: "$sort", Value: bson.M{"_id": -1}}},
+		bson.D{{Key: "$skip", Value: (page - 1) * pageSize}},
+		bson.D{{Key: "$limit", Value: pageSize}},
+	})
+
 	if err != nil {
 		return nil, err
 	}
 	err = cursor.All(ctx, &artworks)
 	if err != nil {
 		return nil, err
-	}
-	if len(artworks) == 0 {
-		return nil, mongo.ErrNoDocuments
 	}
 	return artworks, nil
 }

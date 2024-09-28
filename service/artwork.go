@@ -243,11 +243,7 @@ func GetArtworksByTags(ctx context.Context, tags [][]string, r18 types.R18Type, 
 	if err != nil {
 		return nil, err
 	}
-	artworks, err := adapter.ConvertToArtworks(ctx, artworkModels, convertOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return artworks, nil
+	return adapter.ConvertToArtworks(ctx, artworkModels, convertOpts...)
 }
 
 func GetArtworkCount(ctx context.Context, r18 types.R18Type) (int64, error) {
