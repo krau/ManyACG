@@ -8,6 +8,7 @@ import (
 	"github.com/krau/ManyACG/api/restful/routers"
 	"github.com/krau/ManyACG/config"
 	. "github.com/krau/ManyACG/logger"
+	"github.com/penglongli/gin-metrics/ginmetrics"
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
@@ -21,6 +22,10 @@ func Run() {
 	}
 
 	r := gin.Default()
+
+	metrics := ginmetrics.GetMonitor()
+	metrics.SetMetricPath("/metrics")
+	metrics.Use(r)
 
 	corsConfig := cors.DefaultConfig()
 	corsConfig.AllowCredentials = true

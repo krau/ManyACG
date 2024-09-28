@@ -15,6 +15,7 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/gookit/slog v0.5.6
 	github.com/gorilla/feeds v1.2.0
+	github.com/penglongli/gin-metrics v0.1.10
 	github.com/resend/resend-go/v2 v2.12.0
 	github.com/rhysd/go-github-selfupdate v1.2.3
 	github.com/spf13/cobra v1.8.1
@@ -29,8 +30,11 @@ require (
 require (
 	github.com/andybalholm/brotli v1.1.0 // indirect
 	github.com/aws/aws-sdk-go v1.38.20 // indirect
+	github.com/beorn7/perks v1.0.1 // indirect
+	github.com/bits-and-blooms/bitset v1.2.0 // indirect
 	github.com/bytedance/sonic v1.12.1 // indirect
 	github.com/bytedance/sonic/loader v0.2.0 // indirect
+	github.com/cespare/xxhash/v2 v2.2.0 // indirect
 	github.com/cloudflare/circl v1.3.9 // indirect
 	github.com/cloudwego/base64x v0.1.4 // indirect
 	github.com/cloudwego/iasm v0.2.0 // indirect
@@ -62,10 +66,14 @@ require (
 	github.com/montanaflynn/stats v0.7.1 // indirect
 	github.com/nfnt/resize v0.0.0-20180221191011-83c6a9932646 // indirect
 	github.com/onsi/ginkgo/v2 v2.20.0 // indirect
+	github.com/pkg/errors v0.9.1 // indirect
+	github.com/prometheus/client_golang v1.19.1 // indirect
+	github.com/prometheus/client_model v0.5.0 // indirect
+	github.com/prometheus/common v0.48.0 // indirect
+	github.com/prometheus/procfs v0.12.0 // indirect
 	github.com/quic-go/qpack v0.4.0 // indirect
 	github.com/quic-go/quic-go v0.46.0 // indirect
 	github.com/refraction-networking/utls v1.6.7 // indirect
-	github.com/rogpeppe/go-internal v1.10.0 // indirect
 	github.com/savsgio/gotils v0.0.0-20240704082632-aef3928b8a38 // indirect
 	github.com/tcnksm/go-gitconfig v0.1.2 // indirect
 	github.com/twitchyliquid64/golang-asm v0.15.1 // indirect
@@ -85,7 +93,6 @@ require (
 	golang.org/x/oauth2 v0.22.0 // indirect
 	golang.org/x/tools v0.24.0 // indirect
 	google.golang.org/protobuf v1.34.2 // indirect
-	gopkg.in/yaml.v2 v2.4.0 // indirect
 )
 
 require (
