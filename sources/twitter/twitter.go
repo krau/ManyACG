@@ -56,7 +56,7 @@ func (t *Twitter) GetCommonSourceURL(url string) string {
 	if tweetPath == "" {
 		return ""
 	}
-	return "https://twitter.com/" + tweetPath
+	return "https://twitter.com/" + strings.ToLower(tweetPath)
 }
 
 func (t *Twitter) GetFileName(artwork *types.Artwork, picture *types.Picture) string {
