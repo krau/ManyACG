@@ -14,7 +14,7 @@ func InitLogger() {
 	if Logger != nil {
 		return
 	}
-	slog.DefaultChannelName = "github.com/krau/ManyACG"
+	slog.DefaultChannelName = "ManyACG"
 	Logger = slog.New()
 	logLevel := slog.LevelByName(config.Cfg.Log.Level)
 	logFilePath := config.Cfg.Log.FilePath
