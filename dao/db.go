@@ -94,7 +94,7 @@ func createIndex(ctx context.Context) {
 	cachedArtworkCollection.Indexes().CreateMany(ctx, []mongo.IndexModel{
 		{
 			Keys:    bson.D{{Key: "source_url", Value: 1}},
-			Options: options.Index().SetName("source_url").SetUnique(true),
+			Options: options.Index().SetName("source_url"),
 		},
 		{
 			Keys:    bson.D{{Key: "created_at", Value: 1}},
@@ -169,7 +169,7 @@ func createIndex(ctx context.Context) {
 	callbackDataCollection.Indexes().CreateMany(ctx, []mongo.IndexModel{
 		{
 			Keys:    bson.D{{Key: "created_at", Value: 1}},
-			Options: options.Index().SetExpireAfterSeconds(86400).SetName("created_at"),
+			Options: options.Index().SetExpireAfterSeconds(86400 * 3).SetName("created_at"),
 		},
 	})
 
