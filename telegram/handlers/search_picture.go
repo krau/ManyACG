@@ -28,7 +28,7 @@ func SearchPicture(ctx context.Context, bot *telego.Bot, message telego.Message)
 		utils.ReplyMessage(bot, message, "获取图片文件失败: "+err.Error())
 		return
 	}
-	text, err := getSearchResult(ctx, hasPermission, fileBytes)
+	text, _, err := getSearchResult(ctx, hasPermission, fileBytes)
 	if err != nil {
 		utils.ReplyMessage(bot, message, err.Error())
 		return
@@ -47,23 +47,25 @@ func SearchPictureCallbackQuery(ctx context.Context, bot *telego.Bot, query tele
 		bot.AnswerCallbackQuery(telegoutil.CallbackQuery(query.ID).WithText("获取图片文件失败: " + err.Error()).WithShowAlert().WithCacheTime(5))
 		return
 	}
-	text, err := getSearchResult(ctx, true, fileBytes)
+	text, hasResult, err := getSearchResult(ctx, true, fileBytes)
 	if err != nil {
 		bot.AnswerCallbackQuery(telegoutil.CallbackQuery(query.ID).WithText(err.Error()).WithShowAlert().WithCacheTime(5))
 		return
 	}
+	if !hasResult {
+		bot.AnswerCallbackQuery(telegoutil.CallbackQuery(query.ID).WithText(text).WithShowAlert().WithCacheTime(5))
+	}
 	utils.ReplyMessageWithMarkdown(bot, *message, text)
-
 }
 
-func getSearchResult(ctx context.Context, hasPermission bool, fileBytes []byte) (string, error) {
+func getSearchResult(ctx context.Context, hasPermission bool, fileBytes []byte) (string, bool, error) {
 	hash, err := common.GetImagePhash(fileBytes)
 	if err != nil {
-		return "", fmt.Errorf("获取图片哈希失败: %w", err)
+		return "", false, fmt.Errorf("获取图片哈希失败: %w", err)
 	}
 	pictures, err := service.GetPicturesByHashHammingDistance(ctx, hash, 10)
 	if err != nil {
-		return "", fmt.Errorf("搜索图片失败: %w", err)
+		return "", false, fmt.Errorf("搜索图片失败: %w", err)
 	}
 	channelMessageAvailable := ChannelChatID.ID != 0 || ChannelChatID.Username != ""
 	if len(pictures) > 0 {
@@ -89,11 +91,11 @@ func getSearchResult(ctx context.Context, hasPermission bool, fileBytes []byte) 
 			}
 			text += common.EscapeMarkdown(fmt.Sprintf("模糊度: %.2f\n\n", picture.BlurScore))
 		}
-		return text, nil
+		return text, true, nil
 	}
 	if !hasPermission {
-		return "未在数据库中找到相似图片", nil
+		return "未在数据库中找到相似图片", false, nil
 	}
 	// TODO: 有权限时使用其他搜索引擎搜图
-	return "未找到相似图片", nil
+	return "未找到相似图片", false, nil
 }
