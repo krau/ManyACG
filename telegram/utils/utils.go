@@ -98,7 +98,7 @@ func GetArtworkHTMLCaption(artwork *types.Artwork) string {
 		tag = tagCharsReplacer.Replace(tag)
 		tags += "#" + strings.TrimSpace(common.EscapeHTML(tag)) + " "
 	}
-	caption += fmt.Sprintf("\n\n<blockquote expandable=true>%s</blockquote>", tags)
+	caption += fmt.Sprintf("\n<blockquote expandable=true>%s</blockquote>", tags)
 	return caption
 }
 
