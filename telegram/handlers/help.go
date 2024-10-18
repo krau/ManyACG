@@ -17,20 +17,22 @@ func Help(ctx context.Context, bot *telego.Bot, message telego.Message) {
 /setu - 随机图片(NSFW)
 /random - 随机全年龄图片
 /search - 搜索相似图片
-/info - 计算图片信息
+/info - 发送作品图片和信息
+/hash - 计算图片信息
 /stats - 获取统计数据
 `
 
 	if IsChannelAvailable {
-		helpText += `/file - 回复一条频道的消息获取原图文件 <index>`
+		helpText += `/file <index> - 回复一张图片消息获取其原图文件`
 	}
 	helpText += `
-关键词参数使用 '|' 分隔或关系, 使用空格分隔与关系, 示例:
+获取图片相关功能中支持使用以下格式的参数:
+使用 '|' 分隔'或'关系, 使用 '空格' 分隔'与'关系, 示例:
 
 /random 萝莉|白丝 猫耳|原创
 
 表示搜索包含"萝莉"或"白丝", 且包含"猫耳"或"原创"的图片.
-Inline 查询支持同样的参数格式.
+Inline 查询(在任意聊天框中@本bot)支持同样的参数格式.
 `
 	isAdmin, _ := service.IsAdmin(ctx, message.From.ID)
 	if isAdmin {
@@ -48,9 +50,8 @@ Inline 查询支持同样的参数格式.
 /fix_twitter_artists - 修复Twitter作者信息(更新所有推特作品的作者信息)
 
 发送作品链接可以获取信息或发布到频道
-
 `
 	}
-	helpText += fmt.Sprintf("版本: %s, 构建日期 %s, 提交 %s", common.Version, common.BuildTime, common.Commit)
+	helpText += fmt.Sprintf("\n版本: %s, 构建日期 %s, 提交 %s", common.Version, common.BuildTime, common.Commit)
 	utils.ReplyMessage(bot, message, helpText)
 }

@@ -181,6 +181,10 @@ func GetMessagePhotoFileBytes(bot *telego.Bot, message *telego.Message) ([]byte,
 }
 
 func FindSourceURLForMessage(message *telego.Message) string {
+	if message == nil {
+		Logger.Warn("消息为空")
+		return ""
+	}
 	text := message.Text
 	text += message.Caption + " "
 	for _, entity := range message.Entities {

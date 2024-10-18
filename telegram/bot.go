@@ -48,10 +48,14 @@ var (
 		},
 		{
 			Command:     "search",
-			Description: "搜索图片",
+			Description: "搜索相似图片",
 		},
 		{
 			Command:     "info",
+			Description: "获取作品图片和信息",
+		},
+		{
+			Command:     "hash",
 			Description: "计算图片信息",
 		},
 		{

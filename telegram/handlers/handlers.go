@@ -26,7 +26,8 @@ func RegisterHandlers(hg *telegohandler.HandlerGroup) {
 	hg.HandleMessageCtx(RandomPicture, telegohandler.Or(telegohandler.CommandEqual("setu"), telegohandler.CommandEqual("random")), mentionIsBot)
 	hg.HandleMessageCtx(Help, telegohandler.CommandEqual("help"), mentionIsBot)
 	hg.HandleMessageCtx(SearchPicture, telegohandler.CommandEqual("search"), mentionIsBot)
-	hg.HandleMessageCtx(CalculatePicture, telegohandler.CommandEqual("info"), mentionIsBot)
+	hg.HandleMessageCtx(GetArtworkInfoCommand, telegohandler.CommandEqual("info"), mentionIsBot)
+	hg.HandleMessageCtx(CalculatePicture, telegohandler.CommandEqual("hash"), mentionIsBot)
 	hg.HandleMessageCtx(GetStats, telegohandler.CommandEqual("stats"), mentionIsBot)
 
 	hg.HandleMessageCtx(SetAdmin, telegohandler.CommandEqual("set_admin"))

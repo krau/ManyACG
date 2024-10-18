@@ -4,6 +4,7 @@ import (
 	"github.com/krau/ManyACG/adapter"
 	"github.com/krau/ManyACG/dao"
 	manyacgErrors "github.com/krau/ManyACG/errors"
+	"github.com/krau/ManyACG/sources"
 
 	"context"
 	"errors"
@@ -436,4 +437,25 @@ func TidyArtworkPictureIndexByID(ctx context.Context, artworkID primitive.Object
 		return nil, nil
 	})
 	return err
+}
+
+func GetArtworkByURLWithCacheFetch(ctx context.Context, sourceURL string) (*types.Artwork, error) {
+	artwork, _ := GetArtworkByURL(ctx, sourceURL)
+	if artwork != nil {
+		return artwork, nil
+	}
+	cachedArtwork, _ := GetCachedArtworkByURL(ctx, sourceURL)
+	if cachedArtwork != nil && cachedArtwork.Artwork != nil {
+		return cachedArtwork.Artwork, nil
+	}
+	artwork, err := sources.GetArtworkInfo(sourceURL)
+	if err != nil {
+		Logger.Errorf("获取作品信息失败: %s", err)
+		return nil, manyacgErrors.ErrFailedToGetArtwork
+	}
+	err = CreateCachedArtwork(ctx, artwork, types.ArtworkStatusCached)
+	if err != nil {
+		Logger.Warnf("创建缓存作品失败: %s", err)
+	}
+	return artwork, nil
 }

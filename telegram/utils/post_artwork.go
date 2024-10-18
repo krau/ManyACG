@@ -22,7 +22,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
-func PostArtwork(ctx context.Context, bot *telego.Bot, artwork *types.Artwork) ([]telego.Message, error) {
+func SendArtworkMediaGroup(ctx context.Context, bot *telego.Bot, chatID telego.ChatID, artwork *types.Artwork) ([]telego.Message, error) {
 	if bot == nil {
 		return nil, errors.ErrNilBot
 	}
@@ -31,13 +31,13 @@ func PostArtwork(ctx context.Context, bot *telego.Bot, artwork *types.Artwork) (
 		return nil, errors.ErrNilArtwork
 	}
 	if len(artwork.Pictures) <= 10 {
-		inputMediaPhotos, err := getInputMediaPhotos(ctx, artwork, 0, len(artwork.Pictures))
+		inputMediaPhotos, err := GetArtworkInputMediaPhotos(ctx, artwork, 0, len(artwork.Pictures))
 		if err != nil {
 			return nil, err
 		}
 		return bot.SendMediaGroup(
 			telegoutil.MediaGroup(
-				ChannelChatID,
+				chatID,
 				inputMediaPhotos...,
 			),
 		)
@@ -48,14 +48,14 @@ func PostArtwork(ctx context.Context, bot *telego.Bot, artwork *types.Artwork) (
 		if end > len(artwork.Pictures) {
 			end = len(artwork.Pictures)
 		}
-		inputMediaPhotos, err := getInputMediaPhotos(ctx, artwork, i, end)
+		inputMediaPhotos, err := GetArtworkInputMediaPhotos(ctx, artwork, i, end)
 		if err != nil {
 			return nil, err
 		}
-		mediaGroup := telegoutil.MediaGroup(ChannelChatID, inputMediaPhotos...)
+		mediaGroup := telegoutil.MediaGroup(chatID, inputMediaPhotos...)
 		if i > 0 {
 			mediaGroup = mediaGroup.WithReplyParameters(&telego.ReplyParameters{
-				ChatID:    ChannelChatID,
+				ChatID:    chatID,
 				MessageID: allMessages[i-1].MessageID,
 			})
 		}
@@ -72,25 +72,42 @@ func PostArtwork(ctx context.Context, bot *telego.Bot, artwork *types.Artwork) (
 }
 
 // start from 0
-func getInputMediaPhotos(ctx context.Context, artwork *types.Artwork, start, end int) ([]telego.InputMedia, error) {
+func GetArtworkInputMediaPhotos(ctx context.Context, artwork *types.Artwork, start, end int) ([]telego.InputMedia, error) {
 	inputMediaPhotos := make([]telego.InputMedia, end-start)
 	for i := start; i < end; i++ {
 		picture := artwork.Pictures[i]
-		fileBytes := common.GetReqCachedFile(picture.Original)
-		if fileBytes == nil {
-			var err error
-			fileBytes, err = storage.GetFile(ctx, picture.StorageInfo.Original)
+		var photo *telego.InputMediaPhoto
+		if picture.TelegramInfo != nil && picture.TelegramInfo.PhotoFileID != "" {
+			photo = telegoutil.MediaPhoto(telegoutil.FileFromID(picture.TelegramInfo.PhotoFileID))
+		}
+		if photo == nil {
+			fileBytes := common.GetReqCachedFile(picture.Original)
+			if fileBytes == nil {
+				var err error
+				if picture.StorageInfo == nil {
+					fileBytes, err = common.DownloadWithCache(ctx, picture.Original, nil)
+					if err != nil {
+						Logger.Errorf("failed to download file: %s", err)
+						return nil, err
+					}
+				} else {
+					var err error
+					fileBytes, err = storage.GetFile(ctx, picture.StorageInfo.Original)
+					if err != nil {
+						Logger.Errorf("failed to get file: %s", err)
+						return nil, err
+					}
+				}
+			}
+			fileBytes, err := common.CompressImageToJPEG(fileBytes, 10, 2560, picture.Original)
 			if err != nil {
-				Logger.Errorf("failed to get file: %s", err)
+				Logger.Errorf("failed to compress image: %s", err)
 				return nil, err
 			}
+			photo = telegoutil.MediaPhoto(telegoutil.File(telegoutil.NameReader(bytes.NewReader(fileBytes), primitive.NewObjectID().Hex())))
+			fileBytes = nil
 		}
-		fileBytes, err := common.CompressImageToJPEG(fileBytes, 10, 2560, picture.Original)
-		if err != nil {
-			Logger.Errorf("failed to compress image: %s", err)
-			return nil, err
-		}
-		photo := telegoutil.MediaPhoto(telegoutil.File(telegoutil.NameReader(bytes.NewReader(fileBytes), picture.StorageInfo.Original.Path)))
+
 		if i == 0 {
 			photo = photo.WithCaption(GetArtworkHTMLCaption(artwork)).WithParseMode(telego.ModeHTML)
 		}
@@ -98,9 +115,7 @@ func getInputMediaPhotos(ctx context.Context, artwork *types.Artwork, start, end
 			photo = photo.WithHasSpoiler()
 		}
 		inputMediaPhotos[i-start] = photo
-		fileBytes = nil
 	}
-	runtime.GC()
 	return inputMediaPhotos, nil
 }
 
@@ -155,7 +170,7 @@ func PostAndCreateArtwork(ctx context.Context, artwork *types.Artwork, bot *tele
 			),
 		})
 	}
-	messages, err := PostArtwork(ctx, bot, artwork)
+	messages, err := SendArtworkMediaGroup(ctx, bot, ChannelChatID, artwork)
 	if err != nil {
 		return fmt.Errorf("posting artwork [%s](%s): %w", artwork.Title, artwork.SourceURL, err)
 	}
