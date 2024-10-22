@@ -34,7 +34,7 @@ func GetUserByID(ctx context.Context, id primitive.ObjectID) (*model.UserModel, 
 
 func GetUserByUsername(ctx context.Context, username string) (*model.UserModel, error) {
 	user := &model.UserModel{}
-	err := userCollection.FindOne(ctx, bson.M{"username": username}).Decode(user)
+	err := userCollection.FindOne(ctx, bson.M{"username": bson.M{"$regex": primitive.Regex{Pattern: "^" + username + "$", Options: "i"}}}).Decode(user)
 	if err != nil {
 		return nil, err
 	}
@@ -52,7 +52,7 @@ func GetUserByTelegramID(ctx context.Context, telegramID int64) (*model.UserMode
 
 func GetUserByEmail(ctx context.Context, email string) (*model.UserModel, error) {
 	user := &model.UserModel{}
-	err := userCollection.FindOne(ctx, bson.M{"email": email}).Decode(user)
+	err := userCollection.FindOne(ctx, bson.M{"email": bson.M{"$regex": primitive.Regex{Pattern: "^" + email + "$", Options: "i"}}}).Decode(user)
 	if err != nil {
 		return nil, err
 	}

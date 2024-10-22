@@ -29,7 +29,7 @@ func GetUnauthUserByID(ctx context.Context, id primitive.ObjectID) (*model.Unaut
 
 func GetUnauthUserByUsername(ctx context.Context, username string) (*model.UnauthUserModel, error) {
 	user := &model.UnauthUserModel{}
-	err := unauthUserCollection.FindOne(ctx, bson.M{"username": username}).Decode(user)
+	err := unauthUserCollection.FindOne(ctx, bson.M{"username": bson.M{"$regex": primitive.Regex{Pattern: "^" + username + "$", Options: "i"}}}).Decode(user)
 	if err != nil {
 		return nil, err
 	}
