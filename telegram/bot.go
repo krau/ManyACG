@@ -31,7 +31,7 @@ var (
 			Description: "开始涩涩",
 		},
 		{
-			Command:     "file <index>",
+			Command:     "file",
 			Description: "获取原图文件",
 		},
 		{
