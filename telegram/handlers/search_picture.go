@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/krau/ManyACG/common"
+	"github.com/krau/ManyACG/config"
 	. "github.com/krau/ManyACG/logger"
 	"github.com/krau/ManyACG/service"
 	"github.com/krau/ManyACG/telegram/utils"
@@ -89,6 +90,7 @@ func getSearchResult(ctx context.Context, hasPermission bool, fileBytes []byte) 
 			if channelMessageAvailable && picture.TelegramInfo != nil && picture.TelegramInfo.MessageID != 0 {
 				text += fmt.Sprintf("[频道消息](%s)\n", utils.GetArtworkPostMessageURL(picture.TelegramInfo.MessageID, ChannelChatID))
 			}
+			text += fmt.Sprintf("[ManyACG](%s)\n", config.Cfg.API.SiteURL+"/artwork/"+artwork.ID)
 			text += common.EscapeMarkdown(fmt.Sprintf("模糊度: %.2f\n\n", picture.BlurScore))
 		}
 		return text, true, nil
