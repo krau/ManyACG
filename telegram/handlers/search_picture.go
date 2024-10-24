@@ -52,7 +52,7 @@ func SearchPictureCallbackQuery(ctx context.Context, bot *telego.Bot, query tele
 		bot.AnswerCallbackQuery(telegoutil.CallbackQuery(query.ID).WithText(err.Error()).WithShowAlert().WithCacheTime(5))
 		return
 	}
-	go bot.AnswerCallbackQuery(telegoutil.CallbackQuery(query.ID).WithText(text).WithShowAlert().WithCacheTime(5))
+	go bot.AnswerCallbackQuery(telegoutil.CallbackQuery(query.ID).WithText(text).WithCacheTime(5))
 	utils.ReplyMessageWithMarkdown(bot, *message, text)
 }
 
