@@ -47,14 +47,12 @@ func SearchPictureCallbackQuery(ctx context.Context, bot *telego.Bot, query tele
 		bot.AnswerCallbackQuery(telegoutil.CallbackQuery(query.ID).WithText("获取图片文件失败: " + err.Error()).WithShowAlert().WithCacheTime(5))
 		return
 	}
-	text, hasResult, err := getSearchResult(ctx, true, fileBytes)
+	text, _, err := getSearchResult(ctx, true, fileBytes)
 	if err != nil {
 		bot.AnswerCallbackQuery(telegoutil.CallbackQuery(query.ID).WithText(err.Error()).WithShowAlert().WithCacheTime(5))
 		return
 	}
-	if !hasResult {
-		bot.AnswerCallbackQuery(telegoutil.CallbackQuery(query.ID).WithText(text).WithShowAlert().WithCacheTime(5))
-	}
+	go bot.AnswerCallbackQuery(telegoutil.CallbackQuery(query.ID).WithText(text).WithShowAlert().WithCacheTime(5))
 	utils.ReplyMessageWithMarkdown(bot, *message, text)
 }
 
