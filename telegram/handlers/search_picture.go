@@ -42,7 +42,6 @@ func SearchPictureCallbackQuery(ctx context.Context, bot *telego.Bot, query tele
 		return
 	}
 	message := query.Message.(*telego.Message)
-	go bot.AnswerCallbackQuery(telegoutil.CallbackQuery(query.ID).WithText("少女祈祷中...").WithCacheTime(5))
 	fileBytes, err := utils.GetMessagePhotoFileBytes(bot, message)
 	if err != nil {
 		bot.AnswerCallbackQuery(telegoutil.CallbackQuery(query.ID).WithText("获取图片文件失败: " + err.Error()).WithShowAlert().WithCacheTime(5))
