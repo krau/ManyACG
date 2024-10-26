@@ -34,3 +34,7 @@ func CreateLike(ctx context.Context, userID, artworkID primitive.ObjectID) error
 	}
 	return nil
 }
+
+func GetLike(ctx context.Context, userID, artworkID primitive.ObjectID) (*model.LikeModel, error) {
+	return dao.GetLike(ctx, userID, artworkID)
+}

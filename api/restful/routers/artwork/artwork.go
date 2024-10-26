@@ -25,6 +25,12 @@ func RegisterRouter(r *gin.RouterGroup) {
 	r.GET("/:id",
 		middleware.OptionalJWTMiddleware,
 		GetArtwork)
+
+	r.GET("/like",
+		middleware.JWTAuthMiddleware.MiddlewareFunc(),
+		validateArtworkIDMiddleware,
+		checkArtworkAndUserMiddleware,
+		GetArtworkLikeStatus)
 	r.POST("/like",
 		middleware.JWTAuthMiddleware.MiddlewareFunc(),
 		validateArtworkIDMiddleware,
