@@ -3,7 +3,9 @@ package middleware
 import (
 	"errors"
 	"net/http"
+	"os"
 
+	jwt "github.com/appleboy/gin-jwt/v2"
 	"github.com/krau/ManyACG/common"
 	"github.com/krau/ManyACG/config"
 	. "github.com/krau/ManyACG/logger"
@@ -12,7 +14,54 @@ import (
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
+
+	"time"
+
+	"github.com/chenyahui/gin-cache/persist"
+	"github.com/go-redis/redis/v8"
 )
+
+var CacheStore persist.CacheStore
+
+func Init() {
+	// Init JWT
+	var err error
+	JWTAuthMiddleware, err = jwt.New(JWTInitParamas())
+	if err != nil {
+		Logger.Fatalf("JWT init error: %v", err)
+		os.Exit(1)
+	}
+	if err := JWTAuthMiddleware.MiddlewareInit(); err != nil {
+		Logger.Fatalf("JWT middleware init error: %v", err)
+		os.Exit(1)
+	}
+
+	// Init Cache
+	cacheConfig := config.Cfg.API.Cache
+	if cacheConfig.Enable {
+		if cacheConfig.Redis {
+			opt, err := redis.ParseURL(cacheConfig.URL)
+			if err != nil {
+				Logger.Fatalf("Failed to parse redis url: %v", err)
+				os.Exit(1)
+			}
+			CacheStore = persist.NewRedisStore(redis.NewClient(opt))
+		} else {
+			CacheStore = persist.NewMemoryStore(time.Duration(cacheConfig.MemoryTTL) * time.Second)
+		}
+	}
+}
+
+func GetCacheDuration(route string) time.Duration {
+	if CacheStore == nil {
+		return 0
+	}
+	ttl, ok := config.Cfg.API.Cache.TTL[route]
+	if !ok {
+		return 0
+	}
+	return time.Duration(ttl) * time.Second
+}
 
 func CheckKey(ctx *gin.Context) {
 	if config.Cfg.Debug {

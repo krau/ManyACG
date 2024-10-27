@@ -19,10 +19,20 @@ type apiConfig struct {
 	RefreshTokenExpire int      `toml:"refresh_token_expire" mapstructure:"refresh_token_expire" json:"refresh_token_expire" yaml:"refresh_token_expire"`
 
 	PathRules []PathRule `toml:"path_rules" mapstructure:"path_rules" json:"path_rules" yaml:"path_rules"`
+
+	Cache apiCacheConfig `toml:"cache" mapstructure:"cache" json:"cache" yaml:"cache"`
 }
 
 type PathRule struct {
 	Path       string `toml:"path" mapstructure:"path" json:"path" yaml:"path"`
 	TrimPrefix string `toml:"trim_prefix" mapstructure:"trim_prefix" json:"trim_prefix" yaml:"trim_prefix"`
 	JoinPrefix string `toml:"join_prefix" mapstructure:"join_prefix" json:"join_prefix" yaml:"join_prefix"`
+}
+
+type apiCacheConfig struct {
+	Enable    bool           `toml:"enable" mapstructure:"enable" json:"enable" yaml:"enable"`
+	Redis     bool           `toml:"redis" mapstructure:"redis" json:"redis" yaml:"redis"`
+	URL       string         `toml:"url" mapstructure:"url" json:"url" yaml:"url"`
+	TTL       map[string]int `toml:"ttl" mapstructure:"ttl" json:"ttl" yaml:"ttl"`
+	MemoryTTL int            `toml:"memory_ttl" mapstructure:"memory_ttl" json:"memory_ttl" yaml:"memory_ttl"`
 }

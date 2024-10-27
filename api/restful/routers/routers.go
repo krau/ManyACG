@@ -1,6 +1,7 @@
 package routers
 
 import (
+	cache "github.com/chenyahui/gin-cache"
 	"github.com/krau/ManyACG/api/restful/middleware"
 	"github.com/krau/ManyACG/api/restful/routers/artist"
 	"github.com/krau/ManyACG/api/restful/routers/artwork"
@@ -24,7 +25,11 @@ func RegisterAllRouters(r *gin.RouterGroup, authMiddleware *jwt.GinJWTMiddleware
 
 	auth.RegisterRouter(r, authMiddleware)
 
-	r.GET("/atom", GenerateAtom)
+	if middleware.CacheStore != nil {
+		r.GET("/atom", cache.CacheByRequestPath(middleware.CacheStore, middleware.GetCacheDuration("/atom")), GenerateAtom)
+	} else {
+		r.GET("/atom", GenerateAtom)
+	}
 
 	artworkGroup := r.Group("/artwork")
 	artwork.RegisterRouter(artworkGroup)

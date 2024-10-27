@@ -31,12 +31,15 @@ func InitConfig() {
 	viper.AddConfigPath(".")
 	viper.SetConfigType("toml")
 
-	viper.SetDefault("api.enable", false)
 	viper.SetDefault("api.address", "0.0.0.0:39080")
 	viper.SetDefault("api.site_name", "ManyACG")
 	viper.SetDefault("api.site_title", "ManyACG - ACG Picture Collection")
 	viper.SetDefault("api.site_description", "Many illustrations and pictures of ACG")
 	viper.SetDefault("api.site_email", "acg@unv.app")
+	viper.SetDefault("api.allowed_origins", []string{"*"})
+	viper.SetDefault("api.realm", "ManyACG")
+	viper.SetDefault("api.token_expire", 86400*14)
+	viper.SetDefault("api.refresh_token_expire", 86400*30)
 
 	viper.SetDefault("fetcher.max_concurrent", 5)
 	viper.SetDefault("fetcher.limit", 50)
@@ -45,12 +48,7 @@ func InitConfig() {
 	viper.SetDefault("log.file_path", "logs/ManyACG.log")
 	viper.SetDefault("log.backup_num", 7)
 
-	viper.SetDefault("source.pixiv.enable", false)
-	viper.SetDefault("source.twitter.enable", false)
 	viper.SetDefault("source.twitter.fx_twitter_domain", "fxtwitter.com")
-	viper.SetDefault("source.bilibili.enable", false)
-	viper.SetDefault("source.danbooru.enable", false)
-	viper.SetDefault("source.kemono.enable", false)
 
 	viper.SetDefault("storage.cache_dir", "./cache")
 	viper.SetDefault("storage.cache_ttl", 86400)

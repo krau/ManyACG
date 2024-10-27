@@ -1,7 +1,6 @@
 package middleware
 
 import (
-	"os"
 	"time"
 
 	"github.com/krau/ManyACG/config"
@@ -30,19 +29,6 @@ const (
 )
 
 var JWTAuthMiddleware *jwt.GinJWTMiddleware
-
-func Init() {
-	var err error
-	JWTAuthMiddleware, err = jwt.New(JWTInitParamas())
-	if err != nil {
-		Logger.Fatalf("JWT init error: %v", err)
-		os.Exit(1)
-	}
-	if err := JWTAuthMiddleware.MiddlewareInit(); err != nil {
-		Logger.Fatalf("JWT middleware init error: %v", err)
-		os.Exit(1)
-	}
-}
 
 func JWTInitParamas() *jwt.GinJWTMiddleware {
 	return &jwt.GinJWTMiddleware{
