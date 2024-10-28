@@ -34,6 +34,18 @@ func GetPictureByID(ctx context.Context, id primitive.ObjectID) (*types.Picture,
 	return pictureModel.ToPicture(), nil
 }
 
+func GetRandomPictures(ctx context.Context, limit int) ([]*types.Picture, error) {
+	pictures, err := dao.GetRandomPictures(ctx, limit)
+	if err != nil {
+		return nil, err
+	}
+	var result []*types.Picture
+	for _, picture := range pictures {
+		result = append(result, picture.ToPicture())
+	}
+	return result, nil
+}
+
 func UpdatePictureTelegramInfo(ctx context.Context, picture *types.Picture, telegramInfo *types.TelegramInfo) error {
 	pictureModel, err := dao.GetPictureByOriginal(ctx, picture.Original)
 	if err != nil {

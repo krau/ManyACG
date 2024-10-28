@@ -70,6 +70,21 @@ func GetPicturesByHash(ctx context.Context, hash string) ([]*model.PictureModel,
 	return pictures, nil
 }
 
+func GetRandomPictures(ctx context.Context, limit int) ([]*model.PictureModel, error) {
+	cursor, err := pictureCollection.Aggregate(ctx, mongo.Pipeline{
+		bson.D{{Key: "$sample", Value: bson.M{"size": limit}}},
+	})
+	if err != nil {
+		return nil, err
+	}
+	var pictures []*model.PictureModel
+	err = cursor.All(ctx, &pictures)
+	if err != nil {
+		return nil, err
+	}
+	return pictures, nil
+}
+
 /*
 全库遍历搜索
 */

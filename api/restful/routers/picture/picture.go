@@ -8,4 +8,5 @@ import (
 
 func RegisterRouter(r *gin.RouterGroup) {
 	r.GET("/file/:id", middleware.ValidatePictureID, GetFile)
+	r.GET("/random", RandomPicture)
 }
