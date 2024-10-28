@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"time"
 
 	"github.com/krau/ManyACG/config"
 	"github.com/krau/ManyACG/dao/collections"
@@ -30,12 +31,13 @@ func InitDB(ctx context.Context) {
 			config.Cfg.Database.Port,
 		)
 	}
-	client, err := mongo.Connect(ctx, options.Client().ApplyURI(uri))
+	client, err := mongo.Connect(ctx, options.Client().ApplyURI(uri),
+		options.Client().SetReadPreference(readpref.Nearest(readpref.WithMaxStaleness(time.Duration(config.Cfg.Database.MaxStaleness)*time.Second))))
 	if err != nil {
 		Logger.Fatal(err)
 		os.Exit(1)
 	}
-	if err = client.Ping(ctx, readpref.Primary()); err != nil {
+	if err = client.Ping(ctx, nil); err != nil {
 		Logger.Fatal(err)
 		os.Exit(1)
 	}

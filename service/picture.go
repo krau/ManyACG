@@ -13,6 +13,8 @@ import (
 
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
+	"go.mongodb.org/mongo-driver/mongo/readpref"
 )
 
 // Deprecated: MessageID 现在可能为 0
@@ -37,18 +39,7 @@ func UpdatePictureTelegramInfo(ctx context.Context, picture *types.Picture, tele
 	if err != nil {
 		return err
 	}
-	session, err := dao.Client.StartSession()
-	if err != nil {
-		return err
-	}
-	defer session.EndSession(ctx)
-	_, err = session.WithTransaction(ctx, func(ctx mongo.SessionContext) (interface{}, error) {
-		_, err := dao.UpdatePictureTelegramInfoByID(ctx, pictureModel.ID, telegramInfo)
-		if err != nil {
-			return nil, err
-		}
-		return nil, nil
-	})
+	_, err = dao.UpdatePictureTelegramInfoByID(ctx, pictureModel.ID, telegramInfo)
 	if err != nil {
 		return err
 	}
@@ -96,7 +87,7 @@ func DeletePictureByMessageID(ctx context.Context, messageID int) error {
 			}
 		}
 		return nil, nil
-	})
+	}, options.Transaction().SetReadPreference(readpref.Primary()))
 	if err != nil {
 		return err
 	}
@@ -139,7 +130,7 @@ func DeletePictureByID(ctx context.Context, id primitive.ObjectID) error {
 			return nil, err
 		}
 		return nil, TidyArtworkPictureIndexByID(ctx, artworkModel.ID)
-	})
+	}, options.Transaction().SetReadPreference(readpref.Primary()))
 	return err
 }
 
@@ -163,45 +154,34 @@ func ProcessPictureHashAndSizeAndUpdate(ctx context.Context, picture *types.Pict
 	if err != nil {
 		return err
 	}
-	session, err := dao.Client.StartSession()
+	fileBytes, err := storage.GetFile(ctx, picture.StorageInfo.Original)
 	if err != nil {
 		return err
 	}
-	defer session.EndSession(ctx)
-	_, err = session.WithTransaction(ctx, func(ctx mongo.SessionContext) (interface{}, error) {
-		fileBytes, err := storage.GetFile(ctx, picture.StorageInfo.Original)
-		if err != nil {
-			return nil, err
-		}
-		defer func() {
-			fileBytes = nil
-		}()
-		hash, err := common.GetImagePhash(fileBytes)
-		if err != nil {
-			return nil, err
-		}
-		blurscore, err := common.GetImageBlurScore(fileBytes)
-		if err != nil {
-			return nil, err
-		}
-		_, err = dao.UpdatePictureHashAndBlurScoreByID(ctx, pictureModel.ID, hash, blurscore)
-		if err != nil {
-			return nil, err
-		}
-		if picture.Width == 0 || picture.Height == 0 {
-			width, height, err := common.GetImageSize(fileBytes)
-			if err != nil {
-				return nil, err
-			}
-			_, err = dao.UpdatePictureSizeByID(ctx, pictureModel.ID, width, height)
-			if err != nil {
-				return nil, err
-			}
-		}
-		return nil, nil
-	})
+	defer func() {
+		fileBytes = nil
+	}()
+	hash, err := common.GetImagePhash(fileBytes)
 	if err != nil {
 		return err
+	}
+	blurscore, err := common.GetImageBlurScore(fileBytes)
+	if err != nil {
+		return err
+	}
+	_, err = dao.UpdatePictureHashAndBlurScoreByID(ctx, pictureModel.ID, hash, blurscore)
+	if err != nil {
+		return err
+	}
+	if picture.Width == 0 || picture.Height == 0 {
+		width, height, err := common.GetImageSize(fileBytes)
+		if err != nil {
+			return err
+		}
+		_, err = dao.UpdatePictureSizeByID(ctx, pictureModel.ID, width, height)
+		if err != nil {
+			return err
+		}
 	}
 	return nil
 }

@@ -16,6 +16,8 @@ import (
 	"github.com/duke-git/lancet/v2/slice"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
+	"go.mongodb.org/mongo-driver/mongo/readpref"
 )
 
 func CreateArtwork(ctx context.Context, artwork *types.Artwork) (*types.Artwork, error) {
@@ -157,7 +159,7 @@ func CreateArtwork(ctx context.Context, artwork *types.Artwork) (*types.Artwork,
 			return nil, err
 		}
 		return artworkModel, nil
-	})
+	}, options.Transaction().SetReadPreference(readpref.Primary()))
 	if err != nil {
 		return nil, err
 	}
@@ -346,7 +348,7 @@ func UpdateArtworkTagsByURL(ctx context.Context, sourceURL string, tags []string
 			return nil, err
 		}
 		return nil, nil
-	})
+	}, options.Transaction().SetReadPreference(readpref.Primary()))
 	if err != nil {
 		return err
 	}
@@ -389,7 +391,7 @@ func deleteArtwork(ctx context.Context, id primitive.ObjectID, sourceURL string)
 			return nil, err
 		}
 		return nil, nil
-	})
+	}, options.Transaction().SetReadPreference(readpref.Primary()))
 	if err != nil {
 		return err
 	}
@@ -435,7 +437,7 @@ func TidyArtworkPictureIndexByID(ctx context.Context, artworkID primitive.Object
 			}
 		}
 		return nil, nil
-	})
+	}, options.Transaction().SetReadPreference(readpref.Primary()))
 	return err
 }
 

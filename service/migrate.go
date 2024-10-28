@@ -20,6 +20,8 @@ import (
 	"github.com/mymmrac/telego/telegoutil"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
+	"go.mongodb.org/mongo-driver/mongo/readpref"
 )
 
 func ProcessPicturesHashAndSizeAndUpdate(ctx context.Context, bot *telego.Bot, message *telego.Message) {
@@ -127,7 +129,7 @@ func StoragePictureRegularAndThumbAndUpdate(ctx context.Context, picture *model.
 			return nil, err
 		}
 		return nil, nil
-	})
+	}, options.Transaction().SetReadPreference(readpref.Primary()))
 	if err != nil {
 		return err
 	}

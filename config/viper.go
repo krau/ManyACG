@@ -62,7 +62,8 @@ func InitConfig() {
 	viper.SetDefault("telegram.sleep", 1)
 	viper.SetDefault("telegram.api_url", "https://api.telegram.org")
 
-	viper.SetDefault("Database.databse", "manyacg")
+	viper.SetDefault("database.database", "manyacg")
+	viper.SetDefault("database.max_staleness", 120)
 
 	if err := viper.ReadInConfig(); err != nil {
 		fmt.Printf("error when reading config: %s\n", err)
