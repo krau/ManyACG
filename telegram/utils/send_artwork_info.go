@@ -98,7 +98,7 @@ func SendArtworkInfo(ctx context.Context, bot *telego.Bot, params *SendArtworkIn
 	}
 
 	if !needUpdatePreview {
-		cachedArtwork, err := service.GetCachedArtworkByURL(ctx, params.SourceURL)
+		cachedArtwork, err := service.GetCachedArtworkByURL(ctx, artwork.SourceURL)
 		if err == nil {
 			if cachedArtwork.Artwork.Pictures[0].TelegramInfo == nil {
 				cachedArtwork.Artwork.Pictures[0].TelegramInfo = &types.TelegramInfo{}
@@ -120,7 +120,7 @@ func SendArtworkInfo(ctx context.Context, bot *telego.Bot, params *SendArtworkIn
 		}
 		return nil
 	}
-	if err := updateLinkPreview(ctx, msg, artwork, bot, 0, photo); err != nil {
+	if err := updatePreview(ctx, msg, artwork, bot, 0, photo); err != nil {
 		Logger.Warnf("更新预览失败: %s", err)
 		bot.EditMessageCaption(&telego.EditMessageCaptionParams{
 			ChatID:      *params.ChatID,
@@ -172,7 +172,7 @@ func getArtworkInfoReplyMarkup(ctx context.Context, artwork *types.Artwork, isCr
 	), nil
 }
 
-func updateLinkPreview(ctx context.Context, targetMessage *telego.Message, artwork *types.Artwork, bot *telego.Bot, pictureIndex uint, photoParams *telego.SendPhotoParams) error {
+func updatePreview(ctx context.Context, targetMessage *telego.Message, artwork *types.Artwork, bot *telego.Bot, pictureIndex uint, photoParams *telego.SendPhotoParams) error {
 	if pictureIndex >= uint(len(artwork.Pictures)) {
 		return manyacgErrors.ErrIndexOOB
 	}
@@ -208,6 +208,9 @@ func updateLinkPreview(ctx context.Context, targetMessage *telego.Message, artwo
 		replyMarkup = targetMessage.ReplyMarkup
 	} else {
 		mediaPhoto.WithCaption(photoParams.Caption + "\n<i>正在发布...</i>").WithParseMode(telego.ModeHTML)
+	}
+	if artwork.R18 {
+		mediaPhoto.WithHasSpoiler()
 	}
 	msg, err := bot.EditMessageMedia(&telego.EditMessageMediaParams{
 		ChatID:      targetMessage.Chat.ChatID(),
