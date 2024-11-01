@@ -13,10 +13,6 @@ type RestfulCommonResponse[T any] struct {
 	Data    T      `json:"data"`
 }
 
-// func GinResponse(ctx *gin.Context, status int, message string, data any) {
-// 	ctx.JSON(status, &RestfulCommonResponse[any]{Status: status, Message: message, Data: data})
-// }
-
 func GinErrorResponse(ctx *gin.Context, err error, status int, message string) {
 	if err == nil {
 		err = errors.New(message)
