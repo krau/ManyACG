@@ -45,7 +45,7 @@ func GetCachedArtworkByURLWithCache(ctx context.Context, sourceURL string) (*mod
 		if err != nil {
 			return nil, err
 		}
-		cachedArtwork, err = dao.GetCachedArtworkByURL(ctx, sourceURL)
+		cachedArtwork, err = dao.GetCachedArtworkByURL(ctx, artwork.SourceURL)
 		if err != nil {
 			return nil, err
 		}
