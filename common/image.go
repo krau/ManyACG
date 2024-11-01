@@ -9,6 +9,7 @@ import (
 	"image/jpeg"
 	_ "image/png"
 	"os"
+	"path/filepath"
 	"strconv"
 	"time"
 
@@ -18,9 +19,17 @@ import (
 
 	. "github.com/krau/ManyACG/logger"
 
+	"sync"
+
 	"github.com/corona10/goimagehash"
 	ffmpeg "github.com/u2takey/ffmpeg-go"
 )
+
+var imageBufferPool = sync.Pool{
+	New: func() interface{} {
+		return new(bytes.Buffer)
+	},
+}
 
 func GetImagePhash(b []byte) (string, error) {
 	r := bytes.NewReader(b)
@@ -91,25 +100,43 @@ func GetImageBlurScore(b []byte) (float64, error) {
 	return strconv.ParseFloat(strconv.FormatFloat(variance, 'f', 2, 64), 64)
 }
 
+// ResizeImage resizes an image to the specified width and height.
+//
+// It use golang.org/x/image/draw and CatmullRom interpolation. (Slow but high quality)
 func ResizeImage(img image.Image, width, height uint) image.Image {
+	if width == 0 || height == 0 {
+		return img
+	}
 	rect := image.Rect(0, 0, int(width), int(height))
 	resizedImg := image.NewRGBA(rect)
 	draw.CatmullRom.Scale(resizedImg, rect, img, img.Bounds(), draw.Over, nil)
 	return resizedImg
 }
 
+func GetImageSize(b []byte) (int, int, error) {
+	r := bytes.NewReader(b)
+	img, _, err := image.DecodeConfig(r)
+	if err != nil {
+		return 0, 0, err
+	}
+	return img.Width, img.Height, nil
+}
+
 func CompressImageToJPEG(input []byte, maxSizeMB, maxEdgeLength uint, cacheKey string) ([]byte, error) {
 	if cacheKey != "" {
-		cachePath := config.Cfg.Storage.CacheDir + "/image/" + EscapeFileName(cacheKey)
+		cachePath := filepath.Join(config.Cfg.Storage.CacheDir, "image", EscapeFileName(cacheKey))
 		data, err := os.ReadFile(cachePath)
 		if err == nil {
 			return data, nil
 		}
 	}
+
 	img, _, err := image.Decode(bytes.NewReader(input))
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to decode image: %w", err)
 	}
+	input = nil
+
 	bounds := img.Bounds()
 	width := bounds.Dx()
 	height := bounds.Dy()
@@ -124,47 +151,39 @@ func CompressImageToJPEG(input []byte, maxSizeMB, maxEdgeLength uint, cacheKey s
 		}
 		img = ResizeImage(img, newWidth, newHeight)
 	}
+
+	buf := imageBufferPool.Get().(*bytes.Buffer)
+	buf.Reset()
+	defer func() {
+		buf.Reset()
+		imageBufferPool.Put(buf)
+	}()
+	maxSize := int(maxSizeMB * 1024 * 1024)
+	if buf.Cap() < maxSize {
+		buf.Grow(maxSize)
+	}
 	quality := 100
-	var buf bytes.Buffer
-	err = jpeg.Encode(&buf, img, &jpeg.Options{Quality: quality})
-	if err != nil {
-		return nil, err
-	}
-	if buf.Len() < int(maxSizeMB*1024*1024) {
-		return buf.Bytes(), nil
-	}
 	for {
 		if quality <= 0 {
 			return nil, fmt.Errorf("cannot compress image to %d MB", maxSizeMB)
 		}
-		quality -= 5
 		buf.Reset()
-		err = jpeg.Encode(&buf, img, &jpeg.Options{Quality: quality})
+		err = jpeg.Encode(buf, img, &jpeg.Options{Quality: quality})
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("failed to encode image: %w", err)
 		}
-		if buf.Len() < int(maxSizeMB*1024*1024) {
+		if buf.Len() < maxSize {
 			break
 		}
+		quality -= 5
 	}
-	if cacheKey != "" {
-		if err := MkFile(config.Cfg.Storage.CacheDir+"/image/"+EscapeFileName(cacheKey), buf.Bytes()); err != nil {
-			Logger.Errorf("failed to save cache file: %s", err)
-		} else {
-			go PurgeFileAfter(config.Cfg.Storage.CacheDir+"/image/"+EscapeFileName(cacheKey), time.Duration(config.Cfg.Storage.CacheTTL)*time.Second)
-		}
-	}
-	return buf.Bytes(), nil
-}
 
-// 宽高
-func GetImageSize(b []byte) (int, int, error) {
-	r := bytes.NewReader(b)
-	img, _, err := image.DecodeConfig(r)
-	if err != nil {
-		return 0, 0, err
+	result := bytes.Clone(buf.Bytes())
+
+	if cacheKey != "" {
+		go MkCache(filepath.Join(config.Cfg.Storage.CacheDir, "image", EscapeFileName(cacheKey)), result, time.Duration(config.Cfg.Storage.CacheTTL)*time.Second)
 	}
-	return img.Width, img.Height, nil
+	return result, nil
 }
 
 // 使用 ffmpeg 压缩图片
