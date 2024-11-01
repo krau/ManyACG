@@ -4,13 +4,23 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"sync"
 	"time"
 
 	. "github.com/krau/ManyACG/logger"
 )
 
+var fileLocks sync.Map
+
 // 创建文件, 自动创建目录
 func MkFile(path string, data []byte) error {
+	lock, _ := fileLocks.LoadOrStore(path, &sync.Mutex{})
+	lock.(*sync.Mutex).Lock()
+	defer func() {
+		lock.(*sync.Mutex).Unlock()
+		fileLocks.Delete(path)
+	}()
+
 	err := os.MkdirAll(filepath.Dir(path), os.ModePerm)
 	if err != nil {
 		return err
@@ -58,7 +68,9 @@ func PurgeFileAfter(path string, td time.Duration) {
 	}
 	Logger.Debugf("Purge file after %s: %s", td, path)
 	time.AfterFunc(td, func() {
-		PurgeFile(path)
+		if err := PurgeFile(path); err != nil {
+			Logger.Errorf("Failed to purge file: %s", err)
+		}
 	})
 }
 
