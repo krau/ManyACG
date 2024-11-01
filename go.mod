@@ -17,6 +17,7 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/gookit/slog v0.5.7
 	github.com/gorilla/feeds v1.2.0
+	github.com/mmcdole/gofeed v1.3.0
 	github.com/penglongli/gin-metrics v0.1.12
 	github.com/resend/resend-go/v2 v2.13.0
 	github.com/rhysd/go-github-selfupdate v1.2.3
@@ -67,7 +68,6 @@ require (
 	github.com/klauspost/cpuid/v2 v2.2.8 // indirect
 	github.com/leodido/go-urn v1.4.0 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
-	github.com/mmcdole/gofeed v1.3.0 // indirect
 	github.com/mmcdole/goxpp v1.1.1-0.20240225020742-a0c311522b23 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
