@@ -7,6 +7,9 @@ import (
 	"syscall"
 	"time"
 
+	"net/http"
+	_ "net/http/pprof"
+
 	"github.com/krau/ManyACG/api/restful"
 	"github.com/krau/ManyACG/common"
 	"github.com/krau/ManyACG/config"
@@ -23,6 +26,16 @@ func Run() {
 	config.InitConfig()
 	common.Init()
 	logger.InitLogger()
+
+	if config.Cfg.Debug {
+		go func() {
+			logger.Logger.Info("Start pprof server")
+			if err := http.ListenAndServe("localhost:39060", nil); err != nil {
+				logger.Logger.Fatal(err)
+			}
+		}()
+	}
+
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 	logger.Logger.Info("Start running")
