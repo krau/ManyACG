@@ -59,3 +59,7 @@ type StorageDetail struct {
 	Type StorageType `json:"type" bson:"type"`
 	Path string      `json:"path" bson:"path"`
 }
+
+func (detail *StorageDetail) String() string {
+	return string(detail.Type) + ":" + detail.Path
+}

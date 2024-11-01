@@ -130,9 +130,23 @@ func Save(ctx context.Context, filePath string, storagePath string, storageType 
 	}
 }
 
+var storageLocks sync.Map
+
 func GetFile(ctx context.Context, detail *types.StorageDetail) ([]byte, error) {
+	if detail.Type != types.StorageTypeLocal {
+		lock, _ := storageLocks.LoadOrStore(detail.String(), &sync.Mutex{})
+		lock.(*sync.Mutex).Lock()
+		defer func() {
+			lock.(*sync.Mutex).Unlock()
+			storageLocks.Delete(detail)
+		}()
+	}
 	if storage, ok := Storages[detail.Type]; ok {
-		return storage.GetFile(ctx, detail)
+		file, err := storage.GetFile(ctx, detail)
+		if err != nil {
+			return nil, err
+		}
+		return file, nil
 	} else {
 		return nil, fmt.Errorf("%w: %s", manyacgErrors.ErrStorageUnkown, detail.Type)
 	}
