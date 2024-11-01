@@ -49,7 +49,18 @@ func InitConfig() {
 	viper.SetDefault("log.file_path", "logs/ManyACG.log")
 	viper.SetDefault("log.backup_num", 7)
 
+	viper.SetDefault("source.pixiv.enable", true)
+	viper.SetDefault("source.twitter.enable", true)
+	viper.SetDefault("source.bilibili.enable", true)
+	viper.SetDefault("source.danbooru.enable", true)
+	viper.SetDefault("source.kemono.enable", true)
+
+	viper.SetDefault("source.pixiv.intervel", 60)
+	viper.SetDefault("source.pixiv.sleep", 1)
+
 	viper.SetDefault("source.twitter.fx_twitter_domain", "fxtwitter.com")
+	viper.SetDefault("source.twitter.sleep", 1)
+	viper.SetDefault("source.twitter.intervel", 60)
 
 	viper.SetDefault("storage.cache_dir", "./cache")
 	viper.SetDefault("storage.cache_ttl", 86400)

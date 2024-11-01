@@ -1,6 +1,7 @@
 package twitter
 
 import (
+	"fmt"
 	"path/filepath"
 	"regexp"
 	"strconv"
@@ -21,11 +22,33 @@ func (t *Twitter) Init() {
 }
 
 func (t *Twitter) FetchNewArtworksWithCh(artworkCh chan *types.Artwork, limit int) error {
+	errs := make([]error, 0)
+	for _, url := range config.Cfg.Source.Twitter.URLs {
+		err := t.fetchRssURLWithCh(url, limit, artworkCh)
+		if err != nil {
+			errs = append(errs, err)
+		}
+	}
+	if len(errs) > 0 {
+		return fmt.Errorf("fetching twitter encountered %d errors: %v", len(errs), errs)
+	}
 	return nil
 }
 
 func (t *Twitter) FetchNewArtworks(limit int) ([]*types.Artwork, error) {
-	return nil, nil
+	artworks := make([]*types.Artwork, 0)
+	errs := make([]error, 0)
+	for _, url := range config.Cfg.Source.Twitter.URLs {
+		artworksForURL, err := t.fetchRssURL(url, limit)
+		if err != nil {
+			errs = append(errs, err)
+		}
+		artworks = append(artworks, artworksForURL...)
+	}
+	if len(errs) > 0 {
+		return nil, fmt.Errorf("fetching twitter encountered %d errors: %v", len(errs), errs)
+	}
+	return artworks, nil
 }
 
 func (t *Twitter) GetArtworkInfo(sourceURL string) (*types.Artwork, error) {
@@ -77,7 +100,7 @@ func (t *Twitter) GetFileName(artwork *types.Artwork, picture *types.Picture) st
 func (t *Twitter) Config() *config.SourceCommonConfig {
 	return &config.SourceCommonConfig{
 		Enable:   config.Cfg.Source.Twitter.Enable,
-		Intervel: -1,
+		Intervel: config.Cfg.Source.Twitter.Intervel,
 	}
 
 }

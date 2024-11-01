@@ -41,7 +41,7 @@ func (p *Pixiv) FetchNewArtworksWithCh(artworkCh chan *types.Artwork, limit int)
 		}
 	}
 	if len(errs) > 0 {
-		return fmt.Errorf("encountered %d errors: %v", len(errs), errs)
+		return fmt.Errorf("fetching pixiv encountered %d errors: %v", len(errs), errs)
 	}
 
 	return nil
@@ -58,7 +58,7 @@ func (p *Pixiv) FetchNewArtworks(limit int) ([]*types.Artwork, error) {
 		artworks = append(artworks, artworksForURL...)
 	}
 	if len(errs) > 0 {
-		return artworks, fmt.Errorf("encountered %d errors: %v", len(errs), errs)
+		return artworks, fmt.Errorf("fetching pixiv encountered %d errors: %v", len(errs), errs)
 	}
 	return artworks, nil
 }
