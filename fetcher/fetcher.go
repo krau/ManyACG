@@ -26,18 +26,20 @@ func StartScheduler(ctx context.Context) {
 			if interval <= 0 {
 				return
 			}
-			ticker := time.NewTicker(time.Duration(interval) * time.Minute)
 			for {
 				err := source.FetchNewArtworksWithCh(artworkCh, limit)
 				if err != nil {
 					Logger.Errorf("Error when fetching from %s: %s", name, err)
 				}
-				<-ticker.C
+				time.Sleep(time.Duration(interval) * time.Minute)
 			}
 		}(source, config.Cfg.Fetcher.Limit, artworkCh, source.Config().Intervel)
 	}
 	Logger.Infof("Enabled sources: %s", enabledSources)
 	for artwork := range artworkCh {
+		if artwork == nil {
+			continue
+		}
 		if telegram.IsChannelAvailable {
 			err := telegram.PostAndCreateArtwork(ctx, artwork, telegram.Bot, config.Cfg.Telegram.Admins[0], 0)
 			if err != nil {
