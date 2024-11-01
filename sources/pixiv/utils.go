@@ -19,7 +19,7 @@ func GetPid(url string) string {
 func reqAjaxResp(sourceURL string) (*PixivAjaxResp, error) {
 	ajaxURL := "https://www.pixiv.net/ajax/illust/" + GetPid(sourceURL)
 	Logger.Tracef("request artwork info: %s", ajaxURL)
-	resp, err := ReqClient.R().Get(ajaxURL)
+	resp, err := reqClient.R().Get(ajaxURL)
 	if err != nil {
 		return nil, err
 	}
@@ -35,7 +35,7 @@ func reqAjaxResp(sourceURL string) (*PixivAjaxResp, error) {
 func reqIllustPages(sourceURL string) (*PixivIllustPages, error) {
 	ajaxURL := "https://www.pixiv.net/ajax/illust/" + GetPid(sourceURL) + "/pages?lang=zh"
 	Logger.Tracef("request artwork pages: %s", ajaxURL)
-	resp, err := ReqClient.R().Get(ajaxURL)
+	resp, err := reqClient.R().Get(ajaxURL)
 	if err != nil {
 		return nil, err
 	}
@@ -49,7 +49,7 @@ func reqIllustPages(sourceURL string) (*PixivIllustPages, error) {
 
 func fetchNewArtworksForRSSURLWithCh(rssURL string, limit int, artworkCh chan *types.Artwork) error {
 	Logger.Infof("Fetching %s", rssURL)
-	resp, err := ReqClient.R().Get(rssURL)
+	resp, err := reqClient.R().Get(rssURL)
 
 	if err != nil {
 		Logger.Errorf("Error fetching %s: %v", rssURL, err)
@@ -90,7 +90,7 @@ func fetchNewArtworksForRSSURLWithCh(rssURL string, limit int, artworkCh chan *t
 
 func fetchNewArtworksForRSSURL(rssURL string, limit int) ([]*types.Artwork, error) {
 	Logger.Infof("Fetching %s", rssURL)
-	resp, err := ReqClient.R().Get(rssURL)
+	resp, err := reqClient.R().Get(rssURL)
 	if err != nil {
 		Logger.Errorf("Error fetching %s: %v", rssURL, err)
 		return nil, err

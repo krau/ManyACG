@@ -1,11 +1,9 @@
 package bilibili
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"strconv"
-	"time"
 
 	"github.com/krau/ManyACG/common"
 	"github.com/krau/ManyACG/types"
@@ -114,8 +112,5 @@ func (resp *BilibiliApiResp) ToArtwork() (*types.Artwork, error) {
 		Pictures: pictures,
 		Tags:     common.ExtractTagsFromText(summary.Text),
 	}
-	timeOutCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-	common.DownloadWithCache(timeOutCtx, artwork.Pictures[0].Original, ReqClient)
 	return artwork, nil
 }

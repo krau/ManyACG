@@ -7,7 +7,9 @@ import (
 	"path/filepath"
 	"regexp"
 	"strconv"
+	"time"
 
+	"github.com/imroc/req/v3"
 	"github.com/krau/ManyACG/config"
 	. "github.com/krau/ManyACG/logger"
 	"github.com/krau/ManyACG/types"
@@ -16,13 +18,17 @@ import (
 type Kemono struct{}
 
 func (k *Kemono) Init() {
+	reqClient = req.C().ImpersonateChrome()
 	if config.Cfg.Source.Kemono.Session != "" {
 		reqClient.SetCommonCookies(&http.Cookie{
 			Name:  "session",
 			Value: config.Cfg.Source.Kemono.Session,
 		})
 	}
-	reqClient.SetCommonRetryCount(3).SetCommonRetryFixedInterval(5)
+	if config.Cfg.Source.Proxy != "" {
+		reqClient.SetProxyURL(config.Cfg.Source.Proxy)
+	}
+	reqClient.SetCommonRetryCount(3).SetTLSHandshakeTimeout(20 * time.Second)
 }
 
 func (k *Kemono) FetchNewArtworksWithCh(artworkCh chan *types.Artwork, limit int) error {

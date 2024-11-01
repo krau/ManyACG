@@ -17,7 +17,7 @@ import (
 type Pixiv struct{}
 
 func (p *Pixiv) Init() {
-	ReqClient = req.C().ImpersonateChrome()
+	reqClient = req.C().ImpersonateChrome()
 	cookies := make([]*http.Cookie, 0)
 	for _, cookie := range config.Cfg.Source.Pixiv.Cookies {
 		cookies = append(cookies, &http.Cookie{
@@ -25,9 +25,9 @@ func (p *Pixiv) Init() {
 			Value: cookie.Value,
 		})
 	}
-	ReqClient.SetCommonCookies(cookies...)
+	reqClient.SetCommonCookies(cookies...)
 	if config.Cfg.Source.Proxy != "" {
-		ReqClient.SetProxyURL(config.Cfg.Source.Proxy)
+		reqClient.SetProxyURL(config.Cfg.Source.Proxy)
 	}
 }
 

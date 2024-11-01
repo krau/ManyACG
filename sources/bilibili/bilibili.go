@@ -14,11 +14,12 @@ import (
 type Bilibili struct{}
 
 func (b *Bilibili) Init() {
-	ReqClient = req.C().ImpersonateChrome().SetUserAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Safari/537.36")
+	reqClient = req.C().ImpersonateChrome().SetUserAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Safari/537.36")
 	if config.Cfg.Source.Proxy != "" {
-		ReqClient.SetProxyURL(config.Cfg.Source.Proxy)
+		reqClient.SetProxyURL(config.Cfg.Source.Proxy)
 	}
-	ReqClient.SetCommonHeader("referer", "https://t.bilibili.com/")
+	reqClient.SetCommonHeader("referer", "https://t.bilibili.com/")
+	reqClient.SetCommonRetryCount(3)
 }
 
 func (b *Bilibili) FetchNewArtworksWithCh(artworkCh chan *types.Artwork, limit int) error {

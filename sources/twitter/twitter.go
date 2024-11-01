@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/imroc/req/v3"
 	"github.com/krau/ManyACG/config"
 	"github.com/krau/ManyACG/types"
 )
@@ -13,6 +14,10 @@ import (
 type Twitter struct{}
 
 func (t *Twitter) Init() {
+	reqClient = req.C().ImpersonateChrome().SetCommonRetryCount(3)
+	if config.Cfg.Source.Proxy != "" {
+		reqClient.SetProxyURL(config.Cfg.Source.Proxy)
+	}
 }
 
 func (t *Twitter) FetchNewArtworksWithCh(artworkCh chan *types.Artwork, limit int) error {
@@ -72,7 +77,7 @@ func (t *Twitter) GetFileName(artwork *types.Artwork, picture *types.Picture) st
 func (t *Twitter) Config() *config.SourceCommonConfig {
 	return &config.SourceCommonConfig{
 		Enable:   config.Cfg.Source.Twitter.Enable,
-		Intervel: -1, // Twitter 暂无法实现主动抓取的功能
+		Intervel: -1,
 	}
 
 }

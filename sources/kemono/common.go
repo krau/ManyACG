@@ -8,8 +8,8 @@ import (
 )
 
 var (
+	reqClient            *req.Client
 	kemonoSourceURLRegex = regexp.MustCompile(`kemono\.su/\w+/user/\d+/post/\d+`)
-	reqClient            = req.NewClient()
 	apiBaseURL           = "https://kemono.su/api/v1"
 	cdnBaseURL           = "https://c1.kemono.su/data"
 	thumbnailsBaseURL    = "https://img.kemono.su/thumbnail/data"

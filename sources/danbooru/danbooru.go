@@ -7,7 +7,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/krau/ManyACG/common"
+	"github.com/imroc/req/v3"
 	"github.com/krau/ManyACG/config"
 	. "github.com/krau/ManyACG/logger"
 	"github.com/krau/ManyACG/types"
@@ -15,7 +15,13 @@ import (
 
 type Danbooru struct{}
 
+var reqClient *req.Client
+
 func (d *Danbooru) Init() {
+	reqClient = req.C().ImpersonateChrome().SetCommonRetryCount(2)
+	if config.Cfg.Source.Proxy != "" {
+		reqClient.SetProxyURL(config.Cfg.Source.Proxy)
+	}
 }
 
 func (d *Danbooru) FetchNewArtworksWithCh(artworkCh chan *types.Artwork, limit int) error {
@@ -33,7 +39,7 @@ func (d *Danbooru) GetArtworkInfo(sourceURL string) (*types.Artwork, error) {
 	}
 	sourceURL = "https://" + danbooruPostURL
 	Logger.Tracef("request artwork info: %s", sourceURL)
-	resp, err := common.Client.R().Get(sourceURL + ".json")
+	resp, err := reqClient.R().Get(sourceURL + ".json")
 	if err != nil {
 		return nil, err
 	}

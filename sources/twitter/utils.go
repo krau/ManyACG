@@ -5,17 +5,18 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/krau/ManyACG/common"
+	"github.com/imroc/req/v3"
 	. "github.com/krau/ManyACG/logger"
 )
 
 var (
 	twitterSourceURLRegexp *regexp.Regexp = regexp.MustCompile(`(?:twitter|x)\.com/([^/]+)/status/(\d+)`)
+	reqClient              *req.Client
 )
 
 func reqApiResp(url string) (*FxTwitterApiResp, error) {
 	Logger.Tracef("request artwork info: %s", url)
-	resp, err := common.Client.R().Get(url)
+	resp, err := reqClient.R().Get(url)
 	if err != nil {
 		Logger.Errorf("request failed: %v", err)
 		return nil, ErrRequestFailed
