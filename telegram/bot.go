@@ -3,6 +3,7 @@ package telegram
 import (
 	"context"
 	"os"
+	"time"
 
 	"github.com/krau/ManyACG/config"
 	"github.com/krau/ManyACG/service"
@@ -12,6 +13,7 @@ import (
 	. "github.com/krau/ManyACG/logger"
 
 	"github.com/mymmrac/telego"
+	"github.com/mymmrac/telego/telegoapi"
 	"github.com/mymmrac/telego/telegohandler"
 	"github.com/mymmrac/telego/telegoutil"
 )
@@ -115,6 +117,13 @@ func InitBot() {
 		config.Cfg.Telegram.Token,
 		telego.WithDefaultLogger(false, true),
 		telego.WithAPIServer(apiUrl),
+		telego.WithAPICaller(&telegoapi.RetryCaller{
+			Caller:       telegoapi.DefaultFastHTTPCaller,
+			MaxAttempts:  config.Cfg.Telegram.Retry.MaxAttempts,
+			ExponentBase: config.Cfg.Telegram.Retry.ExponentBase,
+			StartDelay:   time.Duration(config.Cfg.Telegram.Retry.StartDelay),
+			MaxDelay:     time.Duration(config.Cfg.Telegram.Retry.MaxDelay),
+		}),
 	)
 	if err != nil {
 		Logger.Fatalf("Error when creating bot: %s", err)

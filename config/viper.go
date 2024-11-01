@@ -3,6 +3,7 @@ package config
 import (
 	"fmt"
 	"os"
+	"time"
 
 	"github.com/spf13/viper"
 )
@@ -61,6 +62,10 @@ func InitConfig() {
 
 	viper.SetDefault("telegram.sleep", 1)
 	viper.SetDefault("telegram.api_url", "https://api.telegram.org")
+	viper.SetDefault("telegram.retry.max_attempts", 5)
+	viper.SetDefault("telegram.retry.exponent_base", 2.0)
+	viper.SetDefault("telegram.retry.start_delay", 2*time.Second)
+	viper.SetDefault("telegram.retry.max_delay", 1*time.Minute)
 
 	viper.SetDefault("database.database", "manyacg")
 	viper.SetDefault("database.max_staleness", 120)
