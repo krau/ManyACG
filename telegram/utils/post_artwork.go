@@ -210,7 +210,7 @@ func PostAndCreateArtwork(ctx context.Context, artwork *types.Artwork, bot *tele
 				Logger.Errorf("deleting messages: %s", err)
 			}
 		}()
-		return fmt.Errorf("error when creating artwork %s: %w", artwork.SourceURL, err)
+		return fmt.Errorf("error when creating artwork: %w", err)
 	}
 	go afterCreate(context.TODO(), artwork, bot, fromID)
 	return nil
