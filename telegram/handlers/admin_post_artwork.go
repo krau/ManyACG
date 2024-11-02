@@ -33,7 +33,7 @@ func PostArtworkCallbackQuery(ctx context.Context, bot *telego.Bot, query telego
 		return
 	}
 	queryDataSlice := strings.Split(query.Data, " ")
-	asR18 := queryDataSlice[0] == "post_artwork_r18"
+	reverseR18 := queryDataSlice[0] == "post_artwork_r18"
 	dataID := queryDataSlice[1]
 	sourceURL, err := service.GetCallbackDataByID(ctx, dataID)
 	if err != nil {
@@ -87,8 +87,8 @@ func PostArtworkCallbackQuery(ctx context.Context, bot *telego.Bot, query telego
 		})
 		return
 	}
-	if asR18 {
-		artwork.R18 = true
+	if reverseR18 {
+		artwork.R18 = !artwork.R18
 	}
 
 	if IsChannelAvailable {
@@ -333,7 +333,7 @@ func ArtworkPreview(ctx context.Context, bot *telego.Bot, query telego.CallbackQ
 	postArtworkKeyboard := []telego.InlineKeyboardButton{
 		telegoutil.InlineKeyboardButton("发布").WithCallbackData("post_artwork " + dataID),
 		telegoutil.InlineKeyboardButton("查重").WithCallbackData("search_picture " + dataID),
-		telegoutil.InlineKeyboardButton("发布(R18)").WithCallbackData("post_artwork_r18 " + dataID),
+		telegoutil.InlineKeyboardButton("发布(!R18)").WithCallbackData("post_artwork_r18 " + dataID),
 	}
 	currentPictureIndexStr := queryDataSlice[4]
 	currentPictureIndex, err := strconv.Atoi(currentPictureIndexStr)
