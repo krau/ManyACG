@@ -21,7 +21,7 @@ import (
 func InlineQuery(ctx context.Context, bot *telego.Bot, query telego.InlineQuery) {
 	queryText := query.Query
 	texts := common.ParseStringTo2DArray(queryText, "|", " ")
-	artworks, err := service.QueryArtworksByTexts(ctx, texts, types.R18TypeAll, 20, adapter.OnlyLoadPicture())
+	artworks, err := service.QueryArtworksByTexts(ctx, texts, types.R18TypeAll, 48, adapter.OnlyLoadPicture())
 	if err != nil || len(artworks) == 0 {
 		Logger.Warnf("获取图片失败: %s", err)
 		bot.AnswerInlineQuery(telegoutil.InlineQuery(query.ID, telegoutil.ResultArticle(uuid.NewString(), "未找到相关图片", telegoutil.TextMessage("/setu"))))
