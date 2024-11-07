@@ -66,7 +66,7 @@ func PurgeFileAfter(path string, td time.Duration) {
 		Logger.Errorf("Failed to create timer for %s: %s", path, err)
 		return
 	}
-	Logger.Debugf("Purge file after %s: %s", td, path)
+	Logger.Tracef("Purge file after %s: %s", td, path)
 	time.AfterFunc(td, func() {
 		if err := PurgeFile(path); err != nil {
 			Logger.Errorf("Failed to purge file: %s", err)

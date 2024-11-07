@@ -79,6 +79,6 @@ func (w *Webdav) GetFile(ctx context.Context, detail *types.StorageDetail) ([]by
 }
 
 func (w *Webdav) Delete(ctx context.Context, detail *types.StorageDetail) error {
-	Logger.Debugf("deleting file %s", detail.Path)
+	Logger.Debugf("Deleting file %s", detail.Path)
 	return Client.Remove(detail.Path)
 }
