@@ -3,6 +3,7 @@ package local
 import (
 	"context"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/krau/ManyACG/common"
@@ -31,7 +32,7 @@ func (l *Local) Init() {
 
 func (l *Local) Save(ctx context.Context, filePath string, storagePath string) (*types.StorageDetail, error) {
 	Logger.Debugf("saving file %s", filePath)
-	storagePath = basePath + storagePath
+	storagePath = filepath.Join(basePath, storagePath)
 	fileBytes, err := os.ReadFile(filePath)
 	if err != nil {
 		Logger.Errorf("failed to read file: %s", err)

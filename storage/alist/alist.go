@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"path"
 	"path/filepath"
 	"strings"
 	"time"
@@ -55,7 +56,7 @@ func (a *Alist) Init() {
 
 func (a *Alist) Save(ctx context.Context, filePath string, storagePath string) (*types.StorageDetail, error) {
 	Logger.Debugf("saving file %s", filePath)
-	storagePath = basePath + storagePath
+	storagePath = path.Join(basePath, storagePath)
 	fileBytes, err := os.ReadFile(filePath)
 	if err != nil {
 		Logger.Errorf("failed to read file: %s", err)
@@ -89,7 +90,7 @@ func (a *Alist) Save(ctx context.Context, filePath string, storagePath string) (
 
 func (a *Alist) GetFile(ctx context.Context, detail *types.StorageDetail) ([]byte, error) {
 	Logger.Debugf("Getting file %s", detail.Path)
-	cachePath := strings.TrimSuffix(config.Cfg.Storage.CacheDir, "/") + "/" + filepath.Base(detail.Path)
+	cachePath := path.Join(config.Cfg.Storage.CacheDir, filepath.Base(detail.Path))
 	data, err := os.ReadFile(cachePath)
 	if err == nil {
 		return data, nil

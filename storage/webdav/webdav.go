@@ -3,6 +3,7 @@ package webdav
 import (
 	"context"
 	"os"
+	"path"
 	"path/filepath"
 	"strings"
 	"time"
@@ -35,7 +36,7 @@ func (w *Webdav) Init() {
 
 func (w *Webdav) Save(ctx context.Context, filePath string, storagePath string) (*types.StorageDetail, error) {
 	Logger.Debugf("saving file %s", filePath)
-	storagePath = basePath + storagePath
+	storagePath = path.Join(basePath, storagePath)
 	storageDir := filepath.Dir(storagePath)
 	if err := Client.MkdirAll(storageDir, os.ModePerm); err != nil {
 		Logger.Errorf("failed to create directory: %s", err)
@@ -53,7 +54,7 @@ func (w *Webdav) Save(ctx context.Context, filePath string, storagePath string) 
 		return nil, ErrFailedWrite
 	}
 
-	cachePath := strings.TrimSuffix(config.Cfg.Storage.CacheDir, "/") + "/" + filepath.Base(storagePath)
+	cachePath := path.Join(config.Cfg.Storage.CacheDir, filepath.Base(storagePath))
 	go common.MkCache(cachePath, fileBytes, time.Duration(config.Cfg.Storage.CacheTTL)*time.Second)
 
 	return &types.StorageDetail{
@@ -64,7 +65,7 @@ func (w *Webdav) Save(ctx context.Context, filePath string, storagePath string) 
 
 func (w *Webdav) GetFile(ctx context.Context, detail *types.StorageDetail) ([]byte, error) {
 	Logger.Debugf("Getting file %s", detail.Path)
-	cachePath := strings.TrimSuffix(config.Cfg.Storage.CacheDir, "/") + "/" + filepath.Base(detail.Path)
+	cachePath := path.Join(config.Cfg.Storage.CacheDir, filepath.Base(detail.Path))
 	data, err := os.ReadFile(cachePath)
 	if err == nil {
 		return data, nil
