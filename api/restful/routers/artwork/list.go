@@ -27,11 +27,11 @@ func RandomArtworks(ctx *gin.Context) {
 
 	hasKey := ctx.GetBool("auth")
 	r18Type := types.R18Type(request.R18)
-	if r18Type != types.R18TypeNone && !hasKey {
-		if !checkR18Permission(ctx) {
-			return
-		}
-	}
+	// if r18Type != types.R18TypeNone && !hasKey {
+	// 	if !checkR18Permission(ctx) {
+	// 		return
+	// 	}
+	// }
 
 	artworks, err := service.GetRandomArtworks(ctx, r18Type, request.Limit)
 	if err != nil {
@@ -56,13 +56,13 @@ func RandomArtworkPreview(ctx *gin.Context) {
 		common.GinBindError(ctx, err)
 		return
 	}
-	hasKey := ctx.GetBool("auth")
+	// hasKey := ctx.GetBool("auth")
 	r18Type := types.R18Type(request.R18)
-	if r18Type != types.R18TypeNone && !hasKey {
-		if !checkR18Permission(ctx) {
-			return
-		}
-	}
+	// if r18Type != types.R18TypeNone && !hasKey {
+	// 	if !checkR18Permission(ctx) {
+	// 		return
+	// 	}
+	// }
 	artwork, err := service.GetRandomArtworks(ctx, r18Type, 1, adapter.OnlyLoadPicture())
 	if err != nil {
 		if errors.Is(err, mongo.ErrNoDocuments) {
@@ -104,11 +104,11 @@ func GetArtworkList(ctx *gin.Context) {
 
 	hasKey := ctx.GetBool("auth")
 	r18Type := types.R18Type(request.R18)
-	if r18Type != types.R18TypeNone && !hasKey {
-		if !checkR18Permission(ctx) {
-			return
-		}
-	}
+	// if r18Type != types.R18TypeNone && !hasKey {
+	// 	if !checkR18Permission(ctx) {
+	// 		return
+	// 	}
+	// }
 	adapterOption := &adapter.AdapterOption{}
 	if request.Simple {
 		adapterOption = adapterOption.WithLoadArtist().WithOnlyIndexPicture()
