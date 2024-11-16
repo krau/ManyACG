@@ -7,6 +7,7 @@ import (
 
 	"github.com/krau/ManyACG/adapter"
 	"github.com/krau/ManyACG/common"
+	"github.com/krau/ManyACG/config"
 	"github.com/krau/ManyACG/service"
 	"github.com/krau/ManyACG/sources"
 	"github.com/krau/ManyACG/telegram/utils"
@@ -36,7 +37,7 @@ func InlineQuery(ctx context.Context, bot *telego.Bot, query telego.InlineQuery)
 				continue
 			}
 			result := telegoutil.ResultPhoto(uuid.NewString(),
-				fmt.Sprintf("https://wsrv.nl/?url=%s&w=2560&h=2560&we",
+				fmt.Sprintf("%s/?url=%s&w=2560&h=2560&we&output=jpg", config.Cfg.WSRVURL,
 					picture.Original), picture.Thumbnail).WithCaption(caption).WithParseMode(telego.ModeHTML)
 			results = append(results, result)
 		}
