@@ -14,7 +14,7 @@ import (
 
 	"github.com/krau/ManyACG/common"
 	"github.com/krau/ManyACG/config"
-	. "github.com/krau/ManyACG/logger"
+
 	"github.com/krau/ManyACG/types"
 
 	"github.com/imroc/req/v3"
@@ -46,20 +46,20 @@ func (a *Alist) Init() {
 	}
 	token, err := getJwtToken()
 	if err != nil {
-		Logger.Errorf("Failed to login to Alist: %v", err)
+		common.Logger.Errorf("Failed to login to Alist: %v", err)
 		os.Exit(1)
 	}
-	Logger.Debugf("Login to Alist successfully")
+	common.Logger.Debugf("Login to Alist successfully")
 	reqClient.SetCommonHeader("Authorization", token)
 	go refreshJwtToken(reqClient)
 }
 
 func (a *Alist) Save(ctx context.Context, filePath string, storagePath string) (*types.StorageDetail, error) {
-	Logger.Debugf("saving file %s", filePath)
+	common.Logger.Debugf("saving file %s", filePath)
 	storagePath = path.Join(basePath, storagePath)
 	fileBytes, err := os.ReadFile(filePath)
 	if err != nil {
-		Logger.Errorf("failed to read file: %s", err)
+		common.Logger.Errorf("failed to read file: %s", err)
 		return nil, err
 	}
 	resp, err := reqClient.R().SetContext(ctx).SetFileBytes("file", filepath.Base(storagePath), fileBytes).
@@ -68,16 +68,16 @@ func (a *Alist) Save(ctx context.Context, filePath string, storagePath string) (
 			"As-Task":   "true",
 		}).Put("/api/fs/form")
 	if err != nil {
-		Logger.Errorf("failed to save file: %s", err)
+		common.Logger.Errorf("failed to save file: %s", err)
 		return nil, err
 	}
 	var fsFormResp FsFormResponse
 	if err := json.Unmarshal(resp.Bytes(), &fsFormResp); err != nil {
-		Logger.Errorf("failed to unmarshal response: %s", err)
+		common.Logger.Errorf("failed to unmarshal response: %s", err)
 		return nil, err
 	}
 	if fsFormResp.Code != http.StatusOK {
-		Logger.Errorf("failed to save file: %s", fsFormResp.Message)
+		common.Logger.Errorf("failed to save file: %s", fsFormResp.Message)
 		return nil, fmt.Errorf("failed to save file: %s", fsFormResp.Message)
 	}
 	cachePath := strings.TrimSuffix(config.Cfg.Storage.CacheDir, "/") + "/" + filepath.Base(storagePath)
@@ -89,7 +89,7 @@ func (a *Alist) Save(ctx context.Context, filePath string, storagePath string) (
 }
 
 func (a *Alist) GetFile(ctx context.Context, detail *types.StorageDetail) ([]byte, error) {
-	Logger.Debugf("Getting file %s", detail.Path)
+	common.Logger.Debugf("Getting file %s", detail.Path)
 	cachePath := path.Join(config.Cfg.Storage.CacheDir, filepath.Base(detail.Path))
 	data, err := os.ReadFile(cachePath)
 	if err == nil {
@@ -100,21 +100,21 @@ func (a *Alist) GetFile(ctx context.Context, detail *types.StorageDetail) ([]byt
 		"password": config.Cfg.Storage.Alist.PathPassword,
 	}).Post("/api/fs/get")
 	if err != nil {
-		Logger.Errorf("failed to get file: %s", err)
+		common.Logger.Errorf("failed to get file: %s", err)
 		return nil, err
 	}
 	var fsGetResp FsGetResponse
 	if err := json.Unmarshal(resp.Bytes(), &fsGetResp); err != nil {
-		Logger.Errorf("failed to unmarshal response: %s", err)
+		common.Logger.Errorf("failed to unmarshal response: %s", err)
 		return nil, err
 	}
 	if fsGetResp.Code != http.StatusOK {
-		Logger.Errorf("failed to get file: %s", fsGetResp.Message)
+		common.Logger.Errorf("failed to get file: %s", fsGetResp.Message)
 		return nil, fmt.Errorf("failed to get file: %s", fsGetResp.Message)
 	}
 	_, err = reqClient.R().SetContext(ctx).SetOutputFile(cachePath).Get(fsGetResp.Data.RawUrl)
 	if err != nil {
-		Logger.Errorf("failed to save file: %s", err)
+		common.Logger.Errorf("failed to save file: %s", err)
 		return nil, err
 	}
 	go common.PurgeFileAfter(cachePath, time.Duration(config.Cfg.Storage.CacheTTL)*time.Second)
@@ -122,22 +122,22 @@ func (a *Alist) GetFile(ctx context.Context, detail *types.StorageDetail) ([]byt
 }
 
 func (a *Alist) Delete(ctx context.Context, detail *types.StorageDetail) error {
-	Logger.Debugf("Deleting file %s", detail.Path)
+	common.Logger.Debugf("Deleting file %s", detail.Path)
 	resp, err := reqClient.R().SetContext(ctx).SetBodyJsonMarshal(map[string]any{
 		"names": []string{filepath.Base(detail.Path)},
 		"dir":   filepath.Dir(detail.Path),
 	}).Post("/api/fs/remove")
 	if err != nil {
-		Logger.Errorf("failed to delete file: %s", err)
+		common.Logger.Errorf("failed to delete file: %s", err)
 		return err
 	}
 	var fsRemoveResp FsRemoveResponse
 	if err := json.Unmarshal(resp.Bytes(), &fsRemoveResp); err != nil {
-		Logger.Errorf("failed to unmarshal response: %s", err)
+		common.Logger.Errorf("failed to unmarshal response: %s", err)
 		return err
 	}
 	if fsRemoveResp.Code != http.StatusOK {
-		Logger.Errorf("failed to delete file: %s", fsRemoveResp.Message)
+		common.Logger.Errorf("failed to delete file: %s", fsRemoveResp.Message)
 		return fmt.Errorf("failed to delete file: %s", fsRemoveResp.Message)
 	}
 	return nil

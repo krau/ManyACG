@@ -13,8 +13,6 @@ import (
 	"github.com/krau/ManyACG/telegram/utils"
 	"github.com/krau/ManyACG/types"
 
-	. "github.com/krau/ManyACG/logger"
-
 	"github.com/google/uuid"
 	"github.com/mymmrac/telego"
 	"github.com/mymmrac/telego/telegoutil"
@@ -46,14 +44,14 @@ func InlineQuery(ctx context.Context, bot *telego.Bot, query telego.InlineQuery)
 			Results:       results,
 			CacheTime:     10,
 		}); err != nil {
-			Logger.Errorf("响应Inline查询失败: %s", err)
+			common.Logger.Errorf("响应Inline查询失败: %s", err)
 		}
 		return
 	}
 	texts := common.ParseStringTo2DArray(queryText, "|", " ")
 	artworks, err := service.QueryArtworksByTexts(ctx, texts, types.R18TypeAll, 48, adapter.OnlyLoadPicture())
 	if err != nil || len(artworks) == 0 {
-		Logger.Warnf("获取图片失败: %s", err)
+		common.Logger.Warnf("获取图片失败: %s", err)
 		bot.AnswerInlineQuery(telegoutil.InlineQuery(query.ID, telegoutil.ResultArticle(uuid.NewString(), "未找到相关图片", telegoutil.TextMessage("/setu"))))
 		return
 	}
@@ -73,6 +71,6 @@ func InlineQuery(ctx context.Context, bot *telego.Bot, query telego.InlineQuery)
 		Results:       results,
 		CacheTime:     1,
 	}); err != nil {
-		Logger.Errorf("响应Inline查询失败: %s", err)
+		common.Logger.Errorf("响应Inline查询失败: %s", err)
 	}
 }

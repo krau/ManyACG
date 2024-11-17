@@ -1,16 +1,15 @@
-package logger
+package common
 
 import (
-	"github.com/krau/ManyACG/config"
-
 	"github.com/gookit/slog"
 	"github.com/gookit/slog/handler"
 	"github.com/gookit/slog/rotatefile"
+	"github.com/krau/ManyACG/config"
 )
 
 var Logger *slog.Logger
 
-func InitLogger() {
+func initLogger() {
 	if Logger != nil {
 		return
 	}

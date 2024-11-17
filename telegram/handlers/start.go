@@ -8,8 +8,6 @@ import (
 	"github.com/krau/ManyACG/service"
 	"github.com/krau/ManyACG/telegram/utils"
 
-	. "github.com/krau/ManyACG/logger"
-
 	"github.com/mymmrac/telego"
 	"github.com/mymmrac/telego/telegoutil"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -18,7 +16,7 @@ import (
 func Start(ctx context.Context, bot *telego.Bot, message telego.Message) {
 	_, _, args := telegoutil.ParseCommand(message.Text)
 	if len(args) > 0 {
-		Logger.Debugf("start: args=%v", args)
+		common.Logger.Debugf("start: args=%v", args)
 		action := strings.Split(args[0], "_")[0]
 		switch action {
 		case "file":
@@ -66,7 +64,7 @@ func Start(ctx context.Context, bot *telego.Bot, message telego.Message) {
 				WithParseMode(telego.ModeHTML),
 			)
 			if err != nil {
-				Logger.Errorf("Failed to send message: %v", err)
+				common.Logger.Errorf("Failed to send message: %v", err)
 				return
 			}
 			unauthUser.TelegramID = userID

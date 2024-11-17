@@ -15,8 +15,6 @@ import (
 	"github.com/krau/ManyACG/storage"
 	"github.com/krau/ManyACG/types"
 
-	. "github.com/krau/ManyACG/logger"
-
 	"github.com/mymmrac/telego"
 	"github.com/mymmrac/telego/telegoutil"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -30,7 +28,7 @@ func GetMessageIDs(messages []telego.Message) []int {
 	return ids
 }
 
-func GetMssageOriginChannel(_ context.Context, _ *telego.Bot, message telego.Message) *telego.MessageOriginChannel {
+func GetMssageOriginChannel(message telego.Message) *telego.MessageOriginChannel {
 	if message.ForwardOrigin == nil {
 		return nil
 	}
@@ -53,7 +51,7 @@ func GetMessageOriginChannelArtworkPost(ctx context.Context, bot *telego.Bot, me
 	if message.ReplyToMessage.Photo == nil || message.ReplyToMessage.ForwardOrigin == nil {
 		return nil, false
 	}
-	messageOriginChannel := GetMssageOriginChannel(ctx, bot, *message.ReplyToMessage)
+	messageOriginChannel := GetMssageOriginChannel(*message.ReplyToMessage)
 	if messageOriginChannel == nil {
 		return nil, false
 	}
@@ -142,7 +140,7 @@ func GetPostedPictureReplyMarkup(artwork *types.Artwork, index uint, channelChat
 
 func GetPostedPictureInlineKeyboardButton(artwork *types.Artwork, index uint, channelChatID telego.ChatID, botUsername string) []telego.InlineKeyboardButton {
 	if index >= uint(len(artwork.Pictures)) {
-		Logger.Fatalf("图片索引越界: %d", index)
+		common.Logger.Fatalf("图片索引越界: %d", index)
 		return nil
 	}
 	if (channelChatID.ID == 0 && channelChatID.Username == "") || (artwork.Pictures[index].TelegramInfo == nil || artwork.Pictures[index].TelegramInfo.MessageID == 0) {
@@ -182,7 +180,7 @@ func GetMessagePhotoFileBytes(bot *telego.Bot, message *telego.Message) ([]byte,
 
 func FindSourceURLForMessage(message *telego.Message) string {
 	if message == nil {
-		Logger.Warn("消息为空")
+		common.Logger.Warn("消息为空")
 		return ""
 	}
 	text := message.Text
@@ -237,10 +235,10 @@ func SendPictureFileByID(ctx context.Context, bot *telego.Bot, message telego.Me
 					telegoutil.InlineKeyboardButton("详情").WithURL(artwork.SourceURL),
 				}))
 			} else {
-				Logger.Warnf("获取作品信息失败: %s", err)
+				common.Logger.Warnf("获取作品信息失败: %s", err)
 			}
 		} else {
-			Logger.Warnf("创建 ObjectID 失败: %s", err)
+			common.Logger.Warnf("创建 ObjectID 失败: %s", err)
 		}
 	}
 	documentMessage, err := bot.SendDocument(document)
@@ -254,7 +252,7 @@ func SendPictureFileByID(ctx context.Context, bot *telego.Bot, message telego.Me
 			}
 			picture.TelegramInfo.DocumentFileID = documentMessage.Document.FileID
 			if service.UpdatePictureTelegramInfo(ctx, picture, picture.TelegramInfo) != nil {
-				Logger.Warnf("更新图片信息失败: %s", err)
+				common.Logger.Warnf("更新图片信息失败: %s", err)
 			}
 		}
 	}

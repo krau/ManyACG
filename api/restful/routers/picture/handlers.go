@@ -5,7 +5,7 @@ import (
 	"net/http"
 
 	"github.com/krau/ManyACG/common"
-	. "github.com/krau/ManyACG/logger"
+
 	"github.com/krau/ManyACG/service"
 	"github.com/krau/ManyACG/storage"
 	"github.com/krau/ManyACG/types"
@@ -18,7 +18,7 @@ func GetFile(ctx *gin.Context) {
 	picture := ctx.MustGet("picture").(*types.Picture)
 	data, err := storage.GetFile(ctx, picture.StorageInfo.Original)
 	if err != nil {
-		Logger.Errorf("Failed to get file: %v", err)
+		common.Logger.Errorf("Failed to get file: %v", err)
 		common.GinErrorResponse(ctx, err, http.StatusInternalServerError, "Failed to get file")
 		return
 	}
@@ -30,7 +30,7 @@ func RandomPicture(ctx *gin.Context) {
 	pictures, err := service.GetRandomPictures(ctx, 1)
 
 	if err != nil {
-		Logger.Errorf("Failed to get random pictures: %v", err)
+		common.Logger.Errorf("Failed to get random pictures: %v", err)
 		common.GinErrorResponse(ctx, err, http.StatusInternalServerError, "Failed to get random pictures")
 		return
 	}
@@ -47,7 +47,7 @@ func RandomPicture(ctx *gin.Context) {
 	default:
 		data, err := storage.GetFile(ctx, picture.StorageInfo.Regular)
 		if err != nil {
-			Logger.Errorf("Failed to get file: %v", err)
+			common.Logger.Errorf("Failed to get file: %v", err)
 			common.GinErrorResponse(ctx, err, http.StatusInternalServerError, "Failed to get file")
 			return
 		}

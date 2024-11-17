@@ -4,9 +4,8 @@ import (
 	"context"
 	"errors"
 
+	"github.com/krau/ManyACG/common"
 	"github.com/krau/ManyACG/dao"
-
-	. "github.com/krau/ManyACG/logger"
 
 	"go.mongodb.org/mongo-driver/mongo"
 )
@@ -15,7 +14,7 @@ func GetEtcData(ctx context.Context, key string) any {
 	result, err := dao.GetEtcData(ctx, key)
 	if err != nil {
 		if !errors.Is(err, mongo.ErrNoDocuments) {
-			Logger.Errorf("Error when getting etc data: %s", err)
+			common.Logger.Errorf("Error when getting etc data: %s", err)
 		}
 		return nil
 	}

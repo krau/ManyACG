@@ -9,7 +9,7 @@ import (
 
 	"github.com/krau/ManyACG/adapter"
 	"github.com/krau/ManyACG/common"
-	. "github.com/krau/ManyACG/logger"
+
 	"github.com/krau/ManyACG/service"
 	"github.com/krau/ManyACG/sources"
 	"github.com/krau/ManyACG/telegram/utils"
@@ -31,7 +31,7 @@ func RandomPicture(ctx context.Context, bot *telego.Bot, message telego.Message)
 	}
 	artwork, err := service.QueryArtworksByTexts(ctx, textArray, r18Type, 1, adapter.OnlyLoadPicture())
 	if err != nil {
-		Logger.Warnf("获取图片失败: %s", err)
+		common.Logger.Warnf("获取图片失败: %s", err)
 		text := "获取图片失败" + err.Error()
 		if errors.Is(err, mongo.ErrNoDocuments) {
 			text = "未找到图片"
@@ -72,7 +72,7 @@ func RandomPicture(ctx context.Context, bot *telego.Bot, message telego.Message)
 	if photoMessage != nil {
 		picture.TelegramInfo.PhotoFileID = photoMessage.Photo[len(photoMessage.Photo)-1].FileID
 		if service.UpdatePictureTelegramInfo(ctx, picture, picture.TelegramInfo) != nil {
-			Logger.Warnf("更新图片信息失败: %s", err)
+			common.Logger.Warnf("更新图片信息失败: %s", err)
 		}
 	}
 }

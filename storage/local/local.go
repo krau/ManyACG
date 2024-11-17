@@ -8,7 +8,7 @@ import (
 
 	"github.com/krau/ManyACG/common"
 	"github.com/krau/ManyACG/config"
-	. "github.com/krau/ManyACG/logger"
+
 	"github.com/krau/ManyACG/types"
 )
 
@@ -21,25 +21,25 @@ var (
 func (l *Local) Init() {
 	basePath = strings.TrimSuffix(config.Cfg.Storage.Local.Path, "/")
 	if basePath == "" {
-		Logger.Fatalf("Local storage path not set,for example: manyacg/storage")
+		common.Logger.Fatalf("Local storage path not set,for example: manyacg/storage")
 		os.Exit(1)
 	}
 	if err := os.MkdirAll(basePath, os.ModePerm); err != nil {
-		Logger.Fatalf("Failed to create directory: %v", err)
+		common.Logger.Fatalf("Failed to create directory: %v", err)
 		os.Exit(1)
 	}
 }
 
 func (l *Local) Save(ctx context.Context, filePath string, storagePath string) (*types.StorageDetail, error) {
-	Logger.Debugf("saving file %s", filePath)
+	common.Logger.Debugf("saving file %s", filePath)
 	storagePath = filepath.Join(basePath, storagePath)
 	fileBytes, err := os.ReadFile(filePath)
 	if err != nil {
-		Logger.Errorf("failed to read file: %s", err)
+		common.Logger.Errorf("failed to read file: %s", err)
 		return nil, err
 	}
 	if err := common.MkFile(storagePath, fileBytes); err != nil {
-		Logger.Errorf("failed to write file: %s", err)
+		common.Logger.Errorf("failed to write file: %s", err)
 		return nil, err
 	}
 	return &types.StorageDetail{

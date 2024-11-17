@@ -8,7 +8,7 @@ import (
 
 	"github.com/krau/ManyACG/common"
 	manyacgErrors "github.com/krau/ManyACG/errors"
-	. "github.com/krau/ManyACG/logger"
+
 	"github.com/krau/ManyACG/service"
 	"github.com/krau/ManyACG/sources"
 	"github.com/krau/ManyACG/types"
@@ -38,7 +38,7 @@ func SendArtworkInfo(ctx context.Context, bot *telego.Bot, params *SendArtworkIn
 	}
 	deleteModel, _ := service.GetDeletedByURL(ctx, params.SourceURL)
 	if deleteModel != nil && params.IgnoreDeleted {
-		Logger.Debugf("已删除的作品: %s", params.SourceURL)
+		common.Logger.Debugf("已删除的作品: %s", params.SourceURL)
 		return nil
 	}
 	isCreated := false
@@ -105,10 +105,10 @@ func SendArtworkInfo(ctx context.Context, bot *telego.Bot, params *SendArtworkIn
 			}
 			cachedArtwork.Artwork.Pictures[0].TelegramInfo.PhotoFileID = msg.Photo[len(msg.Photo)-1].FileID
 			if err := service.UpdateCachedArtwork(ctx, cachedArtwork); err != nil {
-				Logger.Warnf("更新缓存作品失败: %s", err)
+				common.Logger.Warnf("更新缓存作品失败: %s", err)
 			}
 		} else {
-			Logger.Warnf("获取缓存作品失败: %s", err)
+			common.Logger.Warnf("获取缓存作品失败: %s", err)
 		}
 		telegramInfo := artwork.Pictures[0].TelegramInfo
 		if telegramInfo == nil {
@@ -116,12 +116,12 @@ func SendArtworkInfo(ctx context.Context, bot *telego.Bot, params *SendArtworkIn
 		}
 		telegramInfo.PhotoFileID = msg.Photo[len(msg.Photo)-1].FileID
 		if err := service.UpdatePictureTelegramInfo(ctx, artwork.Pictures[0], telegramInfo); err != nil {
-			Logger.Warnf("更新图片信息失败: %s", err)
+			common.Logger.Warnf("更新图片信息失败: %s", err)
 		}
 		return nil
 	}
 	if err := updatePreview(ctx, msg, artwork, bot, 0, photo); err != nil {
-		Logger.Warnf("更新预览失败: %s", err)
+		common.Logger.Warnf("更新预览失败: %s", err)
 		bot.EditMessageCaption(&telego.EditMessageCaptionParams{
 			ChatID:      *params.ChatID,
 			MessageID:   msg.MessageID,
@@ -179,7 +179,7 @@ func updatePreview(ctx context.Context, targetMessage *telego.Message, artwork *
 
 	defer func() {
 		if err := recover(); err != nil {
-			Logger.Fatalf("Panic recovered: %v", err)
+			common.Logger.Fatalf("Panic recovered: %v", err)
 		}
 	}()
 
@@ -226,10 +226,10 @@ func updatePreview(ctx context.Context, targetMessage *telego.Message, artwork *
 	}
 	cachedArtwork.Artwork.Pictures[pictureIndex].TelegramInfo.PhotoFileID = msg.Photo[len(msg.Photo)-1].FileID
 	if err := service.UpdateCachedArtwork(ctx, cachedArtwork); err != nil {
-		Logger.Warnf("更新缓存作品失败: %s", err)
+		common.Logger.Warnf("更新缓存作品失败: %s", err)
 	}
 	if err := service.UpdatePictureTelegramInfo(ctx, cachedArtwork.Artwork.Pictures[pictureIndex], cachedArtwork.Artwork.Pictures[pictureIndex].TelegramInfo); err != nil {
-		Logger.Warnf("更新图片信息失败: %s", err)
+		common.Logger.Warnf("更新图片信息失败: %s", err)
 	}
 	return nil
 }

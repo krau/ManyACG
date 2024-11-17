@@ -3,15 +3,15 @@ package utils
 import (
 	"bytes"
 	"context"
-	es "errors"
+	"errors"
 	"fmt"
 	"runtime"
 	"time"
 
 	"github.com/krau/ManyACG/common"
 	"github.com/krau/ManyACG/config"
-	"github.com/krau/ManyACG/errors"
-	. "github.com/krau/ManyACG/logger"
+	manyacgErrors "github.com/krau/ManyACG/errors"
+
 	"github.com/krau/ManyACG/service"
 	"github.com/krau/ManyACG/storage"
 	"github.com/krau/ManyACG/types"
@@ -24,11 +24,11 @@ import (
 
 func SendArtworkMediaGroup(ctx context.Context, bot *telego.Bot, chatID telego.ChatID, artwork *types.Artwork) ([]telego.Message, error) {
 	if bot == nil {
-		return nil, errors.ErrNilBot
+		return nil, manyacgErrors.ErrNilBot
 	}
 	if artwork == nil {
-		Logger.Fatal("Artwork is nil")
-		return nil, errors.ErrNilArtwork
+		common.Logger.Fatal("Artwork is nil")
+		return nil, manyacgErrors.ErrNilArtwork
 	}
 	if len(artwork.Pictures) <= 10 {
 		inputMediaPhotos, err := GetArtworkInputMediaPhotos(ctx, artwork, 0, len(artwork.Pictures))
@@ -87,21 +87,21 @@ func GetArtworkInputMediaPhotos(ctx context.Context, artwork *types.Artwork, sta
 				if picture.StorageInfo == nil {
 					fileBytes, err = common.DownloadWithCache(ctx, picture.Original, nil)
 					if err != nil {
-						Logger.Errorf("failed to download file: %s", err)
+						common.Logger.Errorf("failed to download file: %s", err)
 						return nil, err
 					}
 				} else {
 					var err error
 					fileBytes, err = storage.GetFile(ctx, picture.StorageInfo.Original)
 					if err != nil {
-						Logger.Errorf("failed to get file: %s", err)
+						common.Logger.Errorf("failed to get file: %s", err)
 						return nil, err
 					}
 				}
 			}
 			fileBytes, err := common.CompressImageToJPEG(fileBytes, 10, 2560, picture.Original)
 			if err != nil {
-				Logger.Errorf("failed to compress image: %s", err)
+				common.Logger.Errorf("failed to compress image: %s", err)
 				return nil, err
 			}
 			photo = telegoutil.MediaPhoto(telegoutil.File(telegoutil.NameReader(bytes.NewReader(fileBytes), primitive.NewObjectID().Hex())))
@@ -122,15 +122,15 @@ func GetArtworkInputMediaPhotos(ctx context.Context, artwork *types.Artwork, sta
 func PostAndCreateArtwork(ctx context.Context, artwork *types.Artwork, bot *telego.Bot, fromID int64, messageID int) error {
 	artworkInDB, err := service.GetArtworkByURL(ctx, artwork.SourceURL)
 	if err == nil && artworkInDB != nil {
-		Logger.Debugf("Artwork %s already exists", artwork.Title)
-		return fmt.Errorf("post artwork %s error: %w", artwork.Title, errors.ErrArtworkAlreadyExist)
+		common.Logger.Debugf("Artwork %s already exists", artwork.Title)
+		return fmt.Errorf("post artwork %s error: %w", artwork.Title, manyacgErrors.ErrArtworkAlreadyExist)
 	}
-	if err != nil && !es.Is(err, mongo.ErrNoDocuments) {
+	if err != nil && !errors.Is(err, mongo.ErrNoDocuments) {
 		return err
 	}
 	if service.CheckDeletedByURL(ctx, artwork.SourceURL) {
-		Logger.Debugf("Artwork %s is deleted", artwork.Title)
-		return fmt.Errorf("post artwork %s error: %w", artwork.Title, errors.ErrArtworkDeleted)
+		common.Logger.Debugf("Artwork %s is deleted", artwork.Title)
+		return fmt.Errorf("post artwork %s error: %w", artwork.Title, manyacgErrors.ErrArtworkDeleted)
 	}
 	showProgress := fromID != 0 && messageID != 0 && bot != nil
 	if showProgress {
@@ -154,7 +154,7 @@ func PostAndCreateArtwork(ctx context.Context, artwork *types.Artwork, bot *tele
 		}
 		info, err := storage.SaveAll(ctx, artwork, picture)
 		if err != nil {
-			Logger.Errorf("saving picture %d of artwork %s: %s", i, artwork.Title, err)
+			common.Logger.Errorf("saving picture %d of artwork %s: %s", i, artwork.Title, err)
 			return fmt.Errorf("saving picture %d of artwork %s: %w", i, artwork.Title, err)
 		}
 		artwork.Pictures[i].StorageInfo = info
@@ -174,7 +174,7 @@ func PostAndCreateArtwork(ctx context.Context, artwork *types.Artwork, bot *tele
 	if err != nil {
 		return fmt.Errorf("posting artwork [%s](%s): %w", artwork.Title, artwork.SourceURL, err)
 	}
-	Logger.Infof("Posted artwork %s", artwork.Title)
+	common.Logger.Infof("Posted artwork %s", artwork.Title)
 	if showProgress {
 		go bot.EditMessageReplyMarkup(&telego.EditMessageReplyMarkupParams{
 			ChatID:    telegoutil.ID(fromID),
@@ -207,7 +207,7 @@ func PostAndCreateArtwork(ctx context.Context, artwork *types.Artwork, bot *tele
 				ChatID:     ChannelChatID,
 				MessageIDs: GetMessageIDs(messages),
 			}) != nil {
-				Logger.Errorf("deleting messages: %s", err)
+				common.Logger.Errorf("deleting messages: %s", err)
 			}
 		}()
 		return fmt.Errorf("error when creating artwork: %w", err)
@@ -219,7 +219,7 @@ func PostAndCreateArtwork(ctx context.Context, artwork *types.Artwork, bot *tele
 func afterCreate(ctx context.Context, artwork *types.Artwork, bot *telego.Bot, fromID int64) {
 	for _, picture := range artwork.Pictures {
 		if err := service.ProcessPictureHashAndSizeAndUpdate(ctx, picture); err != nil {
-			Logger.Warnf("error when processing %d of artwork %s: %s", picture.Index, artwork.Title, err)
+			common.Logger.Warnf("error when processing %d of artwork %s: %s", picture.Index, artwork.Title, err)
 		}
 	}
 	runtime.GC()
@@ -231,7 +231,7 @@ func checkDuplicate(ctx context.Context, artwork *types.Artwork, bot *telego.Bot
 	artworkID, err := primitive.ObjectIDFromHex(artwork.ID)
 	artworkTitleMarkdown := common.EscapeMarkdown(artwork.Title)
 	if err != nil {
-		Logger.Errorf("invalid ObjectID: %s", artwork.ID)
+		common.Logger.Errorf("invalid ObjectID: %s", artwork.ID)
 		if sendNotify {
 			bot.SendMessage(telegoutil.Messagef(telegoutil.ID(fromID),
 				"刚刚发布的作品 [%s](%s) 后续处理失败\\: \n无效的ObjectID\\: %s", artworkTitleMarkdown, func() string {
@@ -248,24 +248,24 @@ func checkDuplicate(ctx context.Context, artwork *types.Artwork, bot *telego.Bot
 	for _, picture := range artwork.Pictures {
 		pictureID, err := primitive.ObjectIDFromHex(picture.ID)
 		if err != nil {
-			Logger.Errorf("invalid ObjectID: %s", picture.ID)
+			common.Logger.Errorf("invalid ObjectID: %s", picture.ID)
 			continue
 		}
 		picture, err = service.GetPictureByID(ctx, pictureID)
 		if err != nil {
-			Logger.Warnf("error when getting picture by message ID: %s", err)
+			common.Logger.Warnf("error when getting picture by message ID: %s", err)
 			continue
 		}
 		resPictures, err := service.GetPicturesByHashHammingDistance(ctx, picture.Hash, 10)
 		if err != nil {
-			Logger.Warnf("error when getting pictures by hash: %s", err)
+			common.Logger.Warnf("error when getting pictures by hash: %s", err)
 			continue
 		}
 		similarPictures := make([]*types.Picture, 0)
 		for _, resPicture := range resPictures {
 			resArtworkID, err := primitive.ObjectIDFromHex(resPicture.ArtworkID)
 			if err != nil {
-				Logger.Warnf("invalid ObjectID: %s", resPicture.ArtworkID)
+				common.Logger.Warnf("invalid ObjectID: %s", resPicture.ArtworkID)
 				continue
 			}
 			if resArtworkID == artworkID {
@@ -276,7 +276,7 @@ func checkDuplicate(ctx context.Context, artwork *types.Artwork, bot *telego.Bot
 		if len(similarPictures) == 0 {
 			continue
 		}
-		Logger.Noticef("Found %d similar pictures for %s", len(similarPictures), picture.Original)
+		common.Logger.Noticef("Found %d similar pictures for %s", len(similarPictures), picture.Original)
 		if !sendNotify {
 			continue
 		}
@@ -295,13 +295,13 @@ func checkDuplicate(ctx context.Context, artwork *types.Artwork, bot *telego.Bot
 		for _, similarPicture := range similarPictures {
 			objectID, err := primitive.ObjectIDFromHex(similarPicture.ArtworkID)
 			if err != nil {
-				Logger.Errorf("invalid ObjectID: %s", similarPicture.ArtworkID)
+				common.Logger.Errorf("invalid ObjectID: %s", similarPicture.ArtworkID)
 				continue
 			}
 
 			artworkOfSimilarPicture, err := service.GetArtworkByID(ctx, objectID)
 			if err != nil {
-				Logger.Warnf("error when getting artwork by ID: %s", err)
+				common.Logger.Warnf("error when getting artwork by ID: %s", err)
 				continue
 			}
 			text += fmt.Sprintf("[%s\\_%d](%s)  ",
@@ -318,7 +318,7 @@ func checkDuplicate(ctx context.Context, artwork *types.Artwork, bot *telego.Bot
 		text += "_模糊度使用原图文件计算得出, 越小图像质量越好_"
 		_, err = bot.SendMessage(telegoutil.Messagef(telegoutil.ID(fromID), text).WithParseMode(telego.ModeMarkdownV2))
 		if err != nil {
-			Logger.Errorf("error when sending similar pictures: %s", err)
+			common.Logger.Errorf("error when sending similar pictures: %s", err)
 		}
 	}
 }

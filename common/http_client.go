@@ -8,8 +8,6 @@ import (
 
 	"github.com/krau/ManyACG/config"
 
-	. "github.com/krau/ManyACG/logger"
-
 	"sync"
 
 	"github.com/imroc/req/v3"

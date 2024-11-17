@@ -6,9 +6,9 @@ import (
 	"os"
 	"time"
 
+	"github.com/krau/ManyACG/common"
 	"github.com/krau/ManyACG/config"
 	"github.com/krau/ManyACG/dao/collections"
-	. "github.com/krau/ManyACG/logger"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -20,7 +20,7 @@ var Client *mongo.Client
 var DB *mongo.Database
 
 func InitDB(ctx context.Context) {
-	Logger.Info("Initializing database...")
+	common.Logger.Info("Initializing database...")
 	uri := config.Cfg.Database.URI
 	if uri == "" {
 		uri = fmt.Sprintf(
@@ -34,23 +34,23 @@ func InitDB(ctx context.Context) {
 	client, err := mongo.Connect(ctx, options.Client().ApplyURI(uri),
 		options.Client().SetReadPreference(readpref.Nearest(readpref.WithMaxStaleness(time.Duration(config.Cfg.Database.MaxStaleness)*time.Second))))
 	if err != nil {
-		Logger.Fatal(err)
+		common.Logger.Fatal(err)
 		os.Exit(1)
 	}
 	if err = client.Ping(ctx, nil); err != nil {
-		Logger.Fatal(err)
+		common.Logger.Fatal(err)
 		os.Exit(1)
 	}
 	Client = client
 	DB = Client.Database(config.Cfg.Database.Database)
 	if DB == nil {
-		Logger.Fatal("Failed to get database")
+		common.Logger.Fatal("Failed to get database")
 		os.Exit(1)
 	}
 	createCollection(ctx)
 	createIndex(ctx)
 
-	Logger.Info("Database initialized")
+	common.Logger.Info("Database initialized")
 }
 
 func createCollection(ctx context.Context) {
@@ -155,7 +155,7 @@ func createIndex(ctx context.Context) {
 	for _, admin := range config.Cfg.Telegram.Admins {
 		_, err := CreateSuperAdminByUserID(ctx, admin, 0)
 		if err != nil {
-			Logger.Error(err)
+			common.Logger.Error(err)
 		}
 	}
 

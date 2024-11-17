@@ -3,8 +3,9 @@ package middleware
 import (
 	"time"
 
+	"github.com/krau/ManyACG/common"
 	"github.com/krau/ManyACG/config"
-	. "github.com/krau/ManyACG/logger"
+
 	"github.com/krau/ManyACG/model"
 	"github.com/krau/ManyACG/service"
 
@@ -85,7 +86,7 @@ func JWTInitParamas() *jwt.GinJWTMiddleware {
 		Authenticator: func(c *gin.Context) (interface{}, error) {
 			loginInfo := Login{}
 			if err := c.ShouldBind(&loginInfo); err != nil {
-				Logger.Errorf("Failed to bind login info: %v", err)
+				common.Logger.Errorf("Failed to bind login info: %v", err)
 				return "", jwt.ErrMissingLoginValues
 			}
 			if loginInfo.Username == "" && loginInfo.Email == "" && loginInfo.TelegramID == 0 {

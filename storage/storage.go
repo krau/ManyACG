@@ -10,7 +10,7 @@ import (
 	"github.com/krau/ManyACG/common"
 	"github.com/krau/ManyACG/config"
 	manyacgErrors "github.com/krau/ManyACG/errors"
-	. "github.com/krau/ManyACG/logger"
+
 	"github.com/krau/ManyACG/sources"
 	"github.com/krau/ManyACG/storage/alist"
 	"github.com/krau/ManyACG/storage/local"
@@ -23,7 +23,7 @@ import (
 var Storages = make(map[types.StorageType]Storage)
 
 func InitStorage() {
-	Logger.Info("Initializing storage")
+	common.Logger.Info("Initializing storage")
 	if config.Cfg.Storage.Local.Enable {
 		Storages[types.StorageTypeLocal] = new(local.Local)
 		Storages[types.StorageTypeLocal].Init()
@@ -40,7 +40,7 @@ func InitStorage() {
 
 // 将图片保存为所有尺寸
 func SaveAll(ctx context.Context, artwork *types.Artwork, picture *types.Picture) (*types.StorageInfo, error) {
-	Logger.Infof("saving picture %d of artwork %s", picture.Index, artwork.Title)
+	common.Logger.Infof("saving picture %d of artwork %s", picture.Index, artwork.Title)
 	originalBytes, err := common.DownloadWithCache(ctx, picture.Original, nil)
 	if err != nil {
 		return nil, err
@@ -59,7 +59,7 @@ func SaveAll(ctx context.Context, artwork *types.Artwork, picture *types.Picture
 	originalStoragePath := fmt.Sprintf("/%s/%s/%s", artwork.SourceType, artwork.Artist.UID, originalStorageFileName)
 	originalStorage, ok := Storages[types.StorageType(config.Cfg.Storage.OriginalType)]
 	if !ok {
-		Logger.Fatalf("Unknown storage type: %s", config.Cfg.Storage.OriginalType)
+		common.Logger.Fatalf("Unknown storage type: %s", config.Cfg.Storage.OriginalType)
 		return nil, fmt.Errorf("%w: %s", manyacgErrors.ErrStorageUnkown, config.Cfg.Storage.OriginalType)
 	}
 
@@ -72,7 +72,7 @@ func SaveAll(ctx context.Context, artwork *types.Artwork, picture *types.Picture
 	if config.Cfg.Storage.RegularType != "" {
 		regularStorage, ok := Storages[types.StorageType(config.Cfg.Storage.RegularType)]
 		if !ok {
-			Logger.Fatalf("Unknown storage type: %s", config.Cfg.Storage.RegularType)
+			common.Logger.Fatalf("Unknown storage type: %s", config.Cfg.Storage.RegularType)
 			return nil, fmt.Errorf("%w: %s", manyacgErrors.ErrStorageUnkown, config.Cfg.Storage.RegularType)
 		}
 		regularOutputPath := filePath[:len(filePath)-len(filepath.Ext(filePath))] + "_regular.webp"
@@ -96,7 +96,7 @@ func SaveAll(ctx context.Context, artwork *types.Artwork, picture *types.Picture
 	if config.Cfg.Storage.ThumbType != "" {
 		thumbStorage, ok := Storages[types.StorageType(config.Cfg.Storage.ThumbType)]
 		if !ok {
-			Logger.Fatalf("Unknown storage type: %s", config.Cfg.Storage.ThumbType)
+			common.Logger.Fatalf("Unknown storage type: %s", config.Cfg.Storage.ThumbType)
 			return nil, fmt.Errorf("%w: %s", manyacgErrors.ErrStorageUnkown, config.Cfg.Storage.ThumbType)
 		}
 		thumbOutputPath := filePath[:len(filePath)-len(filepath.Ext(filePath))] + "_thumb.webp"

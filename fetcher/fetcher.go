@@ -5,9 +5,10 @@ import (
 	es "errors"
 	"time"
 
+	"github.com/krau/ManyACG/common"
 	"github.com/krau/ManyACG/config"
 	"github.com/krau/ManyACG/errors"
-	. "github.com/krau/ManyACG/logger"
+
 	"github.com/krau/ManyACG/service"
 	"github.com/krau/ManyACG/sources"
 	"github.com/krau/ManyACG/storage"
@@ -29,13 +30,13 @@ func StartScheduler(ctx context.Context) {
 			for {
 				err := source.FetchNewArtworksWithCh(artworkCh, limit)
 				if err != nil {
-					Logger.Errorf("Error when fetching from %s: %s", name, err)
+					common.Logger.Errorf("Error when fetching from %s: %s", name, err)
 				}
 				time.Sleep(time.Duration(interval) * time.Minute)
 			}
 		}(source, config.Cfg.Fetcher.Limit, artworkCh, source.Config().Intervel)
 	}
-	Logger.Infof("Enabled sources: %s", enabledSources)
+	common.Logger.Infof("Enabled sources: %s", enabledSources)
 	for artwork := range artworkCh {
 		if artwork == nil {
 			continue
@@ -46,21 +47,21 @@ func StartScheduler(ctx context.Context) {
 				if es.Is(err, errors.ErrArtworkAlreadyExist) || es.Is(err, errors.ErrArtworkDeleted) {
 					continue
 				}
-				Logger.Errorf(err.Error())
+				common.Logger.Errorf(err.Error())
 			}
 			time.Sleep(time.Duration(int(config.Cfg.Telegram.Sleep)*len(artwork.Pictures)) * time.Second)
 		} else {
 			artworkInDB, err := service.GetArtworkByURL(ctx, artwork.SourceURL)
 			if err == nil && artworkInDB != nil {
-				Logger.Debugf("Artwork %s already exists", artwork.Title)
+				common.Logger.Debugf("Artwork %s already exists", artwork.Title)
 				continue
 			}
 			if err != nil && !es.Is(err, mongo.ErrNoDocuments) {
-				Logger.Errorf(err.Error())
+				common.Logger.Errorf(err.Error())
 				continue
 			}
 			if service.CheckDeletedByURL(ctx, artwork.SourceURL) {
-				Logger.Debugf("Artwork %s is deleted", artwork.Title)
+				common.Logger.Debugf("Artwork %s is deleted", artwork.Title)
 				continue
 			}
 
@@ -68,7 +69,7 @@ func StartScheduler(ctx context.Context) {
 			for i, picture := range artwork.Pictures {
 				info, err := storage.SaveAll(ctx, artwork, picture)
 				if err != nil {
-					Logger.Errorf("saving picture %d of artwork %s: %s", i, artwork.Title, err)
+					common.Logger.Errorf("saving picture %d of artwork %s: %s", i, artwork.Title, err)
 					saveSuccess = false
 					break
 				}
@@ -79,13 +80,13 @@ func StartScheduler(ctx context.Context) {
 			}
 			_, err = service.CreateArtwork(ctx, artwork)
 			if err != nil {
-				Logger.Errorf(err.Error())
+				common.Logger.Errorf(err.Error())
 				continue
 			}
 			go func() {
 				for _, picture := range artwork.Pictures {
 					if err := service.ProcessPictureHashAndSizeAndUpdate(ctx, picture); err != nil {
-						Logger.Warnf("error when processing %d of artwork %s: %s", picture.Index, artwork.Title, err)
+						common.Logger.Warnf("error when processing %d of artwork %s: %s", picture.Index, artwork.Title, err)
 					}
 				}
 			}()
@@ -95,17 +96,17 @@ func StartScheduler(ctx context.Context) {
 
 // TODO:
 // func FetchOnce(ctx context.Context, limit int) {
-// 	Logger.Info("Start fetching once")
+// 	common.Logger.Info("Start fetching once")
 // 	artworks := make([]*types.Artwork, 0)
 // 	var wg sync.WaitGroup
 // 	for name, source := range sources.Sources {
 // 		wg.Add(1)
-// 		Logger.Infof("Start fetching from %s", name)
+// 		common.Logger.Infof("Start fetching from %s", name)
 // 		go func(source sources.Source, limit int) {
 // 			defer wg.Done()
 // 			artworksForURL, err := source.FetchNewArtworks(limit)
 // 			if err != nil {
-// 				Logger.Errorf("Error when fetching from %s: %s", name, err)
+// 				common.Logger.Errorf("Error when fetching from %s: %s", name, err)
 // 			}
 // 			for _, artwork := range artworksForURL {
 // 				if artwork != nil {
@@ -115,7 +116,7 @@ func StartScheduler(ctx context.Context) {
 // 		}(source, limit)
 // 	}
 // 	wg.Wait()
-// 	Logger.Infof("Fetched %d artworks", len(artworks))
+// 	common.Logger.Infof("Fetched %d artworks", len(artworks))
 
 // 	for _, artwork := range artworks {
 // 		err := telegram.PostAndCreateArtwork(ctx, artwork, telegram.Bot, config.Cfg.Telegram.Admins[0], 0)
@@ -123,7 +124,7 @@ func StartScheduler(ctx context.Context) {
 // 			if es.Is(err, errors.ErrArtworkAlreadyExist) || es.Is(err, errors.ErrArtworkDeleted) {
 // 				continue
 // 			}
-// 			Logger.Errorf(err.Error())
+// 			common.Logger.Errorf(err.Error())
 // 		}
 // 		time.Sleep(time.Duration(int(config.Cfg.Telegram.Sleep)*len(artwork.Pictures)) * time.Second)
 // 	}

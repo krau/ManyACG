@@ -5,7 +5,7 @@ import (
 	"net/http"
 
 	"github.com/krau/ManyACG/common"
-	. "github.com/krau/ManyACG/logger"
+
 	"github.com/krau/ManyACG/model"
 	"github.com/krau/ManyACG/service"
 
@@ -46,7 +46,7 @@ func GetProfile(ctx *gin.Context) {
 			ctx.JSON(http.StatusNotFound, gin.H{"message": "user not found"})
 			return
 		}
-		Logger.Errorf("failed to get user: %v", err)
+		common.Logger.Errorf("failed to get user: %v", err)
 		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "failed to get user"})
 		return
 	}
@@ -62,7 +62,7 @@ func GetProfile(ctx *gin.Context) {
 func UpdateSettings(ctx *gin.Context) {
 	var settings UserSettingsRequest
 	if err := ctx.ShouldBind(&settings); err != nil {
-		Logger.Errorf("failed to bind json: %v", err)
+		common.Logger.Errorf("failed to bind json: %v", err)
 		common.GinBindError(ctx, err)
 		return
 	}
@@ -76,13 +76,13 @@ func UpdateSettings(ctx *gin.Context) {
 			common.GinErrorResponse(ctx, err, http.StatusNotFound, "user not found")
 			return
 		}
-		Logger.Errorf("failed to get user: %v", err)
+		common.Logger.Errorf("failed to get user: %v", err)
 		common.GinErrorResponse(ctx, err, http.StatusInternalServerError, "failed to get user")
 		return
 	}
 	res, err := service.UpdateUserSettings(ctx, user.ID, (*model.UserSettings)(&settings))
 	if err != nil {
-		Logger.Errorf("failed to update user settings: %v", err)
+		common.Logger.Errorf("failed to update user settings: %v", err)
 		common.GinErrorResponse(ctx, err, http.StatusInternalServerError, "failed to update user settings")
 		return
 	}

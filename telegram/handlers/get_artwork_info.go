@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	. "github.com/krau/ManyACG/logger"
+	"github.com/krau/ManyACG/common"
 	"github.com/krau/ManyACG/service"
 	"github.com/krau/ManyACG/telegram/utils"
 	"github.com/krau/ManyACG/types"
@@ -21,7 +21,7 @@ func GetArtworkInfo(ctx context.Context, bot *telego.Bot, message telego.Message
 		go func() {
 			msg, err := utils.ReplyMessage(bot, message, "正在获取作品信息...")
 			if err != nil {
-				Logger.Warnf("发送消息失败: %s", err)
+				common.Logger.Warnf("发送消息失败: %s", err)
 				return
 			}
 			waitMessageID = msg.MessageID
@@ -47,7 +47,7 @@ func GetArtworkInfo(ctx context.Context, bot *telego.Bot, message telego.Message
 		},
 	})
 	if err != nil {
-		Logger.Error(err)
+		common.Logger.Error(err)
 		utils.ReplyMessage(bot, message, err.Error())
 	}
 }
@@ -65,7 +65,7 @@ func GetArtworkInfoCommand(ctx context.Context, bot *telego.Bot, message telego.
 	go func() {
 		msg, err := utils.ReplyMessage(bot, message, "正在获取作品信息...")
 		if err != nil {
-			Logger.Warnf("发送消息失败: %s", err)
+			common.Logger.Warnf("发送消息失败: %s", err)
 			return
 		}
 		waitMessageID = msg.MessageID
@@ -78,19 +78,19 @@ func GetArtworkInfoCommand(ctx context.Context, bot *telego.Bot, message telego.
 	}()
 	artwork, err := service.GetArtworkByURLWithCacheFetch(ctx, sourceURL)
 	if err != nil {
-		Logger.Error(err)
+		common.Logger.Error(err)
 		utils.ReplyMessage(bot, message, err.Error())
 		return
 	}
 	messages, err := utils.SendArtworkMediaGroup(ctx, bot, message.Chat.ChatID(), artwork)
 	if err != nil {
-		Logger.Error(err)
+		common.Logger.Error(err)
 		utils.ReplyMessage(bot, message, "发送作品信息失败")
 	}
 
 	cachedArtwork, err := service.GetCachedArtworkByURL(ctx, sourceURL)
 	if err != nil {
-		Logger.Warnf("获取缓存作品信息失败: %s", err)
+		common.Logger.Warnf("获取缓存作品信息失败: %s", err)
 		return
 	}
 
@@ -105,6 +105,6 @@ func GetArtworkInfoCommand(ctx context.Context, bot *telego.Bot, message telego.
 		}
 	}
 	if err := service.UpdateCachedArtwork(ctx, cachedArtwork); err != nil {
-		Logger.Warnf("更新缓存作品信息失败: %s", err)
+		common.Logger.Warnf("更新缓存作品信息失败: %s", err)
 	}
 }

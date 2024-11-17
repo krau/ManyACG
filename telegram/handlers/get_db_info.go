@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	. "github.com/krau/ManyACG/logger"
+	"github.com/krau/ManyACG/common"
 	"github.com/krau/ManyACG/service"
 	"github.com/krau/ManyACG/telegram/utils"
 
@@ -14,7 +14,7 @@ import (
 func GetStats(ctx context.Context, bot *telego.Bot, message telego.Message) {
 	stats, err := service.GetDatabaseStats(ctx)
 	if err != nil {
-		Logger.Errorf("获取统计信息失败: %s", err)
+		common.Logger.Errorf("获取统计信息失败: %s", err)
 		utils.ReplyMessage(bot, message, "获取统计信息失败: "+err.Error())
 		return
 	}

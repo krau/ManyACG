@@ -10,7 +10,7 @@ import (
 	"github.com/krau/ManyACG/common"
 	"github.com/krau/ManyACG/config"
 	"github.com/krau/ManyACG/dao"
-	. "github.com/krau/ManyACG/logger"
+
 	"github.com/krau/ManyACG/model"
 	"github.com/krau/ManyACG/storage"
 	"github.com/krau/ManyACG/types"
@@ -28,7 +28,7 @@ func ProcessPicturesHashAndSizeAndUpdate(ctx context.Context, bot *telego.Bot, m
 	pictures, err := dao.GetNoHashPictures(ctx)
 	sendMessage := bot != nil && message != nil
 	if err != nil {
-		Logger.Errorf("Failed to get not processed pictures: %v", err)
+		common.Logger.Errorf("Failed to get not processed pictures: %v", err)
 		if sendMessage {
 			bot.SendMessage(telegoutil.Messagef(
 				message.Chat.ChatID(),
@@ -52,7 +52,7 @@ func ProcessPicturesHashAndSizeAndUpdate(ctx context.Context, bot *telego.Bot, m
 			failed++
 		}
 	}
-	Logger.Infof("Processed %d pictures, %d failed", len(pictures)-failed, failed)
+	common.Logger.Infof("Processed %d pictures, %d failed", len(pictures)-failed, failed)
 	if sendMessage {
 		bot.SendMessage(telegoutil.Messagef(
 			message.Chat.ChatID(),
@@ -140,7 +140,7 @@ func StoragePicturesRegularAndThumbAndUpdate(ctx context.Context, bot *telego.Bo
 	pictures, err := dao.GetNoRegularAndThumbPictures(ctx)
 	sendMessage := bot != nil && message != nil
 	if err != nil {
-		Logger.Errorf("Failed to get no regular and thumb pictures: %v", err)
+		common.Logger.Errorf("Failed to get no regular and thumb pictures: %v", err)
 		if sendMessage {
 			bot.SendMessage(telegoutil.Messagef(
 				message.Chat.ChatID(),
@@ -161,11 +161,11 @@ func StoragePicturesRegularAndThumbAndUpdate(ctx context.Context, bot *telego.Bo
 	failed := 0
 	for _, picture := range pictures {
 		if err := StoragePictureRegularAndThumbAndUpdate(ctx, picture); err != nil {
-			Logger.Errorf("Failed to storage regular and thumb picture: %v", err)
+			common.Logger.Errorf("Failed to storage regular and thumb picture: %v", err)
 			failed++
 		}
 	}
-	Logger.Infof("Processed %d pictures, %d failed", len(pictures)-failed, failed)
+	common.Logger.Infof("Processed %d pictures, %d failed", len(pictures)-failed, failed)
 	if sendMessage {
 		bot.SendMessage(telegoutil.Messagef(
 			message.Chat.ChatID(),
@@ -188,7 +188,7 @@ func FixTwitterArtists(ctx context.Context, bot *telego.Bot, message *telego.Mes
 
 	collection := dao.DB.Collection("Artists")
 	if collection == nil {
-		Logger.Errorf("Failed to get collection")
+		common.Logger.Errorf("Failed to get collection")
 		if sendMessage {
 			bot.SendMessage(telegoutil.Messagef(
 				message.Chat.ChatID(),
@@ -199,7 +199,7 @@ func FixTwitterArtists(ctx context.Context, bot *telego.Bot, message *telego.Mes
 	}
 	total, err := collection.CountDocuments(ctx, bson.M{"type": "twitter"})
 	if err != nil {
-		Logger.Errorf("Failed to count artists: %v", err)
+		common.Logger.Errorf("Failed to count artists: %v", err)
 		if sendMessage {
 			bot.SendMessage(telegoutil.Messagef(
 				message.Chat.ChatID(),
@@ -209,7 +209,7 @@ func FixTwitterArtists(ctx context.Context, bot *telego.Bot, message *telego.Mes
 		}
 		return
 	}
-	Logger.Infof("Found %d artists", total)
+	common.Logger.Infof("Found %d artists", total)
 	if sendMessage {
 		bot.SendMessage(telegoutil.Messagef(
 			message.Chat.ChatID(),
@@ -219,7 +219,7 @@ func FixTwitterArtists(ctx context.Context, bot *telego.Bot, message *telego.Mes
 	}
 	cursor, err := collection.Find(ctx, bson.M{"type": "twitter"})
 	if err != nil {
-		Logger.Errorf("Failed to find artists: %v", err)
+		common.Logger.Errorf("Failed to find artists: %v", err)
 		if sendMessage {
 			bot.SendMessage(telegoutil.Messagef(
 				message.Chat.ChatID(),
@@ -243,7 +243,7 @@ func FixTwitterArtists(ctx context.Context, bot *telego.Bot, message *telego.Mes
 
 	// 创建一个集合，用于存储失败文档id
 	if err := dao.DB.CreateCollection(ctx, "failedArtists"); err != nil {
-		Logger.Errorf("Failed to create collection: %v", err)
+		common.Logger.Errorf("Failed to create collection: %v", err)
 	}
 	failedCollection := dao.DB.Collection("failedArtists")
 	failed, count := 0, 0
@@ -251,42 +251,42 @@ func FixTwitterArtists(ctx context.Context, bot *telego.Bot, message *telego.Mes
 		count++
 		var artist model.ArtistModel
 		if err := cursor.Decode(&artist); err != nil {
-			Logger.Errorf("Failed to decode artist: %v", err)
+			common.Logger.Errorf("Failed to decode artist: %v", err)
 			failed++
 			continue
 		}
 		updateArtist := func() error {
 			resp, err := client.R().Get(apiBase + artist.Username)
 			if err != nil {
-				Logger.Errorf("Failed to get artist: %v", err)
+				common.Logger.Errorf("Failed to get artist: %v", err)
 				return err
 			}
 			var artistResp ArtistResp
 			if err := json.Unmarshal(resp.Bytes(), &artistResp); err != nil {
-				Logger.Errorf("Failed to unmarshal artist: %v", err)
+				common.Logger.Errorf("Failed to unmarshal artist: %v", err)
 				return err
 			}
 			if artistResp.Code != 200 {
-				Logger.Errorf("Failed to get artist: %v", artistResp.Message)
+				common.Logger.Errorf("Failed to get artist: %v", artistResp.Message)
 				return fmt.Errorf("failed to get artist: %s", artistResp.Message)
 			}
 			artist.UID = artistResp.User.ID
 			artist.Name = artistResp.User.Name
 			if _, err := dao.UpdateArtist(ctx, &artist); err != nil {
-				Logger.Errorf("Failed to update artist: %v", err)
+				common.Logger.Errorf("Failed to update artist: %v", err)
 				return err
 			}
 			return nil
 		}
 		if err := updateArtist(); err != nil {
 			if _, err := failedCollection.InsertOne(ctx, artist); err != nil {
-				Logger.Errorf("Failed to insert failed artist: %v", err)
+				common.Logger.Errorf("Failed to insert failed artist: %v", err)
 			}
 			failed++
 		}
 		time.Sleep(1 * time.Second)
 	}
-	Logger.Infof("Processed %d artists, %d failed", count, failed)
+	common.Logger.Infof("Processed %d artists, %d failed", count, failed)
 	if sendMessage {
 		bot.SendMessage(telegoutil.Messagef(
 			message.Chat.ChatID(),
@@ -298,8 +298,8 @@ func FixTwitterArtists(ctx context.Context, bot *telego.Bot, message *telego.Mes
 }
 
 func TidyArtist(ctx context.Context) {
-	Logger.Infof("Tidying artist")
+	common.Logger.Infof("Tidying artist")
 	if err := dao.TidyArtist(ctx); err != nil {
-		Logger.Errorf("Failed to tidy artist: %v", err)
+		common.Logger.Errorf("Failed to tidy artist: %v", err)
 	}
 }

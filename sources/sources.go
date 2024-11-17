@@ -7,7 +7,7 @@ import (
 	"github.com/krau/ManyACG/common"
 	"github.com/krau/ManyACG/config"
 	"github.com/krau/ManyACG/errors"
-	. "github.com/krau/ManyACG/logger"
+
 	"github.com/krau/ManyACG/sources/bilibili"
 	"github.com/krau/ManyACG/sources/danbooru"
 	"github.com/krau/ManyACG/sources/kemono"
@@ -42,7 +42,7 @@ func newSource(sourceType types.SourceType) Source {
 }
 
 func InitSources() {
-	Logger.Info("Initializing sources")
+	common.Logger.Info("Initializing sources")
 	for _, sourceType := range types.SourceTypes {
 		sourcesNotInit[sourceType] = newSource(sourceType)
 	}
@@ -72,7 +72,7 @@ func InitSources() {
 }
 
 func GetArtworkInfo(sourceURL string) (*types.Artwork, error) {
-	Logger.Infof("Getting artwork info: %s", sourceURL)
+	common.Logger.Infof("Getting artwork info: %s", sourceURL)
 	for k, v := range SourceURLRegexps {
 		if v.MatchString(sourceURL) {
 			if Sources[k] != nil {
@@ -80,7 +80,7 @@ func GetArtworkInfo(sourceURL string) (*types.Artwork, error) {
 			}
 		}
 	}
-	Logger.Warnf("Source URL not supported: %s", sourceURL)
+	common.Logger.Warnf("Source URL not supported: %s", sourceURL)
 	return nil, errors.ErrSourceNotSupported
 }
 

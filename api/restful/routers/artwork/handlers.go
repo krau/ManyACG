@@ -11,7 +11,7 @@ import (
 	"github.com/krau/ManyACG/types"
 
 	"github.com/gin-gonic/gin"
-	. "github.com/krau/ManyACG/logger"
+
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 )
@@ -55,7 +55,7 @@ func GetArtworkCount(ctx *gin.Context) {
 	r18Type := types.R18Type(request.R18)
 	count, err := service.GetArtworkCount(ctx, r18Type)
 	if err != nil {
-		Logger.Errorf("Failed to get artwork count: %v", err)
+		common.Logger.Errorf("Failed to get artwork count: %v", err)
 		common.GinErrorResponse(ctx, err, http.StatusInternalServerError, "Failed to get artwork count")
 		return
 	}

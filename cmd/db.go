@@ -5,9 +5,9 @@ import (
 	"os"
 	"time"
 
+	"github.com/krau/ManyACG/common"
 	"github.com/krau/ManyACG/config"
 	"github.com/krau/ManyACG/dao"
-	"github.com/krau/ManyACG/logger"
 	"github.com/krau/ManyACG/service"
 
 	"github.com/spf13/cobra"
@@ -29,14 +29,14 @@ var tidyArtistCmd = &cobra.Command{
 	Long:  "清理没有任何 artwork 的 artist, 通过 source type 和 username 合并相同的 artist.",
 	Run: func(cmd *cobra.Command, args []string) {
 		config.InitConfig()
-		logger.InitLogger()
+		common.Init()
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer cancel()
-		logger.Logger.Info("Start migrating")
+		common.Logger.Info("Start migrating")
 		dao.InitDB(ctx)
 		defer func() {
 			if err := dao.Client.Disconnect(ctx); err != nil {
-				logger.Logger.Fatal(err)
+				common.Logger.Fatal(err)
 				os.Exit(1)
 			}
 		}()

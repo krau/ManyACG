@@ -8,8 +8,6 @@ import (
 	"github.com/krau/ManyACG/telegram"
 	tgUtils "github.com/krau/ManyACG/telegram/utils"
 
-	. "github.com/krau/ManyACG/logger"
-
 	"github.com/gin-gonic/gin"
 	"github.com/mymmrac/telego"
 	"github.com/mymmrac/telego/telegoutil"
@@ -40,7 +38,7 @@ func SendArtworkInfo(ctx *gin.Context) {
 			IgnoreDeleted: true,
 			ReplyParams:   nil,
 		}); err != nil {
-			Logger.Error(err)
+			common.Logger.Error(err)
 		}
 	}()
 	ctx.JSON(http.StatusOK, common.RestfulCommonResponse[any]{Status: http.StatusOK, Message: "Task created"})

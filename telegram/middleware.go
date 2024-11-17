@@ -1,8 +1,7 @@
 package telegram
 
 import (
-	. "github.com/krau/ManyACG/logger"
-
+	"github.com/krau/ManyACG/common"
 	"github.com/mymmrac/telego"
 	"github.com/mymmrac/telego/telegohandler"
 )
@@ -13,9 +12,9 @@ func messageLogger(bot *telego.Bot, update telego.Update, next telegohandler.Han
 		user := update.Message.From
 		senderChat := update.Message.SenderChat
 		if senderChat != nil {
-			Logger.Tracef("[%s](%d) [%s](%s)", chat.Title, chat.ID, senderChat.Title, senderChat.Username)
+			common.Logger.Tracef("[%s](%d) [%s](%s)", chat.Title, chat.ID, senderChat.Title, senderChat.Username)
 		} else {
-			Logger.Tracef("[%s](%d) [%s](%d)", chat.Title, chat.ID, user.FirstName+user.LastName, user.ID)
+			common.Logger.Tracef("[%s](%d) [%s](%d)", chat.Title, chat.ID, user.FirstName+user.LastName, user.ID)
 		}
 	}
 

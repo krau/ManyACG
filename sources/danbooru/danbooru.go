@@ -8,8 +8,9 @@ import (
 	"strings"
 
 	"github.com/imroc/req/v3"
+	"github.com/krau/ManyACG/common"
 	"github.com/krau/ManyACG/config"
-	. "github.com/krau/ManyACG/logger"
+
 	"github.com/krau/ManyACG/types"
 )
 
@@ -38,7 +39,7 @@ func (d *Danbooru) GetArtworkInfo(sourceURL string) (*types.Artwork, error) {
 		return nil, ErrInvalidDanbooruPostURL
 	}
 	sourceURL = "https://" + danbooruPostURL
-	Logger.Tracef("request artwork info: %s", sourceURL)
+	common.Logger.Tracef("request artwork info: %s", sourceURL)
 	resp, err := reqClient.R().Get(sourceURL + ".json")
 	if err != nil {
 		return nil, err

@@ -7,7 +7,7 @@ import (
 
 	"github.com/krau/ManyACG/common"
 	"github.com/krau/ManyACG/config"
-	. "github.com/krau/ManyACG/logger"
+
 	"github.com/krau/ManyACG/model"
 	"github.com/krau/ManyACG/service"
 	"github.com/krau/ManyACG/types"
@@ -40,7 +40,7 @@ func handleSendCode(c *gin.Context) {
 
 	user, err := service.GetUserByUsername(c, request.Username)
 	if err != nil && !errors.Is(err, mongo.ErrNoDocuments) {
-		Logger.Errorf("Failed to get user: %v", err)
+		common.Logger.Errorf("Failed to get user: %v", err)
 		common.GinErrorResponse(c, err, http.StatusInternalServerError, "Failed to get user")
 		return
 	}
@@ -54,7 +54,7 @@ func handleSendCode(c *gin.Context) {
 
 	unauthUserInDB, err := service.GetUnauthUserByUsername(c, request.Username)
 	if err != nil && !errors.Is(err, mongo.ErrNoDocuments) {
-		Logger.Errorf("Failed to get user: %v", err)
+		common.Logger.Errorf("Failed to get user: %v", err)
 		common.GinErrorResponse(c, err, http.StatusInternalServerError, "Failed to get user")
 		return
 	}
@@ -92,7 +92,7 @@ func handleSendCode(c *gin.Context) {
 		Code:       code,
 	})
 	if err != nil {
-		Logger.Errorf("Failed to create unauth user: %v", err)
+		common.Logger.Errorf("Failed to create unauth user: %v", err)
 		common.GinErrorResponse(c, err, http.StatusInternalServerError, "Failed send code")
 		return
 	}
@@ -115,7 +115,7 @@ func handleSendCode(c *gin.Context) {
 			Text:    "你的验证码是: " + code + ".\n\n请在 10 分钟内使用, 请勿泄露给他人",
 		})
 		if err != nil {
-			Logger.Errorf("Failed to send email: %v", err)
+			common.Logger.Errorf("Failed to send email: %v", err)
 			common.GinErrorResponse(c, err, http.StatusInternalServerError, "Failed to send email")
 			return
 		}
@@ -149,7 +149,7 @@ func handleRegister(c *gin.Context) {
 
 	user, err := service.GetUserByUsername(c, register.Username)
 	if err != nil && !errors.Is(err, mongo.ErrNoDocuments) {
-		Logger.Errorf("Failed to get user: %v", err)
+		common.Logger.Errorf("Failed to get user: %v", err)
 		common.GinErrorResponse(c, err, http.StatusInternalServerError, "Failed to get user")
 		return
 	}
@@ -160,7 +160,7 @@ func handleRegister(c *gin.Context) {
 
 	unauthUser, err := service.GetUnauthUserByUsername(c, register.Username)
 	if err != nil && !errors.Is(err, mongo.ErrNoDocuments) {
-		Logger.Errorf("Failed to get unauth user: %v", err)
+		common.Logger.Errorf("Failed to get unauth user: %v", err)
 		common.GinErrorResponse(c, err, http.StatusInternalServerError, "Failed to verify code")
 		return
 	}
@@ -189,7 +189,7 @@ func handleRegister(c *gin.Context) {
 
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(register.Password), bcrypt.DefaultCost)
 	if err != nil {
-		Logger.Errorf("Failed to hash password: %v", err)
+		common.Logger.Errorf("Failed to hash password: %v", err)
 		common.GinErrorResponse(c, err, http.StatusInternalServerError, "Failed to hash password")
 		return
 	}
@@ -200,12 +200,12 @@ func handleRegister(c *gin.Context) {
 		Email:      register.Email,
 	})
 	if err != nil {
-		Logger.Errorf("Failed to create user: %v", err)
+		common.Logger.Errorf("Failed to create user: %v", err)
 		common.GinErrorResponse(c, err, http.StatusInternalServerError, "Failed to create user")
 		return
 	}
 	c.JSON(http.StatusOK, common.RestfulCommonResponse[any]{Status: http.StatusOK, Message: "User created"})
 	if err := service.DeleteUnauthUser(c, unauthUser.ID); err != nil {
-		Logger.Warnf("Failed to delete unauth user: %v", err)
+		common.Logger.Warnf("Failed to delete unauth user: %v", err)
 	}
 }

@@ -2,6 +2,7 @@ package service
 
 import (
 	"github.com/krau/ManyACG/adapter"
+	"github.com/krau/ManyACG/common"
 	"github.com/krau/ManyACG/dao"
 	manyacgErrors "github.com/krau/ManyACG/errors"
 	"github.com/krau/ManyACG/sources"
@@ -9,7 +10,6 @@ import (
 	"context"
 	"errors"
 
-	. "github.com/krau/ManyACG/logger"
 	"github.com/krau/ManyACG/model"
 	"github.com/krau/ManyACG/types"
 
@@ -397,7 +397,7 @@ func deleteArtwork(ctx context.Context, id primitive.ObjectID, sourceURL string)
 	}
 
 	if err := UpdateCachedArtworkStatusByURL(ctx, sourceURL, types.ArtworkStatusCached); err != nil {
-		Logger.Warnf("更新缓存作品状态失败: %s", err)
+		common.Logger.Warnf("更新缓存作品状态失败: %s", err)
 	}
 
 	return nil
@@ -452,12 +452,12 @@ func GetArtworkByURLWithCacheFetch(ctx context.Context, sourceURL string) (*type
 	}
 	artwork, err := sources.GetArtworkInfo(sourceURL)
 	if err != nil {
-		Logger.Errorf("获取作品信息失败: %s", err)
+		common.Logger.Errorf("获取作品信息失败: %s", err)
 		return nil, manyacgErrors.ErrFailedToGetArtwork
 	}
 	err = CreateCachedArtwork(ctx, artwork, types.ArtworkStatusCached)
 	if err != nil {
-		Logger.Warnf("创建缓存作品失败: %s", err)
+		common.Logger.Warnf("创建缓存作品失败: %s", err)
 	}
 	return artwork, nil
 }

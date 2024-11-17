@@ -6,8 +6,8 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/krau/ManyACG/common"
 	"github.com/krau/ManyACG/config"
-	. "github.com/krau/ManyACG/logger"
 
 	"github.com/imroc/req/v3"
 )
@@ -32,10 +32,10 @@ func refreshJwtToken(client *req.Client) {
 		time.Sleep(time.Duration(config.Cfg.Storage.Alist.TokenExpire) * time.Second)
 		token, err := getJwtToken()
 		if err != nil {
-			Logger.Errorf("Failed to refresh jwt token: %v", err)
+			common.Logger.Errorf("Failed to refresh jwt token: %v", err)
 			continue
 		}
 		client.SetCommonHeader("Authorization", token)
-		Logger.Info("Refreshed Alist jwt token")
+		common.Logger.Info("Refreshed Alist jwt token")
 	}
 }

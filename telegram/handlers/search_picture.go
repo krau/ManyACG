@@ -6,7 +6,7 @@ import (
 
 	"github.com/krau/ManyACG/common"
 	"github.com/krau/ManyACG/config"
-	. "github.com/krau/ManyACG/logger"
+
 	"github.com/krau/ManyACG/service"
 	"github.com/krau/ManyACG/telegram/utils"
 	"github.com/krau/ManyACG/types"
@@ -76,12 +76,12 @@ func getSearchResult(ctx context.Context, hasPermission bool, fileBytes []byte) 
 		for _, picture := range pictures {
 			artworkObjectID, err := primitive.ObjectIDFromHex(picture.ArtworkID)
 			if err != nil {
-				Logger.Errorf("无效的ObjectID: %s", picture.ID)
+				common.Logger.Errorf("无效的ObjectID: %s", picture.ID)
 				continue
 			}
 			artwork, err := service.GetArtworkByID(ctx, artworkObjectID)
 			if err != nil {
-				Logger.Errorf("获取作品信息失败: %s", err)
+				common.Logger.Errorf("获取作品信息失败: %s", err)
 				continue
 			}
 			text += fmt.Sprintf("[%s\\_%d](%s)\n",

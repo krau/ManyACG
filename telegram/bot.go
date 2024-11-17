@@ -5,12 +5,11 @@ import (
 	"os"
 	"time"
 
+	"github.com/krau/ManyACG/common"
 	"github.com/krau/ManyACG/config"
 	"github.com/krau/ManyACG/service"
 	"github.com/krau/ManyACG/telegram/handlers"
 	"github.com/krau/ManyACG/telegram/utils"
-
-	. "github.com/krau/ManyACG/logger"
 
 	"github.com/mymmrac/telego"
 	"github.com/mymmrac/telego/telegoapi"
@@ -107,7 +106,7 @@ var (
 )
 
 func InitBot() {
-	Logger.Info("Initializing bot")
+	common.Logger.Info("Initializing bot")
 	var err error
 	apiUrl := config.Cfg.Telegram.APIURL
 	if apiUrl == "" {
@@ -126,7 +125,7 @@ func InitBot() {
 		}),
 	)
 	if err != nil {
-		Logger.Fatalf("Error when creating bot: %s", err)
+		common.Logger.Fatalf("Error when creating bot: %s", err)
 		os.Exit(1)
 	}
 
@@ -137,7 +136,7 @@ func InitBot() {
 	}
 	if ChannelChatID.ID == 0 && ChannelChatID.Username == "" {
 		if config.Cfg.Telegram.Channel {
-			Logger.Fatalf("Enabled channel mode but no channel ID or username is provided")
+			common.Logger.Fatalf("Enabled channel mode but no channel ID or username is provided")
 			os.Exit(1)
 		}
 	} else {
@@ -150,7 +149,7 @@ func InitBot() {
 
 	me, err := Bot.GetMe()
 	if err != nil {
-		Logger.Errorf("Error when getting bot info: %s", err)
+		common.Logger.Errorf("Error when getting bot info: %s", err)
 		os.Exit(1)
 	}
 	BotUsername = me.Username
@@ -167,7 +166,7 @@ func InitBot() {
 
 	adminUserIDs, err := service.GetAdminUserIDs(context.TODO())
 	if err != nil {
-		Logger.Warnf("Error when getting admin user IDs: %s", err)
+		common.Logger.Warnf("Error when getting admin user IDs: %s", err)
 		return
 	}
 
@@ -194,7 +193,7 @@ func InitBot() {
 
 	adminGroupIDs, err := service.GetAdminGroupIDs(context.TODO())
 	if err != nil {
-		Logger.Warnf("Error when getting admin group IDs: %s", err)
+		common.Logger.Warnf("Error when getting admin group IDs: %s", err)
 		return
 	}
 
@@ -209,10 +208,10 @@ func InitBot() {
 	}
 	botInfo, err := Bot.GetMe()
 	if err != nil {
-		Logger.Errorf("Error when getting bot info: %s", err)
+		common.Logger.Errorf("Error when getting bot info: %s", err)
 		os.Exit(1)
 	}
-	Logger.Infof("Bot %s is ready", botInfo.Username)
+	common.Logger.Infof("Bot %s is ready", botInfo.Username)
 
 	if service.GetEtcData(context.TODO(), "bot_photo_file_id") != nil && service.GetEtcData(context.TODO(), "bot_photo_bytes") != nil {
 		return
@@ -223,11 +222,11 @@ func InitBot() {
 		Limit:  1,
 	})
 	if err != nil {
-		Logger.Errorf("Error when getting bot photo: %s", err)
+		common.Logger.Errorf("Error when getting bot photo: %s", err)
 		os.Exit(1)
 	}
 	if botPhoto.TotalCount == 0 {
-		Logger.Warn("Please set bot photo")
+		common.Logger.Warn("Please set bot photo")
 		os.Exit(1)
 	}
 
@@ -236,22 +235,22 @@ func InitBot() {
 		FileID: photoSize.FileID,
 	})
 	if err != nil {
-		Logger.Errorf("Error when getting bot photo: %s", err)
+		common.Logger.Errorf("Error when getting bot photo: %s", err)
 		os.Exit(1)
 	}
 	fileBytes, err := telegoutil.DownloadFile(Bot.FileDownloadURL(photoFile.FilePath))
 	if err != nil {
-		Logger.Errorf("Error when downloading bot photo: %s", err)
+		common.Logger.Errorf("Error when downloading bot photo: %s", err)
 		os.Exit(1)
 	}
 	_, err = service.SetEtcData(context.TODO(), "bot_photo_bytes", fileBytes)
 	if err != nil {
-		Logger.Errorf("Error when setting bot photo bytes: %s", err)
+		common.Logger.Errorf("Error when setting bot photo bytes: %s", err)
 		os.Exit(1)
 	}
 	_, err = service.SetEtcData(context.TODO(), "bot_photo_file_id", photoSize.FileID)
 	if err != nil {
-		Logger.Errorf("Error when setting bot photo file ID: %s", err)
+		common.Logger.Errorf("Error when setting bot photo file ID: %s", err)
 		os.Exit(1)
 	}
 }
@@ -260,7 +259,7 @@ func RunPolling() {
 	if Bot == nil {
 		InitBot()
 	}
-	Logger.Info("Start polling")
+	common.Logger.Info("Start polling")
 	updates, err := Bot.UpdatesViaLongPolling(&telego.GetUpdatesParams{
 		Offset: -1,
 		AllowedUpdates: []string{
@@ -271,13 +270,13 @@ func RunPolling() {
 		},
 	})
 	if err != nil {
-		Logger.Fatalf("Error when getting updates: %s", err)
+		common.Logger.Fatalf("Error when getting updates: %s", err)
 		os.Exit(1)
 	}
 
 	botHandler, err := telegohandler.NewBotHandler(Bot, updates)
 	if err != nil {
-		Logger.Fatalf("Error when creating bot handler: %s", err)
+		common.Logger.Fatalf("Error when creating bot handler: %s", err)
 		os.Exit(1)
 	}
 	defer botHandler.Stop()

@@ -17,8 +17,6 @@ import (
 	"github.com/krau/ManyACG/telegram/utils"
 	"github.com/krau/ManyACG/types"
 
-	. "github.com/krau/ManyACG/logger"
-
 	"github.com/mymmrac/telego"
 	"github.com/mymmrac/telego/telegoutil"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -64,7 +62,7 @@ func GetPictureFile(ctx context.Context, bot *telego.Bot, message telego.Message
 	}
 	artwork, err := service.GetArtworkByURL(ctx, sourceURL)
 	if err != nil {
-		Logger.Errorf("获取作品信息失败: %s", err)
+		common.Logger.Errorf("获取作品信息失败: %s", err)
 		if errors.Is(err, mongo.ErrNoDocuments) {
 			utils.ReplyMessage(bot, message, "这张图片未在数据库中呢")
 			return
@@ -98,7 +96,7 @@ func GetPictureFile(ctx context.Context, bot *telego.Bot, message telego.Message
 			utils.ReplyMessage(bot, message, "这张图片未在数据库中呢")
 			return
 		}
-		Logger.Errorf("发送文件失败: %s", err)
+		common.Logger.Errorf("发送文件失败: %s", err)
 		utils.ReplyMessage(bot, message, "发送文件失败, 去找管理员反馈吧~")
 		return
 	}
@@ -107,7 +105,7 @@ func GetPictureFile(ctx context.Context, bot *telego.Bot, message telego.Message
 func getArtworkFiles(ctx context.Context, bot *telego.Bot, message telego.Message, artwork *types.Artwork) {
 	defer func() {
 		if r := recover(); r != nil {
-			Logger.Fatalf("获取文件失败: %s", r)
+			common.Logger.Fatalf("获取文件失败: %s", r)
 		}
 	}()
 	for i, picture := range artwork.Pictures {
@@ -118,7 +116,7 @@ func getArtworkFiles(ctx context.Context, bot *telego.Bot, message telego.Messag
 		} else {
 			data, err := storage.GetFile(ctx, picture.StorageInfo.Original)
 			if err != nil {
-				Logger.Errorf("获取文件失败: %s", err)
+				common.Logger.Errorf("获取文件失败: %s", err)
 				utils.ReplyMessage(bot, message, fmt.Sprintf("获取第 %d 张图片失败", i+1))
 				return
 			}
@@ -139,7 +137,7 @@ func getArtworkFiles(ctx context.Context, bot *telego.Bot, message telego.Messag
 		}
 		documentMessage, err := bot.SendDocument(document)
 		if err != nil {
-			Logger.Errorf("发送文件失败: %s", err)
+			common.Logger.Errorf("发送文件失败: %s", err)
 			bot.SendMessage(telegoutil.Messagef(
 				message.Chat.ChatID(),
 				"发送第 %d 张图片时失败",
@@ -152,7 +150,7 @@ func getArtworkFiles(ctx context.Context, bot *telego.Bot, message telego.Messag
 		if documentMessage != nil {
 			picture.TelegramInfo.DocumentFileID = documentMessage.Document.FileID
 			if service.UpdatePictureTelegramInfo(ctx, picture, picture.TelegramInfo) != nil {
-				Logger.Warnf("更新图片信息失败: %s", err)
+				common.Logger.Warnf("更新图片信息失败: %s", err)
 			}
 			if alreadyCached {
 				time.Sleep(time.Duration(config.Cfg.Telegram.Sleep) * time.Second)

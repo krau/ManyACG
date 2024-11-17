@@ -10,8 +10,9 @@ import (
 	"time"
 
 	"github.com/imroc/req/v3"
+	"github.com/krau/ManyACG/common"
 	"github.com/krau/ManyACG/config"
-	. "github.com/krau/ManyACG/logger"
+
 	"github.com/krau/ManyACG/types"
 )
 
@@ -47,7 +48,7 @@ func (k *Kemono) GetArtworkInfo(sourceURL string) (*types.Artwork, error) {
 	sourceURL = "https://" + kemonoPostURL
 	postPath := getPostPath(sourceURL)
 	apiURL := apiBaseURL + postPath
-	Logger.Tracef("request artwork info: %s", apiURL)
+	common.Logger.Tracef("request artwork info: %s", apiURL)
 	resp, err := reqClient.R().Get(apiURL)
 	if err != nil {
 		return nil, err

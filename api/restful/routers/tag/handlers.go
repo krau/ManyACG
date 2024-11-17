@@ -4,7 +4,7 @@ import (
 	"net/http"
 
 	"github.com/krau/ManyACG/common"
-	. "github.com/krau/ManyACG/logger"
+
 	"github.com/krau/ManyACG/model"
 	"github.com/krau/ManyACG/service"
 
@@ -23,7 +23,7 @@ func GetRandomTags(ctx *gin.Context) {
 	}
 	tags, err := service.GetRandomTagModels(ctx, request.Limit)
 	if err != nil {
-		Logger.Errorf("Failed to get tags: %v", err)
+		common.Logger.Errorf("Failed to get tags: %v", err)
 		common.GinErrorResponse(ctx, err, http.StatusInternalServerError, "Failed to get random tags")
 		return
 	}

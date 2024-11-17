@@ -6,8 +6,6 @@ import (
 	"path/filepath"
 	"sync"
 	"time"
-
-	. "github.com/krau/ManyACG/logger"
 )
 
 var fileLocks sync.Map

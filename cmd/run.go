@@ -15,7 +15,6 @@ import (
 	"github.com/krau/ManyACG/config"
 	"github.com/krau/ManyACG/dao"
 	"github.com/krau/ManyACG/fetcher"
-	"github.com/krau/ManyACG/logger"
 	"github.com/krau/ManyACG/service"
 	"github.com/krau/ManyACG/sources"
 	"github.com/krau/ManyACG/storage"
@@ -25,24 +24,23 @@ import (
 func Run() {
 	config.InitConfig()
 	common.Init()
-	logger.InitLogger()
 
 	if config.Cfg.Debug {
 		go func() {
-			logger.Logger.Info("Start pprof server")
+			common.Logger.Info("Start pprof server")
 			if err := http.ListenAndServe("localhost:39060", nil); err != nil {
-				logger.Logger.Fatal(err)
+				common.Logger.Fatal(err)
 			}
 		}()
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
-	logger.Logger.Info("Start running")
+	common.Logger.Info("Start running")
 	dao.InitDB(ctx)
 	defer func() {
 		if err := dao.Client.Disconnect(ctx); err != nil {
-			logger.Logger.Fatal(err)
+			common.Logger.Fatal(err)
 			os.Exit(1)
 		}
 	}()
@@ -58,9 +56,9 @@ func Run() {
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	sig := <-quit
-	logger.Logger.Info(sig, " Exiting...")
+	common.Logger.Info(sig, " Exiting...")
 	if err := service.Cleanup(context.TODO()); err != nil {
-		logger.Logger.Error(err)
+		common.Logger.Error(err)
 	}
-	logger.Logger.Info("See you next time.")
+	common.Logger.Info("See you next time.")
 }

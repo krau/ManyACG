@@ -8,7 +8,6 @@ import (
 	"strings"
 
 	"github.com/krau/ManyACG/config"
-	. "github.com/krau/ManyACG/logger"
 )
 
 var fileNameEscaper = strings.NewReplacer(

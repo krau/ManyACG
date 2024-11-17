@@ -7,8 +7,6 @@ import (
 	"github.com/krau/ManyACG/common"
 	"github.com/krau/ManyACG/service"
 
-	. "github.com/krau/ManyACG/logger"
-
 	jwt "github.com/appleboy/gin-jwt/v2"
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -38,7 +36,7 @@ func checkR18Permission(ctx *gin.Context) bool {
 			})
 			return false
 		}
-		Logger.Errorf("Failed to get user: %v", err)
+		common.Logger.Errorf("Failed to get user: %v", err)
 		ctx.JSON(http.StatusInternalServerError, common.RestfulCommonResponse[any]{
 			Status:  http.StatusInternalServerError,
 			Message: "Failed to get user",
@@ -79,7 +77,7 @@ func checkArtworkAndUserMiddleware(ctx *gin.Context) {
 			common.GinErrorResponse(ctx, err, http.StatusBadRequest, "Artwork not found")
 			return
 		}
-		Logger.Errorf("Failed to get artwork: %v", err)
+		common.Logger.Errorf("Failed to get artwork: %v", err)
 		common.GinErrorResponse(ctx, err, http.StatusInternalServerError, "Failed to get artwork")
 		return
 	}
@@ -92,7 +90,7 @@ func checkArtworkAndUserMiddleware(ctx *gin.Context) {
 		return
 	}
 	if err != nil {
-		Logger.Errorf("Failed to get user: %v", err)
+		common.Logger.Errorf("Failed to get user: %v", err)
 		common.GinErrorResponse(ctx, err, http.StatusInternalServerError, "Failed to get user")
 		return
 	}

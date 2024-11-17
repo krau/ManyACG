@@ -17,8 +17,6 @@ import (
 
 	"golang.org/x/image/draw"
 
-	. "github.com/krau/ManyACG/logger"
-
 	"sync"
 
 	"github.com/corona10/goimagehash"

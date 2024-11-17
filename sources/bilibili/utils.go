@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	. "github.com/krau/ManyACG/logger"
+	"github.com/krau/ManyACG/common"
 )
 
 func getDynamicID(url string) string {
@@ -12,11 +12,11 @@ func getDynamicID(url string) string {
 }
 
 func reqApiResp(url string) (*BilibiliApiResp, error) {
-	Logger.Tracef("request artwork info: %s", url)
+	common.Logger.Tracef("request artwork info: %s", url)
 	apiUrl := fmt.Sprintf(apiURLFormat, getDynamicID(url))
 	resp, err := reqClient.R().Get(apiUrl)
 	if err != nil {
-		Logger.Errorf("request failed: %v", err)
+		common.Logger.Errorf("request failed: %v", err)
 		return nil, ErrRequestFailed
 	}
 	var bilibiliApiResp BilibiliApiResp

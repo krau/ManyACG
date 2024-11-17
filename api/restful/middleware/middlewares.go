@@ -8,7 +8,7 @@ import (
 	jwt "github.com/appleboy/gin-jwt/v2"
 	"github.com/krau/ManyACG/common"
 	"github.com/krau/ManyACG/config"
-	. "github.com/krau/ManyACG/logger"
+
 	"github.com/krau/ManyACG/service"
 
 	"github.com/gin-gonic/gin"
@@ -28,11 +28,11 @@ func Init() {
 	var err error
 	JWTAuthMiddleware, err = jwt.New(JWTInitParamas())
 	if err != nil {
-		Logger.Fatalf("JWT init error: %v", err)
+		common.Logger.Fatalf("JWT init error: %v", err)
 		os.Exit(1)
 	}
 	if err := JWTAuthMiddleware.MiddlewareInit(); err != nil {
-		Logger.Fatalf("JWT middleware init error: %v", err)
+		common.Logger.Fatalf("JWT middleware init error: %v", err)
 		os.Exit(1)
 	}
 
@@ -42,7 +42,7 @@ func Init() {
 		if cacheConfig.Redis {
 			opt, err := redis.ParseURL(cacheConfig.URL)
 			if err != nil {
-				Logger.Fatalf("Failed to parse redis url: %v", err)
+				common.Logger.Fatalf("Failed to parse redis url: %v", err)
 				os.Exit(1)
 			}
 			CacheStore = persist.NewRedisStore(redis.NewClient(opt))
@@ -109,7 +109,7 @@ func ValidatePictureID(ctx *gin.Context) {
 				"message": "Picture not found",
 			})
 		} else {
-			Logger.Errorf("Failed to get picture: %v", err)
+			common.Logger.Errorf("Failed to get picture: %v", err)
 			ctx.JSON(http.StatusInternalServerError, gin.H{
 				"status":  http.StatusInternalServerError,
 				"message": "Failed to get picture",

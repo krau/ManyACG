@@ -6,7 +6,7 @@ import (
 	"regexp"
 	"strings"
 
-	. "github.com/krau/ManyACG/logger"
+	"github.com/krau/ManyACG/common"
 	"github.com/krau/ManyACG/types"
 )
 
@@ -71,11 +71,11 @@ func (resp *KemonoPostResp) ToArtwork() (*types.Artwork, error) {
 		fileURL := cdnBaseURL + attachment.Path
 		fileResp, err := reqClient.R().DisableAutoReadResponse().Get(fileURL)
 		if err != nil {
-			Logger.Warnf("get attachment %s failed: %s", fileURL, err)
+			common.Logger.Warnf("get attachment %s failed: %s", fileURL, err)
 			continue
 		}
 		if fileResp.StatusCode != http.StatusOK {
-			Logger.Warnf("get attachment %s failed: %d", fileURL, fileResp.StatusCode)
+			common.Logger.Warnf("get attachment %s failed: %d", fileURL, fileResp.StatusCode)
 			continue
 		}
 		fileResp.Body.Close()

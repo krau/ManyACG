@@ -13,7 +13,7 @@ import (
 
 	"github.com/gabriel-vasile/mimetype"
 	"github.com/gin-gonic/gin"
-	. "github.com/krau/ManyACG/logger"
+
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 )
@@ -39,7 +39,7 @@ func RandomArtworks(ctx *gin.Context) {
 			common.GinErrorResponse(ctx, err, http.StatusNotFound, "Artworks not found")
 			return
 		}
-		Logger.Errorf("Failed to get random artworks: %v", err)
+		common.Logger.Errorf("Failed to get random artworks: %v", err)
 		common.GinErrorResponse(ctx, err, http.StatusInternalServerError, "Failed to get random artworks")
 		return
 	}

@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"strings"
 
-	. "github.com/krau/ManyACG/logger"
+	"github.com/krau/ManyACG/common"
 	"github.com/krau/ManyACG/service"
 	"github.com/krau/ManyACG/sources"
 	"github.com/krau/ManyACG/storage"
@@ -49,7 +49,7 @@ func DeleteArtwork(ctx context.Context, bot *telego.Bot, message telego.Message)
 		utils.ReplyMessage(bot, message, "在数据库中已删除该作品")
 		for _, picture := range artwork.Pictures {
 			if err := storage.DeleteAll(ctx, picture.StorageInfo); err != nil {
-				Logger.Errorf("删除图片失败: %s", err)
+				common.Logger.Errorf("删除图片失败: %s", err)
 			}
 		}
 		return
@@ -86,7 +86,7 @@ func DeleteArtwork(ctx context.Context, bot *telego.Bot, message telego.Message)
 	}
 	utils.ReplyMessage(bot, message, "在数据库中已删除该图片")
 	if err := storage.DeleteAll(ctx, picture.StorageInfo); err != nil {
-		Logger.Errorf("删除图片失败: %s", err)
+		common.Logger.Errorf("删除图片失败: %s", err)
 	}
 }
 
@@ -124,7 +124,7 @@ func DeleteArtworkCallbackQuery(ctx context.Context, bot *telego.Bot, query tele
 
 	for _, picture := range artwork.Pictures {
 		if err := storage.DeleteAll(ctx, picture.StorageInfo); err != nil {
-			Logger.Warnf("删除图片失败: %s", err)
+			common.Logger.Warnf("删除图片失败: %s", err)
 			bot.AnswerCallbackQuery(telegoutil.CallbackQuery(query.ID).WithText("从存储中删除图片失败: " + err.Error()))
 		}
 	}
