@@ -189,7 +189,7 @@ func updatePreview(ctx context.Context, targetMessage *telego.Message, artwork *
 		return err
 	}
 	defer rc.Close()
-	fileBytes, err := common.CompressImageToJPEG(rc, 10, 2560, artwork.Pictures[pictureIndex].Original)
+	fileBytes, err := common.CompressImageToJPEGByFFmpeg(rc, 2560)
 	if err != nil {
 		return err
 	}

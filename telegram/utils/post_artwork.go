@@ -85,7 +85,12 @@ func GetArtworkInputMediaPhotos(ctx context.Context, artwork *types.Artwork, sta
 		if photo == nil {
 			cacheFile, err := common.GetReqCachedFile(picture.Original)
 			if err == nil {
-				photo = telegoutil.MediaPhoto(telegoutil.File(cacheFile))
+				fileBytes, err := common.CompressImageToJPEGByFFmpeg(cacheFile, 2560)
+				if err != nil {
+					common.Logger.Errorf("failed to compress image: %s", err)
+					return nil, err
+				}
+				photo = telegoutil.MediaPhoto(telegoutil.File(telegoutil.NameReader(bytes.NewReader(fileBytes), uuid.New().String())))
 			} else {
 				var rc io.ReadCloser
 				defer func() {
@@ -106,7 +111,7 @@ func GetArtworkInputMediaPhotos(ctx context.Context, artwork *types.Artwork, sta
 						return nil, err
 					}
 				}
-				fileBytes, err := common.CompressImageToJPEG(rc, 10, 2560, picture.Original)
+				fileBytes, err := common.CompressImageToJPEGByFFmpeg(rc, 2560)
 				if err != nil {
 					common.Logger.Errorf("failed to compress image: %s", err)
 					return nil, err

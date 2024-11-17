@@ -14,6 +14,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/krau/ManyACG/config"
 
 	"golang.org/x/image/draw"
@@ -97,17 +98,34 @@ func GetImageBlurScore(r io.Reader) (float64, error) {
 	return strconv.ParseFloat(strconv.FormatFloat(variance, 'f', 2, 64), 64)
 }
 
+var rgbaPool = sync.Pool{
+	New: func() any {
+		return &image.RGBA{}
+	},
+}
+
 // ResizeImage resizes an image to the specified width and height.
 //
 // It use golang.org/x/image/draw and CatmullRom interpolation. (Slow but high quality)
-func ResizeImage(img image.Image, width, height uint) image.Image {
+func ResizeImage(img image.Image, width, height uint) (image.Image, func()) {
 	if width == 0 || height == 0 {
-		return img
+		return img, func() {}
 	}
-	rect := image.Rect(0, 0, int(width), int(height))
-	resizedImg := image.NewRGBA(rect)
-	draw.CatmullRom.Scale(resizedImg, rect, img, img.Bounds(), draw.Over, nil)
-	return resizedImg
+
+	rgba := rgbaPool.Get().(*image.RGBA)
+	bounds := image.Rect(0, 0, int(width), int(height))
+
+	if rgba.Bounds() != bounds {
+		rgba = image.NewRGBA(bounds)
+	}
+
+	draw.CatmullRom.Scale(rgba, bounds, img, img.Bounds(), draw.Over, nil)
+
+	cleanup := func() {
+		rgbaPool.Put(rgba)
+	}
+
+	return rgba, cleanup
 }
 
 func GetImageSize(r io.Reader) (int, int, error) {
@@ -144,7 +162,9 @@ func CompressImageToJPEG(r io.Reader, maxSizeMB, maxEdgeLength uint, cacheKey st
 			newHeight = maxEdgeLength
 			newWidth = uint(float64(width) * (float64(maxEdgeLength) / float64(height)))
 		}
-		img = ResizeImage(img, newWidth, newHeight)
+		var cleanup func()
+		img, cleanup = ResizeImage(img, newWidth, newHeight)
+		defer cleanup()
 	}
 
 	buf := imageBufferPool.Get().(*bytes.Buffer)
@@ -206,4 +226,39 @@ func CompressImageByFFmpeg(inputPath, outputPath string, maxEdgeLength uint, qua
 		return err
 	}
 	return nil
+}
+
+func CompressImageToJPEGByFFmpeg(r io.Reader, maxEdgeLength uint) ([]byte, error) {
+	buf, err := io.ReadAll(r)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read image: %w", err)
+	}
+	img, _, err := image.DecodeConfig(bytes.NewReader(buf))
+	if err != nil {
+		return nil, fmt.Errorf("failed to decode image: %w", err)
+	}
+	var vfKwArg ffmpeg.KwArgs
+	if img.Width > int(maxEdgeLength) || img.Height > int(maxEdgeLength) {
+		if img.Width > img.Height {
+			vfKwArg = ffmpeg.KwArgs{"vf": fmt.Sprintf("scale=%d:-1", maxEdgeLength)}
+		} else {
+			vfKwArg = ffmpeg.KwArgs{"vf": fmt.Sprintf("scale=-1:%d", maxEdgeLength)}
+		}
+	}
+	cacheKey := uuid.NewString()
+	cachePath := filepath.Join(config.Cfg.Storage.CacheDir, "image", EscapeFileName("temp_"+uuid.NewString()))
+	if err := MkFile(cachePath, buf); err != nil {
+		return nil, fmt.Errorf("failed to write cache: %w", err)
+	}
+	defer os.Remove(cachePath)
+	outputPath := filepath.Join(config.Cfg.Storage.CacheDir, "image", EscapeFileName(cacheKey+"_compressed.jpg"))
+	if err := ffmpeg.Input(cachePath).Output(outputPath, vfKwArg).OverWriteOutput().Run(); err != nil {
+		return nil, fmt.Errorf("failed to compress image: %w", err)
+	}
+	data, err := os.ReadFile(outputPath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read compressed image: %w", err)
+	}
+	defer os.Remove(outputPath)
+	return data, nil
 }
