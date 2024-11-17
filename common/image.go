@@ -8,6 +8,7 @@ import (
 	_ "image/gif"
 	"image/jpeg"
 	_ "image/png"
+	"io"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -29,8 +30,7 @@ var imageBufferPool = sync.Pool{
 	},
 }
 
-func GetImagePhash(b []byte) (string, error) {
-	r := bytes.NewReader(b)
+func GetImagePhash(r io.Reader) (string, error) {
 	img, _, err := image.Decode(r)
 	if err != nil {
 		return "", err
@@ -42,8 +42,7 @@ func GetImagePhash(b []byte) (string, error) {
 	return hash.ToString(), nil
 }
 
-func GetImageBlurScore(b []byte) (float64, error) {
-	r := bytes.NewReader(b)
+func GetImageBlurScore(r io.Reader) (float64, error) {
 	img, _, err := image.Decode(r)
 	if err != nil {
 		return 0, err
@@ -111,8 +110,7 @@ func ResizeImage(img image.Image, width, height uint) image.Image {
 	return resizedImg
 }
 
-func GetImageSize(b []byte) (int, int, error) {
-	r := bytes.NewReader(b)
+func GetImageSize(r io.Reader) (int, int, error) {
 	img, _, err := image.DecodeConfig(r)
 	if err != nil {
 		return 0, 0, err
@@ -120,7 +118,7 @@ func GetImageSize(b []byte) (int, int, error) {
 	return img.Width, img.Height, nil
 }
 
-func CompressImageToJPEG(input []byte, maxSizeMB, maxEdgeLength uint, cacheKey string) ([]byte, error) {
+func CompressImageToJPEG(r io.Reader, maxSizeMB, maxEdgeLength uint, cacheKey string) ([]byte, error) {
 	if cacheKey != "" {
 		cachePath := filepath.Join(config.Cfg.Storage.CacheDir, "image", EscapeFileName(cacheKey))
 		data, err := os.ReadFile(cachePath)
@@ -129,11 +127,10 @@ func CompressImageToJPEG(input []byte, maxSizeMB, maxEdgeLength uint, cacheKey s
 		}
 	}
 
-	img, _, err := image.Decode(bytes.NewReader(input))
+	img, _, err := image.Decode(r)
 	if err != nil {
 		return nil, fmt.Errorf("failed to decode image: %w", err)
 	}
-	input = nil
 
 	bounds := img.Bounds()
 	width := bounds.Dx()

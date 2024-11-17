@@ -8,6 +8,7 @@ import (
 
 	"github.com/krau/ManyACG/config"
 
+	"io"
 	"sync"
 
 	"github.com/imroc/req/v3"
@@ -55,11 +56,35 @@ func DownloadWithCache(ctx context.Context, url string, client *req.Client) ([]b
 	return data, nil
 }
 
-func GetReqCachedFile(path string) []byte {
-	cachePath := filepath.Join(config.Cfg.Storage.CacheDir, "req", EscapeFileName(path))
-	data, err := os.ReadFile(cachePath)
-	if err != nil {
-		return nil
+func GetBodyReader(ctx context.Context, url string, client *req.Client) (io.ReadCloser, error) {
+	if client == nil {
+		client = Client
 	}
-	return data
+	cachePath := filepath.Join(config.Cfg.Storage.CacheDir, "req", EscapeFileName(url))
+	if file, err := os.Open(cachePath); err == nil {
+		return file, nil
+	}
+
+	lock, _ := cacheLocks.LoadOrStore(url, &sync.Mutex{})
+	lock.(*sync.Mutex).Lock()
+	defer func() {
+		lock.(*sync.Mutex).Unlock()
+		cacheLocks.Delete(url)
+	}()
+
+	if file, err := os.Open(cachePath); err == nil {
+		return file, nil
+	}
+
+	Logger.Debugf("getting: %s", url)
+	resp, err := client.R().SetContext(ctx).Get(url)
+	if err != nil {
+		return nil, err
+	}
+	return resp.Body, nil
+}
+
+func GetReqCachedFile(path string) (*os.File, error) {
+	cachePath := filepath.Join(config.Cfg.Storage.CacheDir, "req", EscapeFileName(path))
+	return os.Open(cachePath)
 }

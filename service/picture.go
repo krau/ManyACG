@@ -1,7 +1,9 @@
 package service
 
 import (
+	"bytes"
 	"context"
+	"io"
 
 	"github.com/krau/ManyACG/common"
 	"github.com/krau/ManyACG/dao"
@@ -166,18 +168,20 @@ func ProcessPictureHashAndSizeAndUpdate(ctx context.Context, picture *types.Pict
 	if err != nil {
 		return err
 	}
-	fileBytes, err := storage.GetFile(ctx, picture.StorageInfo.Original)
+	file, err := storage.GetFileStream(ctx, picture.StorageInfo.Original)
 	if err != nil {
 		return err
 	}
-	defer func() {
-		fileBytes = nil
-	}()
-	hash, err := common.GetImagePhash(fileBytes)
+	defer file.Close()
+	buf, err := io.ReadAll(file)
 	if err != nil {
 		return err
 	}
-	blurscore, err := common.GetImageBlurScore(fileBytes)
+	hash, err := common.GetImagePhash(bytes.NewReader(buf))
+	if err != nil {
+		return err
+	}
+	blurscore, err := common.GetImageBlurScore(bytes.NewReader(buf))
 	if err != nil {
 		return err
 	}
@@ -186,7 +190,7 @@ func ProcessPictureHashAndSizeAndUpdate(ctx context.Context, picture *types.Pict
 		return err
 	}
 	if picture.Width == 0 || picture.Height == 0 {
-		width, height, err := common.GetImageSize(fileBytes)
+		width, height, err := common.GetImageSize(bytes.NewReader(buf))
 		if err != nil {
 			return err
 		}
@@ -195,5 +199,6 @@ func ProcessPictureHashAndSizeAndUpdate(ctx context.Context, picture *types.Pict
 			return err
 		}
 	}
+	buf = nil
 	return nil
 }

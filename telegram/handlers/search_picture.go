@@ -3,6 +3,7 @@ package handlers
 import (
 	"context"
 	"fmt"
+	"io"
 
 	"github.com/krau/ManyACG/common"
 	"github.com/krau/ManyACG/config"
@@ -24,12 +25,12 @@ func SearchPicture(ctx context.Context, bot *telego.Bot, message telego.Message)
 	}
 	go utils.ReplyMessage(bot, message, "少女祈祷中...")
 
-	fileBytes, err := utils.GetMessagePhotoFileBytes(bot, message.ReplyToMessage)
+	file, err := utils.GetMessagePhotoFile(bot, message.ReplyToMessage)
 	if err != nil {
 		utils.ReplyMessage(bot, message, "获取图片文件失败: "+err.Error())
 		return
 	}
-	text, _, err := getSearchResult(ctx, hasPermission, fileBytes)
+	text, _, err := getSearchResult(ctx, hasPermission, file)
 	if err != nil {
 		utils.ReplyMessage(bot, message, err.Error())
 		return
@@ -42,12 +43,12 @@ func SearchPictureCallbackQuery(ctx context.Context, bot *telego.Bot, query tele
 		return
 	}
 	message := query.Message.(*telego.Message)
-	fileBytes, err := utils.GetMessagePhotoFileBytes(bot, message)
+	file, err := utils.GetMessagePhotoFile(bot, message)
 	if err != nil {
 		bot.AnswerCallbackQuery(telegoutil.CallbackQuery(query.ID).WithText("获取图片文件失败: " + err.Error()).WithShowAlert().WithCacheTime(5))
 		return
 	}
-	text, hasResult, err := getSearchResult(ctx, true, fileBytes)
+	text, hasResult, err := getSearchResult(ctx, true, file)
 	if err != nil {
 		bot.AnswerCallbackQuery(telegoutil.CallbackQuery(query.ID).WithText(err.Error()).WithShowAlert().WithCacheTime(5))
 		return
@@ -60,8 +61,8 @@ func SearchPictureCallbackQuery(ctx context.Context, bot *telego.Bot, query tele
 	utils.ReplyMessageWithMarkdown(bot, *message, text)
 }
 
-func getSearchResult(ctx context.Context, hasPermission bool, fileBytes []byte) (string, bool, error) {
-	hash, err := common.GetImagePhash(fileBytes)
+func getSearchResult(ctx context.Context, hasPermission bool, fileReader io.Reader) (string, bool, error) {
+	hash, err := common.GetImagePhash(fileReader)
 	if err != nil {
 		return "", false, fmt.Errorf("获取图片哈希失败: %w", err)
 	}

@@ -2,6 +2,7 @@ package local
 
 import (
 	"context"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -50,6 +51,10 @@ func (l *Local) Save(ctx context.Context, filePath string, storagePath string) (
 
 func (l *Local) GetFile(ctx context.Context, detail *types.StorageDetail) ([]byte, error) {
 	return os.ReadFile(detail.Path)
+}
+
+func (l *Local) GetFileStream(ctx context.Context, detail *types.StorageDetail) (io.ReadCloser, error) {
+	return os.Open(detail.Path)
 }
 
 func (l *Local) Delete(ctx context.Context, detail *types.StorageDetail) error {

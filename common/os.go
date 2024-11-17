@@ -72,10 +72,32 @@ func PurgeFileAfter(path string, td time.Duration) {
 	})
 }
 
+var timerMap sync.Map
+
+func RmFileAfter(path string, td time.Duration) {
+	if _, ok := timerMap.Load(path); ok {
+		return
+	}
+	timerMap.Store(path, struct{}{})
+	defer timerMap.Delete(path)
+
+	_, err := os.Stat(path)
+	if err != nil {
+		Logger.Errorf("Failed to create timer for %s: %s", path, err)
+		return
+	}
+	Logger.Tracef("Remove file after %s: %s", td, path)
+	time.AfterFunc(td, func() {
+		if err := os.Remove(path); err != nil {
+			Logger.Errorf("Failed to remove file: %s", err)
+		}
+	})
+}
+
 func MkCache(path string, data []byte, td time.Duration) {
 	if err := MkFile(path, data); err != nil {
 		Logger.Errorf("failed to save cache file: %s", err)
 	} else {
-		go PurgeFileAfter(path, td)
+		go RmFileAfter(path, td)
 	}
 }

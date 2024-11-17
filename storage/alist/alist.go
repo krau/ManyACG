@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"net/url"
 	"os"
@@ -117,8 +118,63 @@ func (a *Alist) GetFile(ctx context.Context, detail *types.StorageDetail) ([]byt
 		common.Logger.Errorf("failed to save file: %s", err)
 		return nil, err
 	}
-	go common.PurgeFileAfter(cachePath, time.Duration(config.Cfg.Storage.CacheTTL)*time.Second)
+	defer func() {
+		go common.RmFileAfter(cachePath, time.Duration(config.Cfg.Storage.CacheTTL)*time.Second)
+	}()
 	return os.ReadFile(cachePath)
+}
+
+type AutoCleanRC struct {
+	io.ReadCloser
+	name string
+}
+
+func (a *AutoCleanRC) Name() string {
+	return a.name
+}
+
+func (a *AutoCleanRC) Close() error {
+	err := a.ReadCloser.Close()
+	if err != nil {
+		return err
+	}
+	go common.RmFileAfter(a.Name(), time.Duration(config.Cfg.Storage.CacheTTL)*time.Second)
+	return nil
+}
+
+func (a *Alist) GetFileStream(ctx context.Context, detail *types.StorageDetail) (io.ReadCloser, error) {
+	common.Logger.Debugf("Getting file %s", detail.Path)
+	cachePath := path.Join(config.Cfg.Storage.CacheDir, filepath.Base(detail.Path))
+	file, err := os.Open(cachePath)
+	if err == nil {
+		return file, nil
+	}
+	resp, err := reqClient.R().SetContext(ctx).SetBodyJsonMarshal(map[string]string{
+		"path":     detail.Path,
+		"password": config.Cfg.Storage.Alist.PathPassword,
+	}).Post("/api/fs/get")
+	if err != nil {
+		common.Logger.Errorf("failed to get file: %s", err)
+		return nil, err
+	}
+	var fsGetResp FsGetResponse
+	if err := json.Unmarshal(resp.Bytes(), &fsGetResp); err != nil {
+		common.Logger.Errorf("failed to unmarshal response: %s", err)
+		return nil, err
+	}
+	if fsGetResp.Code != http.StatusOK {
+		common.Logger.Errorf("failed to get file: %s", fsGetResp.Message)
+		return nil, fmt.Errorf("failed to get file: %s", fsGetResp.Message)
+	}
+	resp, err = reqClient.R().SetContext(ctx).Get(fsGetResp.Data.RawUrl)
+	if err != nil {
+		common.Logger.Errorf("failed to save file: %s", err)
+		return nil, err
+	}
+	return &AutoCleanRC{
+		ReadCloser: resp.Body,
+		name:       cachePath,
+	}, nil
 }
 
 func (a *Alist) Delete(ctx context.Context, detail *types.StorageDetail) error {

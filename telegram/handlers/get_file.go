@@ -34,11 +34,11 @@ func GetPictureFile(ctx context.Context, bot *telego.Bot, message telego.Message
 			if message.ReplyToMessage == nil {
 				return nil
 			}
-			fileBytes, err := utils.GetMessagePhotoFileBytes(bot, message.ReplyToMessage)
+			file, err := utils.GetMessagePhotoFile(bot, message.ReplyToMessage)
 			if err != nil {
 				return nil
 			}
-			hash, err := common.GetImagePhash(fileBytes)
+			hash, err := common.GetImagePhash(file)
 			if err != nil {
 				return nil
 			}

@@ -2,6 +2,7 @@ package webdav
 
 import (
 	"context"
+	"io"
 	"os"
 	"path"
 	"path/filepath"
@@ -37,7 +38,7 @@ func (w *Webdav) Init() {
 func (w *Webdav) Save(ctx context.Context, filePath string, storagePath string) (*types.StorageDetail, error) {
 	common.Logger.Debugf("saving file %s", filePath)
 	storagePath = path.Join(basePath, storagePath)
-	storageDir := filepath.Dir(storagePath)
+	storageDir := path.Dir(storagePath)
 	if err := Client.MkdirAll(storageDir, os.ModePerm); err != nil {
 		common.Logger.Errorf("failed to create directory: %s", err)
 		return nil, ErrFailedMkdirAll
@@ -54,7 +55,7 @@ func (w *Webdav) Save(ctx context.Context, filePath string, storagePath string) 
 		return nil, ErrFailedWrite
 	}
 
-	cachePath := path.Join(config.Cfg.Storage.CacheDir, filepath.Base(storagePath))
+	cachePath := filepath.Join(config.Cfg.Storage.CacheDir, filepath.Base(storagePath))
 	go common.MkCache(cachePath, fileBytes, time.Duration(config.Cfg.Storage.CacheTTL)*time.Second)
 
 	return &types.StorageDetail{
@@ -65,7 +66,7 @@ func (w *Webdav) Save(ctx context.Context, filePath string, storagePath string) 
 
 func (w *Webdav) GetFile(ctx context.Context, detail *types.StorageDetail) ([]byte, error) {
 	common.Logger.Debugf("Getting file %s", detail.Path)
-	cachePath := path.Join(config.Cfg.Storage.CacheDir, filepath.Base(detail.Path))
+	cachePath := filepath.Join(config.Cfg.Storage.CacheDir, path.Base(detail.Path))
 	data, err := os.ReadFile(cachePath)
 	if err == nil {
 		return data, nil
@@ -77,6 +78,21 @@ func (w *Webdav) GetFile(ctx context.Context, detail *types.StorageDetail) ([]by
 	}
 	go common.MkCache(cachePath, data, time.Duration(config.Cfg.Storage.CacheTTL)*time.Second)
 	return data, nil
+}
+
+func (w *Webdav) GetFileStream(ctx context.Context, detail *types.StorageDetail) (io.ReadCloser, error) {
+	common.Logger.Debugf("Getting file %s", detail.Path)
+	cachePath := filepath.Join(config.Cfg.Storage.CacheDir, path.Base(detail.Path))
+	file, err := os.Open(cachePath)
+	if err == nil {
+		return file, nil
+	}
+	steam, err := Client.ReadStream(detail.Path)
+	if err != nil {
+		common.Logger.Errorf("failed to read file: %s", err)
+		return nil, ErrReadFile
+	}
+	return steam, nil
 }
 
 func (w *Webdav) Delete(ctx context.Context, detail *types.StorageDetail) error {

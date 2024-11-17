@@ -524,12 +524,13 @@ func downloadAndCompressArtwork(ctx context.Context, artwork *types.Artwork, sta
 		if cachedArtwork.Status != types.ArtworkStatusCached {
 			break
 		}
-		fileBytes, err := common.DownloadWithCache(ctx, picture.Original, nil)
+		tempFile, err := common.GetBodyReader(ctx, picture.Original, nil)
 		if err != nil {
 			common.Logger.Warnf("下载图片失败: %s", err)
 			continue
 		}
-		_, err = common.CompressImageToJPEG(fileBytes, 10, 2560, picture.Original)
+		defer tempFile.Close()
+		_, err = common.CompressImageToJPEG(tempFile, 10, 2560, picture.Original)
 		if err != nil {
 			common.Logger.Warnf("压缩图片失败: %s", err)
 		}

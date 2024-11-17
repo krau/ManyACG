@@ -20,22 +20,22 @@ func CalculatePicture(ctx context.Context, bot *telego.Bot, message telego.Messa
 	if err == nil {
 		waitMessageID = msg.MessageID
 	}
-	fileBytes, err := utils.GetMessagePhotoFileBytes(bot, message.ReplyToMessage)
+	file, err := utils.GetMessagePhotoFile(bot, message.ReplyToMessage)
 	if err != nil {
 		utils.ReplyMessage(bot, message, "获取图片文件失败: "+err.Error())
 		return
 	}
-	hash, err := common.GetImagePhash(fileBytes)
+	hash, err := common.GetImagePhash(file)
 	if err != nil {
 		utils.ReplyMessage(bot, message, "计算图片信息失败: "+err.Error())
 		return
 	}
-	blurScore, err := common.GetImageBlurScore(fileBytes)
+	blurScore, err := common.GetImageBlurScore(file)
 	if err != nil {
 		utils.ReplyMessage(bot, message, "计算图片信息失败: "+err.Error())
 		return
 	}
-	width, height, err := common.GetImageSize(fileBytes)
+	width, height, err := common.GetImageSize(file)
 	if err != nil {
 		utils.ReplyMessage(bot, message, "计算图片信息失败: "+err.Error())
 		return

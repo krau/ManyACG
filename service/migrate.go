@@ -49,6 +49,7 @@ func ProcessPicturesHashAndSizeAndUpdate(ctx context.Context, bot *telego.Bot, m
 	failed := 0
 	for _, picture := range pictures {
 		if err := ProcessPictureHashAndSizeAndUpdate(ctx, picture.ToPicture()); err != nil {
+			common.Logger.Errorf("Failed to process picture hash and size: %v", err)
 			failed++
 		}
 	}

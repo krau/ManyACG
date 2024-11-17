@@ -10,7 +10,7 @@ import (
 	"github.com/krau/ManyACG/config"
 )
 
-var fileNameEscaper = strings.NewReplacer(
+var fileNameReplacer = strings.NewReplacer(
 	" ", "_",
 	"/", "_",
 	"\\", "_",
@@ -27,7 +27,7 @@ var fileNameEscaper = strings.NewReplacer(
 )
 
 func EscapeFileName(fileName string) string {
-	return fileNameEscaper.Replace(fileName)
+	return fileNameReplacer.Replace(fileName)
 }
 
 var markdownRe = regexp.MustCompile("([" + regexp.QuoteMeta(`\_*[]()~`+"`"+`>#+-=|{}.!`) + "])")

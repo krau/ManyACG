@@ -3,6 +3,7 @@ package storage
 import (
 	"context"
 	"fmt"
+	"io"
 	"path/filepath"
 	"sync"
 	"time"
@@ -50,7 +51,7 @@ func SaveAll(ctx context.Context, artwork *types.Artwork, picture *types.Picture
 		return nil, err
 	}
 	defer func() {
-		go common.PurgeFileAfter(filePath, time.Duration(config.Cfg.Storage.CacheTTL)*time.Second)
+		go common.RmFileAfter(filePath, time.Duration(config.Cfg.Storage.CacheTTL)*time.Second)
 	}()
 	originalStorageFileName, err := sources.GetFileName(artwork, picture)
 	if err != nil {
@@ -79,7 +80,9 @@ func SaveAll(ctx context.Context, artwork *types.Artwork, picture *types.Picture
 		if err := common.CompressImageByFFmpeg(filePath, regularOutputPath, 2560, 75); err != nil {
 			return nil, err
 		}
-		go common.PurgeFileAfter(regularOutputPath, time.Duration(config.Cfg.Storage.CacheTTL)*time.Second)
+		defer func() {
+			go common.RmFileAfter(regularOutputPath, time.Duration(config.Cfg.Storage.CacheTTL)*time.Second)
+		}()
 
 		if picture.ID == "" {
 			picture.ID = primitive.NewObjectID().Hex()
@@ -103,7 +106,11 @@ func SaveAll(ctx context.Context, artwork *types.Artwork, picture *types.Picture
 		if err := common.CompressImageByFFmpeg(filePath, thumbOutputPath, 500, 75); err != nil {
 			return nil, err
 		}
-		go common.PurgeFileAfter(thumbOutputPath, time.Duration(config.Cfg.Storage.CacheTTL)*time.Second)
+
+		defer func() {
+			go common.RmFileAfter(thumbOutputPath, time.Duration(config.Cfg.Storage.CacheTTL)*time.Second)
+		}()
+
 		if picture.ID == "" {
 			picture.ID = primitive.NewObjectID().Hex()
 		}
@@ -143,6 +150,26 @@ func GetFile(ctx context.Context, detail *types.StorageDetail) ([]byte, error) {
 	}
 	if storage, ok := Storages[detail.Type]; ok {
 		file, err := storage.GetFile(ctx, detail)
+		if err != nil {
+			return nil, err
+		}
+		return file, nil
+	} else {
+		return nil, fmt.Errorf("%w: %s", manyacgErrors.ErrStorageUnkown, detail.Type)
+	}
+}
+
+func GetFileStream(ctx context.Context, detail *types.StorageDetail) (io.ReadCloser, error) {
+	if detail.Type != types.StorageTypeLocal {
+		lock, _ := storageLocks.LoadOrStore(detail.String(), &sync.Mutex{})
+		lock.(*sync.Mutex).Lock()
+		defer func() {
+			lock.(*sync.Mutex).Unlock()
+			storageLocks.Delete(detail)
+		}()
+	}
+	if storage, ok := Storages[detail.Type]; ok {
+		file, err := storage.GetFileStream(ctx, detail)
 		if err != nil {
 			return nil, err
 		}

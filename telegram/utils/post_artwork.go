@@ -5,9 +5,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"runtime"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/krau/ManyACG/common"
 	"github.com/krau/ManyACG/config"
 	manyacgErrors "github.com/krau/ManyACG/errors"
@@ -81,33 +83,37 @@ func GetArtworkInputMediaPhotos(ctx context.Context, artwork *types.Artwork, sta
 			photo = telegoutil.MediaPhoto(telegoutil.FileFromID(picture.TelegramInfo.PhotoFileID))
 		}
 		if photo == nil {
-			fileBytes := common.GetReqCachedFile(picture.Original)
-			if fileBytes == nil {
-				var err error
+			cacheFile, err := common.GetReqCachedFile(picture.Original)
+			if err == nil {
+				photo = telegoutil.MediaPhoto(telegoutil.File(cacheFile))
+			} else {
+				var rc io.ReadCloser
+				defer func() {
+					if rc != nil {
+						rc.Close()
+					}
+				}()
 				if picture.StorageInfo == nil {
-					fileBytes, err = common.DownloadWithCache(ctx, picture.Original, nil)
+					rc, err = common.GetBodyReader(ctx, picture.Original, nil)
 					if err != nil {
 						common.Logger.Errorf("failed to download file: %s", err)
 						return nil, err
 					}
 				} else {
-					var err error
-					fileBytes, err = storage.GetFile(ctx, picture.StorageInfo.Original)
+					rc, err = storage.GetFileStream(ctx, picture.StorageInfo.Original)
 					if err != nil {
 						common.Logger.Errorf("failed to get file: %s", err)
 						return nil, err
 					}
 				}
+				fileBytes, err := common.CompressImageToJPEG(rc, 10, 2560, picture.Original)
+				if err != nil {
+					common.Logger.Errorf("failed to compress image: %s", err)
+					return nil, err
+				}
+				photo = telegoutil.MediaPhoto(telegoutil.File(telegoutil.NameReader(bytes.NewReader(fileBytes), uuid.New().String())))
 			}
-			fileBytes, err := common.CompressImageToJPEG(fileBytes, 10, 2560, picture.Original)
-			if err != nil {
-				common.Logger.Errorf("failed to compress image: %s", err)
-				return nil, err
-			}
-			photo = telegoutil.MediaPhoto(telegoutil.File(telegoutil.NameReader(bytes.NewReader(fileBytes), primitive.NewObjectID().Hex())))
-			fileBytes = nil
 		}
-
 		if i == 0 {
 			photo = photo.WithCaption(GetArtworkHTMLCaption(artwork)).WithParseMode(telego.ModeHTML)
 		}

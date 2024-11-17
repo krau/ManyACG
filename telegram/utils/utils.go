@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"io"
 	"path/filepath"
 	"strings"
 
@@ -155,7 +156,7 @@ func GetPostedPictureInlineKeyboardButton(artwork *types.Artwork, index uint, ch
 	}
 }
 
-func GetMessagePhotoFileBytes(bot *telego.Bot, message *telego.Message) ([]byte, error) {
+func GetMessagePhotoFile(bot *telego.Bot, message *telego.Message) (io.ReadCloser, error) {
 	fileID := ""
 	if message.Photo != nil {
 		fileID = message.Photo[len(message.Photo)-1].FileID
@@ -175,7 +176,11 @@ func GetMessagePhotoFileBytes(bot *telego.Bot, message *telego.Message) ([]byte,
 	if err != nil {
 		return nil, err
 	}
-	return telegoutil.DownloadFile(bot.FileDownloadURL(tgFile.FilePath))
+	resp, err := common.Client.R().Get(bot.FileDownloadURL(tgFile.FilePath))
+	if err != nil {
+		return nil, err
+	}
+	return resp.Body, nil
 }
 
 func FindSourceURLForMessage(message *telego.Message) string {
@@ -259,32 +264,28 @@ func SendPictureFileByID(ctx context.Context, bot *telego.Bot, message telego.Me
 	return documentMessage, nil
 }
 
-func GetPicturePreviewInputFile(ctx context.Context, picture *types.Picture) (inputFile *telego.InputFile, needUpdatePreview bool, err error) {
+func GetPicturePreviewInputFile(ctx context.Context, picture *types.Picture) (*telego.InputFile, bool, error) {
 	if picture.TelegramInfo != nil && picture.TelegramInfo.PhotoFileID != "" {
-		inputFileStruct := telegoutil.FileFromID(picture.TelegramInfo.PhotoFileID)
-		inputFile = &inputFileStruct
-		return
+		inputFile := telegoutil.FileFromID(picture.TelegramInfo.PhotoFileID)
+		return &inputFile, false, nil
 	}
-	if fileBytes := common.GetReqCachedFile(picture.Original); fileBytes != nil {
-		fileBytes, err = common.CompressImageToJPEG(fileBytes, 10, 2560, picture.Original)
+	cacheFile, err := common.GetReqCachedFile(picture.Original)
+	if err == nil {
+		fileBytes, err := common.CompressImageToJPEG(cacheFile, 10, 2560, picture.Original)
 		if err != nil {
 			return nil, false, err
 		}
-		inputFileStruct := telegoutil.File(telegoutil.NameReader(bytes.NewReader(fileBytes), picture.Original))
-		inputFile = &inputFileStruct
-		return
+		inputFile := telegoutil.File(telegoutil.NameReader(bytes.NewReader(fileBytes), picture.Original))
+		return &inputFile, false, nil
 	}
-	needUpdatePreview = true
 	if botPhotoFileID := service.GetEtcData(ctx, "bot_photo_file_id"); botPhotoFileID != nil {
-		inputFileStruct := telegoutil.FileFromID(botPhotoFileID.(string))
-		inputFile = &inputFileStruct
-		return
+		inputFile := telegoutil.FileFromID(botPhotoFileID.(string))
+		return &inputFile, true, nil
 	}
 	if botPhotoFileBytes := service.GetEtcData(ctx, "bot_photo_bytes"); botPhotoFileBytes != nil {
 		if data, ok := botPhotoFileBytes.(primitive.Binary); ok {
-			inputFileStruct := telegoutil.File(telegoutil.NameReader(bytes.NewReader(data.Data), picture.Original))
-			inputFile = &inputFileStruct
-			return
+			inputFile := telegoutil.File(telegoutil.NameReader(bytes.NewReader(data.Data), picture.Original))
+			return &inputFile, true, nil
 		}
 	}
 	return nil, true, errors.ErrNoAvailableFile
