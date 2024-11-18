@@ -84,9 +84,6 @@ func StoragePictureRegularAndThumbAndUpdate(ctx context.Context, picture *model.
 		if err != nil {
 			return nil, err
 		}
-		defer func() {
-			fileBytes = nil
-		}()
 		originalPath := migrateDir + filepath.Base(picture.StorageInfo.Original.Path)
 		if err := common.MkFile(originalPath, fileBytes); err != nil {
 			return nil, err

@@ -5,7 +5,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"runtime"
 	"time"
 
 	"github.com/google/uuid"
@@ -74,7 +73,6 @@ func SendArtworkMediaGroup(ctx context.Context, bot *telego.Bot, chatID telego.C
 
 // start from 0
 func GetArtworkInputMediaPhotos(ctx context.Context, artwork *types.Artwork, start, end int) ([]telego.InputMedia, error) {
-	defer runtime.GC()
 	inputMediaPhotos := make([]telego.InputMedia, end-start)
 	for i := start; i < end; i++ {
 		picture := artwork.Pictures[i]

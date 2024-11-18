@@ -177,12 +177,6 @@ func updatePreview(ctx context.Context, targetMessage *telego.Message, artwork *
 		return manyacgErrors.ErrIndexOOB
 	}
 
-	defer func() {
-		if err := recover(); err != nil {
-			common.Logger.Fatalf("Panic recovered: %v", err)
-		}
-	}()
-
 	var inputFile telego.InputFile
 	var err error
 	var fileBytes []byte

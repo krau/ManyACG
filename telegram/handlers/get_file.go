@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -103,24 +102,20 @@ func GetPictureFile(ctx context.Context, bot *telego.Bot, message telego.Message
 }
 
 func getArtworkFiles(ctx context.Context, bot *telego.Bot, message telego.Message, artwork *types.Artwork) {
-	defer func() {
-		if r := recover(); r != nil {
-			common.Logger.Fatalf("获取文件失败: %s", r)
-		}
-	}()
 	for i, picture := range artwork.Pictures {
 		var file telego.InputFile
 		alreadyCached := picture.TelegramInfo.DocumentFileID != ""
 		if alreadyCached {
 			file = telegoutil.FileFromID(picture.TelegramInfo.DocumentFileID)
 		} else {
-			data, err := storage.GetFile(ctx, picture.StorageInfo.Original)
+			data, err := storage.GetFileStream(ctx, picture.StorageInfo.Original)
 			if err != nil {
 				common.Logger.Errorf("获取文件失败: %s", err)
 				utils.ReplyMessage(bot, message, fmt.Sprintf("获取第 %d 张图片失败", i+1))
 				return
 			}
-			file = telegoutil.File(telegoutil.NameReader(bytes.NewReader(data), filepath.Base(picture.StorageInfo.Original.Path)))
+			defer data.Close()
+			file = telegoutil.File(telegoutil.NameReader(data, filepath.Base(picture.StorageInfo.Original.Path)))
 		}
 		document := telegoutil.Document(message.Chat.ChatID(), file).
 			WithReplyParameters(&telego.ReplyParameters{

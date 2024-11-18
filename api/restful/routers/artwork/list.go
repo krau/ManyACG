@@ -4,6 +4,7 @@ import (
 	"errors"
 	"net/http"
 
+	"github.com/gabriel-vasile/mimetype"
 	"github.com/krau/ManyACG/adapter"
 	"github.com/krau/ManyACG/common"
 	manyacgErrors "github.com/krau/ManyACG/errors"
@@ -11,7 +12,6 @@ import (
 	"github.com/krau/ManyACG/storage"
 	"github.com/krau/ManyACG/types"
 
-	"github.com/gabriel-vasile/mimetype"
 	"github.com/gin-gonic/gin"
 
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -87,6 +87,7 @@ func RandomArtworkPreview(ctx *gin.Context) {
 	default:
 		data, err := storage.GetFile(ctx, picture.StorageInfo.Regular)
 		if err != nil {
+			common.Logger.Errorf("Failed to get file: %v", err)
 			common.GinErrorResponse(ctx, err, http.StatusInternalServerError, "Failed to get file")
 			return
 		}

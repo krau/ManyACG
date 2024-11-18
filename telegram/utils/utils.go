@@ -217,11 +217,12 @@ func SendPictureFileByID(ctx context.Context, bot *telego.Bot, message telego.Me
 		file = telegoutil.FileFromID(picture.TelegramInfo.DocumentFileID)
 	} else {
 		go ReplyMessage(bot, message, "正在下载原图，请稍等~")
-		data, err := storage.GetFile(ctx, picture.StorageInfo.Original)
+		data, err := storage.GetFileStream(ctx, picture.StorageInfo.Original)
 		if err != nil {
 			return nil, err
 		}
-		file = telegoutil.File(telegoutil.NameReader(bytes.NewReader(data), filepath.Base(picture.StorageInfo.Original.Path)))
+		defer data.Close()
+		file = telegoutil.File(telegoutil.NameReader(data, filepath.Base(picture.StorageInfo.Original.Path)))
 	}
 	document := telegoutil.Document(message.Chat.ChatID(), file).
 		WithReplyParameters(&telego.ReplyParameters{
