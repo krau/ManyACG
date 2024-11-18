@@ -51,3 +51,8 @@ func UpdateCachedArtwork(ctx context.Context, artwork *model.CachedArtworksModel
 	artwork.CreatedAt = primitive.NewDateTimeFromTime(time.Now())
 	return cachedArtworkCollection.UpdateOne(ctx, filter, update, options.Update().SetUpsert(true))
 }
+
+func DeleteCachedArtworkByURL(ctx context.Context, url string) (*mongo.DeleteResult, error) {
+	filter := bson.M{"source_url": url}
+	return cachedArtworkCollection.DeleteOne(ctx, filter)
+}

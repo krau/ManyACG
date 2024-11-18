@@ -53,6 +53,11 @@ func GetCachedArtworkByURLWithCache(ctx context.Context, sourceURL string) (*mod
 	return cachedArtwork, nil
 }
 
+func DeleteCachedArtworkByURL(ctx context.Context, sourceURL string) error {
+	_, err := dao.DeleteCachedArtworkByURL(ctx, sourceURL)
+	return err
+}
+
 func DeleteCachedArtworkPicture(ctx context.Context, cachedArtwork *model.CachedArtworksModel, pictureIndex int) error {
 	if pictureIndex < 0 || pictureIndex > len(cachedArtwork.Artwork.Pictures) {
 		return errors.ErrIndexOOB
