@@ -91,7 +91,7 @@ func (resp *FxTwitterApiResp) ToArtwork() (*types.Artwork, error) {
 				desc = strings.Join(textLines[1:textLineLen-1], "\n")
 			}
 		} else {
-			desc = strings.Join(textLines[:textLineLen-1], "\n")
+			desc = tweet.Text
 		}
 	}
 
@@ -100,7 +100,7 @@ func (resp *FxTwitterApiResp) ToArtwork() (*types.Artwork, error) {
 		Description: desc,
 		SourceType:  types.SourceTypeTwitter,
 		SourceURL:   tweet.URL,
-		R18:         false, // TODO
+		R18:         false,
 		Artist: &types.Artist{
 			Name:     tweet.Author.Name,
 			Username: tweet.Author.Username,
