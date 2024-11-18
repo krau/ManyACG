@@ -98,10 +98,10 @@ func createIndex(ctx context.Context) {
 			Keys:    bson.D{{Key: "source_url", Value: 1}},
 			Options: options.Index().SetName("source_url"),
 		},
-		{
-			Keys:    bson.D{{Key: "created_at", Value: 1}},
-			Options: options.Index().SetExpireAfterSeconds(86400 * 30).SetName("created_at"),
-		},
+		// {
+		// 	Keys:    bson.D{{Key: "created_at", Value: 1}},
+		// 	Options: options.Index().SetExpireAfterSeconds(86400 * 30).SetName("created_at"),
+		// },
 	})
 
 	// 标签
