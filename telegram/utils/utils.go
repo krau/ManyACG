@@ -129,8 +129,8 @@ func GetArtworkPostMessageURL(messageID int, channelChatID telego.ChatID) string
 	return fmt.Sprintf("https://t.me/c/%s/%d", strings.TrimPrefix(channelChatID.String(), "-100"), messageID)
 }
 
-func GetDeepLinkForFile(pictureID string, botUsername string) string {
-	return fmt.Sprintf("https://t.me/%s/?start=file_%s", botUsername, pictureID)
+func GetDeepLink(botUsername, command string, args ...string) string {
+	return fmt.Sprintf("https://t.me/%s/?start=%s_%s", botUsername, command, strings.Join(args, "_"))
 }
 
 func GetPostedPictureReplyMarkup(artwork *types.Artwork, index uint, channelChatID telego.ChatID, botUsername string) *telego.InlineKeyboardMarkup {
@@ -147,12 +147,12 @@ func GetPostedPictureInlineKeyboardButton(artwork *types.Artwork, index uint, ch
 	if (channelChatID.ID == 0 && channelChatID.Username == "") || (artwork.Pictures[index].TelegramInfo == nil || artwork.Pictures[index].TelegramInfo.MessageID == 0) {
 		return []telego.InlineKeyboardButton{
 			telegoutil.InlineKeyboardButton("详情").WithURL(config.Cfg.API.SiteURL + "/artwork/" + artwork.ID),
-			telegoutil.InlineKeyboardButton("原图").WithURL(GetDeepLinkForFile(artwork.Pictures[index].ID, botUsername)),
+			telegoutil.InlineKeyboardButton("原图").WithURL(GetDeepLink(botUsername, "file", artwork.Pictures[index].ID)),
 		}
 	}
 	return []telego.InlineKeyboardButton{
 		telegoutil.InlineKeyboardButton("详情").WithURL(GetArtworkPostMessageURL(artwork.Pictures[index].TelegramInfo.MessageID, channelChatID)),
-		telegoutil.InlineKeyboardButton("原图").WithURL(GetDeepLinkForFile(artwork.Pictures[index].ID, botUsername)),
+		telegoutil.InlineKeyboardButton("原图").WithURL(GetDeepLink(botUsername, "file", artwork.Pictures[index].ID)),
 	}
 }
 

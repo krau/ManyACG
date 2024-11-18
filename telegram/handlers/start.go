@@ -69,6 +69,16 @@ func Start(ctx context.Context, bot *telego.Bot, message telego.Message) {
 			}
 			unauthUser.TelegramID = userID
 			service.UpdateUnauthUser(ctx, objectID, unauthUser)
+		case "info":
+			dataID := args[0][5:]
+			sourceURL, err := service.GetCallbackDataByID(ctx, dataID)
+			if err != nil {
+				utils.ReplyMessage(bot, message, "获取失败: "+err.Error())
+				return
+			}
+			if err := utils.SendFullArtworkInfo(ctx, bot, message, sourceURL); err != nil {
+				utils.ReplyMessage(bot, message, err.Error())
+			}
 		}
 		return
 	}

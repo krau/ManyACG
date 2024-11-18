@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/krau/ManyACG/common"
-	"github.com/krau/ManyACG/service"
 	"github.com/krau/ManyACG/telegram/utils"
 	"github.com/krau/ManyACG/types"
 
@@ -61,50 +60,7 @@ func GetArtworkInfoCommand(ctx context.Context, bot *telego.Bot, message telego.
 		utils.ReplyMessage(bot, message, "命令参数或回复的消息中没有找到支持的链接")
 		return
 	}
-	var waitMessageID int
-	go func() {
-		msg, err := utils.ReplyMessage(bot, message, "正在获取作品信息...")
-		if err != nil {
-			common.Logger.Warnf("发送消息失败: %s", err)
-			return
-		}
-		waitMessageID = msg.MessageID
-	}()
-	defer func() {
-		time.Sleep(1 * time.Second)
-		if waitMessageID != 0 {
-			bot.DeleteMessage(telegoutil.Delete(message.Chat.ChatID(), waitMessageID))
-		}
-	}()
-	artwork, err := service.GetArtworkByURLWithCacheFetch(ctx, sourceURL)
-	if err != nil {
-		common.Logger.Error(err)
+	if err := utils.SendFullArtworkInfo(ctx, bot, message, sourceURL); err != nil {
 		utils.ReplyMessage(bot, message, err.Error())
-		return
-	}
-	messages, err := utils.SendArtworkMediaGroup(ctx, bot, message.Chat.ChatID(), artwork)
-	if err != nil {
-		common.Logger.Error(err)
-		utils.ReplyMessage(bot, message, "发送作品信息失败")
-	}
-
-	cachedArtwork, err := service.GetCachedArtworkByURL(ctx, sourceURL)
-	if err != nil {
-		common.Logger.Warnf("获取缓存作品信息失败: %s", err)
-		return
-	}
-
-	for i, picture := range cachedArtwork.Artwork.Pictures {
-		if picture.TelegramInfo == nil {
-			picture.TelegramInfo = &types.TelegramInfo{}
-		}
-		if i < len(messages) {
-			if messages[i].Photo != nil {
-				picture.TelegramInfo.PhotoFileID = messages[i].Photo[len(messages[i].Photo)-1].FileID
-			}
-		}
-	}
-	if err := service.UpdateCachedArtwork(ctx, cachedArtwork); err != nil {
-		common.Logger.Warnf("更新缓存作品信息失败: %s", err)
 	}
 }

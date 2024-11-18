@@ -328,11 +328,17 @@ func ArtworkPreview(ctx context.Context, bot *telego.Bot, query telego.CallbackQ
 		return
 	}
 
-	postArtworkKeyboard := []telego.InlineKeyboardButton{
-		telegoutil.InlineKeyboardButton("发布").WithCallbackData("post_artwork " + dataID),
-		telegoutil.InlineKeyboardButton("查重").WithCallbackData("search_picture " + dataID),
-		telegoutil.InlineKeyboardButton("发布(!R18)").WithCallbackData("post_artwork_r18 " + dataID),
+	postArtworkKeyboard := [][]telego.InlineKeyboardButton{
+		{
+			telegoutil.InlineKeyboardButton("发布").WithCallbackData("post_artwork " + dataID),
+			telegoutil.InlineKeyboardButton("发布(!R18)").WithCallbackData("post_artwork_r18 " + dataID),
+		},
+		{
+			telegoutil.InlineKeyboardButton("查重").WithCallbackData("search_picture " + dataID),
+			telegoutil.InlineKeyboardButton("预览发布").WithURL(utils.GetDeepLink(BotUsername, "info", dataID)),
+		},
 	}
+
 	currentPictureIndexStr := queryDataSlice[4]
 	currentPictureIndex, err := strconv.Atoi(currentPictureIndexStr)
 	if err != nil {
@@ -413,10 +419,11 @@ func ArtworkPreview(ctx context.Context, bot *telego.Bot, query telego.CallbackQ
 			})
 			return
 		}
+		postArtworkKeyboard = append(postArtworkKeyboard, previewKeyboard)
 		_, err = bot.EditMessageMedia(&telego.EditMessageMediaParams{
 			ChatID:      callbackMessage.Chat.ChatID(),
 			MessageID:   callbackMessage.MessageID,
-			ReplyMarkup: telegoutil.InlineKeyboard(postArtworkKeyboard, previewKeyboard),
+			ReplyMarkup: telegoutil.InlineKeyboard(postArtworkKeyboard...),
 			Media: telegoutil.MediaPhoto(*inputFile).
 				WithCaption(utils.GetArtworkHTMLCaption(cachedArtwork.Artwork) + fmt.Sprintf("\n<i>当前作品有 %d 张图片</i>", len(cachedArtwork.Artwork.Pictures))).
 				WithParseMode(telego.ModeHTML),
@@ -480,6 +487,7 @@ func ArtworkPreview(ctx context.Context, bot *telego.Bot, query telego.CallbackQ
 			)
 		}
 	}
+	postArtworkKeyboard = append(postArtworkKeyboard, previewKeyboard)
 	msg, err := bot.EditMessageMedia(&telego.EditMessageMediaParams{
 		ChatID:    callbackMessage.Chat.ChatID(),
 		MessageID: callbackMessage.MessageID,
@@ -487,8 +495,7 @@ func ArtworkPreview(ctx context.Context, bot *telego.Bot, query telego.CallbackQ
 			WithCaption(utils.GetArtworkHTMLCaption(cachedArtwork.Artwork) + fmt.Sprintf("\n<i>当前作品有 %d 张图片</i>", len(cachedArtwork.Artwork.Pictures))).
 			WithParseMode(telego.ModeHTML),
 		ReplyMarkup: telegoutil.InlineKeyboard(
-			postArtworkKeyboard,
-			previewKeyboard,
+			postArtworkKeyboard...,
 		),
 	})
 	if err != nil {

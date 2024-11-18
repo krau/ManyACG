@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/krau/ManyACG/common"
 	manyacgErrors "github.com/krau/ManyACG/errors"
@@ -165,8 +166,11 @@ func getArtworkInfoReplyMarkup(ctx context.Context, artwork *types.Artwork, isCr
 	return telegoutil.InlineKeyboard(
 		[]telego.InlineKeyboardButton{
 			telegoutil.InlineKeyboardButton("发布").WithCallbackData("post_artwork " + cbId),
-			telegoutil.InlineKeyboardButton("查重").WithCallbackData("search_picture " + cbId),
 			telegoutil.InlineKeyboardButton("发布(!R18)").WithCallbackData("post_artwork_r18 " + cbId),
+		},
+		[]telego.InlineKeyboardButton{
+			telegoutil.InlineKeyboardButton("查重").WithCallbackData("search_picture " + cbId),
+			telegoutil.InlineKeyboardButton("预览发布").WithURL(GetDeepLink(BotUsername, "info", cbId)),
 		},
 		previewKeyboard,
 	), nil
@@ -226,6 +230,55 @@ func updatePreview(ctx context.Context, targetMessage *telego.Message, artwork *
 	}
 	if err := service.UpdatePictureTelegramInfo(ctx, cachedArtwork.Artwork.Pictures[pictureIndex], cachedArtwork.Artwork.Pictures[pictureIndex].TelegramInfo); err != nil {
 		common.Logger.Warnf("更新图片信息失败: %s", err)
+	}
+	return nil
+}
+
+func SendFullArtworkInfo(ctx context.Context, bot *telego.Bot, message telego.Message, sourceURL string) error {
+	var waitMessageID int
+	go func() {
+		msg, err := ReplyMessage(bot, message, "正在获取作品信息...")
+		if err != nil {
+			common.Logger.Warnf("发送消息失败: %s", err)
+			return
+		}
+		waitMessageID = msg.MessageID
+	}()
+	defer func() {
+		time.Sleep(1 * time.Second)
+		if waitMessageID != 0 {
+			bot.DeleteMessage(telegoutil.Delete(message.Chat.ChatID(), waitMessageID))
+		}
+	}()
+	artwork, err := service.GetArtworkByURLWithCacheFetch(ctx, sourceURL)
+	if err != nil {
+		common.Logger.Error(err)
+		return errors.New("获取作品信息失败")
+	}
+	messages, err := SendArtworkMediaGroup(ctx, bot, message.Chat.ChatID(), artwork)
+	if err != nil {
+		common.Logger.Error(err)
+		return errors.New("发送作品详情失败")
+	}
+
+	cachedArtwork, err := service.GetCachedArtworkByURL(ctx, sourceURL)
+	if err != nil {
+		common.Logger.Warnf("获取缓存作品信息失败: %s", err)
+		return nil
+	}
+
+	for i, picture := range cachedArtwork.Artwork.Pictures {
+		if picture.TelegramInfo == nil {
+			picture.TelegramInfo = &types.TelegramInfo{}
+		}
+		if i < len(messages) {
+			if messages[i].Photo != nil {
+				picture.TelegramInfo.PhotoFileID = messages[i].Photo[len(messages[i].Photo)-1].FileID
+			}
+		}
+	}
+	if err := service.UpdateCachedArtwork(ctx, cachedArtwork); err != nil {
+		common.Logger.Warnf("更新缓存作品信息失败: %s", err)
 	}
 	return nil
 }
