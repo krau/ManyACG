@@ -102,6 +102,10 @@ var (
 			Command:     "post",
 			Description: "发布作品 <url>",
 		},
+		{
+			Command:     "refresh",
+			Description: "删除作品缓存 <url>",
+		},
 	}
 )
 
