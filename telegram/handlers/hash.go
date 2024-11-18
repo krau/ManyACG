@@ -3,6 +3,7 @@ package handlers
 import (
 	"context"
 	"fmt"
+	"image"
 
 	"github.com/krau/ManyACG/common"
 	"github.com/krau/ManyACG/telegram/utils"
@@ -25,17 +26,24 @@ func CalculatePicture(ctx context.Context, bot *telego.Bot, message telego.Messa
 		utils.ReplyMessage(bot, message, "获取图片文件失败: "+err.Error())
 		return
 	}
-	hash, err := common.GetImagePhash(file)
+	defer file.Close()
+	img, _, err := image.Decode(file)
+	if err != nil {
+		common.Logger.Error("解码图片失败: %v", err)
+		utils.ReplyMessage(bot, message, "解码图片失败")
+		return
+	}
+	hash, err := common.GetImagePhash(img)
 	if err != nil {
 		utils.ReplyMessage(bot, message, "计算图片信息失败: "+err.Error())
 		return
 	}
-	blurScore, err := common.GetImageBlurScore(file)
+	blurScore, err := common.GetImageBlurScore(img)
 	if err != nil {
 		utils.ReplyMessage(bot, message, "计算图片信息失败: "+err.Error())
 		return
 	}
-	width, height, err := common.GetImageSize(file)
+	width, height, err := common.GetImageSize(img)
 	if err != nil {
 		utils.ReplyMessage(bot, message, "计算图片信息失败: "+err.Error())
 		return

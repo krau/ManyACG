@@ -184,12 +184,13 @@ func updatePreview(ctx context.Context, targetMessage *telego.Message, artwork *
 	}()
 
 	var inputFile telego.InputFile
-	rc, err := common.GetBodyReader(ctx, artwork.Pictures[pictureIndex].Original, nil)
+	var err error
+	var fileBytes []byte
+	fileBytes, err = common.DownloadWithCache(ctx, artwork.Pictures[pictureIndex].Original, nil)
 	if err != nil {
 		return err
 	}
-	defer rc.Close()
-	fileBytes, err := common.CompressImageToJPEGByFFmpeg(rc, 2560)
+	fileBytes, err = common.CompressImageToJPEGByFFmpeg(fileBytes, 2560)
 	if err != nil {
 		return err
 	}

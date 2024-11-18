@@ -85,9 +85,7 @@ func StartScheduler(ctx context.Context) {
 			}
 			go func() {
 				for _, picture := range artwork.Pictures {
-					if err := service.ProcessPictureHashAndSizeAndUpdate(ctx, picture); err != nil {
-						common.Logger.Warnf("error when processing %d of artwork %s: %s", picture.Index, artwork.Title, err)
-					}
+					service.AddProcessPictureTask(ctx, picture)
 				}
 			}()
 		}

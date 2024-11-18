@@ -44,6 +44,7 @@ func Run() {
 			os.Exit(1)
 		}
 	}()
+	service.InitService()
 	if config.Cfg.Telegram.Token != "" {
 		go telegram.RunPolling()
 	}

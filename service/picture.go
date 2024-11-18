@@ -1,9 +1,10 @@
 package service
 
 import (
-	"bytes"
 	"context"
-	"io"
+	"fmt"
+	"image"
+	"runtime"
 
 	"github.com/krau/ManyACG/common"
 	"github.com/krau/ManyACG/dao"
@@ -163,7 +164,7 @@ func GetPicturesByHashHammingDistance(ctx context.Context, hash string, distance
 	return result, nil
 }
 
-func ProcessPictureHashAndSizeAndUpdate(ctx context.Context, picture *types.Picture) error {
+func ProcessPictureHashAndUpdate(ctx context.Context, picture *types.Picture) error {
 	pictureModel, err := dao.GetPictureByOriginal(ctx, picture.Original)
 	if err != nil {
 		return err
@@ -173,15 +174,16 @@ func ProcessPictureHashAndSizeAndUpdate(ctx context.Context, picture *types.Pict
 		return err
 	}
 	defer file.Close()
-	buf, err := io.ReadAll(file)
+	img, _, err := image.Decode(file)
+	if err != nil {
+		return fmt.Errorf("failed to decode image: %w", err)
+	}
+
+	hash, err := common.GetImagePhash(img)
 	if err != nil {
 		return err
 	}
-	hash, err := common.GetImagePhash(bytes.NewReader(buf))
-	if err != nil {
-		return err
-	}
-	blurscore, err := common.GetImageBlurScore(bytes.NewReader(buf))
+	blurscore, err := common.GetImageBlurScore(img)
 	if err != nil {
 		return err
 	}
@@ -190,7 +192,7 @@ func ProcessPictureHashAndSizeAndUpdate(ctx context.Context, picture *types.Pict
 		return err
 	}
 	if picture.Width == 0 || picture.Height == 0 {
-		width, height, err := common.GetImageSize(bytes.NewReader(buf))
+		width, height, err := common.GetImageSize(img)
 		if err != nil {
 			return err
 		}
@@ -199,6 +201,29 @@ func ProcessPictureHashAndSizeAndUpdate(ctx context.Context, picture *types.Pict
 			return err
 		}
 	}
-	buf = nil
 	return nil
+}
+
+type processPictureTask struct {
+	Picture *types.Picture
+	Ctx     context.Context
+}
+
+var processPictureTaskChan = make(chan *processPictureTask)
+
+func AddProcessPictureTask(ctx context.Context, picture *types.Picture) {
+	processPictureTaskChan <- &processPictureTask{
+		Picture: picture,
+		Ctx:     ctx,
+	}
+}
+
+func listenProcessPictureTask() {
+	for task := range processPictureTaskChan {
+		err := ProcessPictureHashAndUpdate(task.Ctx, task.Picture)
+		runtime.GC()
+		if err != nil {
+			common.Logger.Errorf("error when processing picture %s: %s", task.Picture.Original, err)
+		}
+	}
 }

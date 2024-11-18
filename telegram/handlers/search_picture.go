@@ -62,7 +62,7 @@ func SearchPictureCallbackQuery(ctx context.Context, bot *telego.Bot, query tele
 }
 
 func getSearchResult(ctx context.Context, hasPermission bool, fileReader io.Reader) (string, bool, error) {
-	hash, err := common.GetImagePhash(fileReader)
+	hash, err := common.GetImagePhashFromReader(fileReader)
 	if err != nil {
 		return "", false, fmt.Errorf("获取图片哈希失败: %w", err)
 	}

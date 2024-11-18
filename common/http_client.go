@@ -2,6 +2,7 @@ package common
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"path/filepath"
 	"time"
@@ -51,6 +52,9 @@ func DownloadWithCache(ctx context.Context, url string, client *req.Client) ([]b
 	if err != nil {
 		return nil, err
 	}
+	if resp.IsErrorState() {
+		return nil, fmt.Errorf("http error: %d", resp.GetStatusCode())
+	}
 	data = resp.Bytes()
 	go MkCache(cachePath, data, time.Duration(config.Cfg.Storage.CacheTTL)*time.Second)
 	return data, nil
@@ -75,16 +79,22 @@ func GetBodyReader(ctx context.Context, url string, client *req.Client) (io.Read
 	if file, err := os.Open(cachePath); err == nil {
 		return file, nil
 	}
-
 	Logger.Debugf("getting: %s", url)
 	resp, err := client.R().SetContext(ctx).Get(url)
 	if err != nil {
 		return nil, err
 	}
+	if resp.IsErrorState() {
+		return nil, fmt.Errorf("http error: %d", resp.GetStatusCode())
+	}
 	return resp.Body, nil
 }
 
-func GetReqCachedFile(path string) (*os.File, error) {
+func GetReqCachedFile(path string) ([]byte, error) {
 	cachePath := filepath.Join(config.Cfg.Storage.CacheDir, "req", EscapeFileName(path))
-	return os.Open(cachePath)
+	data, err := os.ReadFile(cachePath)
+	if err != nil {
+		return nil, err
+	}
+	return data, nil
 }

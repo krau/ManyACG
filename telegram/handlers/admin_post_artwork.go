@@ -6,11 +6,13 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
 
 	"github.com/krau/ManyACG/common"
+	"github.com/krau/ManyACG/config"
 
 	"github.com/krau/ManyACG/service"
 	"github.com/krau/ManyACG/sources"
@@ -150,9 +152,7 @@ func PostArtworkCallbackQuery(ctx context.Context, bot *telego.Bot, query telego
 			}
 			go func() {
 				for _, picture := range artwork.Pictures {
-					if err := service.ProcessPictureHashAndSizeAndUpdate(context.TODO(), picture); err != nil {
-						common.Logger.Warnf("处理图片失败: %s", err)
-					}
+					service.AddProcessPictureTask(context.TODO(), picture)
 				}
 			}()
 			common.Logger.Infof("Posted artwork %s", artwork.Title)
@@ -266,9 +266,7 @@ func PostArtworkCommand(ctx context.Context, bot *telego.Bot, message telego.Mes
 		}
 		go func() {
 			for _, picture := range artwork.Pictures {
-				if err := service.ProcessPictureHashAndSizeAndUpdate(context.TODO(), picture); err != nil {
-					common.Logger.Warnf("处理图片失败: %s", err)
-				}
+				service.AddProcessPictureTask(context.TODO(), picture)
 			}
 		}()
 	}
@@ -524,16 +522,17 @@ func downloadAndCompressArtwork(ctx context.Context, artwork *types.Artwork, sta
 		if cachedArtwork.Status != types.ArtworkStatusCached {
 			break
 		}
-		tempFile, err := common.GetBodyReader(ctx, picture.Original, nil)
+		tempFile, err := common.DownloadWithCache(ctx, picture.Original, nil)
 		if err != nil {
 			common.Logger.Warnf("下载图片失败: %s", err)
 			continue
 		}
-		defer tempFile.Close()
-		_, err = common.CompressImageToJPEG(tempFile, 10, 2560, picture.Original)
+		tempFile, err = common.CompressImageToJPEGByFFmpeg(tempFile, 2560)
 		if err != nil {
 			common.Logger.Warnf("压缩图片失败: %s", err)
 		}
+		cachePath := filepath.Join(config.Cfg.Storage.CacheDir, "image", common.EscapeFileName(picture.Original))
+		go common.MkCache(cachePath, tempFile, time.Duration(config.Cfg.Storage.CacheTTL)*time.Second)
 	}
 }
 

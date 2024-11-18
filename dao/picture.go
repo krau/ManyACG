@@ -175,6 +175,10 @@ func UpdatePictureSizeByID(ctx context.Context, id primitive.ObjectID, width, he
 	return pictureCollection.UpdateOne(ctx, bson.M{"_id": id}, bson.M{"$set": bson.M{"width": width, "height": height}})
 }
 
+func UpdatePictureByID(ctx context.Context, id primitive.ObjectID, picture *model.PictureModel) (*mongo.UpdateResult, error) {
+	return pictureCollection.UpdateOne(ctx, bson.M{"_id": id}, bson.M{"$set": picture})
+}
+
 func UpdatePictureStorageInfoByID(ctx context.Context, id primitive.ObjectID, storageInfo *types.StorageInfo) (*mongo.UpdateResult, error) {
 	return pictureCollection.UpdateOne(ctx, bson.M{"_id": id}, bson.M{"$set": bson.M{"storage_info": storageInfo}})
 }

@@ -5,7 +5,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"io"
 	"runtime"
 	"time"
 
@@ -75,6 +74,7 @@ func SendArtworkMediaGroup(ctx context.Context, bot *telego.Bot, chatID telego.C
 
 // start from 0
 func GetArtworkInputMediaPhotos(ctx context.Context, artwork *types.Artwork, start, end int) ([]telego.InputMedia, error) {
+	defer runtime.GC()
 	inputMediaPhotos := make([]telego.InputMedia, end-start)
 	for i := start; i < end; i++ {
 		picture := artwork.Pictures[i]
@@ -83,41 +83,30 @@ func GetArtworkInputMediaPhotos(ctx context.Context, artwork *types.Artwork, sta
 			photo = telegoutil.MediaPhoto(telegoutil.FileFromID(picture.TelegramInfo.PhotoFileID))
 		}
 		if photo == nil {
-			cacheFile, err := common.GetReqCachedFile(picture.Original)
-			if err == nil {
-				fileBytes, err := common.CompressImageToJPEGByFFmpeg(cacheFile, 2560)
-				if err != nil {
-					common.Logger.Errorf("failed to compress image: %s", err)
-					return nil, err
-				}
-				photo = telegoutil.MediaPhoto(telegoutil.File(telegoutil.NameReader(bytes.NewReader(fileBytes), uuid.New().String())))
-			} else {
-				var rc io.ReadCloser
-				defer func() {
-					if rc != nil {
-						rc.Close()
-					}
-				}()
+			var fileBytes []byte
+			var err error
+			fileBytes, err = common.GetReqCachedFile(picture.Original)
+			if err != nil {
 				if picture.StorageInfo == nil {
-					rc, err = common.GetBodyReader(ctx, picture.Original, nil)
+					fileBytes, err = common.DownloadWithCache(ctx, picture.Original, nil)
 					if err != nil {
 						common.Logger.Errorf("failed to download file: %s", err)
 						return nil, err
 					}
 				} else {
-					rc, err = storage.GetFileStream(ctx, picture.StorageInfo.Original)
+					fileBytes, err = storage.GetFile(ctx, picture.StorageInfo.Original)
 					if err != nil {
 						common.Logger.Errorf("failed to get file: %s", err)
 						return nil, err
 					}
 				}
-				fileBytes, err := common.CompressImageToJPEGByFFmpeg(rc, 2560)
-				if err != nil {
-					common.Logger.Errorf("failed to compress image: %s", err)
-					return nil, err
-				}
-				photo = telegoutil.MediaPhoto(telegoutil.File(telegoutil.NameReader(bytes.NewReader(fileBytes), uuid.New().String())))
 			}
+			fileBytes, err = common.CompressImageToJPEGByFFmpeg(fileBytes, 2560)
+			if err != nil {
+				common.Logger.Errorf("failed to compress image: %s", err)
+				return nil, err
+			}
+			photo = telegoutil.MediaPhoto(telegoutil.File(telegoutil.NameReader(bytes.NewReader(fileBytes), uuid.New().String())))
 		}
 		if i == 0 {
 			photo = photo.WithCaption(GetArtworkHTMLCaption(artwork)).WithParseMode(telego.ModeHTML)
@@ -229,11 +218,8 @@ func PostAndCreateArtwork(ctx context.Context, artwork *types.Artwork, bot *tele
 
 func afterCreate(ctx context.Context, artwork *types.Artwork, bot *telego.Bot, fromID int64) {
 	for _, picture := range artwork.Pictures {
-		if err := service.ProcessPictureHashAndSizeAndUpdate(ctx, picture); err != nil {
-			common.Logger.Warnf("error when processing %d of artwork %s: %s", picture.Index, artwork.Title, err)
-		}
+		service.AddProcessPictureTask(ctx, picture)
 	}
-	runtime.GC()
 	checkDuplicate(ctx, artwork, bot, fromID)
 }
 

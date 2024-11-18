@@ -14,7 +14,6 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/google/uuid"
 	"github.com/krau/ManyACG/config"
 
 	"golang.org/x/image/draw"
@@ -25,17 +24,19 @@ import (
 	ffmpeg "github.com/u2takey/ffmpeg-go"
 )
 
-var imageBufferPool = sync.Pool{
-	New: func() interface{} {
-		return new(bytes.Buffer)
-	},
+func GetImagePhash(img image.Image) (string, error) {
+	return getImagePhash(img)
 }
 
-func GetImagePhash(r io.Reader) (string, error) {
+func GetImagePhashFromReader(r io.Reader) (string, error) {
 	img, _, err := image.Decode(r)
 	if err != nil {
 		return "", err
 	}
+	return getImagePhash(img)
+}
+
+func getImagePhash(img image.Image) (string, error) {
 	hash, err := goimagehash.PerceptionHash(img)
 	if err != nil {
 		return "", err
@@ -43,11 +44,19 @@ func GetImagePhash(r io.Reader) (string, error) {
 	return hash.ToString(), nil
 }
 
-func GetImageBlurScore(r io.Reader) (float64, error) {
+func GetImageBlurScore(img image.Image) (float64, error) {
+	return getImageBlurScore(img)
+}
+
+func GetImageBlurScoreFromReader(r io.Reader) (float64, error) {
 	img, _, err := image.Decode(r)
 	if err != nil {
 		return 0, err
 	}
+	return getImageBlurScore(img)
+}
+
+func getImageBlurScore(img image.Image) (float64, error) {
 	bounds := img.Bounds()
 	grayImg := image.NewGray(bounds)
 	for y := bounds.Min.Y; y < bounds.Max.Y; y++ {
@@ -94,7 +103,6 @@ func GetImageBlurScore(r io.Reader) (float64, error) {
 		}
 	}
 	variance /= float64(pixelCount)
-
 	return strconv.ParseFloat(strconv.FormatFloat(variance, 'f', 2, 64), 64)
 }
 
@@ -106,7 +114,7 @@ var rgbaPool = sync.Pool{
 
 // ResizeImage resizes an image to the specified width and height.
 //
-// It use golang.org/x/image/draw and CatmullRom interpolation. (Slow but high quality)
+// It use golang.org/x/image/draw and CatmullRom interpolation. (Slow but high quality, and cost many memory)
 func ResizeImage(img image.Image, width, height uint) (image.Image, func()) {
 	if width == 0 || height == 0 {
 		return img, func() {}
@@ -128,12 +136,29 @@ func ResizeImage(img image.Image, width, height uint) (image.Image, func()) {
 	return rgba, cleanup
 }
 
-func GetImageSize(r io.Reader) (int, int, error) {
+func GetImageSizeFromReader(r io.Reader) (int, int, error) {
 	img, _, err := image.DecodeConfig(r)
 	if err != nil {
 		return 0, 0, err
 	}
 	return img.Width, img.Height, nil
+}
+
+func GetImageSize(img image.Image) (int, int, error) {
+	if img == nil {
+		return 0, 0, fmt.Errorf("nil image")
+	}
+	bounds := img.Bounds()
+	if bounds.Empty() {
+		return 0, 0, fmt.Errorf("empty image")
+	}
+	return bounds.Dx(), bounds.Dy(), nil
+}
+
+var imageBufferPool = sync.Pool{
+	New: func() interface{} {
+		return new(bytes.Buffer)
+	},
 }
 
 func CompressImageToJPEG(r io.Reader, maxSizeMB, maxEdgeLength uint, cacheKey string) ([]byte, error) {
@@ -228,12 +253,8 @@ func CompressImageByFFmpeg(inputPath, outputPath string, maxEdgeLength uint, qua
 	return nil
 }
 
-func CompressImageToJPEGByFFmpeg(r io.Reader, maxEdgeLength uint) ([]byte, error) {
-	buf, err := io.ReadAll(r)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read image: %w", err)
-	}
-	img, _, err := image.DecodeConfig(bytes.NewReader(buf))
+func CompressImageToJPEGByFFmpeg(input []byte, maxEdgeLength uint) ([]byte, error) {
+	img, _, err := image.DecodeConfig(bytes.NewReader(input))
 	if err != nil {
 		return nil, fmt.Errorf("failed to decode image: %w", err)
 	}
@@ -245,20 +266,32 @@ func CompressImageToJPEGByFFmpeg(r io.Reader, maxEdgeLength uint) ([]byte, error
 			vfKwArg = ffmpeg.KwArgs{"vf": fmt.Sprintf("scale=-1:%d", maxEdgeLength)}
 		}
 	}
-	cacheKey := uuid.NewString()
-	cachePath := filepath.Join(config.Cfg.Storage.CacheDir, "image", EscapeFileName("temp_"+uuid.NewString()))
-	if err := MkFile(cachePath, buf); err != nil {
-		return nil, fmt.Errorf("failed to write cache: %w", err)
+
+	tempFile, err := os.CreateTemp(config.Cfg.Storage.CacheDir, "ffmpeg_input_*.tmp")
+	if err != nil {
+		return nil, fmt.Errorf("failed to create temp file: %w", err)
 	}
-	defer os.Remove(cachePath)
-	outputPath := filepath.Join(config.Cfg.Storage.CacheDir, "image", EscapeFileName(cacheKey+"_compressed.jpg"))
-	if err := ffmpeg.Input(cachePath).Output(outputPath, vfKwArg).OverWriteOutput().Run(); err != nil {
+	inputPath := tempFile.Name()
+	defer os.Remove(inputPath)
+	if _, err := tempFile.Write(input); err != nil {
+		tempFile.Close()
+		return nil, fmt.Errorf("failed to write temp file: %w", err)
+	}
+	tempFile.Close()
+	outputTempFile, err := os.CreateTemp(config.Cfg.Storage.CacheDir, "ffmpeg_output_*.jpg")
+	if err != nil {
+		return nil, fmt.Errorf("failed to create output temp file: %w", err)
+	}
+	outputPath := outputTempFile.Name()
+	outputTempFile.Close()
+	defer os.Remove(outputPath)
+
+	if err := ffmpeg.Input(inputPath).Output(outputPath, vfKwArg).OverWriteOutput().Run(); err != nil {
 		return nil, fmt.Errorf("failed to compress image: %w", err)
 	}
 	data, err := os.ReadFile(outputPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read compressed image: %w", err)
 	}
-	defer os.Remove(outputPath)
 	return data, nil
 }
