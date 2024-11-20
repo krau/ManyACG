@@ -124,24 +124,6 @@ func (a *Alist) GetFile(ctx context.Context, detail *types.StorageDetail) ([]byt
 	return os.ReadFile(cachePath)
 }
 
-type AutoCleanRC struct {
-	io.ReadCloser
-	name string
-}
-
-func (a *AutoCleanRC) Name() string {
-	return a.name
-}
-
-func (a *AutoCleanRC) Close() error {
-	err := a.ReadCloser.Close()
-	if err != nil {
-		return err
-	}
-	go common.RmFileAfter(a.Name(), time.Duration(config.Cfg.Storage.CacheTTL)*time.Second)
-	return nil
-}
-
 func (a *Alist) GetFileStream(ctx context.Context, detail *types.StorageDetail) (io.ReadCloser, error) {
 	common.Logger.Debugf("Getting file %s", detail.Path)
 	cachePath := path.Join(config.Cfg.Storage.CacheDir, filepath.Base(detail.Path))
@@ -171,10 +153,7 @@ func (a *Alist) GetFileStream(ctx context.Context, detail *types.StorageDetail) 
 		common.Logger.Errorf("failed to save file: %s", err)
 		return nil, err
 	}
-	return &AutoCleanRC{
-		ReadCloser: resp.Body,
-		name:       cachePath,
-	}, nil
+	return resp.Body, nil
 }
 
 func (a *Alist) Delete(ctx context.Context, detail *types.StorageDetail) error {
