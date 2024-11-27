@@ -227,7 +227,7 @@ func CompressImageToJPEG(r io.Reader, maxSizeMB, maxEdgeLength uint, cacheKey st
 }
 
 // 使用 ffmpeg 压缩图片
-func CompressImageByFFmpeg(inputPath, outputPath string, maxEdgeLength uint, quality uint) error {
+func CompressImageByFFmpeg(inputPath, outputPath string, maxEdgeLength uint) error {
 	file, err := os.Open(inputPath)
 	if err != nil {
 		return err
@@ -245,8 +245,7 @@ func CompressImageByFFmpeg(inputPath, outputPath string, maxEdgeLength uint, qua
 			vfKwArg = ffmpeg.KwArgs{"vf": fmt.Sprintf("scale=-1:%d", maxEdgeLength)}
 		}
 	}
-	qualityArg := ffmpeg.KwArgs{"q": quality}
-	if err := ffmpeg.Input(inputPath).Output(outputPath, vfKwArg, qualityArg).OverWriteOutput().Run(); err != nil {
+	if err := ffmpeg.Input(inputPath).Output(outputPath, vfKwArg).OverWriteOutput().Run(); err != nil {
 		Logger.Errorf("failed to compress image: %s", err)
 		return err
 	}
