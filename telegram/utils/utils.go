@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"path"
 	"path/filepath"
 	"strings"
 
@@ -219,10 +220,19 @@ func SendPictureFileByID(ctx context.Context, bot *telego.Bot, message telego.Me
 		go ReplyMessage(bot, message, "正在下载原图，请稍等~")
 		data, err := storage.GetFileStream(ctx, picture.StorageInfo.Original)
 		if err != nil {
-			return nil, err
+			data, err = common.GetBodyReader(ctx, picture.Original, nil)
+			if err != nil {
+				return nil, err
+			}
 		}
 		defer data.Close()
-		file = telegoutil.File(telegoutil.NameReader(data, filepath.Base(picture.StorageInfo.Original.Path)))
+		filename := func() string {
+			if picture.StorageInfo.Original != nil && picture.StorageInfo.Original.Path != "" {
+				return filepath.Base(picture.StorageInfo.Original.Path)
+			}
+			return path.Base(strings.Split(picture.Original, "?")[0])
+		}()
+		file = telegoutil.File(telegoutil.NameReader(data, filename))
 	}
 	document := telegoutil.Document(message.Chat.ChatID(), file).
 		WithReplyParameters(&telego.ReplyParameters{

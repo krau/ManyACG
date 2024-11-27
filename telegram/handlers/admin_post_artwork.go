@@ -110,15 +110,27 @@ func PostArtworkCallbackQuery(ctx context.Context, bot *telego.Bot, query telego
 		var err error
 		createArtworkWithoutChannel := func() error {
 			for i, picture := range artwork.Pictures {
-				bot.EditMessageCaption(&telego.EditMessageCaptionParams{
-					ChatID:    telegoutil.ID(query.Message.GetChat().ID),
-					MessageID: query.Message.GetMessageID(),
-					ReplyMarkup: telegoutil.InlineKeyboard(
-						[]telego.InlineKeyboardButton{
-							telegoutil.InlineKeyboardButton(fmt.Sprintf("正在保存图片 %d/%d", i+1, len(artwork.Pictures))).WithCallbackData("noop"),
-						},
-					),
-				})
+				if len(picture.Original) > 0 {
+					bot.EditMessageCaption(&telego.EditMessageCaptionParams{
+						ChatID:    telegoutil.ID(query.Message.GetChat().ID),
+						MessageID: query.Message.GetMessageID(),
+						ReplyMarkup: telegoutil.InlineKeyboard(
+							[]telego.InlineKeyboardButton{
+								telegoutil.InlineKeyboardButton(fmt.Sprintf("正在保存图片 %d/%d", i+1, len(artwork.Pictures))).WithCallbackData("noop"),
+							},
+						),
+					})
+				} else if i == 0 {
+					bot.EditMessageCaption(&telego.EditMessageCaptionParams{
+						ChatID:    telegoutil.ID(query.Message.GetChat().ID),
+						MessageID: query.Message.GetMessageID(),
+						ReplyMarkup: telegoutil.InlineKeyboard(
+							[]telego.InlineKeyboardButton{
+								telegoutil.InlineKeyboardButton("正在处理存储...").WithCallbackData("noop"),
+							},
+						),
+					})
+				}
 				info, err := storage.SaveAll(ctx, artwork, picture)
 				if err != nil {
 					common.Logger.Errorf("保存第 %d 张图片失败: %s", i, err)
@@ -136,7 +148,7 @@ func PostArtworkCallbackQuery(ctx context.Context, bot *telego.Bot, query telego
 				MessageID: query.Message.GetMessageID(),
 				ReplyMarkup: telegoutil.InlineKeyboard(
 					[]telego.InlineKeyboardButton{
-						telegoutil.InlineKeyboardButton("图片保存完成, 正在发布...").WithCallbackData("noop"),
+						telegoutil.InlineKeyboardButton("正在发布...").WithCallbackData("noop"),
 					},
 				),
 			})

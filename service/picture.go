@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"image"
+	"io"
 
 	"github.com/krau/ManyACG/common"
 	"github.com/krau/ManyACG/dao"
@@ -168,7 +169,12 @@ func ProcessPictureHashAndUpdate(ctx context.Context, picture *types.Picture) er
 	if err != nil {
 		return err
 	}
-	file, err := storage.GetFileStream(ctx, picture.StorageInfo.Original)
+	var file io.ReadCloser
+	if picture.StorageInfo.Original != nil {
+		file, err = storage.GetFileStream(ctx, picture.StorageInfo.Original)
+	} else {
+		file, err = common.GetBodyReader(ctx, picture.Original, nil)
+	}
 	if err != nil {
 		return err
 	}

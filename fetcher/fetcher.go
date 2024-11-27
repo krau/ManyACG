@@ -78,7 +78,7 @@ func StartScheduler(ctx context.Context) {
 			if !saveSuccess {
 				continue
 			}
-			_, err = service.CreateArtwork(ctx, artwork)
+			artwork, err = service.CreateArtwork(ctx, artwork)
 			if err != nil {
 				common.Logger.Errorf(err.Error())
 				continue

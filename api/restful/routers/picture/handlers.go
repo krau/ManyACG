@@ -16,7 +16,13 @@ import (
 
 func GetFile(ctx *gin.Context) {
 	picture := ctx.MustGet("picture").(*types.Picture)
-	data, err := storage.GetFile(ctx, picture.StorageInfo.Original)
+	var data []byte
+	var err error
+	if picture.StorageInfo.Original != nil {
+		data, err = storage.GetFile(ctx, picture.StorageInfo.Original)
+	} else {
+		data, err = common.DownloadWithCache(ctx, picture.Original, nil)
+	}
 	if err != nil {
 		common.Logger.Errorf("Failed to get file: %v", err)
 		common.GinErrorResponse(ctx, err, http.StatusInternalServerError, "Failed to get file")
@@ -86,6 +92,10 @@ func RandomPicture(ctx *gin.Context) {
 		return
 	}
 	picture := pictures[0]
+	if picture.StorageInfo.Regular == nil {
+		ctx.Redirect(http.StatusFound, picture.Thumbnail)
+		return
+	}
 	switch picture.StorageInfo.Regular.Type {
 	case types.StorageTypeLocal:
 		ctx.File(picture.StorageInfo.Regular.Path)

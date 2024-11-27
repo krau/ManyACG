@@ -2,6 +2,7 @@ package storage
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"path/filepath"
@@ -41,6 +42,13 @@ func InitStorage() {
 
 // 将图片保存为所有尺寸
 func SaveAll(ctx context.Context, artwork *types.Artwork, picture *types.Picture) (*types.StorageInfo, error) {
+	if len(Storages) == 0 {
+		return &types.StorageInfo{
+			Original: nil,
+			Regular:  nil,
+			Thumb:    nil,
+		}, nil
+	}
 	common.Logger.Infof("saving picture %d of artwork %s", picture.Index, artwork.Title)
 	originalBytes, err := common.DownloadWithCache(ctx, picture.Original, nil)
 	if err != nil {
@@ -160,6 +168,9 @@ func GetFile(ctx context.Context, detail *types.StorageDetail) ([]byte, error) {
 }
 
 func GetFileStream(ctx context.Context, detail *types.StorageDetail) (io.ReadCloser, error) {
+	if detail == nil {
+		return nil, errors.New("storage detail is nil")
+	}
 	if detail.Type != types.StorageTypeLocal {
 		lock, _ := storageLocks.LoadOrStore(detail.String(), &sync.Mutex{})
 		lock.(*sync.Mutex).Lock()

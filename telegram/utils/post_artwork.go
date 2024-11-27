@@ -140,15 +140,26 @@ func PostAndCreateArtwork(ctx context.Context, artwork *types.Artwork, bot *tele
 	}
 	for i, picture := range artwork.Pictures {
 		if showProgress {
-			go bot.EditMessageReplyMarkup(&telego.EditMessageReplyMarkupParams{
-				ChatID:    telegoutil.ID(fromID),
-				MessageID: messageID,
-				ReplyMarkup: telegoutil.InlineKeyboard(
-					[]telego.InlineKeyboardButton{
-						telegoutil.InlineKeyboardButton(fmt.Sprintf("正在保存图片 %d/%d", i+1, len(artwork.Pictures))).WithCallbackData("noop"),
-					},
-				),
-			})
+			if len(storage.Storages) > 0 {
+				go bot.EditMessageReplyMarkup(&telego.EditMessageReplyMarkupParams{
+					ChatID:    telegoutil.ID(fromID),
+					MessageID: messageID,
+					ReplyMarkup: telegoutil.InlineKeyboard(
+						[]telego.InlineKeyboardButton{
+							telegoutil.InlineKeyboardButton(fmt.Sprintf("正在保存图片 %d/%d", i+1, len(artwork.Pictures))).WithCallbackData("noop"),
+						},
+					),
+				})
+			} else if i == 0 {
+				go bot.EditMessageReplyMarkup(&telego.EditMessageReplyMarkupParams{
+					ChatID:    telegoutil.ID(fromID),
+					MessageID: messageID,
+					ReplyMarkup: telegoutil.InlineKeyboard(
+						[]telego.InlineKeyboardButton{
+							telegoutil.InlineKeyboardButton("正在处理存储...").WithCallbackData("noop")},
+					),
+				})
+			}
 		}
 		info, err := storage.SaveAll(ctx, artwork, picture)
 		if err != nil {
@@ -163,7 +174,7 @@ func PostAndCreateArtwork(ctx context.Context, artwork *types.Artwork, bot *tele
 			MessageID: messageID,
 			ReplyMarkup: telegoutil.InlineKeyboard(
 				[]telego.InlineKeyboardButton{
-					telegoutil.InlineKeyboardButton("图片保存完成, 正在发布到频道...").WithCallbackData("noop"),
+					telegoutil.InlineKeyboardButton("正在发布到频道...").WithCallbackData("noop"),
 				},
 			),
 		})
