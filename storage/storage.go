@@ -77,7 +77,7 @@ func SaveAll(ctx context.Context, artwork *types.Artwork, picture *types.Picture
 			return nil, fmt.Errorf("%w: %s", manyacgErrors.ErrStorageUnkown, config.Cfg.Storage.RegularType)
 		}
 		regularOutputPath := filePath[:len(filePath)-len(filepath.Ext(filePath))] + "_regular.webp"
-		if err := common.CompressImageByFFmpeg(filePath, regularOutputPath, 2560); err != nil {
+		if err := common.CompressImageByFFmpeg(filePath, regularOutputPath, types.TelegramMaxPhotoLength); err != nil {
 			return nil, err
 		}
 		defer func() {

@@ -93,7 +93,7 @@ func StoragePictureRegularAndThumbAndUpdate(ctx context.Context, picture *model.
 		}()
 
 		regularPath := migrateDir + picture.ID.Hex() + "_regular.webp"
-		if err := common.CompressImageByFFmpeg(originalPath, regularPath, 2560); err != nil {
+		if err := common.CompressImageByFFmpeg(originalPath, regularPath, types.TelegramMaxPhotoLength); err != nil {
 			return nil, err
 		}
 		defer func() {

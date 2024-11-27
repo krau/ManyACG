@@ -252,12 +252,16 @@ func CompressImageByFFmpeg(inputPath, outputPath string, maxEdgeLength uint) err
 	return nil
 }
 
-func CompressImageByFFmpegFromBytes(input []byte, outputFormat string, maxEdgeLength uint) ([]byte, error) {
+func CompressImageByFFmpegFromBytes(input []byte, outputFormat string, maxEdgeLength, maxFileSize, maxDepth uint) ([]byte, error) {
+	if maxDepth == 0 {
+		return nil, fmt.Errorf("max depth reached")
+	}
 	img, _, err := image.DecodeConfig(bytes.NewReader(input))
 	if err != nil {
 		return nil, fmt.Errorf("failed to decode image: %w", err)
 	}
-	if img.Width <= int(maxEdgeLength) && img.Height <= int(maxEdgeLength) {
+	inputLen := len(input)
+	if img.Width <= int(maxEdgeLength) && img.Height <= int(maxEdgeLength) && uint(inputLen) <= maxFileSize {
 		// TODO: check if the input format is the same as the output format
 		return input, nil
 	}
@@ -296,6 +300,12 @@ func CompressImageByFFmpegFromBytes(input []byte, outputFormat string, maxEdgeLe
 	data, err := os.ReadFile(outputPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read compressed image: %w", err)
+	}
+	if len(data) > inputLen {
+		return nil, fmt.Errorf("compressed image file size %d is larger than original file size %d", len(data), inputLen)
+	}
+	if uint(len(data)) > maxFileSize {
+		return CompressImageByFFmpegFromBytes(data, outputFormat, maxEdgeLength, maxFileSize, maxDepth-1)
 	}
 	return data, nil
 }
