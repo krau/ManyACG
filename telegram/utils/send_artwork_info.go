@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/krau/ManyACG/common"
 	manyacgErrors "github.com/krau/ManyACG/errors"
 
@@ -188,11 +189,11 @@ func updatePreview(ctx context.Context, targetMessage *telego.Message, artwork *
 	if err != nil {
 		return err
 	}
-	fileBytes, err = common.CompressImageByFFmpegFromBytes(fileBytes, "jpg", types.TelegramMaxPhotoLength, types.TelegramMaxPhotoFileSize, 2)
+	fileBytes, err = common.CompressImageForTelegramByFFmpegFromBytes(fileBytes, 2)
 	if err != nil {
 		return err
 	}
-	inputFile = telegoutil.File(telegoutil.NameReader(bytes.NewReader(fileBytes), artwork.Title))
+	inputFile = telegoutil.File(telegoutil.NameReader(bytes.NewReader(fileBytes), uuid.New().String()+".jpg"))
 	mediaPhoto := telegoutil.MediaPhoto(inputFile)
 	mediaPhoto.WithCaption(photoParams.Caption).WithParseMode(photoParams.ParseMode)
 

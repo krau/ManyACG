@@ -9,18 +9,16 @@ import (
 	"image/jpeg"
 	_ "image/png"
 	"io"
+	"math"
 	"os"
-	"path/filepath"
 	"strconv"
-	"time"
-
-	"github.com/krau/ManyACG/config"
 
 	"golang.org/x/image/draw"
 
 	"sync"
 
 	"github.com/corona10/goimagehash"
+	"github.com/krau/ManyACG/types"
 	ffmpeg "github.com/u2takey/ffmpeg-go"
 )
 
@@ -118,9 +116,9 @@ var rgbaPool = sync.Pool{
 // ResizeImage resizes an image to the specified width and height.
 //
 // It use golang.org/x/image/draw and CatmullRom interpolation. (Slow but high quality, and cost many memory)
-func ResizeImage(img image.Image, width, height uint) (image.Image, func()) {
+func ResizeImage(img image.Image, width, height uint) image.Image {
 	if width == 0 || height == 0 {
-		return img, func() {}
+		return img
 	}
 
 	rgba := rgbaPool.Get().(*image.RGBA)
@@ -132,11 +130,7 @@ func ResizeImage(img image.Image, width, height uint) (image.Image, func()) {
 
 	draw.CatmullRom.Scale(rgba, bounds, img, img.Bounds(), draw.Over, nil)
 
-	cleanup := func() {
-		rgbaPool.Put(rgba)
-	}
-
-	return rgba, cleanup
+	return rgba
 }
 
 func GetImageSizeFromReader(r io.Reader) (int, int, error) {
@@ -164,16 +158,8 @@ var imageBufferPool = sync.Pool{
 	},
 }
 
-func CompressImageToJPEG(r io.Reader, maxSizeMB, maxEdgeLength uint, cacheKey string) ([]byte, error) {
-	if cacheKey != "" {
-		cachePath := filepath.Join(config.Cfg.Storage.CacheDir, "image", EscapeFileName(cacheKey))
-		data, err := os.ReadFile(cachePath)
-		if err == nil {
-			return data, nil
-		}
-	}
-
-	img, _, err := image.Decode(r)
+func CompressImageToJPEG(input []byte, maxEdgeLength, maxFileSize uint) ([]byte, error) {
+	img, _, err := image.Decode(bytes.NewReader(input))
 	if err != nil {
 		return nil, fmt.Errorf("failed to decode image: %w", err)
 	}
@@ -190,9 +176,7 @@ func CompressImageToJPEG(r io.Reader, maxSizeMB, maxEdgeLength uint, cacheKey st
 			newHeight = maxEdgeLength
 			newWidth = uint(float64(width) * (float64(maxEdgeLength) / float64(height)))
 		}
-		var cleanup func()
-		img, cleanup = ResizeImage(img, newWidth, newHeight)
-		defer cleanup()
+		img = ResizeImage(img, newWidth, newHeight)
 	}
 
 	buf := imageBufferPool.Get().(*bytes.Buffer)
@@ -201,36 +185,30 @@ func CompressImageToJPEG(r io.Reader, maxSizeMB, maxEdgeLength uint, cacheKey st
 		buf.Reset()
 		imageBufferPool.Put(buf)
 	}()
-	maxSize := int(maxSizeMB * 1024 * 1024)
-	if buf.Cap() < maxSize {
-		buf.Grow(maxSize)
+	if buf.Cap() < int(maxFileSize) {
+		buf.Grow(int(maxFileSize) - buf.Cap())
 	}
 	quality := 100
 	for {
 		if quality <= 0 {
-			return nil, fmt.Errorf("cannot compress image to %d MB", maxSizeMB)
+			return nil, fmt.Errorf("cannot compress image to %d MB", maxFileSize/1024/1024)
 		}
 		buf.Reset()
 		err = jpeg.Encode(buf, img, &jpeg.Options{Quality: quality})
 		if err != nil {
 			return nil, fmt.Errorf("failed to encode image: %w", err)
 		}
-		if buf.Len() < maxSize {
+		if buf.Len() < int(maxFileSize) {
 			break
 		}
 		quality -= 5
 	}
-
 	result := bytes.Clone(buf.Bytes())
-
-	if cacheKey != "" {
-		go MkCache(filepath.Join(config.Cfg.Storage.CacheDir, "image", EscapeFileName(cacheKey)), result, time.Duration(config.Cfg.Storage.CacheTTL)*time.Second)
-	}
 	return result, nil
 }
 
 // 使用 ffmpeg 压缩图片
-func CompressImageByFFmpeg(inputPath, outputPath string, maxEdgeLength uint) error {
+func CompressImageByFFmpeg(inputPath, outputPath string, maxEdgeLength int) error {
 	file, err := os.Open(inputPath)
 	if err != nil {
 		return err
@@ -255,7 +233,7 @@ func CompressImageByFFmpeg(inputPath, outputPath string, maxEdgeLength uint) err
 	return nil
 }
 
-func CompressImageByFFmpegFromBytes(input []byte, outputFormat string, maxEdgeLength, maxFileSize, maxDepth uint) ([]byte, error) {
+func CompressImageForTelegramByFFmpegFromBytes(input []byte, maxDepth uint) ([]byte, error) {
 	if maxDepth == 0 {
 		return nil, fmt.Errorf("max depth reached")
 	}
@@ -264,51 +242,39 @@ func CompressImageByFFmpegFromBytes(input []byte, outputFormat string, maxEdgeLe
 		return nil, fmt.Errorf("failed to decode image: %w", err)
 	}
 	inputLen := len(input)
-	if img.Width <= int(maxEdgeLength) && img.Height <= int(maxEdgeLength) && uint(inputLen) <= maxFileSize {
-		// TODO: check if the input format is the same as the output format
+	currentTotalSideLength := img.Width + img.Height
+	if currentTotalSideLength <= types.TelegramMaxPhotoTotalSideLength && inputLen <= types.TelegramMaxPhotoFileSize {
 		return input, nil
 	}
 
-	var vfKwArg ffmpeg.KwArgs
-	if img.Width > int(maxEdgeLength) || img.Height > int(maxEdgeLength) {
-		if img.Width > img.Height {
-			vfKwArg = ffmpeg.KwArgs{"vf": fmt.Sprintf("scale=%d:-1:flags=lanczos", maxEdgeLength)}
-		} else {
-			vfKwArg = ffmpeg.KwArgs{"vf": fmt.Sprintf("scale=-1:%d:flags=lanczos", maxEdgeLength)}
-		}
+	scaleFactor := float64(types.TelegramMaxPhotoTotalSideLength) / float64(currentTotalSideLength)
+	newWidth := int(math.Round(float64(img.Width) * scaleFactor))
+	newHeight := int(math.Round(float64(img.Height) * scaleFactor))
+	if newWidth == 0 || newHeight == 0 {
+		return nil, fmt.Errorf("failed to calculate new image size")
+	}
+	vfKwArg := ffmpeg.KwArgs{"vf": fmt.Sprintf("scale=%d:%d:flags=lanczos", newWidth, newHeight)}
+
+	buf := imageBufferPool.Get().(*bytes.Buffer)
+	buf.Reset()
+	defer func() {
+		buf.Reset()
+		imageBufferPool.Put(buf)
+	}()
+	if buf.Cap() < inputLen {
+		buf.Grow(inputLen - buf.Cap())
 	}
 
-	tempFile, err := os.CreateTemp(config.Cfg.Storage.CacheDir, "ffmpeg_input_*.tmp")
-	if err != nil {
-		return nil, fmt.Errorf("failed to create temp file: %w", err)
-	}
-	inputPath := tempFile.Name()
-	defer os.Remove(inputPath)
-	if _, err := tempFile.Write(input); err != nil {
-		tempFile.Close()
-		return nil, fmt.Errorf("failed to write temp file: %w", err)
-	}
-	tempFile.Close()
-	outputTempFile, err := os.CreateTemp(config.Cfg.Storage.CacheDir, "ffmpeg_output_*."+outputFormat)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create output temp file: %w", err)
-	}
-	outputPath := outputTempFile.Name()
-	outputTempFile.Close()
-	defer os.Remove(outputPath)
+	err = ffmpeg.Input("pipe:").Output("pipe:", vfKwArg, ffmpeg.KwArgs{"format": "mjpeg"}, ffmpeg.KwArgs{"q:v": 2}).WithInput(bytes.NewReader(input)).WithOutput(buf).Run()
 
-	if err := ffmpeg.Input(inputPath).Output(outputPath, vfKwArg).OverWriteOutput().Run(); err != nil {
+	if err != nil {
 		return nil, fmt.Errorf("failed to compress image: %w", err)
 	}
-	data, err := os.ReadFile(outputPath)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read compressed image: %w", err)
+	if buf.Len() > inputLen {
+		return nil, fmt.Errorf("compressed image file size %d is larger than original file size %d", buf.Len(), inputLen)
 	}
-	if len(data) > inputLen {
-		return nil, fmt.Errorf("compressed image file size %d is larger than original file size %d", len(data), inputLen)
+	if buf.Len() > types.TelegramMaxPhotoFileSize {
+		return CompressImageForTelegramByFFmpegFromBytes(buf.Bytes(), maxDepth-1)
 	}
-	if uint(len(data)) > maxFileSize {
-		return CompressImageByFFmpegFromBytes(data, outputFormat, maxEdgeLength, maxFileSize, maxDepth-1)
-	}
-	return data, nil
+	return buf.Bytes(), nil
 }
