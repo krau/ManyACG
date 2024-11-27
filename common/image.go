@@ -260,7 +260,6 @@ func CompressImageByFFmpegFromBytes(input []byte, outputFormat string, maxEdgeLe
 	}
 	if img.Width <= int(maxEdgeLength) && img.Height <= int(maxEdgeLength) {
 		// TODO: check if the input format is the same as the output format
-		Logger.Debugf("skip compress image: %d x %d", img.Width, img.Height)
 		return input, nil
 	}
 
