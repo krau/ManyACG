@@ -253,11 +253,17 @@ func CompressImageByFFmpeg(inputPath, outputPath string, maxEdgeLength uint, qua
 	return nil
 }
 
-func CompressImageToJPEGByFFmpeg(input []byte, maxEdgeLength uint) ([]byte, error) {
+func CompressImageByFFmpegFromBytes(input []byte, outputFormat string, maxEdgeLength uint) ([]byte, error) {
 	img, _, err := image.DecodeConfig(bytes.NewReader(input))
 	if err != nil {
 		return nil, fmt.Errorf("failed to decode image: %w", err)
 	}
+	if img.Width <= int(maxEdgeLength) && img.Height <= int(maxEdgeLength) {
+		// TODO: check if the input format is the same as the output format
+		Logger.Debugf("skip compress image: %d x %d", img.Width, img.Height)
+		return input, nil
+	}
+
 	var vfKwArg ffmpeg.KwArgs
 	if img.Width > int(maxEdgeLength) || img.Height > int(maxEdgeLength) {
 		if img.Width > img.Height {
@@ -278,7 +284,7 @@ func CompressImageToJPEGByFFmpeg(input []byte, maxEdgeLength uint) ([]byte, erro
 		return nil, fmt.Errorf("failed to write temp file: %w", err)
 	}
 	tempFile.Close()
-	outputTempFile, err := os.CreateTemp(config.Cfg.Storage.CacheDir, "ffmpeg_output_*.jpg")
+	outputTempFile, err := os.CreateTemp(config.Cfg.Storage.CacheDir, "ffmpeg_output_*."+outputFormat)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create output temp file: %w", err)
 	}

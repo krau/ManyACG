@@ -272,7 +272,7 @@ func GetPicturePreviewInputFile(ctx context.Context, picture *types.Picture) (*t
 	}
 	cacheFile, err := common.GetReqCachedFile(picture.Original)
 	if err == nil {
-		fileBytes, err := common.CompressImageToJPEGByFFmpeg(cacheFile, 2560)
+		fileBytes, err := common.CompressImageByFFmpegFromBytes(cacheFile, "jpg", 2560)
 		if err != nil {
 			return nil, false, err
 		}
