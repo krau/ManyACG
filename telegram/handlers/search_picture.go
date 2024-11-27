@@ -96,7 +96,6 @@ func getSearchResult(ctx context.Context, hasPermission bool, fileReader io.Read
 			if enableSite {
 				text += fmt.Sprintf("[ManyACG](%s)\n", config.Cfg.API.SiteURL+"/artwork/"+artwork.ID)
 			}
-			text += common.EscapeMarkdown(fmt.Sprintf("模糊度: %.2f\n\n", picture.BlurScore))
 		}
 		return text, true, nil
 	}

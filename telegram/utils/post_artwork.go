@@ -286,7 +286,7 @@ func checkDuplicate(ctx context.Context, artwork *types.Artwork, bot *telego.Bot
 			}()),
 			picture.Index+1,
 			len(similarPictures))
-		text += common.EscapeMarkdown(fmt.Sprintf("该图像模糊度: %.2f\n搜索到的相似图片列表:\n\n", picture.BlurScore))
+		text += common.EscapeMarkdown("搜索到的相似图片列表:\n\n")
 		for _, similarPicture := range similarPictures {
 			objectID, err := primitive.ObjectIDFromHex(similarPicture.ArtworkID)
 			if err != nil {
@@ -308,9 +308,7 @@ func checkDuplicate(ctx context.Context, artwork *types.Artwork, bot *telego.Bot
 					}
 					return artworkOfSimilarPicture.SourceURL
 				}()))
-			text += common.EscapeMarkdown(fmt.Sprintf("模糊度: %.2f\n\n", similarPicture.BlurScore))
 		}
-		text += "_模糊度使用原图文件计算得出, 越小图像质量越好_"
 		_, err = bot.SendMessage(telegoutil.Messagef(telegoutil.ID(fromID), text).WithParseMode(telego.ModeMarkdownV2))
 		if err != nil {
 			common.Logger.Errorf("error when sending similar pictures: %s", err)

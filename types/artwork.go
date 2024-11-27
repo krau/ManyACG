@@ -33,10 +33,10 @@ type Picture struct {
 	Thumbnail string `json:"thumbnail" bson:"thumbnail"`
 	Original  string `json:"original" bson:"original"`
 
-	Width     uint    `json:"width" bson:"width"`
-	Height    uint    `json:"height" bson:"height"`
-	Hash      string  `json:"hash" bson:"hash"`
-	BlurScore float64 `json:"blur_score" bson:"blur_score"`
+	Width  uint   `json:"width" bson:"width"`
+	Height uint   `json:"height" bson:"height"`
+	Hash   string `json:"hash" bson:"hash"`
+	// BlurScore float64 `json:"blur_score" bson:"blur_score"`
 
 	TelegramInfo *TelegramInfo `json:"telegram_info" bson:"telegram_info"`
 	StorageInfo  *StorageInfo  `json:"storage_info" bson:"storage_info"`

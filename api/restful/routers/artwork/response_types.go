@@ -23,16 +23,15 @@ type ArtworkResponseData struct {
 }
 
 type PictureResponse struct {
-	ID        string  `json:"id"`
-	Width     uint    `json:"width"`
-	Height    uint    `json:"height"`
-	Index     uint    `json:"index"`
-	Hash      string  `json:"hash"`
-	BlurScore float64 `json:"blur_score"`
-	FileName  string  `json:"file_name"`
-	MessageID int     `json:"message_id"`
-	Thumbnail string  `json:"thumbnail"`
-	Regular   string  `json:"regular"`
+	ID        string `json:"id"`
+	Width     uint   `json:"width"`
+	Height    uint   `json:"height"`
+	Index     uint   `json:"index"`
+	Hash      string `json:"hash"`
+	FileName  string `json:"file_name"`
+	MessageID int    `json:"message_id"`
+	Thumbnail string `json:"thumbnail"`
+	Regular   string `json:"regular"`
 }
 
 func ResponseFromArtwork(artwork *types.Artwork, isAuthorized bool) *common.RestfulCommonResponse[any] {
@@ -70,7 +69,6 @@ func ResponseDataFromArtwork(artwork *types.Artwork) *ArtworkResponseData {
 			Height:    picture.Height,
 			Index:     picture.Index,
 			Hash:      picture.Hash,
-			BlurScore: picture.BlurScore,
 			FileName:  filepath.Base(picture.StorageInfo.Original.Path),
 			MessageID: picture.TelegramInfo.MessageID,
 			Thumbnail: thumbnail,

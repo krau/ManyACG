@@ -44,10 +44,12 @@ func getImagePhash(img image.Image) (string, error) {
 	return hash.ToString(), nil
 }
 
+// Deprecated: sometimes inaccurate
 func GetImageBlurScore(img image.Image) (float64, error) {
 	return getImageBlurScore(img)
 }
 
+// Deprecated: sometimes inaccurate
 func GetImageBlurScoreFromReader(r io.Reader) (float64, error) {
 	img, _, err := image.Decode(r)
 	if err != nil {
@@ -57,6 +59,7 @@ func GetImageBlurScoreFromReader(r io.Reader) (float64, error) {
 }
 
 func getImageBlurScore(img image.Image) (float64, error) {
+	// TODO: use more accurate algorithm
 	bounds := img.Bounds()
 	grayImg := image.NewGray(bounds)
 	for y := bounds.Min.Y; y < bounds.Max.Y; y++ {

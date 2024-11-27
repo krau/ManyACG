@@ -182,11 +182,7 @@ func ProcessPictureHashAndUpdate(ctx context.Context, picture *types.Picture) er
 	if err != nil {
 		return err
 	}
-	blurscore, err := common.GetImageBlurScore(img)
-	if err != nil {
-		return err
-	}
-	_, err = dao.UpdatePictureHashAndBlurScoreByID(ctx, pictureModel.ID, hash, blurscore)
+	_, err = dao.UpdatePictureHashByID(ctx, pictureModel.ID, hash)
 	if err != nil {
 		return err
 	}
