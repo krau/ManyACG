@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"image"
-	"runtime"
 
 	"github.com/krau/ManyACG/common"
 	"github.com/krau/ManyACG/dao"
@@ -221,7 +220,6 @@ func AddProcessPictureTask(ctx context.Context, picture *types.Picture) {
 func listenProcessPictureTask() {
 	for task := range processPictureTaskChan {
 		err := ProcessPictureHashAndUpdate(task.Ctx, task.Picture)
-		runtime.GC()
 		if err != nil {
 			common.Logger.Errorf("error when processing picture %s: %s", task.Picture.Original, err)
 		}
