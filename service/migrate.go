@@ -11,7 +11,6 @@ import (
 	"github.com/krau/ManyACG/config"
 	"github.com/krau/ManyACG/dao"
 
-	"github.com/krau/ManyACG/model"
 	"github.com/krau/ManyACG/storage"
 	"github.com/krau/ManyACG/types"
 
@@ -64,7 +63,7 @@ func ProcessPicturesHashAndSizeAndUpdate(ctx context.Context, bot *telego.Bot, m
 	}
 }
 
-func StoragePictureRegularAndThumbAndUpdate(ctx context.Context, picture *model.PictureModel) error {
+func StoragePictureRegularAndThumbAndUpdate(ctx context.Context, picture *types.PictureModel) error {
 	pictureModel, err := dao.GetPictureByID(ctx, picture.ID)
 	if err != nil {
 		return err
@@ -247,7 +246,7 @@ func FixTwitterArtists(ctx context.Context, bot *telego.Bot, message *telego.Mes
 	failed, count := 0, 0
 	for cursor.Next(ctx) {
 		count++
-		var artist model.ArtistModel
+		var artist types.ArtistModel
 		if err := cursor.Decode(&artist); err != nil {
 			common.Logger.Errorf("Failed to decode artist: %v", err)
 			failed++

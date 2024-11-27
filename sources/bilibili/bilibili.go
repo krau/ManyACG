@@ -13,7 +13,7 @@ import (
 
 type Bilibili struct{}
 
-func (b *Bilibili) Init() {
+func (b *Bilibili) Init(_ types.Service) {
 	reqClient = req.C().ImpersonateChrome().SetUserAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Safari/537.36")
 	if config.Cfg.Source.Proxy != "" {
 		reqClient.SetProxyURL(config.Cfg.Source.Proxy)

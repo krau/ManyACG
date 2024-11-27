@@ -3,7 +3,6 @@ package dao
 import (
 	"context"
 
-	"github.com/krau/ManyACG/model"
 	"github.com/krau/ManyACG/types"
 
 	"github.com/corona10/goimagehash"
@@ -14,11 +13,11 @@ import (
 
 var pictureCollection *mongo.Collection
 
-func CreatePicture(ctx context.Context, picture *model.PictureModel) (*mongo.InsertOneResult, error) {
+func CreatePicture(ctx context.Context, picture *types.PictureModel) (*mongo.InsertOneResult, error) {
 	return pictureCollection.InsertOne(ctx, picture)
 }
 
-func CreatePictures(ctx context.Context, pictures []*model.PictureModel) (*mongo.InsertManyResult, error) {
+func CreatePictures(ctx context.Context, pictures []*types.PictureModel) (*mongo.InsertManyResult, error) {
 	var docs []interface{}
 	for _, picture := range pictures {
 		if picture.TelegramInfo == nil {
@@ -30,8 +29,8 @@ func CreatePictures(ctx context.Context, pictures []*model.PictureModel) (*mongo
 }
 
 // Deprecated: MessageID 现在可能为 0
-func GetPictureByMessageID(ctx context.Context, messageID int) (*model.PictureModel, error) {
-	var picture model.PictureModel
+func GetPictureByMessageID(ctx context.Context, messageID int) (*types.PictureModel, error) {
+	var picture types.PictureModel
 	err := pictureCollection.FindOne(ctx, bson.M{"telegram_info.message_id": messageID}).Decode(&picture)
 	if err != nil {
 		return nil, err
@@ -39,8 +38,8 @@ func GetPictureByMessageID(ctx context.Context, messageID int) (*model.PictureMo
 	return &picture, nil
 }
 
-func GetPictureByOriginal(ctx context.Context, original string) (*model.PictureModel, error) {
-	var picture model.PictureModel
+func GetPictureByOriginal(ctx context.Context, original string) (*types.PictureModel, error) {
+	var picture types.PictureModel
 	err := pictureCollection.FindOne(ctx, bson.M{"original": original}).Decode(&picture)
 	if err != nil {
 		return nil, err
@@ -48,8 +47,8 @@ func GetPictureByOriginal(ctx context.Context, original string) (*model.PictureM
 	return &picture, nil
 }
 
-func GetPictureByID(ctx context.Context, id primitive.ObjectID) (*model.PictureModel, error) {
-	var picture model.PictureModel
+func GetPictureByID(ctx context.Context, id primitive.ObjectID) (*types.PictureModel, error) {
+	var picture types.PictureModel
 	err := pictureCollection.FindOne(ctx, bson.M{"_id": id}).Decode(&picture)
 	if err != nil {
 		return nil, err
@@ -57,12 +56,12 @@ func GetPictureByID(ctx context.Context, id primitive.ObjectID) (*model.PictureM
 	return &picture, nil
 }
 
-func GetPicturesByHash(ctx context.Context, hash string) ([]*model.PictureModel, error) {
+func GetPicturesByHash(ctx context.Context, hash string) ([]*types.PictureModel, error) {
 	cursor, err := pictureCollection.Find(ctx, bson.M{"hash": hash})
 	if err != nil {
 		return nil, err
 	}
-	var pictures []*model.PictureModel
+	var pictures []*types.PictureModel
 	err = cursor.All(ctx, &pictures)
 	if err != nil {
 		return nil, err
@@ -70,14 +69,14 @@ func GetPicturesByHash(ctx context.Context, hash string) ([]*model.PictureModel,
 	return pictures, nil
 }
 
-func GetRandomPictures(ctx context.Context, limit int) ([]*model.PictureModel, error) {
+func GetRandomPictures(ctx context.Context, limit int) ([]*types.PictureModel, error) {
 	cursor, err := pictureCollection.Aggregate(ctx, mongo.Pipeline{
 		bson.D{{Key: "$sample", Value: bson.M{"size": limit}}},
 	})
 	if err != nil {
 		return nil, err
 	}
-	var pictures []*model.PictureModel
+	var pictures []*types.PictureModel
 	err = cursor.All(ctx, &pictures)
 	if err != nil {
 		return nil, err
@@ -88,7 +87,7 @@ func GetRandomPictures(ctx context.Context, limit int) ([]*model.PictureModel, e
 /*
 全库遍历搜索
 */
-func GetPicturesByHashHammingDistance(ctx context.Context, hashStr string, distance int) ([]*model.PictureModel, error) {
+func GetPicturesByHashHammingDistance(ctx context.Context, hashStr string, distance int) ([]*types.PictureModel, error) {
 	filter := bson.M{
 		"hash": bson.M{"$ne": ""},
 	}
@@ -98,9 +97,9 @@ func GetPicturesByHashHammingDistance(ctx context.Context, hashStr string, dista
 	}
 	defer cursor.Close(ctx)
 
-	var pictures []*model.PictureModel
+	var pictures []*types.PictureModel
 	for cursor.Next(ctx) {
-		var picture model.PictureModel
+		var picture types.PictureModel
 		err = cursor.Decode(&picture)
 		if err != nil {
 			return nil, err
@@ -129,12 +128,12 @@ func GetPicturesByHashHammingDistance(ctx context.Context, hashStr string, dista
 	return pictures, nil
 }
 
-func GetNoHashPictures(ctx context.Context) ([]*model.PictureModel, error) {
+func GetNoHashPictures(ctx context.Context) ([]*types.PictureModel, error) {
 	cursor, err := pictureCollection.Find(ctx, bson.M{"hash": ""})
 	if err != nil {
 		return nil, err
 	}
-	var pictures []*model.PictureModel
+	var pictures []*types.PictureModel
 	err = cursor.All(ctx, &pictures)
 	if err != nil {
 		return nil, err
@@ -142,12 +141,12 @@ func GetNoHashPictures(ctx context.Context) ([]*model.PictureModel, error) {
 	return pictures, nil
 }
 
-func GetNoRegularAndThumbPictures(ctx context.Context) ([]*model.PictureModel, error) {
+func GetNoRegularAndThumbPictures(ctx context.Context) ([]*types.PictureModel, error) {
 	cursor, err := pictureCollection.Find(ctx, bson.M{"storage_info.regular": nil, "storage_info.thumb": nil})
 	if err != nil {
 		return nil, err
 	}
-	var pictures []*model.PictureModel
+	var pictures []*types.PictureModel
 	err = cursor.All(ctx, &pictures)
 	if err != nil {
 		return nil, err
@@ -175,7 +174,7 @@ func UpdatePictureSizeByID(ctx context.Context, id primitive.ObjectID, width, he
 	return pictureCollection.UpdateOne(ctx, bson.M{"_id": id}, bson.M{"$set": bson.M{"width": width, "height": height}})
 }
 
-func UpdatePictureByID(ctx context.Context, id primitive.ObjectID, picture *model.PictureModel) (*mongo.UpdateResult, error) {
+func UpdatePictureByID(ctx context.Context, id primitive.ObjectID, picture *types.PictureModel) (*mongo.UpdateResult, error) {
 	return pictureCollection.UpdateOne(ctx, bson.M{"_id": id}, bson.M{"$set": picture})
 }
 

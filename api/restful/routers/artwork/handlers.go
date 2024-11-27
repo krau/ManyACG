@@ -6,7 +6,6 @@ import (
 
 	"github.com/krau/ManyACG/common"
 	manyacgErrors "github.com/krau/ManyACG/errors"
-	"github.com/krau/ManyACG/model"
 	"github.com/krau/ManyACG/service"
 	"github.com/krau/ManyACG/types"
 
@@ -68,7 +67,7 @@ func GetArtworkCount(ctx *gin.Context) {
 
 func LikeArtwork(ctx *gin.Context) {
 	artworkID := ctx.MustGet("artwork_id").(primitive.ObjectID)
-	user := ctx.MustGet("user").(*model.UserModel)
+	user := ctx.MustGet("user").(*types.UserModel)
 	userID := user.ID
 	err := service.CreateLike(ctx, userID, artworkID)
 	if err != nil {
@@ -87,7 +86,7 @@ func LikeArtwork(ctx *gin.Context) {
 
 func GetArtworkLikeStatus(ctx *gin.Context) {
 	artworkID := ctx.MustGet("artwork_id").(primitive.ObjectID)
-	user := ctx.MustGet("user").(*model.UserModel)
+	user := ctx.MustGet("user").(*types.UserModel)
 	userID := user.ID
 	like, err := service.GetLike(ctx, userID, artworkID)
 	if err != nil {
@@ -111,7 +110,7 @@ func GetArtworkLikeStatus(ctx *gin.Context) {
 
 func GetArtworkFavoriteStatus(ctx *gin.Context) {
 	artworkID := ctx.MustGet("artwork_id").(primitive.ObjectID)
-	user := ctx.MustGet("user").(*model.UserModel)
+	user := ctx.MustGet("user").(*types.UserModel)
 	userID := user.ID
 	favorite, err := service.GetFavorite(ctx, userID, artworkID)
 	if err != nil {
@@ -135,7 +134,7 @@ func GetArtworkFavoriteStatus(ctx *gin.Context) {
 
 func FavoriteArtwork(ctx *gin.Context) {
 	artworkID := ctx.MustGet("artwork_id").(primitive.ObjectID)
-	user := ctx.MustGet("user").(*model.UserModel)
+	user := ctx.MustGet("user").(*types.UserModel)
 	userID := user.ID
 	_, err := service.CreateFavorite(ctx, userID, artworkID)
 	if err != nil {
@@ -150,7 +149,7 @@ func FavoriteArtwork(ctx *gin.Context) {
 
 func UnfavoriteArtwork(ctx *gin.Context) {
 	artworkID := ctx.MustGet("artwork_id").(primitive.ObjectID)
-	user := ctx.MustGet("user").(*model.UserModel)
+	user := ctx.MustGet("user").(*types.UserModel)
 	userID := user.ID
 	err := service.DeleteFavorite(ctx, userID, artworkID)
 	if err != nil {

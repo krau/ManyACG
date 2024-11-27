@@ -4,7 +4,6 @@ import (
 	"context"
 	"time"
 
-	"github.com/krau/ManyACG/model"
 	"github.com/krau/ManyACG/types"
 
 	"go.mongodb.org/mongo-driver/bson"
@@ -15,13 +14,13 @@ import (
 
 var artworkCollection *mongo.Collection
 
-func CreateArtwork(ctx context.Context, artwork *model.ArtworkModel) (*mongo.InsertOneResult, error) {
+func CreateArtwork(ctx context.Context, artwork *types.ArtworkModel) (*mongo.InsertOneResult, error) {
 	artwork.CreatedAt = primitive.NewDateTimeFromTime(time.Now())
 	return artworkCollection.InsertOne(ctx, artwork)
 }
 
-func GetArtworkByID(ctx context.Context, id primitive.ObjectID) (*model.ArtworkModel, error) {
-	var artwork model.ArtworkModel
+func GetArtworkByID(ctx context.Context, id primitive.ObjectID) (*types.ArtworkModel, error) {
+	var artwork types.ArtworkModel
 	err := artworkCollection.FindOne(ctx, bson.M{"_id": id}).Decode(&artwork)
 	if err != nil {
 		return nil, err
@@ -29,8 +28,8 @@ func GetArtworkByID(ctx context.Context, id primitive.ObjectID) (*model.ArtworkM
 	return &artwork, err
 }
 
-func GetArtworkByURL(ctx context.Context, url string) (*model.ArtworkModel, error) {
-	var artwork model.ArtworkModel
+func GetArtworkByURL(ctx context.Context, url string) (*types.ArtworkModel, error) {
+	var artwork types.ArtworkModel
 	err := artworkCollection.FindOne(ctx, bson.M{"source_url": url}).Decode(&artwork)
 	if err != nil {
 		return nil, err
@@ -38,8 +37,8 @@ func GetArtworkByURL(ctx context.Context, url string) (*model.ArtworkModel, erro
 	return &artwork, err
 }
 
-func GetArtworksByR18(ctx context.Context, r18 types.R18Type, limit int) ([]*model.ArtworkModel, error) {
-	var artworks []*model.ArtworkModel
+func GetArtworksByR18(ctx context.Context, r18 types.R18Type, limit int) ([]*types.ArtworkModel, error) {
+	var artworks []*types.ArtworkModel
 	var cursor *mongo.Cursor
 	var err error
 	if r18 == types.R18TypeAll {
@@ -65,11 +64,11 @@ func GetArtworksByR18(ctx context.Context, r18 types.R18Type, limit int) ([]*mod
 	return artworks, nil
 }
 
-func GetArtworksByTags(ctx context.Context, tags [][]primitive.ObjectID, r18 types.R18Type, page, pageSize int64) ([]*model.ArtworkModel, error) {
+func GetArtworksByTags(ctx context.Context, tags [][]primitive.ObjectID, r18 types.R18Type, page, pageSize int64) ([]*types.ArtworkModel, error) {
 	if len(tags) == 0 {
 		return GetArtworksByR18(ctx, r18, int(pageSize))
 	}
-	var artworks []*model.ArtworkModel
+	var artworks []*types.ArtworkModel
 	var cursor *mongo.Cursor
 	var err error
 	match := bson.M{}
@@ -98,8 +97,8 @@ func GetArtworksByTags(ctx context.Context, tags [][]primitive.ObjectID, r18 typ
 	return artworks, nil
 }
 
-func GetArtworksByArtistID(ctx context.Context, artistID primitive.ObjectID, r18 types.R18Type, page, pageSize int64) ([]*model.ArtworkModel, error) {
-	var artworks []*model.ArtworkModel
+func GetArtworksByArtistID(ctx context.Context, artistID primitive.ObjectID, r18 types.R18Type, page, pageSize int64) ([]*types.ArtworkModel, error) {
+	var artworks []*types.ArtworkModel
 	var cursor *mongo.Cursor
 	var err error
 	opts := options.Find().SetSort(bson.M{"_id": -1}).SetSkip((page - 1) * pageSize).SetLimit(pageSize)
@@ -125,8 +124,8 @@ func GetArtworkCount(ctx context.Context, r18 types.R18Type) (int64, error) {
 	return artworkCollection.CountDocuments(ctx, bson.M{"r18": r18 == types.R18TypeOnly})
 }
 
-func GetLatestArtworks(ctx context.Context, r18 types.R18Type, page, pageSize int64) ([]*model.ArtworkModel, error) {
-	var artworks []*model.ArtworkModel
+func GetLatestArtworks(ctx context.Context, r18 types.R18Type, page, pageSize int64) ([]*types.ArtworkModel, error) {
+	var artworks []*types.ArtworkModel
 	var cursor *mongo.Cursor
 	var err error
 	opts := options.Find().SetSort(bson.M{"_id": -1}).SetSkip((page - 1) * pageSize).SetLimit(pageSize)

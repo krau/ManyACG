@@ -3,7 +3,6 @@ package dao
 import (
 	"context"
 
-	"github.com/krau/ManyACG/model"
 	"github.com/krau/ManyACG/types"
 
 	"go.mongodb.org/mongo-driver/bson"
@@ -11,7 +10,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
-func QueryArtworksByTexts(ctx context.Context, texts [][]string, r18 types.R18Type, limit int) ([]*model.ArtworkModel, error) {
+func QueryArtworksByTexts(ctx context.Context, texts [][]string, r18 types.R18Type, limit int) ([]*types.ArtworkModel, error) {
 	if len(texts) == 0 {
 		return GetArtworksByR18(ctx, r18, limit)
 	}
@@ -27,7 +26,7 @@ func QueryArtworksByTexts(ctx context.Context, texts [][]string, r18 types.R18Ty
 	if err != nil {
 		return nil, err
 	}
-	var artworks []*model.ArtworkModel
+	var artworks []*types.ArtworkModel
 
 	err = cursor.All(ctx, &artworks)
 	if err != nil {
@@ -39,7 +38,7 @@ func QueryArtworksByTexts(ctx context.Context, texts [][]string, r18 types.R18Ty
 	return artworks, nil
 }
 
-func QueryArtworksByTextsPage(ctx context.Context, texts [][]string, r18 types.R18Type, page, pageSize int64) ([]*model.ArtworkModel, error) {
+func QueryArtworksByTextsPage(ctx context.Context, texts [][]string, r18 types.R18Type, page, pageSize int64) ([]*types.ArtworkModel, error) {
 	if len(texts) == 0 {
 		return GetArtworksByR18(ctx, r18, int(pageSize))
 	}
@@ -54,7 +53,7 @@ func QueryArtworksByTextsPage(ctx context.Context, texts [][]string, r18 types.R
 	if err != nil {
 		return nil, err
 	}
-	var artworks []*model.ArtworkModel
+	var artworks []*types.ArtworkModel
 	err = cursor.All(ctx, &artworks)
 	if err != nil {
 		return nil, err

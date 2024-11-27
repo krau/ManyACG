@@ -5,7 +5,6 @@ import (
 
 	"github.com/krau/ManyACG/dao"
 	"github.com/krau/ManyACG/errors"
-	"github.com/krau/ManyACG/model"
 	"github.com/krau/ManyACG/sources"
 	"github.com/krau/ManyACG/types"
 )
@@ -15,7 +14,7 @@ func CreateCachedArtwork(ctx context.Context, artwork *types.Artwork, status typ
 	return err
 }
 
-func GetCachedArtworkByURL(ctx context.Context, sourceURL string) (*model.CachedArtworksModel, error) {
+func GetCachedArtworkByURL(ctx context.Context, sourceURL string) (*types.CachedArtworksModel, error) {
 	cachedArtwork, err := dao.GetCachedArtworkByURL(ctx, sourceURL)
 	if err != nil {
 		return nil, err
@@ -28,13 +27,13 @@ func UpdateCachedArtworkStatusByURL(ctx context.Context, sourceURL string, statu
 	return err
 }
 
-func UpdateCachedArtwork(ctx context.Context, artwork *model.CachedArtworksModel) error {
+func UpdateCachedArtwork(ctx context.Context, artwork *types.CachedArtworksModel) error {
 	_, err := dao.UpdateCachedArtwork(ctx, artwork)
 	return err
 }
 
 // GetCachedArtworkByURLWithCache get cached artwork by sourceURL, if not exist, fetch from source and cache it
-func GetCachedArtworkByURLWithCache(ctx context.Context, sourceURL string) (*model.CachedArtworksModel, error) {
+func GetCachedArtworkByURLWithCache(ctx context.Context, sourceURL string) (*types.CachedArtworksModel, error) {
 	cachedArtwork, err := dao.GetCachedArtworkByURL(ctx, sourceURL)
 	if err != nil {
 		artwork, err := sources.GetArtworkInfo(sourceURL)
@@ -58,7 +57,7 @@ func DeleteCachedArtworkByURL(ctx context.Context, sourceURL string) error {
 	return err
 }
 
-func DeleteCachedArtworkPicture(ctx context.Context, cachedArtwork *model.CachedArtworksModel, pictureIndex int) error {
+func DeleteCachedArtworkPicture(ctx context.Context, cachedArtwork *types.CachedArtworksModel, pictureIndex int) error {
 	if pictureIndex < 0 || pictureIndex > len(cachedArtwork.Artwork.Pictures) {
 		return errors.ErrIndexOOB
 	}

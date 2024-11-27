@@ -18,7 +18,7 @@ type Danbooru struct{}
 
 var reqClient *req.Client
 
-func (d *Danbooru) Init() {
+func (d *Danbooru) Init(_ types.Service) {
 	reqClient = req.C().ImpersonateChrome().SetCommonRetryCount(2)
 	if config.Cfg.Source.Proxy != "" {
 		reqClient.SetProxyURL(config.Cfg.Source.Proxy)

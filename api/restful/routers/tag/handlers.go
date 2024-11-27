@@ -4,8 +4,8 @@ import (
 	"net/http"
 
 	"github.com/krau/ManyACG/common"
+	"github.com/krau/ManyACG/types"
 
-	"github.com/krau/ManyACG/model"
 	"github.com/krau/ManyACG/service"
 
 	"github.com/gin-gonic/gin"
@@ -31,5 +31,5 @@ func GetRandomTags(ctx *gin.Context) {
 		ctx.JSON(http.StatusNotFound, common.RestfulCommonResponse[any]{Status: http.StatusNotFound, Message: "Tags not found"})
 		return
 	}
-	ctx.JSON(http.StatusOK, common.RestfulCommonResponse[[]*model.TagModel]{Status: http.StatusOK, Message: "Success", Data: tags})
+	ctx.JSON(http.StatusOK, common.RestfulCommonResponse[[]*types.TagModel]{Status: http.StatusOK, Message: "Success", Data: tags})
 }

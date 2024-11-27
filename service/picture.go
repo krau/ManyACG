@@ -8,7 +8,6 @@ import (
 
 	"github.com/krau/ManyACG/common"
 	"github.com/krau/ManyACG/dao"
-	"github.com/krau/ManyACG/model"
 	"github.com/krau/ManyACG/storage"
 	"github.com/krau/ManyACG/types"
 
@@ -93,7 +92,7 @@ func DeletePictureByMessageID(ctx context.Context, messageID int) error {
 			if err != nil {
 				return nil, err
 			}
-			_, err = dao.CreateDeleted(ctx, &model.DeletedModel{
+			_, err = dao.CreateDeleted(ctx, &types.DeletedModel{
 				SourceURL: artworkModel.SourceURL,
 				ArtworkID: artworkModel.ID,
 			})

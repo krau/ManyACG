@@ -10,7 +10,6 @@ import (
 	"context"
 	"errors"
 
-	"github.com/krau/ManyACG/model"
 	"github.com/krau/ManyACG/types"
 
 	"github.com/duke-git/lancet/v2/slice"
@@ -50,7 +49,7 @@ func CreateArtwork(ctx context.Context, artwork *types.Artwork) (*types.Artwork,
 				tagIDs[i] = tagModel.ID
 				continue
 			}
-			tagModel = &model.TagModel{
+			tagModel = &types.TagModel{
 				Name: tag,
 			}
 			tagRes, err := dao.CreateTag(ctx, tagModel)
@@ -85,7 +84,7 @@ func CreateArtwork(ctx context.Context, artwork *types.Artwork) (*types.Artwork,
 			}
 			artistId = artistModel.ID
 		} else {
-			artistModel = &model.ArtistModel{
+			artistModel = &types.ArtistModel{
 				Type:     artwork.Artist.Type,
 				UID:      artwork.Artist.UID,
 				Username: artwork.Artist.Username,
@@ -99,7 +98,7 @@ func CreateArtwork(ctx context.Context, artwork *types.Artwork) (*types.Artwork,
 		}
 
 		// 创建 Artwork
-		artworkModel = &model.ArtworkModel{
+		artworkModel = &types.ArtworkModel{
 			Title:       artwork.Title,
 			Description: artwork.Description,
 			R18:         artwork.R18,
@@ -114,7 +113,7 @@ func CreateArtwork(ctx context.Context, artwork *types.Artwork) (*types.Artwork,
 		}
 
 		// 创建 Picture
-		pictureModels := make([]*model.PictureModel, len(artwork.Pictures))
+		pictureModels := make([]*types.PictureModel, len(artwork.Pictures))
 		for i, picture := range artwork.Pictures {
 			var pictureID primitive.ObjectID
 			if picture.ID != "" {
@@ -125,7 +124,7 @@ func CreateArtwork(ctx context.Context, artwork *types.Artwork) (*types.Artwork,
 			} else {
 				pictureID = primitive.NewObjectID()
 			}
-			pictureModel := &model.PictureModel{
+			pictureModel := &types.PictureModel{
 				ID:        pictureID,
 				Index:     picture.Index,
 				ArtworkID: res.InsertedID.(primitive.ObjectID),
@@ -163,11 +162,11 @@ func CreateArtwork(ctx context.Context, artwork *types.Artwork) (*types.Artwork,
 	if err != nil {
 		return nil, err
 	}
-	artworkModel = result.(*model.ArtworkModel)
+	artworkModel = result.(*types.ArtworkModel)
 	return adapter.ConvertToArtwork(ctx, artworkModel)
 }
 
-func GetArtworkByURL(ctx context.Context, sourceURL string, opts ...*adapter.AdapterOption) (*types.Artwork, error) {
+func GetArtworkByURL(ctx context.Context, sourceURL string, opts ...*types.AdapterOption) (*types.Artwork, error) {
 	artworkModel, err := dao.GetArtworkByURL(ctx, sourceURL)
 	if err != nil {
 		return nil, err
@@ -176,7 +175,7 @@ func GetArtworkByURL(ctx context.Context, sourceURL string, opts ...*adapter.Ada
 }
 
 // Deprecated: MessageID 现在可能为 0
-func GetArtworkByMessageID(ctx context.Context, messageID int, opts ...*adapter.AdapterOption) (*types.Artwork, error) {
+func GetArtworkByMessageID(ctx context.Context, messageID int, opts ...*types.AdapterOption) (*types.Artwork, error) {
 	pictureModel, err := dao.GetPictureByMessageID(ctx, messageID)
 	if err != nil {
 		return nil, err
@@ -188,7 +187,7 @@ func GetArtworkByMessageID(ctx context.Context, messageID int, opts ...*adapter.
 	return adapter.ConvertToArtwork(ctx, artworkModel, opts...)
 }
 
-func GetArtworkByID(ctx context.Context, id primitive.ObjectID, opts ...*adapter.AdapterOption) (*types.Artwork, error) {
+func GetArtworkByID(ctx context.Context, id primitive.ObjectID, opts ...*types.AdapterOption) (*types.Artwork, error) {
 	artworkModel, err := dao.GetArtworkByID(ctx, id)
 	if err != nil {
 		return nil, err
@@ -204,7 +203,7 @@ func GetArtworkIDByPicture(ctx context.Context, picture *types.Picture) (primiti
 	return pictureModel.ArtworkID, nil
 }
 
-func GetRandomArtworks(ctx context.Context, r18 types.R18Type, limit int, convertOpts ...*adapter.AdapterOption) ([]*types.Artwork, error) {
+func GetRandomArtworks(ctx context.Context, r18 types.R18Type, limit int, convertOpts ...*types.AdapterOption) ([]*types.Artwork, error) {
 	artworkModels, err := dao.GetArtworksByR18(ctx, r18, limit)
 	if err != nil {
 		return nil, err
@@ -216,7 +215,7 @@ func GetRandomArtworks(ctx context.Context, r18 types.R18Type, limit int, conver
 	return artworks, nil
 }
 
-func GetLatestArtworks(ctx context.Context, r18 types.R18Type, page, pageSize int64, convertOpts ...*adapter.AdapterOption) ([]*types.Artwork, error) {
+func GetLatestArtworks(ctx context.Context, r18 types.R18Type, page, pageSize int64, convertOpts ...*types.AdapterOption) ([]*types.Artwork, error) {
 	artworkModels, err := dao.GetLatestArtworks(ctx, r18, page, pageSize)
 	if err != nil {
 		return nil, err
@@ -227,7 +226,7 @@ func GetLatestArtworks(ctx context.Context, r18 types.R18Type, page, pageSize in
 // 通过标签获取作品, 标签名使用全字匹配
 //
 // tags: 二维数组, tags = [["tag1", "tag2"], ["tag3", "tag4"]] 表示 (tag1 || tag2) && (tag3 || tag4)
-func GetArtworksByTags(ctx context.Context, tags [][]string, r18 types.R18Type, page, pageSize int64, convertOpts ...*adapter.AdapterOption) ([]*types.Artwork, error) {
+func GetArtworksByTags(ctx context.Context, tags [][]string, r18 types.R18Type, page, pageSize int64, convertOpts ...*types.AdapterOption) ([]*types.Artwork, error) {
 	if len(tags) == 0 {
 		return GetRandomArtworks(ctx, r18, int(pageSize))
 	}
@@ -253,7 +252,7 @@ func GetArtworkCount(ctx context.Context, r18 types.R18Type) (int64, error) {
 	return dao.GetArtworkCount(ctx, r18)
 }
 
-func GetArtworksByArtistID(ctx context.Context, artistID primitive.ObjectID, r18 types.R18Type, page, pageSize int64, convertOpts ...*adapter.AdapterOption) ([]*types.Artwork, error) {
+func GetArtworksByArtistID(ctx context.Context, artistID primitive.ObjectID, r18 types.R18Type, page, pageSize int64, convertOpts ...*types.AdapterOption) ([]*types.Artwork, error) {
 	artworkModels, err := dao.GetArtworksByArtistID(ctx, artistID, r18, page, pageSize)
 	if err != nil {
 		return nil, err
@@ -266,7 +265,7 @@ func GetArtworksByArtistID(ctx context.Context, artistID primitive.ObjectID, r18
 // 对于每个关键词, 只要tag名, 标题, 描述, 作者名, 作者用户名中有一个匹配即认为匹配成功
 //
 // 关键词二维数组中, 每个一维数组中的关键词之间是或的关系, 不同一维数组中的关键词之间是与的关系
-func QueryArtworksByTexts(ctx context.Context, texts [][]string, r18 types.R18Type, limit int, convertOpts ...*adapter.AdapterOption) ([]*types.Artwork, error) {
+func QueryArtworksByTexts(ctx context.Context, texts [][]string, r18 types.R18Type, limit int, convertOpts ...*types.AdapterOption) ([]*types.Artwork, error) {
 	artworkModels, err := dao.QueryArtworksByTexts(ctx, texts, r18, limit)
 	if err != nil {
 		return nil, err
@@ -278,7 +277,7 @@ func QueryArtworksByTexts(ctx context.Context, texts [][]string, r18 types.R18Ty
 	return artworks, nil
 }
 
-func QueryArtworksByTextsPage(ctx context.Context, texts [][]string, r18 types.R18Type, page, pageSize int64, convertOpts ...*adapter.AdapterOption) ([]*types.Artwork, error) {
+func QueryArtworksByTextsPage(ctx context.Context, texts [][]string, r18 types.R18Type, page, pageSize int64, convertOpts ...*types.AdapterOption) ([]*types.Artwork, error) {
 	artworkModels, err := dao.QueryArtworksByTextsPage(ctx, texts, r18, page, pageSize)
 	if err != nil {
 		return nil, err
@@ -333,7 +332,7 @@ func UpdateArtworkTagsByURL(ctx context.Context, sourceURL string, tags []string
 				tagIDs[i] = tagModel.ID
 				continue
 			}
-			tagModel = &model.TagModel{
+			tagModel = &types.TagModel{
 				Name: tag,
 			}
 			res, err := dao.CreateTag(ctx, tagModel)
@@ -383,7 +382,7 @@ func deleteArtwork(ctx context.Context, id primitive.ObjectID, sourceURL string)
 		if err != nil {
 			return nil, err
 		}
-		_, err = dao.CreateDeleted(ctx, &model.DeletedModel{
+		_, err = dao.CreateDeleted(ctx, &types.DeletedModel{
 			SourceURL: sourceURL,
 			ArtworkID: id,
 		})

@@ -14,11 +14,14 @@ import (
 
 type Twitter struct{}
 
-func (t *Twitter) Init() {
+var service types.Service
+
+func (t *Twitter) Init(s types.Service) {
 	reqClient = req.C().ImpersonateChrome().SetCommonRetryCount(3)
 	if config.Cfg.Source.Proxy != "" {
 		reqClient.SetProxyURL(config.Cfg.Source.Proxy)
 	}
+	service = s
 }
 
 func (t *Twitter) FetchNewArtworksWithCh(artworkCh chan *types.Artwork, limit int) error {

@@ -4,8 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/krau/ManyACG/model"
-
+	"github.com/krau/ManyACG/types"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -121,7 +120,7 @@ func cleanNoArtworkArtists(ctx context.Context) error {
 	defer cursor.Close(ctx)
 	var artistsToDelete []primitive.ObjectID
 	for cursor.Next(ctx) {
-		var artist model.ArtistModel
+		var artist types.ArtistModel
 		if err := cursor.Decode(&artist); err != nil {
 			return fmt.Errorf("failed to decode artist: %w", err)
 		}
@@ -171,7 +170,7 @@ func mergeDupArtist(ctx context.Context) error {
 		var result struct {
 			ID    bson.M               `bson:"_id"`
 			IDs   []primitive.ObjectID `bson:"ids"`
-			First model.ArtistModel    `bson:"first"`
+			First types.ArtistModel    `bson:"first"`
 			Count int                  `bson:"count"`
 		}
 		if err := cursor.Decode(&result); err != nil {

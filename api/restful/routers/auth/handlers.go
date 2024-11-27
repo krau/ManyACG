@@ -8,7 +8,6 @@ import (
 	"github.com/krau/ManyACG/common"
 	"github.com/krau/ManyACG/config"
 
-	"github.com/krau/ManyACG/model"
 	"github.com/krau/ManyACG/service"
 	"github.com/krau/ManyACG/types"
 
@@ -85,7 +84,7 @@ func handleSendCode(c *gin.Context) {
 	}
 
 	code := random.RandNumeral(6)
-	unauthUser, err := service.CreateUnauthUser(c, &model.UnauthUserModel{
+	unauthUser, err := service.CreateUnauthUser(c, &types.UnauthUserModel{
 		Username:   request.Username,
 		AuthMethod: authMethod,
 		Email:      request.Email,
@@ -193,7 +192,7 @@ func handleRegister(c *gin.Context) {
 		common.GinErrorResponse(c, err, http.StatusInternalServerError, "Failed to hash password")
 		return
 	}
-	_, err = service.CreateUser(c, &model.UserModel{
+	_, err = service.CreateUser(c, &types.UserModel{
 		Username:   register.Username,
 		Password:   string(hashedPassword),
 		TelegramID: register.TelegramID,

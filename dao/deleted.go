@@ -4,8 +4,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/krau/ManyACG/model"
-
+	"github.com/krau/ManyACG/types"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -13,8 +12,8 @@ import (
 
 var deletedCollection *mongo.Collection
 
-func GetDeletedByURL(ctx context.Context, sourceURL string) (*model.DeletedModel, error) {
-	var deleted model.DeletedModel
+func GetDeletedByURL(ctx context.Context, sourceURL string) (*types.DeletedModel, error) {
+	var deleted types.DeletedModel
 	err := deletedCollection.FindOne(ctx, bson.M{"source_url": sourceURL}).Decode(&deleted)
 	if err != nil {
 		return nil, err
@@ -30,7 +29,7 @@ func CheckDeletedByURL(ctx context.Context, sourceURL string) bool {
 	return deleted != nil
 }
 
-func CreateDeleted(ctx context.Context, deleted *model.DeletedModel) (*mongo.InsertOneResult, error) {
+func CreateDeleted(ctx context.Context, deleted *types.DeletedModel) (*mongo.InsertOneResult, error) {
 	deleted.DeletedAt = primitive.NewDateTimeFromTime(time.Now())
 	return deletedCollection.InsertOne(ctx, deleted)
 }

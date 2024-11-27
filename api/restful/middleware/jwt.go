@@ -5,8 +5,8 @@ import (
 
 	"github.com/krau/ManyACG/common"
 	"github.com/krau/ManyACG/config"
+	"github.com/krau/ManyACG/types"
 
-	"github.com/krau/ManyACG/model"
 	"github.com/krau/ManyACG/service"
 
 	jwt "github.com/appleboy/gin-jwt/v2"
@@ -93,7 +93,7 @@ func JWTInitParamas() *jwt.GinJWTMiddleware {
 				return nil, jwt.ErrMissingLoginValues
 			}
 
-			var user *model.UserModel
+			var user *types.UserModel
 			if loginInfo.TelegramID != 0 {
 				user, _ = service.GetUserByTelegramID(c, loginInfo.TelegramID)
 				if user != nil {

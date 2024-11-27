@@ -5,8 +5,8 @@ import (
 	"net/http"
 
 	"github.com/krau/ManyACG/common"
+	"github.com/krau/ManyACG/types"
 
-	"github.com/krau/ManyACG/model"
 	"github.com/krau/ManyACG/service"
 
 	jwt "github.com/appleboy/gin-jwt/v2"
@@ -80,11 +80,11 @@ func UpdateSettings(ctx *gin.Context) {
 		common.GinErrorResponse(ctx, err, http.StatusInternalServerError, "failed to get user")
 		return
 	}
-	res, err := service.UpdateUserSettings(ctx, user.ID, (*model.UserSettings)(&settings))
+	res, err := service.UpdateUserSettings(ctx, user.ID, (*types.UserSettings)(&settings))
 	if err != nil {
 		common.Logger.Errorf("failed to update user settings: %v", err)
 		common.GinErrorResponse(ctx, err, http.StatusInternalServerError, "failed to update user settings")
 		return
 	}
-	ctx.JSON(http.StatusOK, common.RestfulCommonResponse[*model.UserSettings]{Status: http.StatusOK, Message: "success", Data: res})
+	ctx.JSON(http.StatusOK, common.RestfulCommonResponse[*types.UserSettings]{Status: http.StatusOK, Message: "success", Data: res})
 }

@@ -1,8 +1,6 @@
-package model
+package types
 
 import (
-	"github.com/krau/ManyACG/types"
-
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
@@ -12,7 +10,7 @@ type ArtworkModel struct {
 	Description string             `bson:"description" json:"description"`
 	R18         bool               `bson:"r18" json:"r18"`
 	CreatedAt   primitive.DateTime `bson:"created_at" json:"created_at"`
-	SourceType  types.SourceType   `bson:"source_type" json:"source_type"`
+	SourceType  SourceType         `bson:"source_type" json:"source_type"`
 	SourceURL   string             `bson:"source_url" json:"source_url"`
 	LikeCount   uint               `bson:"like_count" json:"like_count"`
 
@@ -24,7 +22,7 @@ type ArtworkModel struct {
 type ArtistModel struct {
 	ID       primitive.ObjectID `bson:"_id,omitempty" json:"id,omitempty"`
 	Name     string             `bson:"name" json:"name"`
-	Type     types.SourceType   `bson:"type" json:"type"`
+	Type     SourceType         `bson:"type" json:"type"`
 	UID      string             `bson:"uid" json:"uid"`
 	Username string             `bson:"username" json:"username"`
 }
@@ -46,8 +44,8 @@ type PictureModel struct {
 	Hash      string             `bson:"hash" json:"hash"`
 	BlurScore float64            `bson:"blur_score" json:"blur_score"`
 
-	TelegramInfo *types.TelegramInfo `bson:"telegram_info" json:"telegram_info"`
-	StorageInfo  *types.StorageInfo  `bson:"storage_info" json:"storage_info"`
+	TelegramInfo *TelegramInfo `bson:"telegram_info" json:"telegram_info"`
+	StorageInfo  *StorageInfo  `bson:"storage_info" json:"storage_info"`
 }
 
 type DeletedModel struct {
@@ -64,9 +62,35 @@ type CallbackDataModel struct {
 }
 
 type CachedArtworksModel struct {
-	ID        primitive.ObjectID  `bson:"_id,omitempty" json:"id,omitempty"`
-	SourceURL string              `bson:"source_url" json:"source_url"`
-	CreatedAt primitive.DateTime  `bson:"created_at" json:"created_at"`
-	Artwork   *types.Artwork      `bson:"artwork" json:"artwork"`
-	Status    types.ArtworkStatus `bson:"status" json:"status"`
+	ID        primitive.ObjectID `bson:"_id,omitempty" json:"id,omitempty"`
+	SourceURL string             `bson:"source_url" json:"source_url"`
+	CreatedAt primitive.DateTime `bson:"created_at" json:"created_at"`
+	Artwork   *Artwork           `bson:"artwork" json:"artwork"`
+	Status    ArtworkStatus      `bson:"status" json:"status"`
+}
+
+func (picture *PictureModel) ToPicture() *Picture {
+	return &Picture{
+		ID:        picture.ID.Hex(),
+		ArtworkID: picture.ArtworkID.Hex(),
+		Index:     picture.Index,
+		Thumbnail: picture.Thumbnail,
+		Original:  picture.Original,
+		Width:     picture.Width,
+		Height:    picture.Height,
+		Hash:      picture.Hash,
+		// BlurScore:    picture.BlurScore,
+		TelegramInfo: picture.TelegramInfo,
+		StorageInfo:  picture.StorageInfo,
+	}
+}
+
+func (artist *ArtistModel) ToArtist() *Artist {
+	return &Artist{
+		ID:       artist.ID.Hex(),
+		Name:     artist.Name,
+		Type:     artist.Type,
+		UID:      artist.UID,
+		Username: artist.Username,
+	}
 }

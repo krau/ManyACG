@@ -4,8 +4,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/krau/ManyACG/model"
-
+	"github.com/krau/ManyACG/types"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -15,16 +14,16 @@ var (
 	userCollection *mongo.Collection
 )
 
-func CreateUser(ctx context.Context, user *model.UserModel) (*mongo.InsertOneResult, error) {
+func CreateUser(ctx context.Context, user *types.UserModel) (*mongo.InsertOneResult, error) {
 	user.UpdatedAt = primitive.NewDateTimeFromTime(time.Now())
 	if user.Settings == nil {
-		user.Settings = &model.UserSettings{}
+		user.Settings = &types.UserSettings{}
 	}
 	return userCollection.InsertOne(ctx, user)
 }
 
-func GetUserByID(ctx context.Context, id primitive.ObjectID) (*model.UserModel, error) {
-	user := &model.UserModel{}
+func GetUserByID(ctx context.Context, id primitive.ObjectID) (*types.UserModel, error) {
+	user := &types.UserModel{}
 	err := userCollection.FindOne(ctx, bson.M{"_id": id}).Decode(user)
 	if err != nil {
 		return nil, err
@@ -32,8 +31,8 @@ func GetUserByID(ctx context.Context, id primitive.ObjectID) (*model.UserModel, 
 	return user, nil
 }
 
-func GetUserByUsername(ctx context.Context, username string) (*model.UserModel, error) {
-	user := &model.UserModel{}
+func GetUserByUsername(ctx context.Context, username string) (*types.UserModel, error) {
+	user := &types.UserModel{}
 	err := userCollection.FindOne(ctx, bson.M{"username": bson.M{"$regex": primitive.Regex{Pattern: "^" + username + "$", Options: "i"}}}).Decode(user)
 	if err != nil {
 		return nil, err
@@ -41,8 +40,8 @@ func GetUserByUsername(ctx context.Context, username string) (*model.UserModel, 
 	return user, nil
 }
 
-func GetUserByTelegramID(ctx context.Context, telegramID int64) (*model.UserModel, error) {
-	user := &model.UserModel{}
+func GetUserByTelegramID(ctx context.Context, telegramID int64) (*types.UserModel, error) {
+	user := &types.UserModel{}
 	err := userCollection.FindOne(ctx, bson.M{"telegram_id": telegramID}).Decode(user)
 	if err != nil {
 		return nil, err
@@ -50,8 +49,8 @@ func GetUserByTelegramID(ctx context.Context, telegramID int64) (*model.UserMode
 	return user, nil
 }
 
-func GetUserByEmail(ctx context.Context, email string) (*model.UserModel, error) {
-	user := &model.UserModel{}
+func GetUserByEmail(ctx context.Context, email string) (*types.UserModel, error) {
+	user := &types.UserModel{}
 	err := userCollection.FindOne(ctx, bson.M{"email": bson.M{"$regex": primitive.Regex{Pattern: "^" + email + "$", Options: "i"}}}).Decode(user)
 	if err != nil {
 		return nil, err
@@ -59,7 +58,7 @@ func GetUserByEmail(ctx context.Context, email string) (*model.UserModel, error)
 	return user, nil
 }
 
-func UpdateUserSettings(ctx context.Context, id primitive.ObjectID, settings *model.UserSettings) (*mongo.UpdateResult, error) {
+func UpdateUserSettings(ctx context.Context, id primitive.ObjectID, settings *types.UserSettings) (*mongo.UpdateResult, error) {
 	// if settings == nil {
 	// 	return nil, manyacgErrors.ErrSettingsNil
 	// }

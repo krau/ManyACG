@@ -41,30 +41,30 @@ func newSource(sourceType types.SourceType) Source {
 	return nil
 }
 
-func InitSources() {
+func InitSources(service types.Service) {
 	common.Logger.Info("Initializing sources")
 	for _, sourceType := range types.SourceTypes {
 		sourcesNotInit[sourceType] = newSource(sourceType)
 	}
 	if config.Cfg.Source.Pixiv.Enable {
 		Sources[types.SourceTypePixiv] = sourcesNotInit[types.SourceTypePixiv]
-		Sources[types.SourceTypePixiv].Init()
+		Sources[types.SourceTypePixiv].Init(service)
 	}
 	if config.Cfg.Source.Twitter.Enable {
 		Sources[types.SourceTypeTwitter] = sourcesNotInit[types.SourceTypeTwitter]
-		Sources[types.SourceTypeTwitter].Init()
+		Sources[types.SourceTypeTwitter].Init(service)
 	}
 	if config.Cfg.Source.Bilibili.Enable {
 		Sources[types.SourceTypeBilibili] = sourcesNotInit[types.SourceTypeBilibili]
-		Sources[types.SourceTypeBilibili].Init()
+		Sources[types.SourceTypeBilibili].Init(service)
 	}
 	if config.Cfg.Source.Kemono.Enable {
 		Sources[types.SourceTypeKemono] = sourcesNotInit[types.SourceTypeKemono]
-		Sources[types.SourceTypeKemono].Init()
+		Sources[types.SourceTypeKemono].Init(service)
 	}
 	if config.Cfg.Source.Danbooru.Enable {
 		Sources[types.SourceTypeDanbooru] = sourcesNotInit[types.SourceTypeDanbooru]
-		Sources[types.SourceTypeDanbooru].Init()
+		Sources[types.SourceTypeDanbooru].Init(service)
 	}
 	for sourceType, source := range Sources {
 		SourceURLRegexps[sourceType] = source.GetSourceURLRegexp()

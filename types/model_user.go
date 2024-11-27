@@ -1,8 +1,6 @@
-package model
+package types
 
 import (
-	"github.com/krau/ManyACG/types"
-
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
@@ -44,6 +42,6 @@ type UnauthUserModel struct {
 	Username   string             `bson:"username"`
 	TelegramID int64              `bson:"telegram_id"`
 	Email      string             `bson:"email"`
-	AuthMethod types.AuthMethod   `bson:"auth_method"`
+	AuthMethod AuthMethod         `bson:"auth_method"`
 	CreatedAt  primitive.DateTime `bson:"created_at"`
 }

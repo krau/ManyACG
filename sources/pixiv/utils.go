@@ -1,6 +1,7 @@
 package pixiv
 
 import (
+	"context"
 	"encoding/json"
 	"encoding/xml"
 	"strings"
@@ -71,6 +72,11 @@ func fetchNewArtworksForRSSURLWithCh(rssURL string, limit int, artworkCh chan *t
 		if i >= limit {
 			break
 		}
+		artworkInDB, _ := service.GetArtworkByURL(context.TODO(), item.Link)
+		if artworkInDB != nil {
+			common.Logger.Infof("Artwork %s already exists", item.Link)
+			continue
+		}
 		ajaxResp, err := reqAjaxResp(item.Link)
 		if err != nil {
 			common.Logger.Errorf("Error fetching artwork info: %v", err)
@@ -109,6 +115,11 @@ func fetchNewArtworksForRSSURL(rssURL string, limit int) ([]*types.Artwork, erro
 	for i, item := range pixivRss.Channel.Items {
 		if i >= limit {
 			break
+		}
+		artworkInDB, _ := service.GetArtworkByURL(context.TODO(), item.Link)
+		if artworkInDB != nil {
+			common.Logger.Infof("Artwork %s already exists", item.Link)
+			continue
 		}
 		ajaxResp, err := reqAjaxResp(item.Link)
 		if err != nil {

@@ -8,7 +8,7 @@ import (
 )
 
 type Source interface {
-	Init()
+	Init(service types.Service)
 	FetchNewArtworksWithCh(artworkCh chan *types.Artwork, limit int) error
 	FetchNewArtworks(limit int) ([]*types.Artwork, error)
 	GetArtworkInfo(sourceURL string) (*types.Artwork, error)

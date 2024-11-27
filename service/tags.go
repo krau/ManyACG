@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/krau/ManyACG/dao"
-	"github.com/krau/ManyACG/model"
+	"github.com/krau/ManyACG/types"
 )
 
 func GetRandomTags(ctx context.Context, limit int) ([]string, error) {
@@ -19,7 +19,7 @@ func GetRandomTags(ctx context.Context, limit int) ([]string, error) {
 	return tagNames, nil
 }
 
-func GetRandomTagModels(ctx context.Context, limit int) ([]*model.TagModel, error) {
+func GetRandomTagModels(ctx context.Context, limit int) ([]*types.TagModel, error) {
 	tags, err := dao.GetRandomTags(ctx, limit)
 	if err != nil {
 		return nil, err

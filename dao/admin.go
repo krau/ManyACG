@@ -6,16 +6,15 @@ import (
 	"context"
 	"errors"
 
-	"github.com/krau/ManyACG/model"
-
+	"github.com/krau/ManyACG/types"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
 var adminCollection *mongo.Collection
 
-func GetAdminByUserID(ctx context.Context, userID int64) (*model.AdminModel, error) {
-	var admin model.AdminModel
+func GetAdminByUserID(ctx context.Context, userID int64) (*types.AdminModel, error) {
+	var admin types.AdminModel
 	err := adminCollection.FindOne(ctx, bson.M{"user_id": userID}).Decode(&admin)
 	if err != nil {
 		return nil, err
@@ -23,7 +22,7 @@ func GetAdminByUserID(ctx context.Context, userID int64) (*model.AdminModel, err
 	return &admin, nil
 }
 
-func CreateAdmin(ctx context.Context, admin *model.AdminModel) (*mongo.InsertOneResult, error) {
+func CreateAdmin(ctx context.Context, admin *types.AdminModel) (*mongo.InsertOneResult, error) {
 	_, err := GetAdminByUserID(ctx, admin.UserID)
 	if err != nil {
 		if errors.Is(err, mongo.ErrNoDocuments) {
@@ -35,23 +34,23 @@ func CreateAdmin(ctx context.Context, admin *model.AdminModel) (*mongo.InsertOne
 }
 
 func CreateSuperAdminByUserID(ctx context.Context, userID int64, grant int64) (*mongo.InsertOneResult, error) {
-	return CreateAdmin(ctx, &model.AdminModel{UserID: userID, GrantBy: grant, SuperAdmin: true})
+	return CreateAdmin(ctx, &types.AdminModel{UserID: userID, GrantBy: grant, SuperAdmin: true})
 }
 
 func DeleteAdminByUserID(ctx context.Context, userID int64) (*mongo.DeleteResult, error) {
 	return adminCollection.DeleteOne(ctx, bson.M{"user_id": userID})
 }
 
-func UpdateAdmin(ctx context.Context, admin *model.AdminModel) (*mongo.UpdateResult, error) {
+func UpdateAdmin(ctx context.Context, admin *types.AdminModel) (*mongo.UpdateResult, error) {
 	return adminCollection.ReplaceOne(ctx, bson.M{"user_id": admin.UserID}, admin)
 }
 
-func GetAdmins(ctx context.Context) ([]model.AdminModel, error) {
+func GetAdmins(ctx context.Context) ([]types.AdminModel, error) {
 	cursor, err := adminCollection.Find(ctx, bson.M{})
 	if err != nil {
 		return nil, err
 	}
-	var admins []model.AdminModel
+	var admins []types.AdminModel
 	err = cursor.All(ctx, &admins)
 	if err != nil {
 		return nil, err

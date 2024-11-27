@@ -4,7 +4,6 @@ import (
 	"context"
 	"time"
 
-	"github.com/krau/ManyACG/model"
 	"github.com/krau/ManyACG/types"
 
 	"go.mongodb.org/mongo-driver/bson"
@@ -16,7 +15,7 @@ import (
 var cachedArtworkCollection *mongo.Collection
 
 func CreateCachedArtwork(ctx context.Context, artwork *types.Artwork, status types.ArtworkStatus) (*mongo.InsertOneResult, error) {
-	cachedArtwork := &model.CachedArtworksModel{
+	cachedArtwork := &types.CachedArtworksModel{
 		SourceURL: artwork.SourceURL,
 		Artwork:   artwork,
 		CreatedAt: primitive.NewDateTimeFromTime(time.Now()),
@@ -25,8 +24,8 @@ func CreateCachedArtwork(ctx context.Context, artwork *types.Artwork, status typ
 	return cachedArtworkCollection.InsertOne(ctx, cachedArtwork)
 }
 
-func GetCachedArtworkByURL(ctx context.Context, url string) (*model.CachedArtworksModel, error) {
-	var cachedArtwork model.CachedArtworksModel
+func GetCachedArtworkByURL(ctx context.Context, url string) (*types.CachedArtworksModel, error) {
+	var cachedArtwork types.CachedArtworksModel
 	err := cachedArtworkCollection.FindOne(ctx, bson.M{"source_url": url}).Decode(&cachedArtwork)
 	if err != nil {
 		return nil, err
@@ -45,7 +44,7 @@ func CleanPostingCachedArtwork(ctx context.Context) (*mongo.DeleteResult, error)
 	return cachedArtworkCollection.DeleteMany(ctx, filter)
 }
 
-func UpdateCachedArtwork(ctx context.Context, artwork *model.CachedArtworksModel) (*mongo.UpdateResult, error) {
+func UpdateCachedArtwork(ctx context.Context, artwork *types.CachedArtworksModel) (*mongo.UpdateResult, error) {
 	filter := bson.M{"source_url": artwork.SourceURL}
 	update := bson.M{"$set": bson.M{"artwork": artwork.Artwork}}
 	artwork.CreatedAt = primitive.NewDateTimeFromTime(time.Now())

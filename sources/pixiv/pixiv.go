@@ -16,7 +16,9 @@ import (
 
 type Pixiv struct{}
 
-func (p *Pixiv) Init() {
+var service types.Service
+
+func (p *Pixiv) Init(s types.Service) {
 	reqClient = req.C().ImpersonateChrome()
 	cookies := make([]*http.Cookie, 0)
 	for _, cookie := range config.Cfg.Source.Pixiv.Cookies {
@@ -29,6 +31,7 @@ func (p *Pixiv) Init() {
 	if config.Cfg.Source.Proxy != "" {
 		reqClient.SetProxyURL(config.Cfg.Source.Proxy)
 	}
+	service = s
 }
 
 func (p *Pixiv) FetchNewArtworksWithCh(artworkCh chan *types.Artwork, limit int) error {

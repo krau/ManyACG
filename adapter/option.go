@@ -1,64 +1,39 @@
 package adapter
 
-type AdapterOption struct {
-	LoadTag          bool
-	LoadArtist       bool
-	LoadPicture      bool
-	OnlyIndexPicture bool
-}
+import "github.com/krau/ManyACG/types"
 
-func (o *AdapterOption) WithLoadTag() *AdapterOption {
-	o.LoadTag = true
-	return o
-}
-
-func (o *AdapterOption) WithLoadArtist() *AdapterOption {
-	o.LoadArtist = true
-	return o
-}
-
-func (o *AdapterOption) WithLoadPicture() *AdapterOption {
-	o.LoadPicture = true
-	return o
-}
-
-func (o *AdapterOption) WithOnlyIndexPicture() *AdapterOption {
-	o.OnlyIndexPicture = true
-	return o
-}
-
-func OnlyLoadTag() *AdapterOption {
-	return &AdapterOption{
+func OnlyLoadTag() *types.AdapterOption {
+	return &types.AdapterOption{
 		LoadTag: true,
 	}
 }
 
-func OnlyLoadArtist() *AdapterOption {
-	return &AdapterOption{
+func OnlyLoadArtist() *types.AdapterOption {
+	return &types.AdapterOption{
 		LoadArtist: true,
 	}
 }
 
-func OnlyLoadPicture() *AdapterOption {
-	return &AdapterOption{
+func OnlyLoadPicture() *types.AdapterOption {
+	return &types.AdapterOption{
 		LoadPicture: true,
 	}
 }
 
-func LoadAll() *AdapterOption {
-	return &AdapterOption{
+func LoadAll() *types.AdapterOption {
+	return &types.AdapterOption{
 		LoadTag:     true,
 		LoadArtist:  true,
 		LoadPicture: true,
 	}
 }
 
-func LoadNone() *AdapterOption {
-	return &AdapterOption{}
+func LoadNone() *types.AdapterOption {
+	return &types.AdapterOption{}
 }
 
-func MergeOptions(opts ...*AdapterOption) *AdapterOption {
-	result := &AdapterOption{}
+func MergeOptions(opts ...*types.AdapterOption) *types.AdapterOption {
+	result := &types.AdapterOption{}
 	for _, opt := range opts {
 		if opt.LoadTag {
 			result.LoadTag = true

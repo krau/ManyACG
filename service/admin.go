@@ -5,7 +5,6 @@ import (
 	"errors"
 
 	"github.com/krau/ManyACG/dao"
-	"github.com/krau/ManyACG/model"
 	"github.com/krau/ManyACG/types"
 
 	"go.mongodb.org/mongo-driver/mongo"
@@ -21,8 +20,7 @@ func IsAdmin(ctx context.Context, userID int64) (bool, error) {
 
 func CreateAdmin(ctx context.Context, userID int64, permissions []types.Permission, grant int64, super bool) error {
 	_, err := dao.CreateAdmin(
-		ctx,
-		&model.AdminModel{
+		ctx, &types.AdminModel{
 			UserID:      userID,
 			Permissions: permissions,
 			GrantBy:     grant,
@@ -37,7 +35,7 @@ func DeleteAdmin(ctx context.Context, userID int64) error {
 	return err
 }
 
-func GetAdminByUserID(ctx context.Context, userID int64) (*model.AdminModel, error) {
+func GetAdminByUserID(ctx context.Context, userID int64) (*types.AdminModel, error) {
 	return dao.GetAdminByUserID(ctx, userID)
 }
 

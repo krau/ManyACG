@@ -3,7 +3,6 @@ package dao
 import (
 	"context"
 
-	"github.com/krau/ManyACG/model"
 	"github.com/krau/ManyACG/types"
 
 	"go.mongodb.org/mongo-driver/bson"
@@ -13,20 +12,20 @@ import (
 
 var artistCollection *mongo.Collection
 
-func CreateArtist(ctx context.Context, artist *model.ArtistModel) (*mongo.InsertOneResult, error) {
+func CreateArtist(ctx context.Context, artist *types.ArtistModel) (*mongo.InsertOneResult, error) {
 	return artistCollection.InsertOne(ctx, artist)
 }
 
-func GetArtistByID(ctx context.Context, id primitive.ObjectID) (*model.ArtistModel, error) {
-	var artist model.ArtistModel
+func GetArtistByID(ctx context.Context, id primitive.ObjectID) (*types.ArtistModel, error) {
+	var artist types.ArtistModel
 	if err := artistCollection.FindOne(ctx, bson.M{"_id": id}).Decode(&artist); err != nil {
 		return nil, err
 	}
 	return &artist, nil
 }
 
-func GetArtistByUserName(ctx context.Context, username string, sourceType types.SourceType) (*model.ArtistModel, error) {
-	var artist model.ArtistModel
+func GetArtistByUserName(ctx context.Context, username string, sourceType types.SourceType) (*types.ArtistModel, error) {
+	var artist types.ArtistModel
 	if err := artistCollection.FindOne(ctx, bson.M{"username": username, "type": string(sourceType)}).Decode(&artist); err != nil {
 		return nil, err
 	}
@@ -37,11 +36,11 @@ func GetArtistCount(ctx context.Context) (int64, error) {
 	return artistCollection.CountDocuments(ctx, bson.M{})
 }
 
-func QueryArtistsByName(ctx context.Context, name string) ([]*model.ArtistModel, error) {
+func QueryArtistsByName(ctx context.Context, name string) ([]*types.ArtistModel, error) {
 	if name == "" {
 		return nil, mongo.ErrNoDocuments
 	}
-	var artists []*model.ArtistModel
+	var artists []*types.ArtistModel
 	cursor, err := artistCollection.Find(ctx, bson.M{"name": primitive.Regex{Pattern: name, Options: "i"}})
 	if err != nil {
 		return nil, err
@@ -55,11 +54,11 @@ func QueryArtistsByName(ctx context.Context, name string) ([]*model.ArtistModel,
 	return artists, nil
 }
 
-func QueryArtistsByUserName(ctx context.Context, username string) ([]*model.ArtistModel, error) {
+func QueryArtistsByUserName(ctx context.Context, username string) ([]*types.ArtistModel, error) {
 	if username == "" {
 		return nil, mongo.ErrNoDocuments
 	}
-	var artists []*model.ArtistModel
+	var artists []*types.ArtistModel
 	cursor, err := artistCollection.Find(ctx, bson.M{"username": primitive.Regex{Pattern: username, Options: "i"}})
 	if err != nil {
 		return nil, err
@@ -73,14 +72,14 @@ func QueryArtistsByUserName(ctx context.Context, username string) ([]*model.Arti
 	return artists, nil
 }
 
-func GetArtistByUID(ctx context.Context, uid string, sourceType types.SourceType) (*model.ArtistModel, error) {
-	var artist model.ArtistModel
+func GetArtistByUID(ctx context.Context, uid string, sourceType types.SourceType) (*types.ArtistModel, error) {
+	var artist types.ArtistModel
 	if err := artistCollection.FindOne(ctx, bson.M{"uid": uid, "type": string(sourceType)}).Decode(&artist); err != nil {
 		return nil, err
 	}
 	return &artist, nil
 }
 
-func UpdateArtist(ctx context.Context, artist *model.ArtistModel) (*mongo.UpdateResult, error) {
+func UpdateArtist(ctx context.Context, artist *types.ArtistModel) (*mongo.UpdateResult, error) {
 	return artistCollection.UpdateOne(ctx, bson.M{"_id": artist.ID}, bson.M{"$set": artist})
 }

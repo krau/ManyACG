@@ -49,7 +49,7 @@ func Run() {
 		go telegram.RunPolling()
 	}
 	storage.InitStorage()
-	sources.InitSources()
+	sources.InitSources(service.NewService())
 	go fetcher.StartScheduler(context.TODO())
 	if config.Cfg.API.Enable {
 		go restful.Run()

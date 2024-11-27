@@ -18,7 +18,7 @@ import (
 
 type Kemono struct{}
 
-func (k *Kemono) Init() {
+func (k *Kemono) Init(_ types.Service) {
 	reqClient = req.C().ImpersonateChrome()
 	if config.Cfg.Source.Kemono.Session != "" {
 		reqClient.SetCommonCookies(&http.Cookie{

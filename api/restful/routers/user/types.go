@@ -1,6 +1,6 @@
 package user
 
-import "github.com/krau/ManyACG/model"
+import "github.com/krau/ManyACG/types"
 
 type UnauthUserResponse struct {
 	ID         string `json:"id"`
@@ -14,7 +14,7 @@ type UserResponseData struct {
 	Email      string `json:"email"`
 	TelegramID int64  `json:"telegram_id"`
 
-	Settings *model.UserSettings `json:"settings"`
+	Settings *types.UserSettings `json:"settings"`
 }
 
 type UserSettingsRequest struct {

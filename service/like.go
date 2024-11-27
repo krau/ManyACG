@@ -6,7 +6,7 @@ import (
 
 	"github.com/krau/ManyACG/dao"
 	manyacgErrors "github.com/krau/ManyACG/errors"
-	"github.com/krau/ManyACG/model"
+	"github.com/krau/ManyACG/types"
 
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -15,7 +15,7 @@ import (
 func CreateLike(ctx context.Context, userID, artworkID primitive.ObjectID) error {
 	likeModel, err := dao.GetLike(ctx, userID, artworkID)
 	if errors.Is(err, mongo.ErrNoDocuments) {
-		like := &model.LikeModel{
+		like := &types.LikeModel{
 			UserID:    userID,
 			ArtworkID: artworkID,
 		}
@@ -35,6 +35,6 @@ func CreateLike(ctx context.Context, userID, artworkID primitive.ObjectID) error
 	return nil
 }
 
-func GetLike(ctx context.Context, userID, artworkID primitive.ObjectID) (*model.LikeModel, error) {
+func GetLike(ctx context.Context, userID, artworkID primitive.ObjectID) (*types.LikeModel, error) {
 	return dao.GetLike(ctx, userID, artworkID)
 }

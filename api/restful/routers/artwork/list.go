@@ -110,7 +110,7 @@ func GetArtworkList(ctx *gin.Context) {
 	// 		return
 	// 	}
 	// }
-	adapterOption := &adapter.AdapterOption{}
+	adapterOption := &types.AdapterOption{}
 	if request.Simple {
 		adapterOption = adapterOption.WithLoadArtist().WithOnlyIndexPicture()
 	} else {
@@ -156,7 +156,7 @@ func GetArtworkList(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, ResponseFromArtworks(artworks, hasKey))
 }
 
-func getArtworkListByArtist(ctx *gin.Context, artistID primitive.ObjectID, r18Type types.R18Type, page, pageSize int64, adapterOption ...*adapter.AdapterOption) {
+func getArtworkListByArtist(ctx *gin.Context, artistID primitive.ObjectID, r18Type types.R18Type, page, pageSize int64, adapterOption ...*types.AdapterOption) {
 	artworks, err := service.GetArtworksByArtistID(ctx, artistID, r18Type, page, pageSize, adapterOption...)
 	if err != nil {
 		if errors.Is(err, mongo.ErrNoDocuments) {
@@ -173,7 +173,7 @@ func getArtworkListByArtist(ctx *gin.Context, artistID primitive.ObjectID, r18Ty
 	ctx.JSON(http.StatusOK, ResponseFromArtworks(artworks, ctx.GetBool("auth")))
 }
 
-func getArtworkListByTag(ctx *gin.Context, tag string, r18Type types.R18Type, page, pageSize int64, adapterOption ...*adapter.AdapterOption) {
+func getArtworkListByTag(ctx *gin.Context, tag string, r18Type types.R18Type, page, pageSize int64, adapterOption ...*types.AdapterOption) {
 	artworks, err := service.GetArtworksByTags(ctx, [][]string{{tag}}, r18Type, page, pageSize, adapterOption...)
 	if err != nil {
 		if errors.Is(err, mongo.ErrNoDocuments) {
@@ -190,7 +190,7 @@ func getArtworkListByTag(ctx *gin.Context, tag string, r18Type types.R18Type, pa
 	ctx.JSON(http.StatusOK, ResponseFromArtworks(artworks, ctx.GetBool("auth")))
 }
 
-func getArtworkListByKeyword(ctx *gin.Context, keywordSlice [][]string, r18Type types.R18Type, page, pageSize int64, adapterOption ...*adapter.AdapterOption) {
+func getArtworkListByKeyword(ctx *gin.Context, keywordSlice [][]string, r18Type types.R18Type, page, pageSize int64, adapterOption ...*types.AdapterOption) {
 	artworks, err := service.QueryArtworksByTextsPage(ctx, keywordSlice, r18Type, page, pageSize, adapterOption...)
 	if err != nil {
 		if errors.Is(err, mongo.ErrNoDocuments) {

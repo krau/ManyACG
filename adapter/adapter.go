@@ -9,13 +9,12 @@ import (
 	"github.com/krau/ManyACG/common"
 	"github.com/krau/ManyACG/config"
 	"github.com/krau/ManyACG/dao"
-	"github.com/krau/ManyACG/model"
 	"github.com/krau/ManyACG/types"
 
 	"github.com/gorilla/feeds"
 )
 
-func GetArtworkModelTags(ctx context.Context, artworkModel *model.ArtworkModel) ([]string, error) {
+func GetArtworkModelTags(ctx context.Context, artworkModel *types.ArtworkModel) ([]string, error) {
 	tags := make([]string, len(artworkModel.Tags))
 	for i, tagID := range artworkModel.Tags {
 		tagModel, err := dao.GetTagByID(ctx, tagID)
@@ -27,7 +26,7 @@ func GetArtworkModelTags(ctx context.Context, artworkModel *model.ArtworkModel) 
 	return tags, nil
 }
 
-func GetArtworkModelPictures(ctx context.Context, artworkModel *model.ArtworkModel) ([]*types.Picture, error) {
+func GetArtworkModelPictures(ctx context.Context, artworkModel *types.ArtworkModel) ([]*types.Picture, error) {
 	pictures := make([]*types.Picture, len(artworkModel.Pictures))
 	for i, pictureID := range artworkModel.Pictures {
 		pictureModel, err := dao.GetPictureByID(ctx, pictureID)
@@ -39,7 +38,7 @@ func GetArtworkModelPictures(ctx context.Context, artworkModel *model.ArtworkMod
 	return pictures, nil
 }
 
-func GetArtworkModelIndexPicture(ctx context.Context, artworkModel *model.ArtworkModel) (*types.Picture, error) {
+func GetArtworkModelIndexPicture(ctx context.Context, artworkModel *types.ArtworkModel) (*types.Picture, error) {
 	pictureModel, err := dao.GetPictureByID(ctx, artworkModel.Pictures[0])
 	if err != nil {
 		return nil, err
@@ -47,7 +46,7 @@ func GetArtworkModelIndexPicture(ctx context.Context, artworkModel *model.Artwor
 	return pictureModel.ToPicture(), nil
 }
 
-func ConvertToArtwork(ctx context.Context, artworkModel *model.ArtworkModel, opts ...*AdapterOption) (*types.Artwork, error) {
+func ConvertToArtwork(ctx context.Context, artworkModel *types.ArtworkModel, opts ...*types.AdapterOption) (*types.Artwork, error) {
 	tags := make([]string, 0)
 	var pictures []*types.Picture
 	var artist *types.Artist
@@ -121,7 +120,7 @@ func ConvertToArtwork(ctx context.Context, artworkModel *model.ArtworkModel, opt
 	}, nil
 }
 
-func ConvertToArtworks(ctx context.Context, artworkModels []*model.ArtworkModel, opts ...*AdapterOption) ([]*types.Artwork, error) {
+func ConvertToArtworks(ctx context.Context, artworkModels []*types.ArtworkModel, opts ...*types.AdapterOption) ([]*types.Artwork, error) {
 	if len(artworkModels) == 1 {
 		artwork, err := ConvertToArtwork(ctx, artworkModels[0])
 		if err != nil {
@@ -132,7 +131,7 @@ func ConvertToArtworks(ctx context.Context, artworkModels []*model.ArtworkModel,
 	artworks := make([]*types.Artwork, len(artworkModels))
 	errCh := make(chan error, len(artworkModels))
 	for i, artworkModel := range artworkModels {
-		go func(i int, artworkModel *model.ArtworkModel) {
+		go func(i int, artworkModel *types.ArtworkModel) {
 			artwork, err := ConvertToArtwork(ctx, artworkModel, opts...)
 			if err != nil {
 				errCh <- err

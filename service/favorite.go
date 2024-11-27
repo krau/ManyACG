@@ -4,24 +4,24 @@ import (
 	"context"
 
 	"github.com/krau/ManyACG/dao"
-	"github.com/krau/ManyACG/model"
+	"github.com/krau/ManyACG/types"
 
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-func CreateFavorite(ctx context.Context, userID, artworkID primitive.ObjectID) (*model.FavoriteModel, error) {
+func CreateFavorite(ctx context.Context, userID, artworkID primitive.ObjectID) (*types.FavoriteModel, error) {
 	res, err := dao.CreateFavorite(ctx, userID, artworkID)
 	if err != nil {
 		return nil, err
 	}
-	return &model.FavoriteModel{
+	return &types.FavoriteModel{
 		ID:        res.InsertedID.(primitive.ObjectID),
 		UserID:    userID,
 		ArtworkID: artworkID,
 	}, nil
 }
 
-func GetFavorite(ctx context.Context, userID, artworkID primitive.ObjectID) (*model.FavoriteModel, error) {
+func GetFavorite(ctx context.Context, userID, artworkID primitive.ObjectID) (*types.FavoriteModel, error) {
 	return dao.GetFavorite(ctx, userID, artworkID)
 }
 

@@ -1,6 +1,7 @@
 package twitter
 
 import (
+	"context"
 	"encoding/json"
 	"regexp"
 	"strings"
@@ -60,6 +61,11 @@ func (t *Twitter) fetchRssURL(url string, limit int) ([]*types.Artwork, error) {
 			break
 		}
 		sourceURL := item.Link
+		artworkInDB, _ := service.GetArtworkByURL(context.TODO(), sourceURL)
+		if artworkInDB != nil {
+			common.Logger.Infof("Artwork %s already exists", sourceURL)
+			continue
+		}
 		artwork, err := t.GetArtworkInfo(sourceURL)
 		if err != nil {
 			common.Logger.Errorf("Error getting artwork info: %v", err)
@@ -91,6 +97,11 @@ func (t *Twitter) fetchRssURLWithCh(url string, limit int, artworkCh chan *types
 			break
 		}
 		sourceURL := item.Link
+		artworkInDB, _ := service.GetArtworkByURL(context.TODO(), sourceURL)
+		if artworkInDB != nil {
+			common.Logger.Infof("Artwork %s already exists", sourceURL)
+			continue
+		}
 		artwork, err := t.GetArtworkInfo(sourceURL)
 		if err != nil {
 			common.Logger.Errorf("Error getting artwork info: %v", err)
