@@ -207,7 +207,6 @@ func PostArtworkCommand(ctx context.Context, bot *telego.Bot, message telego.Mes
 				utils.ReplyMessage(bot, message, "不支持的链接")
 				return
 			}
-			sourceURL = sources.FindSourceURL(args[0])
 		}
 	}
 	if len(args) > 0 {
