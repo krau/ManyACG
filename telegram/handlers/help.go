@@ -13,7 +13,6 @@ import (
 
 func Help(ctx context.Context, bot *telego.Bot, message telego.Message) {
 	helpText := `使用方法:
-
 /setu - 随机图片(NSFW)
 /random - 随机全年龄图片
 /search - 搜索相似图片
@@ -27,16 +26,20 @@ func Help(ctx context.Context, bot *telego.Bot, message telego.Message) {
 	}
 	helpText += `
 获取图片相关功能中支持使用以下格式的参数:
+
 使用 '|' 分隔'或'关系, 使用 '空格' 分隔'与'关系, 示例:
 
 /random 萝莉|白丝 猫耳|原创
 
 表示搜索包含"萝莉"或"白丝", 且包含"猫耳"或"原创"的图片.
+
 Inline 查询(在任意聊天框中@本bot)支持同样的参数格式.
 `
 	isAdmin, _ := service.IsAdmin(ctx, message.From.ID)
 	if isAdmin {
-		helpText += `/set_admin - 设置|删除管理员
+		helpText += `
+管理员命令:
+/set_admin - 设置|删除管理员
 /delete - 删除整个作品
 /r18 - 设置作品R18标记
 /title - 设置作品标题
@@ -45,13 +48,13 @@ Inline 查询(在任意聊天框中@本bot)支持同样的参数格式.
 /deltags - 删除作品标签
 /fetch - 手动开始一次抓取
 
-/process_pictures_hashsize - 处理无哈希和尺寸的图片
-/process_pictures_storage - 处理图片存储(生成缩略图, 迁移用)
-/fix_twitter_artists - 修复Twitter作者信息(更新所有推特作品的作者信息)
+process_pictures_hashsize - 处理无哈希和尺寸的图片
+process_pictures_storage - 处理图片存储(生成缩略图, 迁移用)
+fix_twitter_artists - 修复Twitter作者信息(更新所有推特作品的作者信息)
 
 发送作品链接可以获取信息或发布到频道
 `
 	}
-	helpText += fmt.Sprintf("\n版本: %s, 构建日期 %s, 提交 %s", common.Version, common.BuildTime, common.Commit)
+	helpText += fmt.Sprintf("\n版本: %s, 构建日期 %s, 提交 %s", common.Version, common.BuildTime, common.Commit[:7])
 	utils.ReplyMessage(bot, message, helpText)
 }
