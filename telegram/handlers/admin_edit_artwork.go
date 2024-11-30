@@ -2,7 +2,7 @@ package handlers
 
 import (
 	"context"
-	"fmt"
+	"errors"
 	"strconv"
 	"strings"
 
@@ -15,6 +15,7 @@ import (
 	"github.com/mymmrac/telego"
 	"github.com/mymmrac/telego/telegoutil"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo"
 )
 
 func ToggleArtworkR18(ctx context.Context, bot *telego.Bot, message telego.Message) {
@@ -241,7 +242,7 @@ func EditArtworkTitle(ctx context.Context, bot *telego.Bot, message telego.Messa
 	utils.ReplyMessage(bot, message, "更新作品标题成功")
 }
 
-// 删除 CachedArtwork
+// 删除 CachedArtwork, 刷新 telegram info
 func RefreshArtwork(ctx context.Context, bot *telego.Bot, message telego.Message) {
 	if !CheckPermissionInGroup(ctx, message, types.PermissionEditArtwork) {
 		utils.ReplyMessage(bot, message, "你没有编辑作品的权限")
@@ -259,18 +260,34 @@ func RefreshArtwork(ctx context.Context, bot *telego.Bot, message telego.Message
 		return
 	}
 
-	cachedArtwork, err := service.GetCachedArtworkByURL(ctx, sourceURL)
-	if err != nil {
-		utils.ReplyMessage(bot, message, "获取作品缓存失败: "+err.Error())
-		return
-	}
 	if err := service.DeleteCachedArtworkByURL(ctx, sourceURL); err != nil {
-		utils.ReplyMessage(bot, message, "删除作品缓存失败: "+err.Error())
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			common.Logger.Warnf("删除作品缓存失败: %s", err)
+		} else {
+			utils.ReplyMessage(bot, message, "删除作品缓存失败: "+err.Error())
+			return
+		}
+	}
+
+	artwork, err := service.GetArtworkByURL(ctx, sourceURL)
+	if err != nil {
+		if !errors.Is(err, mongo.ErrNoDocuments) {
+			utils.ReplyMessage(bot, message, "获取作品信息失败: "+err.Error())
+			return
+		}
+		utils.ReplyMessage(bot, message, "该作品未发布, 缓存已删除")
 		return
 	}
-	originCaption := utils.GetArtworkHTMLCaption(cachedArtwork.Artwork)
-	originCaption += fmt.Sprintf("\n该作品共有 %d 张图片", len(cachedArtwork.Artwork.Pictures))
-	if _, err := utils.ReplyMessageWithHTML(bot, message, fmt.Sprintf("已删除作品缓存, 原始信息:\n\n%s", originCaption)); err != nil {
-		common.Logger.Errorf("回复消息失败: %s", err)
+	for _, picture := range artwork.Pictures {
+		if picture.TelegramInfo == nil {
+			continue
+		}
+		picture.TelegramInfo.PhotoFileID = ""
+		picture.TelegramInfo.DocumentFileID = ""
+		if err := service.UpdatePictureTelegramInfo(ctx, picture, picture.TelegramInfo); err != nil {
+			utils.ReplyMessage(bot, message, "刷新作品信息失败: "+err.Error())
+			return
+		}
 	}
+	utils.ReplyMessage(bot, message, "已刷新作品信息")
 }

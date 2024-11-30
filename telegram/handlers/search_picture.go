@@ -94,7 +94,7 @@ func getSearchResult(ctx context.Context, hasPermission bool, fileReader io.Read
 				text += fmt.Sprintf("[频道消息](%s)\n", utils.GetArtworkPostMessageURL(picture.TelegramInfo.MessageID, ChannelChatID))
 			}
 			if enableSite {
-				text += fmt.Sprintf("[ManyACG](%s)\n", config.Cfg.API.SiteURL+"/artwork/"+artwork.ID)
+				text += fmt.Sprintf("[ManyACG](%s)\n\n", config.Cfg.API.SiteURL+"/artwork/"+artwork.ID)
 			}
 		}
 		return text, true, nil

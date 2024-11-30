@@ -263,23 +263,37 @@ func SendFullArtworkInfo(ctx context.Context, bot *telego.Bot, message telego.Me
 	}
 
 	cachedArtwork, err := service.GetCachedArtworkByURL(ctx, sourceURL)
-	if err != nil {
-		common.Logger.Warnf("获取缓存作品信息失败: %s", err)
-		return nil
-	}
-
-	for i, picture := range cachedArtwork.Artwork.Pictures {
-		if picture.TelegramInfo == nil {
-			picture.TelegramInfo = &types.TelegramInfo{}
-		}
-		if i < len(messages) {
-			if messages[i].Photo != nil {
-				picture.TelegramInfo.PhotoFileID = messages[i].Photo[len(messages[i].Photo)-1].FileID
+	if err == nil && len(cachedArtwork.Artwork.Pictures) == len(messages) {
+		for i, picture := range cachedArtwork.Artwork.Pictures {
+			if picture.TelegramInfo == nil {
+				picture.TelegramInfo = &types.TelegramInfo{}
+			}
+			if i < len(messages) {
+				if messages[i].Photo != nil {
+					picture.TelegramInfo.PhotoFileID = messages[i].Photo[len(messages[i].Photo)-1].FileID
+				}
 			}
 		}
+		if err := service.UpdateCachedArtwork(ctx, cachedArtwork); err != nil {
+			common.Logger.Warnf("更新缓存作品信息失败: %s", err)
+		}
 	}
-	if err := service.UpdateCachedArtwork(ctx, cachedArtwork); err != nil {
-		common.Logger.Warnf("更新缓存作品信息失败: %s", err)
+
+	artworkDB, _ := service.GetArtworkByURL(ctx, sourceURL)
+	if artworkDB != nil && len(artworkDB.Pictures) == len(messages) {
+		for i, picture := range artworkDB.Pictures {
+			if picture.TelegramInfo == nil {
+				picture.TelegramInfo = &types.TelegramInfo{}
+			}
+			if i < len(messages) {
+				if messages[i].Photo != nil {
+					picture.TelegramInfo.PhotoFileID = messages[i].Photo[len(messages[i].Photo)-1].FileID
+					if err := service.UpdatePictureTelegramInfo(ctx, picture, picture.TelegramInfo); err != nil {
+						common.Logger.Warnf("更新图片信息失败: %s", err)
+					}
+				}
+			}
+		}
 	}
 	return nil
 }
