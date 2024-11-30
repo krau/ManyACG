@@ -275,15 +275,7 @@ func CompressImageForTelegramByFFmpegFromBytes(input []byte, maxDepth uint, extr
 	}
 	vfKwArg := ffmpeg.KwArgs{"vf": fmt.Sprintf("scale=%d:%d:flags=lanczos", newWidth, newHeight)}
 
-	buf := imageBufferPool.Get().(*bytes.Buffer)
-	buf.Reset()
-	defer func() {
-		buf.Reset()
-		imageBufferPool.Put(buf)
-	}()
-	if buf.Cap() < inputLen {
-		buf.Grow(inputLen - buf.Cap())
-	}
+	buf := bytes.NewBuffer(nil)
 
 	err = ffmpeg.Input("pipe:").Output("pipe:", vfKwArg, ffmpeg.KwArgs{"format": "mjpeg"}, ffmpeg.MergeKwArgs(extraFFmpegKwArgs)).WithInput(bytes.NewReader(input)).WithOutput(buf).Run()
 
