@@ -1,10 +1,10 @@
 package service
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"image"
-	"io"
 
 	"github.com/krau/ManyACG/common"
 	"github.com/krau/ManyACG/dao"
@@ -168,17 +168,16 @@ func ProcessPictureHashAndUpdate(ctx context.Context, picture *types.Picture) er
 	if err != nil {
 		return err
 	}
-	var file io.ReadCloser
+	var file []byte
 	if picture.StorageInfo.Original != nil {
-		file, err = storage.GetFileStream(ctx, picture.StorageInfo.Original)
+		file, err = storage.GetFile(ctx, picture.StorageInfo.Original)
 	} else {
-		file, err = common.GetBodyReader(ctx, picture.Original, nil)
+		file, err = common.DownloadWithCache(ctx, picture.Original, nil)
 	}
 	if err != nil {
 		return err
 	}
-	defer file.Close()
-	img, _, err := image.Decode(file)
+	img, _, err := image.Decode(bytes.NewReader(file))
 	if err != nil {
 		return fmt.Errorf("failed to decode image: %w", err)
 	}
