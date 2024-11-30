@@ -4,6 +4,7 @@ import (
 	"context"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"syscall"
 	"time"
 
@@ -58,8 +59,32 @@ func Run() {
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	sig := <-quit
 	common.Logger.Info(sig, " Exiting...")
+	defer common.Logger.Info("Exited.")
 	if err := service.Cleanup(context.TODO()); err != nil {
 		common.Logger.Error(err)
 	}
-	common.Logger.Info("See you next time.")
+	if config.Cfg.Storage.CacheDir != "" {
+		for _, path := range []string{"/", ".", "\\", ".."} {
+			if filepath.Clean(config.Cfg.Storage.CacheDir) == path {
+				common.Logger.Error("Invalid cache dir: ", config.Cfg.Storage.CacheDir)
+				return
+			}
+		}
+		currentDir, err := os.Getwd()
+		if err != nil {
+			common.Logger.Error(err)
+			return
+		}
+		cachePath := filepath.Join(currentDir, config.Cfg.Storage.CacheDir)
+		cachePath, err = filepath.Abs(cachePath)
+		if err != nil {
+			common.Logger.Error(err)
+			return
+		}
+		common.Logger.Info("Removing cache dir: ", cachePath)
+		if err := os.RemoveAll(cachePath); err != nil {
+			common.Logger.Error(err)
+			return
+		}
+	}
 }
