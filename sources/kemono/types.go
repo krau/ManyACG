@@ -53,7 +53,7 @@ func (resp *KemonoPostResp) ToArtwork() (*types.Artwork, error) {
 	}
 	pictures := make([]*types.Picture, 0)
 	if isImage(postResp.File.Path) {
-		fileResp, err := reqClient.R().Get(cdnBaseURL + postResp.File.Path)
+		fileResp, err := reqClient.R().DisableAutoReadResponse().Get(cdnBaseURL + postResp.File.Path)
 		if err == nil && fileResp.StatusCode == http.StatusOK {
 			fileUrl := cdnBaseURL + postResp.File.Path
 			if fileResp.Response != nil &&
@@ -84,11 +84,11 @@ func (resp *KemonoPostResp) ToArtwork() (*types.Artwork, error) {
 			common.Logger.Warnf("get attachment %s failed: %s", fileURL, err)
 			continue
 		}
+		defer fileResp.Body.Close()
 		if fileResp.StatusCode != http.StatusOK {
 			common.Logger.Warnf("get attachment %s failed: %d", fileURL, fileResp.StatusCode)
 			continue
 		}
-		fileResp.Body.Close()
 		isDuplicate := false
 		for _, picture := range pictures {
 			if picture.Original == fileURL {
@@ -100,6 +100,13 @@ func (resp *KemonoPostResp) ToArtwork() (*types.Artwork, error) {
 			continue
 		}
 		thumbnailURL := thumbnailsBaseURL + attachment.Path
+		if fileResp.Response != nil &&
+			fileResp.Response.Request != nil &&
+			fileResp.Response.Request.Response != nil &&
+			fileResp.Response.Request.Response.Header != nil &&
+			fileResp.Response.Request.Response.Header.Get("Location") != "" {
+			fileURL = fileResp.Response.Request.Response.Header.Get("Location")
+		}
 		pictures = append(pictures, &types.Picture{
 			Index:     uint(i),
 			Thumbnail: thumbnailURL,
