@@ -8,7 +8,7 @@ import (
 )
 
 var (
-	danbooruSourceURLRegexp = regexp.MustCompile(`danbooru\.donmai\.us/posts/\d+`)
+	danbooruSourceURLRegexp = regexp.MustCompile(`danbooru\.donmai\.us/(posts|post\/show)/\d+`)
 	fakeArtist              = &types.Artist{
 		Name:     "Danbooru",
 		Username: "Danbooru",
