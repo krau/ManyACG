@@ -2,7 +2,6 @@ package kemono
 
 import (
 	"encoding/json"
-	"errors"
 	"net/http"
 	"path/filepath"
 	"regexp"
@@ -56,9 +55,6 @@ func (k *Kemono) GetArtworkInfo(sourceURL string) (*types.Artwork, error) {
 	var kemonoResp KemonoPostResp
 	if err := json.Unmarshal(resp.Bytes(), &kemonoResp); err != nil {
 		return nil, err
-	}
-	if kemonoResp.Error != "" {
-		return nil, errors.New(kemonoResp.Error)
 	}
 	return kemonoResp.ToArtwork()
 }

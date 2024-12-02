@@ -11,17 +11,18 @@ import (
 )
 
 type KemonoPostResp struct {
-	Error   string `json:"error"`
-	ID      string `json:"id"`
-	User    string `json:"user"`
-	Service string `json:"service"`
-	Title   string `json:"title"`
-	Content string `json:"content"`
-	File    struct {
-		Name string `json:"name"`
-		Path string `json:"path"`
-	} `json:"file"`
-	Attachments []KemonoPostAttachment `json:"attachments"`
+	Post struct {
+		ID      string `json:"id"`
+		User    string `json:"user"`
+		Service string `json:"service"`
+		Title   string `json:"title"`
+		Content string `json:"content"`
+		File    struct {
+			Name string `json:"name"`
+			Path string `json:"path"`
+		} `json:"file"`
+		Attachments []KemonoPostAttachment `json:"attachments"`
+	} `json:"post"`
 }
 
 type KemonoPostAttachment struct {
@@ -39,24 +40,33 @@ type KemonoCreatorProfileResp struct {
 var htmlRe = regexp.MustCompile("<[^>]+>")
 
 func (resp *KemonoPostResp) ToArtwork() (*types.Artwork, error) {
-	creatorResp, err := getAuthorProfile(resp.Service, resp.User)
+	postResp := resp.Post
+	creatorResp, err := getAuthorProfile(postResp.Service, postResp.User)
 	if err != nil {
 		return nil, err
 	}
 	artist := &types.Artist{
 		Type:     types.SourceTypeKemono,
 		Name:     creatorResp.Name,
-		Username: resp.Service + "_" + creatorResp.PubilcID,
+		Username: postResp.Service + "_" + creatorResp.PubilcID,
 		UID:      creatorResp.ID,
 	}
 	pictures := make([]*types.Picture, 0)
-	if isImage(resp.File.Path) {
-		fileResp, err := reqClient.R().DisableAutoReadResponse().Get(cdnBaseURL + resp.File.Path)
+	if isImage(postResp.File.Path) {
+		fileResp, err := reqClient.R().Get(cdnBaseURL + postResp.File.Path)
 		if err == nil && fileResp.StatusCode == http.StatusOK {
+			fileUrl := cdnBaseURL + postResp.File.Path
+			if fileResp.Response != nil &&
+				fileResp.Response.Request != nil &&
+				fileResp.Response.Request.Response != nil &&
+				fileResp.Response.Request.Response.Header != nil &&
+				fileResp.Response.Request.Response.Header.Get("Location") != "" {
+				fileUrl = fileResp.Response.Request.Response.Header.Get("Location")
+			}
 			pictures = append(pictures, &types.Picture{
 				Index:     0,
-				Thumbnail: thumbnailsBaseURL + resp.File.Path,
-				Original:  cdnBaseURL + resp.File.Path,
+				Thumbnail: thumbnailsBaseURL + postResp.File.Path,
+				Original:  fileUrl,
 				Width:     0,
 				Height:    0,
 			})
@@ -64,7 +74,7 @@ func (resp *KemonoPostResp) ToArtwork() (*types.Artwork, error) {
 		fileResp.Body.Close()
 	}
 	i := len(pictures)
-	for _, attachment := range resp.Attachments {
+	for _, attachment := range postResp.Attachments {
 		if !isImage(attachment.Path) {
 			continue
 		}
@@ -103,11 +113,11 @@ func (resp *KemonoPostResp) ToArtwork() (*types.Artwork, error) {
 		return nil, ErrInvalidKemonoPostURL
 	}
 	artwork := &types.Artwork{
-		Title:       resp.Title,
-		Description: htmlRe.ReplaceAllString(strings.ReplaceAll(resp.Content, "<br/>", "\n"), ""),
+		Title:       postResp.Title,
+		Description: htmlRe.ReplaceAllString(strings.ReplaceAll(postResp.Content, "<br/>", "\n"), ""),
 		R18:         false,
 		SourceType:  types.SourceTypeKemono,
-		SourceURL:   fmt.Sprintf("https://kemono.su/%s/user/%s/post/%s", resp.Service, resp.User, resp.ID),
+		SourceURL:   fmt.Sprintf("https://kemono.su/%s/user/%s/post/%s", postResp.Service, postResp.User, postResp.ID),
 		Artist:      artist,
 		Tags:        nil,
 		Pictures:    pictures,
