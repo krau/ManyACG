@@ -8,6 +8,7 @@ type LikeModel struct {
 	ID        primitive.ObjectID `bson:"_id,omitempty"`
 	ArtworkID primitive.ObjectID `bson:"artwork_id"`
 	UserID    primitive.ObjectID `bson:"user_id"`
+	CreatedAt primitive.DateTime `bson:"created_at"`
 }
 
 type FavoriteModel struct {

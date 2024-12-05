@@ -2,6 +2,7 @@ package dao
 
 import (
 	"context"
+	"time"
 
 	"github.com/krau/ManyACG/types"
 	"go.mongodb.org/mongo-driver/bson"
@@ -14,6 +15,7 @@ var (
 )
 
 func CreateLike(ctx context.Context, like *types.LikeModel) (*mongo.InsertOneResult, error) {
+	like.CreatedAt = primitive.NewDateTimeFromTime(time.Now())
 	return likeCollection.InsertOne(ctx, like)
 }
 

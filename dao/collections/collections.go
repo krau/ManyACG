@@ -30,4 +30,5 @@ var AllCollections = []string{
 	Users,
 	Likes,
 	Favorites,
+	UnauthUser,
 }
