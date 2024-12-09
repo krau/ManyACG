@@ -40,7 +40,7 @@ Kawaii is All You Need! ᕕ(◠ڼ◠)ᕗ
 func Run() {
 	config.InitConfig()
 	common.Init()
-	fmt.Printf(banner, common.BuildTime, common.BuildTime, common.Commit[:7])
+	fmt.Printf(banner, common.BuildTime, common.Version, common.Commit[:7])
 
 	if config.Cfg.Debug {
 		go func() {
