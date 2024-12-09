@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"os/signal"
 	"path/filepath"
@@ -22,9 +23,24 @@ import (
 	"github.com/krau/ManyACG/telegram"
 )
 
+const banner = `
+  __  __                              _       ____    ____ 
+ |  \/  |   __ _   _ __    _   _     / \     / ___|  / ___|
+ | |\/| |  / _  | | '_ \  | | | |   / _ \   | |     | |  _ 
+ | |  | | | (_| | | | | | | |_| |  / ___ \  | |___  | |_| |
+ |_|  |_|  \__,_| |_| |_|  \__, | /_/   \_\  \____|  \____|
+                           |___/                                        
+
+Build time: %s  Version: %s  Commit: %s
+Github: https://github.com/krau/ManyACG
+Kawaii is All You Need! ᕕ(◠ڼ◠)ᕗ
+
+`
+
 func Run() {
 	config.InitConfig()
 	common.Init()
+	fmt.Printf(banner, common.BuildTime, common.BuildTime, common.Commit[:7])
 
 	if config.Cfg.Debug {
 		go func() {
