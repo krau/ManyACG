@@ -55,6 +55,6 @@ fix_twitter_artists - 修复Twitter作者信息(更新所有推特作品的作�
 发送作品链接可以获取信息或发布到频道
 `
 	}
-	helpText += fmt.Sprintf("\n版本: %s, 构建日期 %s, 提交 %s", common.Version, common.BuildTime, common.Commit[:7])
+	helpText += fmt.Sprintf("\n版本: %s, 构建日期 %s, 提交 %s\nhttps://github.com/krau/ManyACG", common.Version, common.BuildTime, common.Commit[:7])
 	utils.ReplyMessage(bot, message, helpText)
 }
