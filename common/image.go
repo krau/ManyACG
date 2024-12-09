@@ -248,7 +248,7 @@ func CompressImageForTelegramByFFmpegFromBytes(input []byte, maxDepth uint, extr
 		}
 		if kwArgs.HasKey("q:v") {
 			settedQV = true
-			if kwArgs.GetString("q:v") == "0" {
+			if kwArgs.GetString("q:v") == "0" { // get string 方法内部使用了 fmt.Sprintf
 				delete(kwArgs, "q:v")
 			}
 		}
