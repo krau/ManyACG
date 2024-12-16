@@ -146,7 +146,7 @@ cache_ttl = 3600
 
 # webdav
 [storage.webdav]
-enable = true
+enable = false
 url = "https://example.com/dav"
 username = "user"
 password = "password"
@@ -155,13 +155,13 @@ path = ""
 
 # 本地存储
 [storage.local]
-enable = true
+enable = false
 # 存储 base 路径
 path = "./downloads"
 
 # Alist
 [storage.alist]
-enable = true
+enable = false
 username = "krau"
 password = "password"
 url = "https://alist.example.com"
@@ -195,13 +195,13 @@ sleep = 5
 enable = false
 # 监听地址
 address = "127.0.0.1:39088"
-# CORS 相关
+# CORS 允许来源
 allowed_origins = ["https://manyacg.top"]
-realm = "manyacg"
 # API Key
 key = "5LiA5Liq5aSN5p2C55qE5a+G56CB"
 # JWT 相关
 secret = "5LiA5Liq5b6I6Zq+55qE5py65a+G"
+realm = "manyacg"
 token_expire = 43200 # 单位: 秒
 refresh_token_expire = 43200
 # API 缓存
@@ -219,13 +219,6 @@ memory_ttl = 10
 "/artwork/:id" = 600
 "/artwork/list" = 10
 "/artwork/count" = 5
-
-# Auth 相关配置, 暂时只有 resend 作为邮件服务
-[auth]
-[auth.resend]
-api_key = "resend_api_key"
-subject = "您的 ManyACG 验证码"
-from = "ManyACG <i@manyacg.top>"
 ```
 
 更详细的配置可以参考 `config` 目录源码
