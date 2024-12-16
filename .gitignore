@@ -4,3 +4,5 @@ cache/
 .VSCodeCounter
 downloads/
 tmp/
+.air.toml
+.vscode/
