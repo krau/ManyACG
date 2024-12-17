@@ -181,6 +181,11 @@ func PostArtworkCallbackQuery(ctx context.Context, bot *telego.Bot, query telego
 	if err := service.UpdateCachedArtworkStatusByURL(ctx, sourceURL, types.ArtworkStatusPosted); err != nil {
 		common.Logger.Errorf("更新缓存作品状态失败: %s", err)
 	}
+	artwork, err = service.GetArtworkByURL(ctx, sourceURL)
+	if err != nil {
+		common.Logger.Errorf("获取作品信息失败: %s", err)
+		return
+	}
 	bot.EditMessageCaption(&telego.EditMessageCaptionParams{
 		ChatID:      telegoutil.ID(query.Message.GetChat().ID),
 		MessageID:   query.Message.GetMessageID(),
