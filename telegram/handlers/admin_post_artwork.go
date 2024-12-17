@@ -549,7 +549,7 @@ func downloadAndCompressArtwork(ctx context.Context, artwork *types.Artwork, sta
 		if err != nil {
 			common.Logger.Warnf("压缩图片失败: %s", err)
 		}
-		cachePath := filepath.Join(config.Cfg.Storage.CacheDir, "image", common.EscapeFileName(picture.Original))
+		cachePath := filepath.Join(config.Cfg.Storage.CacheDir, "image", common.MD5Hash(picture.Original))
 		go common.MkCache(cachePath, tempFile, time.Duration(config.Cfg.Storage.CacheTTL)*time.Second)
 	}
 }

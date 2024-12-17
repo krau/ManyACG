@@ -1,6 +1,8 @@
 package common
 
 import (
+	"crypto/md5"
+	"encoding/hex"
 	"html"
 	"math/rand"
 	"net/url"
@@ -26,8 +28,8 @@ var fileNameReplacer = strings.NewReplacer(
 	"+", "_",
 )
 
-func EscapeFileName(fileName string) string {
-	return fileNameReplacer.Replace(fileName)
+func EscapeFileName(str string) string {
+	return fileNameReplacer.Replace(str)
 }
 
 var markdownRe = regexp.MustCompile("([" + regexp.QuoteMeta(`\_*[]()~`+"`"+`>#+-=|{}.!`) + "])")
@@ -38,6 +40,11 @@ func EscapeMarkdown(text string) string {
 
 func EscapeHTML(text string) string {
 	return html.EscapeString(text)
+}
+
+func MD5Hash(data string) string {
+	sum := md5.Sum([]byte(data))
+	return hex.EncodeToString(sum[:])
 }
 
 // 解析字符串为二维数组, 如果以字符串以引号包裹, 则无视分隔符
