@@ -9,12 +9,17 @@ import (
 
 	"github.com/imroc/req/v3"
 	"github.com/krau/ManyACG/config"
+	sourceCommon "github.com/krau/ManyACG/sources/common"
 	"github.com/krau/ManyACG/types"
 )
 
 type Twitter struct{}
 
 var service types.Service
+
+func init() {
+	sourceCommon.RegisterSource(types.SourceTypeTwitter, new(Twitter))
+}
 
 func (t *Twitter) Init(s types.Service) {
 	reqClient = req.C().ImpersonateChrome().SetCommonRetryCount(3)

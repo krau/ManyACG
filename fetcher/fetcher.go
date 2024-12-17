@@ -20,10 +20,10 @@ import (
 
 func StartScheduler(ctx context.Context) {
 	artworkCh := make(chan *types.Artwork, config.Cfg.Fetcher.MaxConcurrent)
-	enabledSources := ""
-	for name, source := range sources.Sources {
+	var enabledSources string
+	for name, source := range sources.GetSources() {
 		enabledSources += string(name) + " "
-		go func(source sources.Source, limit int, artworkCh chan *types.Artwork, interval int) {
+		go func(source types.Source, limit int, artworkCh chan *types.Artwork, interval int) {
 			if interval <= 0 {
 				return
 			}

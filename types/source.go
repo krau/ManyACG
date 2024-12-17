@@ -1,5 +1,11 @@
 package types
 
+import (
+	"regexp"
+
+	"github.com/krau/ManyACG/config"
+)
+
 type SourceType string
 
 const (
@@ -16,4 +22,18 @@ var SourceTypes []SourceType = []SourceType{
 	SourceTypeBilibili,
 	SourceTypeDanbooru,
 	SourceTypeKemono,
+}
+
+type Source interface {
+	Init(service Service)
+	FetchNewArtworksWithCh(artworkCh chan *Artwork, limit int) error
+	FetchNewArtworks(limit int) ([]*Artwork, error)
+	GetArtworkInfo(sourceURL string) (*Artwork, error)
+	GetPictureInfo(sourceURL string, index uint) (*Picture, error)
+	GetSourceURLRegexp() *regexp.Regexp
+	// CommonSourceURl should has prefix "https://"
+	GetCommonSourceURL(url string) string
+	// FileName 返回图片的用于存储和传输的文件名
+	GetFileName(artwork *Artwork, picture *Picture) string
+	Config() *config.SourceCommonConfig
 }

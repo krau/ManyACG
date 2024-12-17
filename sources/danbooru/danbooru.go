@@ -10,6 +10,7 @@ import (
 	"github.com/imroc/req/v3"
 	"github.com/krau/ManyACG/common"
 	"github.com/krau/ManyACG/config"
+	sourceCommon "github.com/krau/ManyACG/sources/common"
 
 	"github.com/krau/ManyACG/types"
 )
@@ -17,6 +18,10 @@ import (
 type Danbooru struct{}
 
 var reqClient *req.Client
+
+func init() {
+	sourceCommon.RegisterSource(types.SourceTypeDanbooru, new(Danbooru))
+}
 
 func (d *Danbooru) Init(_ types.Service) {
 	reqClient = req.C().ImpersonateChrome().SetCommonRetryCount(2)

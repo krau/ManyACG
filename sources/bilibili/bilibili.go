@@ -6,12 +6,17 @@ import (
 	"regexp"
 
 	"github.com/krau/ManyACG/config"
+	sourceCommon "github.com/krau/ManyACG/sources/common"
 	"github.com/krau/ManyACG/types"
 
 	"github.com/imroc/req/v3"
 )
 
 type Bilibili struct{}
+
+func init() {
+	sourceCommon.RegisterSource(types.SourceTypeBilibili, new(Bilibili))
+}
 
 func (b *Bilibili) Init(_ types.Service) {
 	reqClient = req.C().ImpersonateChrome().SetUserAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Safari/537.36")

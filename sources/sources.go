@@ -1,82 +1,64 @@
 package sources
 
 import (
-	"regexp"
+	"reflect"
 	"strings"
 
 	"github.com/krau/ManyACG/common"
 	"github.com/krau/ManyACG/config"
 	"github.com/krau/ManyACG/errors"
+	sourceCommon "github.com/krau/ManyACG/sources/common"
 
-	"github.com/krau/ManyACG/sources/bilibili"
-	"github.com/krau/ManyACG/sources/danbooru"
-	"github.com/krau/ManyACG/sources/kemono"
-	"github.com/krau/ManyACG/sources/pixiv"
-	"github.com/krau/ManyACG/sources/twitter"
 	"github.com/krau/ManyACG/types"
+
+	_ "github.com/krau/ManyACG/sources/bilibili"
+	_ "github.com/krau/ManyACG/sources/danbooru"
+	_ "github.com/krau/ManyACG/sources/kemono"
+	_ "github.com/krau/ManyACG/sources/pixiv"
+	_ "github.com/krau/ManyACG/sources/twitter"
 )
 
-var (
-	Sources          = make(map[types.SourceType]Source)
-	SourceURLRegexps = make(map[types.SourceType]*regexp.Regexp)
-)
-
-var (
-	sourcesNotInit = make(map[types.SourceType]Source)
-)
-
-func newSource(sourceType types.SourceType) Source {
-	switch sourceType {
-	case types.SourceTypePixiv:
-		return new(pixiv.Pixiv)
-	case types.SourceTypeTwitter:
-		return new(twitter.Twitter)
-	case types.SourceTypeBilibili:
-		return new(bilibili.Bilibili)
-	case types.SourceTypeKemono:
-		return new(kemono.Kemono)
-	case types.SourceTypeDanbooru:
-		return new(danbooru.Danbooru)
+func isSourceEnabled(sourceType types.SourceType) bool {
+	cfgValue := reflect.ValueOf(config.Cfg.Source)
+	field := cfgValue.FieldByName(strings.Title(string(sourceType))) // ignore deprecated warning because we don't need to support unicode punctuation
+	if !field.IsValid() {
+		return false
 	}
-	return nil
+	if field.Kind() != reflect.Struct {
+		return false
+	}
+	enableField := field.FieldByName("Enable")
+	if !enableField.IsValid() {
+		return false
+	}
+	if enableField.Kind() != reflect.Bool {
+		return false
+	}
+	return enableField.Bool()
 }
 
 func InitSources(service types.Service) {
 	common.Logger.Info("Initializing sources")
-	for _, sourceType := range types.SourceTypes {
-		sourcesNotInit[sourceType] = newSource(sourceType)
+	for sourceType, source := range sourceCommon.Sources {
+		if isSourceEnabled(sourceType) {
+			source.Init(service)
+		} else {
+			delete(sourceCommon.Sources, sourceType)
+			delete(sourceCommon.SourceURLRegexps, sourceType)
+		}
 	}
-	if config.Cfg.Source.Pixiv.Enable {
-		Sources[types.SourceTypePixiv] = sourcesNotInit[types.SourceTypePixiv]
-		Sources[types.SourceTypePixiv].Init(service)
-	}
-	if config.Cfg.Source.Twitter.Enable {
-		Sources[types.SourceTypeTwitter] = sourcesNotInit[types.SourceTypeTwitter]
-		Sources[types.SourceTypeTwitter].Init(service)
-	}
-	if config.Cfg.Source.Bilibili.Enable {
-		Sources[types.SourceTypeBilibili] = sourcesNotInit[types.SourceTypeBilibili]
-		Sources[types.SourceTypeBilibili].Init(service)
-	}
-	if config.Cfg.Source.Kemono.Enable {
-		Sources[types.SourceTypeKemono] = sourcesNotInit[types.SourceTypeKemono]
-		Sources[types.SourceTypeKemono].Init(service)
-	}
-	if config.Cfg.Source.Danbooru.Enable {
-		Sources[types.SourceTypeDanbooru] = sourcesNotInit[types.SourceTypeDanbooru]
-		Sources[types.SourceTypeDanbooru].Init(service)
-	}
-	for sourceType, source := range Sources {
-		SourceURLRegexps[sourceType] = source.GetSourceURLRegexp()
-	}
+}
+
+func GetSources() map[types.SourceType]types.Source {
+	return sourceCommon.Sources
 }
 
 func GetArtworkInfo(sourceURL string) (*types.Artwork, error) {
 	common.Logger.Infof("Getting artwork info: %s", sourceURL)
-	for k, v := range SourceURLRegexps {
+	for k, v := range sourceCommon.SourceURLRegexps {
 		if v.MatchString(sourceURL) {
-			if Sources[k] != nil {
-				return Sources[k].GetArtworkInfo(sourceURL)
+			if sourceCommon.Sources[k] != nil {
+				return sourceCommon.Sources[k].GetArtworkInfo(sourceURL)
 			}
 		}
 	}
@@ -85,18 +67,14 @@ func GetArtworkInfo(sourceURL string) (*types.Artwork, error) {
 }
 
 func GetFileName(artwork *types.Artwork, picture *types.Picture) (string, error) {
-	if sourcesNotInit[artwork.SourceType] == nil {
-		return "", errors.ErrSourceNotSupported
-	}
-	fileName := sourcesNotInit[artwork.SourceType].GetFileName(artwork, picture)
-	return common.EscapeFileName(fileName), nil
+	return sourceCommon.GetFileName(artwork, picture)
 }
 
 func FindSourceURL(text string) string {
 	text = strings.ReplaceAll(text, "\n", " ")
-	for sourceType, reg := range SourceURLRegexps {
+	for sourceType, reg := range sourceCommon.SourceURLRegexps {
 		if url := reg.FindString(text); url != "" {
-			return Sources[sourceType].GetCommonSourceURL(url)
+			return sourceCommon.Sources[sourceType].GetCommonSourceURL(url)
 		}
 	}
 	return ""
@@ -105,7 +83,7 @@ func FindSourceURL(text string) string {
 // MatchesSourceURL returns whether the text contains a source URL.
 func MatchesSourceURL(text string) bool {
 	text = strings.ReplaceAll(text, "\n", " ")
-	for _, reg := range SourceURLRegexps {
+	for _, reg := range sourceCommon.SourceURLRegexps {
 		if reg.MatchString(text) {
 			return true
 		}

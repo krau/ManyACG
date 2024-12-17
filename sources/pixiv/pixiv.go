@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/krau/ManyACG/config"
+	sourceCommon "github.com/krau/ManyACG/sources/common"
 	"github.com/krau/ManyACG/types"
 
 	"github.com/imroc/req/v3"
@@ -17,6 +18,10 @@ import (
 type Pixiv struct{}
 
 var service types.Service
+
+func init() {
+	sourceCommon.RegisterSource(types.SourceTypePixiv, new(Pixiv))
+}
 
 func (p *Pixiv) Init(s types.Service) {
 	reqClient = req.C().ImpersonateChrome()
