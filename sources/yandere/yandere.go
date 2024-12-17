@@ -114,9 +114,12 @@ func (y *Yandere) GetCommonSourceURL(url string) string {
 func (y *Yandere) GetFileName(artwork *types.Artwork, picture *types.Picture) string {
 	idStr := GetPostID(artwork.SourceURL)
 	if idStr == "" {
-		idStr = "unknown"
+		idStr = picture.ID
 	}
-	return "yandere_" + idStr + filepath.Ext(picture.Original)
+	if idStr == "" {
+		idStr = common.MD5Hash(picture.Original)
+	}
+	return "yandere_" + idStr + "_" + strconv.Itoa(int(picture.Index)) + filepath.Ext(picture.Original)
 }
 
 func (y *Yandere) Config() *config.SourceCommonConfig {
