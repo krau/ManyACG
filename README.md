@@ -16,6 +16,7 @@ Demo:
   - [x] [Danbooru](https://danbooru.donmai.us/)
   - [x] [Bilibili](https://www.bilibili.com/)
   - [x] [Kemono](https://www.kemono.su/)
+  - [x] [Yandere](https://yande.re/)
 - **可选的存储原图**, 多存储端支持
   - [x] 本地存储
   - [x] WebDAV
@@ -121,6 +122,9 @@ enable = true
 
 # kemono
 [source.kemono]
+enable = true
+
+[source.yandere]
 enable = true
 
 # 抓取配置, 建议都保持默认
