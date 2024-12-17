@@ -67,11 +67,11 @@ func (d *Danbooru) GetSourceURLRegexp() *regexp.Regexp {
 }
 
 func (d *Danbooru) GetCommonSourceURL(url string) string {
-	danbooruPostURL := danbooruSourceURLRegexp.FindString(url)
-	if danbooruPostURL == "" {
+	postID := GetPostID(url)
+	if postID == "" {
 		return ""
 	}
-	return "https://" + danbooruPostURL
+	return "https://danbooru.donmai.us/posts/" + postID
 }
 
 func (d *Danbooru) GetFileName(artwork *types.Artwork, picture *types.Picture) string {
