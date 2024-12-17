@@ -47,7 +47,7 @@ Windows:
 1. 在 [gyan.dev](https://www.gyan.dev/ffmpeg/builds/) 下载 [ffmpeg-release-full.7z](https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-essentials.7z)
 2. 解压并将 `bin` 目录添加到环境变量 `PATH`
 
-完成数据库和 FFmpeg 的安装后, 在 [release](https://github.com/krau/ManyACG/releases) 页面下载与自己系统和架构对应的文件, 解压.
+完成数据库和 FFmpeg 的安装后, 需要为准备使用的 Bot 设置一个头像, 然后在 [release](https://github.com/krau/ManyACG/releases) 页面下载与自己系统和架构对应的文件, 解压.
 
 在与解压出的二进制文件的相同目录下创建 `config.toml` 文件, 参考以下内容修改各项配置:
 
