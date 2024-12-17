@@ -16,6 +16,7 @@ import (
 	_ "github.com/krau/ManyACG/sources/kemono"
 	_ "github.com/krau/ManyACG/sources/pixiv"
 	_ "github.com/krau/ManyACG/sources/twitter"
+	_ "github.com/krau/ManyACG/sources/yandere"
 )
 
 func isSourceEnabled(sourceType types.SourceType) bool {

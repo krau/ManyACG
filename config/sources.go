@@ -7,6 +7,7 @@ type sourceConfigs struct {
 	Bilibili SourceBilibiliConfig `toml:"bilibili" mapstructure:"bilibili" json:"bilibili" yaml:"bilibili"`
 	Danbooru SourceDanbooruConfig `toml:"danbooru" mapstructure:"danbooru" json:"danbooru" yaml:"danbooru"`
 	Kemono   SourceKemonoConfig   `toml:"kemono" mapstructure:"kemono" json:"kemono" yaml:"kemono"`
+	Yandere  SourceYandereConfig  `toml:"yandere" mapstructure:"yandere" json:"yandere" yaml:"yandere"`
 }
 
 type SourcePixivConfig struct {
@@ -37,4 +38,8 @@ type SourceDanbooruConfig struct {
 type SourceKemonoConfig struct {
 	Enable  bool   `toml:"enable" mapstructure:"enable" json:"enable" yaml:"enable"`
 	Session string `toml:"session" mapstructure:"session" json:"session" yaml:"session"`
+}
+
+type SourceYandereConfig struct {
+	Enable bool `toml:"enable" mapstructure:"enable" json:"enable" yaml:"enable"`
 }

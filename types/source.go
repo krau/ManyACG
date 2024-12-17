@@ -14,6 +14,7 @@ const (
 	SourceTypeBilibili SourceType = "bilibili"
 	SourceTypeDanbooru SourceType = "danbooru"
 	SourceTypeKemono   SourceType = "kemono"
+	SourceTypeYandere  SourceType = "yandere"
 )
 
 var SourceTypes []SourceType = []SourceType{
@@ -22,6 +23,7 @@ var SourceTypes []SourceType = []SourceType{
 	SourceTypeBilibili,
 	SourceTypeDanbooru,
 	SourceTypeKemono,
+	SourceTypeYandere,
 }
 
 type Source interface {
