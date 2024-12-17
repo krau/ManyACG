@@ -33,7 +33,7 @@ type SendArtworkInfoParams struct {
 func SendArtworkInfo(ctx context.Context, bot *telego.Bot, params *SendArtworkInfoParams) error {
 	if params.Verify {
 		originSourceURL := params.SourceURL
-		params.SourceURL = sources.FindSourceURL(params.SourceURL)
+		params.SourceURL = sources.FindSourceURL(originSourceURL)
 		if params.SourceURL == "" {
 			return fmt.Errorf("无效的链接: %s", originSourceURL)
 		}
@@ -57,6 +57,13 @@ func SendArtworkInfo(ctx context.Context, bot *telego.Bot, params *SendArtworkIn
 			return fmt.Errorf("缓存作品失败: %w", err)
 		}
 		artwork = cachedArtwork.Artwork
+
+		// 再次检查是否已经发布, 主要解决 Yandere 作品多个图片时的问题
+		artwork2, err := service.GetArtworkByURL(ctx, artwork.SourceURL)
+		if err == nil {
+			artwork = artwork2
+			isCreated = true
+		}
 	} else {
 		isCreated = true
 	}

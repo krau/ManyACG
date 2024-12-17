@@ -1,10 +1,12 @@
 package yandere
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"path/filepath"
 	"regexp"
+	"strconv"
 
 	"github.com/imroc/req/v3"
 	"github.com/krau/ManyACG/common"
@@ -17,16 +19,18 @@ type Yandere struct{}
 
 var reqClient *req.Client
 
+var service types.Service
+
 func init() {
 	sourceCommon.RegisterSource(types.SourceTypeYandere, new(Yandere))
 }
 
-func (y *Yandere) Init(service types.Service) {
+func (y *Yandere) Init(s types.Service) {
 	reqClient = req.C().ImpersonateChrome().SetCommonRetryCount(2)
 	if config.Cfg.Source.Proxy != "" {
 		reqClient.SetProxyURL(config.Cfg.Source.Proxy)
 	}
-
+	service = s
 }
 
 func (y *Yandere) FetchNewArtworksWithCh(artworkCh chan *types.Artwork, limit int) error {
@@ -44,6 +48,7 @@ func (y *Yandere) GetArtworkInfo(sourceURL string) (*types.Artwork, error) {
 	}
 	sourceURL = sourceURLPrefix + postID
 	common.Logger.Tracef("request artwork info: %s", sourceURL)
+	common.Logger.Tracef("getting yandere api: %s", apiBaseURL+postID)
 	resp, err := reqClient.R().Get(apiBaseURL + postID)
 	if err != nil {
 		return nil, err
@@ -55,7 +60,35 @@ func (y *Yandere) GetArtworkInfo(sourceURL string) (*types.Artwork, error) {
 	if err := json.Unmarshal(resp.Bytes(), &yandereResp); err != nil {
 		return nil, err
 	}
-	return yandereResp.ToArtwork(), nil
+	parentID := 0
+	if len(yandereResp) == 1 {
+		parentID = yandereResp[0].ParentID
+	}
+	if parentID == 0 {
+		return yandereResp.ToArtwork(), nil
+	}
+
+	parentURL := sourceURLPrefix + strconv.Itoa(parentID)
+	artwork, _ := service.GetArtworkByURL(context.TODO(), parentURL)
+	if artwork != nil {
+		return artwork, nil
+	}
+
+	apiURL := apiBaseURL + strconv.Itoa(parentID)
+	common.Logger.Tracef("getting yandere api: %s", apiURL)
+	resp, err = reqClient.R().Get(apiURL)
+	if err != nil {
+		return nil, err
+	}
+	if resp.IsErrorState() {
+		return nil, fmt.Errorf("%w: %s", ErrYandereAPIError, resp.Status)
+	}
+	var parentResp YandereJsonResp
+	if err := json.Unmarshal(resp.Bytes(), &parentResp); err != nil {
+		return nil, err
+	}
+
+	return parentResp.ToArtwork(), nil
 }
 
 func (y *Yandere) GetPictureInfo(sourceURL string, _ uint) (*types.Picture, error) {
