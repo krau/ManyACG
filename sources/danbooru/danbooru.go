@@ -34,11 +34,11 @@ func (d *Danbooru) FetchNewArtworks(limit int) ([]*types.Artwork, error) {
 }
 
 func (d *Danbooru) GetArtworkInfo(sourceURL string) (*types.Artwork, error) {
-	danbooruPostURL := danbooruSourceURLRegexp.FindString(sourceURL)
-	if danbooruPostURL == "" {
+	postID := GetPostID(sourceURL)
+	if postID == "" {
 		return nil, ErrInvalidDanbooruPostURL
 	}
-	sourceURL = "https://" + danbooruPostURL
+	sourceURL = "https://danbooru.donmai.us/posts/" + postID
 	common.Logger.Tracef("request artwork info: %s", sourceURL)
 	resp, err := reqClient.R().Get(sourceURL + ".json")
 	if err != nil {

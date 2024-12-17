@@ -16,4 +16,13 @@ var (
 		Type:     types.SourceTypeDanbooru,
 	}
 	ErrInvalidDanbooruPostURL = errors.New("invalid danbooru post url")
+	numberRegexp              = regexp.MustCompile(`\d+`)
 )
+
+func GetPostID(url string) string {
+	matchUrl := danbooruSourceURLRegexp.FindString(url)
+	if matchUrl == "" {
+		return ""
+	}
+	return numberRegexp.FindString(matchUrl)
+}
