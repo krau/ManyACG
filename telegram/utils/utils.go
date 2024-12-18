@@ -71,6 +71,7 @@ var tagCharsReplacer = strings.NewReplacer(
 	"*", "_",
 	"?", "",
 	"/", " #",
+	" ", "_",
 )
 
 func GetArtworkHTMLCaption(artwork *types.Artwork) string {
@@ -236,7 +237,7 @@ func SendPictureFileByID(ctx context.Context, bot *telego.Bot, message telego.Me
 	document := telegoutil.Document(message.Chat.ChatID(), file).
 		WithReplyParameters(&telego.ReplyParameters{
 			MessageID: message.MessageID,
-		})
+		}).WithDisableContentTypeDetection()
 	if IsChannelAvailable && picture.TelegramInfo != nil && picture.TelegramInfo.MessageID != 0 {
 		document.WithReplyMarkup(telegoutil.InlineKeyboard([]telego.InlineKeyboardButton{
 			telegoutil.InlineKeyboardButton("详情").WithURL(GetArtworkPostMessageURL(picture.TelegramInfo.MessageID, channelChatID)),
