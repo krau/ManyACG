@@ -17,6 +17,7 @@ Demo:
   - [x] [Bilibili](https://www.bilibili.com/)
   - [x] [Kemono](https://www.kemono.su/)
   - [x] [Yandere](https://yande.re/)
+  - [x] [Nhentai](https://nhentai.net/)
 - **可选的存储原图**, 多存储端支持
   - [x] 本地存储
   - [x] WebDAV
