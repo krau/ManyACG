@@ -125,7 +125,12 @@ enable = true
 [source.kemono]
 enable = true
 
+# yandere
 [source.yandere]
+enable = true
+
+# nhentai
+[source.nhentai]
 enable = true
 
 # 抓取配置, 建议都保持默认
