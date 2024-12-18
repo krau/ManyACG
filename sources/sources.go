@@ -14,6 +14,7 @@ import (
 	_ "github.com/krau/ManyACG/sources/bilibili"
 	_ "github.com/krau/ManyACG/sources/danbooru"
 	_ "github.com/krau/ManyACG/sources/kemono"
+	_ "github.com/krau/ManyACG/sources/nhentai"
 	_ "github.com/krau/ManyACG/sources/pixiv"
 	_ "github.com/krau/ManyACG/sources/twitter"
 	_ "github.com/krau/ManyACG/sources/yandere"
