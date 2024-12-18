@@ -13,6 +13,8 @@ import (
 	"os"
 	"strconv"
 
+	_ "golang.org/x/image/webp"
+
 	"golang.org/x/image/draw"
 
 	"sync"
