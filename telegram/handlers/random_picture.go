@@ -31,8 +31,8 @@ func RandomPicture(ctx context.Context, bot *telego.Bot, message telego.Message)
 	}
 	artwork, err := service.QueryArtworksByTexts(ctx, textArray, r18Type, 1, adapter.OnlyLoadPicture())
 	if err != nil {
-		common.Logger.Warnf("获取图片失败: %s", err)
-		text := "获取图片失败" + err.Error()
+		common.Logger.Errorf("获取图片失败: %s", err)
+		text := "获取图片失败"
 		if errors.Is(err, mongo.ErrNoDocuments) {
 			text = "未找到图片"
 		}
