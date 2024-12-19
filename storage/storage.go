@@ -11,7 +11,7 @@ import (
 
 	"github.com/krau/ManyACG/common"
 	"github.com/krau/ManyACG/config"
-	manyacgErrors "github.com/krau/ManyACG/errors"
+	"github.com/krau/ManyACG/errs"
 
 	"github.com/krau/ManyACG/sources"
 	"github.com/krau/ManyACG/storage/alist"
@@ -69,7 +69,7 @@ func SaveAll(ctx context.Context, artwork *types.Artwork, picture *types.Picture
 	originalStorage, ok := Storages[types.StorageType(config.Cfg.Storage.OriginalType)]
 	if !ok {
 		common.Logger.Fatalf("Unknown storage type: %s", config.Cfg.Storage.OriginalType)
-		return nil, fmt.Errorf("%w: %s", manyacgErrors.ErrStorageUnkown, config.Cfg.Storage.OriginalType)
+		return nil, fmt.Errorf("%w: %s", errs.ErrStorageUnkown, config.Cfg.Storage.OriginalType)
 	}
 
 	originalDetail, err := originalStorage.Save(ctx, filePath, originalStoragePath)
@@ -82,7 +82,7 @@ func SaveAll(ctx context.Context, artwork *types.Artwork, picture *types.Picture
 		regularStorage, ok := Storages[types.StorageType(config.Cfg.Storage.RegularType)]
 		if !ok {
 			common.Logger.Fatalf("Unknown storage type: %s", config.Cfg.Storage.RegularType)
-			return nil, fmt.Errorf("%w: %s", manyacgErrors.ErrStorageUnkown, config.Cfg.Storage.RegularType)
+			return nil, fmt.Errorf("%w: %s", errs.ErrStorageUnkown, config.Cfg.Storage.RegularType)
 		}
 		regularOutputPath := filePath[:len(filePath)-len(filepath.Ext(filePath))] + "_regular.webp"
 		if err := common.CompressImageByFFmpeg(filePath, regularOutputPath, types.RegularPhotoSideLength); err != nil {
@@ -108,7 +108,7 @@ func SaveAll(ctx context.Context, artwork *types.Artwork, picture *types.Picture
 		thumbStorage, ok := Storages[types.StorageType(config.Cfg.Storage.ThumbType)]
 		if !ok {
 			common.Logger.Fatalf("Unknown storage type: %s", config.Cfg.Storage.ThumbType)
-			return nil, fmt.Errorf("%w: %s", manyacgErrors.ErrStorageUnkown, config.Cfg.Storage.ThumbType)
+			return nil, fmt.Errorf("%w: %s", errs.ErrStorageUnkown, config.Cfg.Storage.ThumbType)
 		}
 		thumbOutputPath := filePath[:len(filePath)-len(filepath.Ext(filePath))] + "_thumb.webp"
 		if err := common.CompressImageByFFmpeg(filePath, thumbOutputPath, types.ThumbPhotoSideLength); err != nil {
@@ -141,7 +141,7 @@ func Save(ctx context.Context, filePath string, storagePath string, storageType 
 	if storage, ok := Storages[storageType]; ok {
 		return storage.Save(ctx, filePath, storagePath)
 	} else {
-		return nil, fmt.Errorf("%w: %s", manyacgErrors.ErrStorageUnkown, storageType)
+		return nil, fmt.Errorf("%w: %s", errs.ErrStorageUnkown, storageType)
 	}
 }
 
@@ -163,7 +163,7 @@ func GetFile(ctx context.Context, detail *types.StorageDetail) ([]byte, error) {
 		}
 		return file, nil
 	} else {
-		return nil, fmt.Errorf("%w: %s", manyacgErrors.ErrStorageUnkown, detail.Type)
+		return nil, fmt.Errorf("%w: %s", errs.ErrStorageUnkown, detail.Type)
 	}
 }
 
@@ -186,7 +186,7 @@ func GetFileStream(ctx context.Context, detail *types.StorageDetail) (io.ReadClo
 		}
 		return file, nil
 	} else {
-		return nil, fmt.Errorf("%w: %s", manyacgErrors.ErrStorageUnkown, detail.Type)
+		return nil, fmt.Errorf("%w: %s", errs.ErrStorageUnkown, detail.Type)
 	}
 }
 
@@ -194,7 +194,7 @@ func Delete(ctx context.Context, info *types.StorageDetail) error {
 	if storage, ok := Storages[info.Type]; ok {
 		return storage.Delete(ctx, info)
 	} else {
-		return fmt.Errorf("%w: %s", manyacgErrors.ErrStorageUnkown, info.Type)
+		return fmt.Errorf("%w: %s", errs.ErrStorageUnkown, info.Type)
 	}
 }
 

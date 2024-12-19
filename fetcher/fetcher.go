@@ -7,7 +7,7 @@ import (
 
 	"github.com/krau/ManyACG/common"
 	"github.com/krau/ManyACG/config"
-	"github.com/krau/ManyACG/errors"
+	"github.com/krau/ManyACG/errs"
 
 	"github.com/krau/ManyACG/service"
 	"github.com/krau/ManyACG/sources"
@@ -44,7 +44,7 @@ func StartScheduler(ctx context.Context) {
 		if telegram.IsChannelAvailable {
 			err := telegram.PostAndCreateArtwork(ctx, artwork, telegram.Bot, config.Cfg.Telegram.Admins[0], 0)
 			if err != nil {
-				if es.Is(err, errors.ErrArtworkAlreadyExist) || es.Is(err, errors.ErrArtworkDeleted) {
+				if es.Is(err, errs.ErrArtworkAlreadyExist) || es.Is(err, errs.ErrArtworkDeleted) {
 					continue
 				}
 				common.Logger.Errorf(err.Error())

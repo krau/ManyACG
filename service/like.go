@@ -5,7 +5,7 @@ import (
 	"errors"
 
 	"github.com/krau/ManyACG/dao"
-	manyacgErrors "github.com/krau/ManyACG/errors"
+	"github.com/krau/ManyACG/errs"
 	"github.com/krau/ManyACG/types"
 
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -30,7 +30,7 @@ func CreateLike(ctx context.Context, userID, artworkID primitive.ObjectID) error
 		return err
 	}
 	if likeModel != nil {
-		return manyacgErrors.ErrLikeExists
+		return errs.ErrLikeExists
 	}
 	return nil
 }

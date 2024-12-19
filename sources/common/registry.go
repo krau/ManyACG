@@ -5,7 +5,7 @@ import (
 	"sync"
 
 	"github.com/krau/ManyACG/common"
-	"github.com/krau/ManyACG/errors"
+	"github.com/krau/ManyACG/errs"
 	"github.com/krau/ManyACG/types"
 )
 
@@ -27,7 +27,7 @@ func RegisterSource(sourceType types.SourceType, source types.Source) {
 func GetFileName(artwork *types.Artwork, picture *types.Picture) (string, error) {
 	source := allSources[artwork.SourceType]
 	if source == nil {
-		return "", errors.ErrSourceNotSupported
+		return "", errs.ErrSourceNotSupported
 	}
 	fileName := source.GetFileName(artwork, picture)
 	return common.EscapeFileName(fileName), nil

@@ -7,7 +7,7 @@ import (
 	"github.com/gabriel-vasile/mimetype"
 	"github.com/krau/ManyACG/adapter"
 	"github.com/krau/ManyACG/common"
-	manyacgErrors "github.com/krau/ManyACG/errors"
+	"github.com/krau/ManyACG/errs"
 	"github.com/krau/ManyACG/service"
 	"github.com/krau/ManyACG/storage"
 	"github.com/krau/ManyACG/types"
@@ -44,7 +44,7 @@ func RandomArtworks(ctx *gin.Context) {
 		return
 	}
 	if len(artworks) == 0 {
-		common.GinErrorResponse(ctx, manyacgErrors.ErrNotFoundArtworks, http.StatusNotFound, "Artworks not found")
+		common.GinErrorResponse(ctx, errs.ErrNotFoundArtworks, http.StatusNotFound, "Artworks not found")
 		return
 	}
 	ctx.JSON(http.StatusOK, ResponseFromArtworks(artworks, hasKey))
@@ -73,7 +73,7 @@ func RandomArtworkPreview(ctx *gin.Context) {
 		return
 	}
 	if len(artwork) == 0 {
-		common.GinErrorResponse(ctx, manyacgErrors.ErrNotFoundArtworks, http.StatusNotFound, "Artwork not found")
+		common.GinErrorResponse(ctx, errs.ErrNotFoundArtworks, http.StatusNotFound, "Artwork not found")
 		return
 	}
 
@@ -150,7 +150,7 @@ func GetArtworkList(ctx *gin.Context) {
 		return
 	}
 	if len(artworks) == 0 {
-		common.GinErrorResponse(ctx, manyacgErrors.ErrNotFoundArtworks, http.StatusNotFound, "Artworks not found")
+		common.GinErrorResponse(ctx, errs.ErrNotFoundArtworks, http.StatusNotFound, "Artworks not found")
 		return
 	}
 	ctx.JSON(http.StatusOK, ResponseFromArtworks(artworks, hasKey))
@@ -167,7 +167,7 @@ func getArtworkListByArtist(ctx *gin.Context, artistID primitive.ObjectID, r18Ty
 		return
 	}
 	if len(artworks) == 0 {
-		common.GinErrorResponse(ctx, manyacgErrors.ErrNotFoundArtworks, http.StatusNotFound, "Artworks not found")
+		common.GinErrorResponse(ctx, errs.ErrNotFoundArtworks, http.StatusNotFound, "Artworks not found")
 		return
 	}
 	ctx.JSON(http.StatusOK, ResponseFromArtworks(artworks, ctx.GetBool("auth")))
@@ -184,7 +184,7 @@ func getArtworkListByTag(ctx *gin.Context, tag string, r18Type types.R18Type, pa
 		return
 	}
 	if len(artworks) == 0 {
-		common.GinErrorResponse(ctx, manyacgErrors.ErrNotFoundArtworks, http.StatusNotFound, "Artworks not found")
+		common.GinErrorResponse(ctx, errs.ErrNotFoundArtworks, http.StatusNotFound, "Artworks not found")
 		return
 	}
 	ctx.JSON(http.StatusOK, ResponseFromArtworks(artworks, ctx.GetBool("auth")))
@@ -201,7 +201,7 @@ func getArtworkListByKeyword(ctx *gin.Context, keywordSlice [][]string, r18Type 
 		return
 	}
 	if len(artworks) == 0 {
-		common.GinErrorResponse(ctx, manyacgErrors.ErrNotFoundArtworks, http.StatusNotFound, "Artworks not found")
+		common.GinErrorResponse(ctx, errs.ErrNotFoundArtworks, http.StatusNotFound, "Artworks not found")
 		return
 	}
 	ctx.JSON(http.StatusOK, ResponseFromArtworks(artworks, ctx.GetBool("auth")))

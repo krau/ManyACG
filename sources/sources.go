@@ -6,7 +6,7 @@ import (
 
 	"github.com/krau/ManyACG/common"
 	"github.com/krau/ManyACG/config"
-	"github.com/krau/ManyACG/errors"
+	"github.com/krau/ManyACG/errs"
 	sourceCommon "github.com/krau/ManyACG/sources/common"
 
 	"github.com/krau/ManyACG/types"
@@ -65,7 +65,7 @@ func GetArtworkInfo(sourceURL string) (*types.Artwork, error) {
 		}
 	}
 	common.Logger.Warnf("Source URL not supported: %s", sourceURL)
-	return nil, errors.ErrSourceNotSupported
+	return nil, errs.ErrSourceNotSupported
 }
 
 func GetFileName(artwork *types.Artwork, picture *types.Picture) (string, error) {

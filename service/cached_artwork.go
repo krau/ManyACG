@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/krau/ManyACG/dao"
-	"github.com/krau/ManyACG/errors"
+	"github.com/krau/ManyACG/errs"
 	"github.com/krau/ManyACG/sources"
 	"github.com/krau/ManyACG/types"
 )
@@ -59,7 +59,7 @@ func DeleteCachedArtworkByURL(ctx context.Context, sourceURL string) error {
 
 func DeleteCachedArtworkPicture(ctx context.Context, cachedArtwork *types.CachedArtworksModel, pictureIndex int) error {
 	if pictureIndex < 0 || pictureIndex > len(cachedArtwork.Artwork.Pictures) {
-		return errors.ErrIndexOOB
+		return errs.ErrIndexOOB
 	}
 	cachedArtwork.Artwork.Pictures = append(cachedArtwork.Artwork.Pictures[:pictureIndex], cachedArtwork.Artwork.Pictures[pictureIndex+1:]...)
 	for i := pictureIndex; i < len(cachedArtwork.Artwork.Pictures); i++ {

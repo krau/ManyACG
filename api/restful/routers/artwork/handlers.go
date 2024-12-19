@@ -5,7 +5,7 @@ import (
 	"net/http"
 
 	"github.com/krau/ManyACG/common"
-	manyacgErrors "github.com/krau/ManyACG/errors"
+	"github.com/krau/ManyACG/errs"
 	"github.com/krau/ManyACG/service"
 	"github.com/krau/ManyACG/types"
 
@@ -34,7 +34,7 @@ func GetArtwork(ctx *gin.Context) {
 		return
 	}
 	if artwork == nil {
-		common.GinErrorResponse(ctx, manyacgErrors.ErrNotFoundArtworks, http.StatusNotFound, "Artwork not found")
+		common.GinErrorResponse(ctx, errs.ErrNotFoundArtworks, http.StatusNotFound, "Artwork not found")
 		return
 	}
 	// if artwork.R18 && !hasKey {
@@ -71,7 +71,7 @@ func LikeArtwork(ctx *gin.Context) {
 	userID := user.ID
 	err := service.CreateLike(ctx, userID, artworkID)
 	if err != nil {
-		if errors.Is(err, manyacgErrors.ErrLikeExists) {
+		if errors.Is(err, errs.ErrLikeExists) {
 			common.GinErrorResponse(ctx, err, http.StatusBadRequest, "You have liked this artwork today")
 			return
 		}

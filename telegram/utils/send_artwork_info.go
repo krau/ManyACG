@@ -9,7 +9,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/krau/ManyACG/common"
-	manyacgErrors "github.com/krau/ManyACG/errors"
+	"github.com/krau/ManyACG/errs"
 
 	"github.com/krau/ManyACG/service"
 	"github.com/krau/ManyACG/sources"
@@ -85,7 +85,7 @@ func SendArtworkInfo(ctx context.Context, bot *telego.Bot, params *SendArtworkIn
 	caption += fmt.Sprintf("\n%s", params.AppendCaption)
 	if params.ChatID == nil {
 		if GroupChatID.ID == 0 && GroupChatID.Username == "" {
-			return manyacgErrors.ErrChatIDNotSet
+			return errs.ErrChatIDNotSet
 		}
 		params.ChatID = &GroupChatID
 	}
@@ -99,7 +99,7 @@ func SendArtworkInfo(ctx context.Context, bot *telego.Bot, params *SendArtworkIn
 		photo.WithHasSpoiler()
 	}
 	if bot == nil {
-		return manyacgErrors.ErrNilBot
+		return errs.ErrNilBot
 	}
 	msg, err := bot.SendPhoto(photo)
 	if err != nil {
@@ -186,7 +186,7 @@ func getArtworkInfoReplyMarkup(ctx context.Context, artwork *types.Artwork, isCr
 
 func updatePreview(ctx context.Context, targetMessage *telego.Message, artwork *types.Artwork, bot *telego.Bot, pictureIndex uint, photoParams *telego.SendPhotoParams) error {
 	if pictureIndex >= uint(len(artwork.Pictures)) {
-		return manyacgErrors.ErrIndexOOB
+		return errs.ErrIndexOOB
 	}
 
 	var inputFile telego.InputFile

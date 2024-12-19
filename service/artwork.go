@@ -4,7 +4,7 @@ import (
 	"github.com/krau/ManyACG/adapter"
 	"github.com/krau/ManyACG/common"
 	"github.com/krau/ManyACG/dao"
-	manyacgErrors "github.com/krau/ManyACG/errors"
+	"github.com/krau/ManyACG/errs"
 	"github.com/krau/ManyACG/sources"
 
 	"context"
@@ -25,10 +25,10 @@ func CreateArtwork(ctx context.Context, artwork *types.Artwork) (*types.Artwork,
 		return nil, err
 	}
 	if artworkModel != nil {
-		return nil, manyacgErrors.ErrArtworkAlreadyExist
+		return nil, errs.ErrArtworkAlreadyExist
 	}
 	if dao.CheckDeletedByURL(ctx, artwork.SourceURL) {
-		return nil, manyacgErrors.ErrArtworkDeleted
+		return nil, errs.ErrArtworkDeleted
 	}
 
 	session, err := dao.Client.StartSession()
@@ -452,7 +452,7 @@ func GetArtworkByURLWithCacheFetch(ctx context.Context, sourceURL string) (*type
 	artwork, err := sources.GetArtworkInfo(sourceURL)
 	if err != nil {
 		common.Logger.Errorf("获取作品信息失败: %s", err)
-		return nil, manyacgErrors.ErrFailedToGetArtwork
+		return nil, errs.ErrFailedToGetArtwork
 	}
 	err = CreateCachedArtwork(ctx, artwork, types.ArtworkStatusCached)
 	if err != nil {

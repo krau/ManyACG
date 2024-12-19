@@ -10,7 +10,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/krau/ManyACG/common"
 	"github.com/krau/ManyACG/config"
-	manyacgErrors "github.com/krau/ManyACG/errors"
+	"github.com/krau/ManyACG/errs"
 
 	"github.com/krau/ManyACG/service"
 	"github.com/krau/ManyACG/storage"
@@ -24,11 +24,11 @@ import (
 
 func SendArtworkMediaGroup(ctx context.Context, bot *telego.Bot, chatID telego.ChatID, artwork *types.Artwork) ([]telego.Message, error) {
 	if bot == nil {
-		return nil, manyacgErrors.ErrNilBot
+		return nil, errs.ErrNilBot
 	}
 	if artwork == nil {
 		common.Logger.Fatal("Artwork is nil")
-		return nil, manyacgErrors.ErrNilArtwork
+		return nil, errs.ErrNilArtwork
 	}
 	if len(artwork.Pictures) <= 10 {
 		inputMediaPhotos, err := GetArtworkInputMediaPhotos(ctx, artwork, 0, len(artwork.Pictures))
@@ -121,14 +121,14 @@ func PostAndCreateArtwork(ctx context.Context, artwork *types.Artwork, bot *tele
 	artworkInDB, err := service.GetArtworkByURL(ctx, artwork.SourceURL)
 	if err == nil && artworkInDB != nil {
 		common.Logger.Debugf("Artwork %s already exists", artwork.Title)
-		return fmt.Errorf("post artwork %s error: %w", artwork.Title, manyacgErrors.ErrArtworkAlreadyExist)
+		return fmt.Errorf("post artwork %s error: %w", artwork.Title, errs.ErrArtworkAlreadyExist)
 	}
 	if err != nil && !errors.Is(err, mongo.ErrNoDocuments) {
 		return err
 	}
 	if service.CheckDeletedByURL(ctx, artwork.SourceURL) {
 		common.Logger.Debugf("Artwork %s is deleted", artwork.Title)
-		return fmt.Errorf("post artwork %s error: %w", artwork.Title, manyacgErrors.ErrArtworkDeleted)
+		return fmt.Errorf("post artwork %s error: %w", artwork.Title, errs.ErrArtworkDeleted)
 	}
 	showProgress := fromID != 0 && messageID != 0 && bot != nil
 	if showProgress {

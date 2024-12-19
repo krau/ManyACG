@@ -11,7 +11,7 @@ import (
 
 	"github.com/krau/ManyACG/common"
 	"github.com/krau/ManyACG/config"
-	"github.com/krau/ManyACG/errors"
+	"github.com/krau/ManyACG/errs"
 	"github.com/krau/ManyACG/service"
 	"github.com/krau/ManyACG/sources"
 	"github.com/krau/ManyACG/storage"
@@ -165,12 +165,12 @@ func GetMessagePhotoFile(bot *telego.Bot, message *telego.Message) (io.ReadClose
 	}
 	if message.Document != nil && strings.HasPrefix(message.Document.MimeType, "image/") {
 		if message.Document.FileSize > 20*1024*1024 {
-			return nil, errors.ErrFileTooLarge
+			return nil, errs.ErrFileTooLarge
 		}
 		fileID = message.Document.FileID
 	}
 	if fileID == "" {
-		return nil, errors.ErrNoPhotoInMessage
+		return nil, errs.ErrNoPhotoInMessage
 	}
 	tgFile, err := bot.GetFile(
 		&telego.GetFileParams{FileID: fileID},
@@ -299,5 +299,5 @@ func GetPicturePreviewInputFile(ctx context.Context, picture *types.Picture) (*t
 			return &inputFile, true, nil
 		}
 	}
-	return nil, true, errors.ErrNoAvailableFile
+	return nil, true, errs.ErrNoAvailableFile
 }
