@@ -3,6 +3,7 @@ package config
 import (
 	"fmt"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/spf13/viper"
@@ -31,7 +32,11 @@ var Cfg *Config
 func InitConfig() {
 	viper.SetConfigName("config")
 	viper.AddConfigPath(".")
+	viper.AddConfigPath("/etc/manyacg/")
 	viper.SetConfigType("toml")
+	viper.SetEnvPrefix("manyacg")
+	viper.AutomaticEnv()
+	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
 
 	viper.SetDefault("wsrv_url", "https://wsrv.nl")
 
