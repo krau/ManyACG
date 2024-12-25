@@ -235,30 +235,7 @@ func CompressImageByFFmpeg(inputPath, outputPath string, maxEdgeLength int) erro
 	return nil
 }
 
-func CompressImageForTelegramByFFmpegFromBytes(input []byte, maxDepth uint, extraFFmpegKwArgs ...ffmpeg.KwArgs) ([]byte, error) {
-	if maxDepth == 0 {
-		return nil, fmt.Errorf("max depth reached")
-	}
-	if extraFFmpegKwArgs == nil {
-		extraFFmpegKwArgs = make([]ffmpeg.KwArgs, 0)
-	}
-
-	settedQV := false
-	for _, kwArgs := range extraFFmpegKwArgs {
-		if kwArgs.HasKey("vf") {
-			return nil, fmt.Errorf("vf kwarg is not allowed in extraFFmpegKwArgs")
-		}
-		if kwArgs.HasKey("q:v") {
-			settedQV = true
-			if kwArgs.GetString("q:v") == "0" { // get string 方法内部使用了 fmt.Sprintf
-				delete(kwArgs, "q:v")
-			}
-		}
-	}
-	if !settedQV {
-		extraFFmpegKwArgs = append(extraFFmpegKwArgs, ffmpeg.KwArgs{"q:v": 2})
-	}
-
+func CompressImageForTelegramByFFmpegFromBytes(input []byte) ([]byte, error) {
 	img, _, err := image.DecodeConfig(bytes.NewReader(input))
 	if err != nil {
 		return nil, fmt.Errorf("failed to decode image: %w", err)
@@ -277,25 +254,24 @@ func CompressImageForTelegramByFFmpegFromBytes(input []byte, maxDepth uint, extr
 	}
 	vfKwArg := ffmpeg.KwArgs{"vf": fmt.Sprintf("scale=%d:%d:flags=lanczos", newWidth, newHeight)}
 
-	buf := bytes.NewBuffer(nil)
-
-	err = ffmpeg.Input("pipe:").Output("pipe:", vfKwArg, ffmpeg.KwArgs{"format": "mjpeg"}, ffmpeg.MergeKwArgs(extraFFmpegKwArgs)).WithInput(bytes.NewReader(input)).WithOutput(buf).Run()
-
-	if err != nil {
-		return nil, fmt.Errorf("failed to compress image: %w", err)
-	}
-	if buf.Len() > inputLen {
-		Logger.Warnf("compressed image file size %d is larger than original file size %d, drop quality parameter and retry", buf.Len(), inputLen)
-		for i, kwArgs := range extraFFmpegKwArgs {
-			if kwArgs.HasKey("q:v") {
-				delete(extraFFmpegKwArgs[i], "q:v")
-			}
+	depth := 0
+	for {
+		if depth > 5 {
+			return nil, fmt.Errorf("failed to compress image")
 		}
-		extraFFmpegKwArgs = append(extraFFmpegKwArgs, ffmpeg.KwArgs{"q:v": 0})
-		return CompressImageForTelegramByFFmpegFromBytes(input, maxDepth-1, ffmpeg.MergeKwArgs(extraFFmpegKwArgs))
+		buf := bytes.NewBuffer(nil)
+		err = ffmpeg.Input("pipe:").
+			Output("pipe:", vfKwArg, ffmpeg.KwArgs{"format": "mjpeg"}, ffmpeg.KwArgs{"q:v": 2 + depth}).
+			WithInput(bytes.NewReader(input)).
+			WithOutput(buf).Run()
+		if err != nil {
+			return nil, fmt.Errorf("failed to compress image: %w", err)
+		}
+		if buf.Len() > inputLen || buf.Len() > types.TelegramMaxPhotoFileSize {
+			Logger.Debugf("recompress...;current: compressed image len: %d, input len: %d, depth: %d;", buf.Len(), inputLen, depth)
+			depth++
+			continue
+		}
+		return buf.Bytes(), nil
 	}
-	if buf.Len() > types.TelegramMaxPhotoFileSize {
-		return CompressImageForTelegramByFFmpegFromBytes(buf.Bytes(), maxDepth-1)
-	}
-	return buf.Bytes(), nil
 }

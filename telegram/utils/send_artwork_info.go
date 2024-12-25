@@ -196,7 +196,7 @@ func updatePreview(ctx context.Context, targetMessage *telego.Message, artwork *
 	if err != nil {
 		return err
 	}
-	fileBytes, err = common.CompressImageForTelegramByFFmpegFromBytes(fileBytes, 2)
+	fileBytes, err = common.CompressImageForTelegramByFFmpegFromBytes(fileBytes)
 	if err != nil {
 		return err
 	}
