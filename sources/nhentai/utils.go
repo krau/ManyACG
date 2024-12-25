@@ -16,6 +16,7 @@ var (
 	sourceURLPrefix         = "https://nhentai.net/g/"
 	ErrorInvalidNhentaiURL  = errors.New("invalid nhentai url")
 	ErrNhentaiResponseError = errors.New("nhentai response error")
+	numberRegexp            = regexp.MustCompile(`\d+`)
 )
 
 func GetGalleryID(url string) string {
@@ -41,37 +42,46 @@ func (n *Nhentai) crawlGallery(galleryID string) (*types.Artwork, error) {
 		return nil, fmt.Errorf("failed to parse html: %w", err)
 	}
 
-	// title: #info > h1 > span.pretty
-	title := doc.Find("#info > h1 > span.pretty").Text()
+	title := doc.Find("#info > h1.title > span.pretty").Text()
 
-	// description: #info > h2 > span.pretty
 	description := doc.Find("#info > h2 > span.pretty").Text()
 
-	// artist: #tags > div:nth-child(4) > span > a > span.name
-	artist := doc.Find("#tags > div:nth-child(4) > span > a > span.name").Text()
+	artist := doc.Find("#tags > div:nth-child(4) > span > a > span.name").First().Text()
+	artistUid := artist
+	if artist == "" {
+		artist = "Nhentai"
+		artistUid = "1"
+	}
 
-	// tags: #tags > div:nth-child(3) > span 下面的 a 下面的 span.name
 	tags := make([]string, 0)
-	doc.Find("#tags > div:nth-child(3) > span > a > span.name").Each(func(i int, s *goquery.Selection) {
+	doc.Find("section#tags .tag-container .tags .tag .name").Each(func(i int, s *goquery.Selection) {
 		tags = append(tags, s.Text())
 	})
 
-	if title == "" || description == "" || artist == "" || len(tags) == 0 {
+	if title == "" && description == "" && artist == "" && len(tags) == 0 {
 		return nil, fmt.Errorf("%w: %s", ErrNhentaiResponseError, "failed to parse gallery info")
 	}
 
 	pictures := make([]*types.Picture, 0)
 
-	// pictures: #thumbnail-container > div > div:nth-child(1) > a > img 标签的 data-src 属性
-
+	pictureThumbUrls := make([]string, 0)
 	doc.Find("#thumbnail-container > div > div > a > img").Each(func(i int, s *goquery.Selection) {
 		thumbUrl, _ := s.Attr("data-src")
+		if thumbUrl != "" {
+			pictureThumbUrls = append(pictureThumbUrls, thumbUrl)
+		}
+	})
+	for i, thumbUrl := range pictureThumbUrls {
+		orgUrl, err := getOriginalUrl(thumbUrl)
+		if err != nil {
+			return nil, fmt.Errorf("%w: %s", ErrNhentaiResponseError, err)
+		}
 		pictures = append(pictures, &types.Picture{
 			Index:     uint(i),
 			Thumbnail: thumbUrl,
-			Original:  getOriginalUrl(thumbUrl),
+			Original:  orgUrl,
 		})
-	})
+	}
 
 	if len(pictures) == 0 {
 		return nil, fmt.Errorf("%w: %s", ErrNhentaiResponseError, "failed to parse gallery pictures")
@@ -82,7 +92,7 @@ func (n *Nhentai) crawlGallery(galleryID string) (*types.Artwork, error) {
 		Description: description,
 		Artist: &types.Artist{
 			Name:     artist,
-			UID:      artist,
+			UID:      artistUid,
 			Username: artist,
 			Type:     types.SourceTypeNhentai,
 		},
@@ -94,12 +104,28 @@ func (n *Nhentai) crawlGallery(galleryID string) (*types.Artwork, error) {
 	}, nil
 }
 
-func getOriginalUrl(thumbUrl string) string {
+func getOriginalUrl(thumbUrl string) (string, error) {
 	if thumbUrl == "" {
-		return ""
+		return "", errors.New("empty thumb url")
 	}
-	parts := strings.Split(thumbUrl, ".")
-	parts[0] = fmt.Sprintf("https://i%d", rand.Intn(4)+1)
-	parts[len(parts)-2] = parts[len(parts)-2][:len(parts[len(parts)-2])-1]
-	return strings.Join(parts, ".")
+	if strings.HasSuffix(thumbUrl, "t.webp") {
+		parts := strings.Split(thumbUrl, ".")
+		if len(parts) != 4 {
+			return "", fmt.Errorf("invalid thumb url: %s", thumbUrl)
+		}
+		parts[0] = fmt.Sprintf("https://i%d", rand.Intn(4)+1)
+		parts[len(parts)-2] = parts[len(parts)-2][:len(parts[len(parts)-2])-1]
+		return strings.Join(parts, "."), nil
+	}
+	parts := strings.Split(thumbUrl, "/")
+	if len(parts) != 6 {
+		return "", fmt.Errorf("invalid thumb url: %s", thumbUrl)
+	}
+	ext := parts[len(parts)-1]
+	picIndex := numberRegexp.FindString(ext)
+	if picIndex == "" {
+		return "", fmt.Errorf("invalid thumb url: %s", thumbUrl)
+	}
+	galleryID := parts[len(parts)-2]
+	return fmt.Sprintf("https://i%d.nhentai.net/galleries/%s/%s.webp", rand.Intn(4)+1, galleryID, picIndex), nil
 }
