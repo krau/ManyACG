@@ -20,6 +20,9 @@ var Client *req.Client
 func initHttpClient() {
 	c := req.C().ImpersonateChrome().SetCommonRetryCount(2).SetTLSHandshakeTimeout(time.Second * 10).SetTimeout(time.Minute * 2)
 	Client = c
+	if config.Cfg.Source.Proxy != "" {
+		Client.SetProxyURL(config.Cfg.Source.Proxy)
+	}
 }
 
 var cacheLocks sync.Map
