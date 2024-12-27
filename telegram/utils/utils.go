@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"io"
 	"path"
 	"path/filepath"
 	"strings"
@@ -158,7 +157,7 @@ func GetPostedPictureInlineKeyboardButton(artwork *types.Artwork, index uint, ch
 	}
 }
 
-func GetMessagePhotoFile(bot *telego.Bot, message *telego.Message) (io.ReadCloser, error) {
+func GetMessagePhotoFile(bot *telego.Bot, message *telego.Message) ([]byte, error) {
 	fileID := ""
 	if message.Photo != nil {
 		fileID = message.Photo[len(message.Photo)-1].FileID
@@ -178,11 +177,7 @@ func GetMessagePhotoFile(bot *telego.Bot, message *telego.Message) (io.ReadClose
 	if err != nil {
 		return nil, err
 	}
-	resp, err := common.Client.R().Get(bot.FileDownloadURL(tgFile.FilePath))
-	if err != nil {
-		return nil, err
-	}
-	return resp.Body, nil
+	return telegoutil.DownloadFile(bot.FileDownloadURL(tgFile.FilePath))
 }
 
 func FindSourceURLForMessage(message *telego.Message) string {

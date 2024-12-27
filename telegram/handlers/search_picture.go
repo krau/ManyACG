@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"io"
@@ -30,7 +31,7 @@ func SearchPicture(ctx context.Context, bot *telego.Bot, message telego.Message)
 		utils.ReplyMessage(bot, message, "获取图片文件失败: "+err.Error())
 		return
 	}
-	text, _, err := getSearchResult(ctx, hasPermission, file)
+	text, _, err := getSearchResult(ctx, hasPermission, bytes.NewReader(file))
 	if err != nil {
 		utils.ReplyMessage(bot, message, err.Error())
 		return
@@ -48,7 +49,7 @@ func SearchPictureCallbackQuery(ctx context.Context, bot *telego.Bot, query tele
 		bot.AnswerCallbackQuery(telegoutil.CallbackQuery(query.ID).WithText("获取图片文件失败: " + err.Error()).WithShowAlert().WithCacheTime(5))
 		return
 	}
-	text, hasResult, err := getSearchResult(ctx, true, file)
+	text, hasResult, err := getSearchResult(ctx, true, bytes.NewReader(file))
 	if err != nil {
 		bot.AnswerCallbackQuery(telegoutil.CallbackQuery(query.ID).WithText(err.Error()).WithShowAlert().WithCacheTime(5))
 		return

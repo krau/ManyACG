@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"image"
@@ -26,8 +27,7 @@ func CalculatePicture(ctx context.Context, bot *telego.Bot, message telego.Messa
 		utils.ReplyMessage(bot, message, "获取图片文件失败: "+err.Error())
 		return
 	}
-	defer file.Close()
-	img, _, err := image.Decode(file)
+	img, _, err := image.Decode(bytes.NewReader(file))
 	if err != nil {
 		common.Logger.Error("解码图片失败: %v", err)
 		utils.ReplyMessage(bot, message, "解码图片失败")

@@ -40,7 +40,7 @@ func GetPictureFile(ctx context.Context, bot *telego.Bot, message telego.Message
 			if err != nil {
 				return nil
 			}
-			hash, err := common.GetImagePhashFromReader(file)
+			hash, err := common.GetImagePhashFromReader(bytes.NewReader(file))
 			if err != nil {
 				return nil
 			}
