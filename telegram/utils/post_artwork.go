@@ -320,7 +320,7 @@ func checkDuplicate(ctx context.Context, artwork *types.Artwork, bot *telego.Bot
 					return artworkOfSimilarPicture.SourceURL
 				}()))
 		}
-		_, err = bot.SendMessage(telegoutil.Messagef(telegoutil.ID(fromID), text).WithParseMode(telego.ModeMarkdownV2))
+		_, err = bot.SendMessage(telegoutil.Message(telegoutil.ID(fromID), text).WithParseMode(telego.ModeMarkdownV2))
 		if err != nil {
 			common.Logger.Errorf("error when sending similar pictures: %s", err)
 		}
