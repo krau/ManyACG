@@ -3,15 +3,17 @@ package handlers
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
-	"io"
+	"path"
+	"strings"
 
+	"github.com/PuerkitoBio/goquery"
 	"github.com/krau/ManyACG/common"
 	"github.com/krau/ManyACG/config"
 
 	"github.com/krau/ManyACG/service"
 	"github.com/krau/ManyACG/telegram/utils"
-	"github.com/krau/ManyACG/types"
 
 	"github.com/mymmrac/telego"
 	"github.com/mymmrac/telego/telegoutil"
@@ -19,24 +21,88 @@ import (
 )
 
 func SearchPicture(ctx context.Context, bot *telego.Bot, message telego.Message) {
-	hasPermission := CheckPermissionInGroup(ctx, message, types.PermissionSearchPicture)
 	if message.ReplyToMessage == nil {
 		utils.ReplyMessage(bot, message, "请使用该命令回复一条图片消息")
 		return
 	}
-	go utils.ReplyMessage(bot, message, "少女祈祷中...")
+	msg, err := utils.ReplyMessage(bot, message, "少女祈祷中...")
+	if err != nil {
+		common.Logger.Errorf("reply message failed: %s", err)
+		return
+	}
 
 	file, err := utils.GetMessagePhotoFile(bot, message.ReplyToMessage)
 	if err != nil {
-		utils.ReplyMessage(bot, message, "获取图片文件失败: "+err.Error())
+		bot.EditMessageText(&telego.EditMessageTextParams{
+			ChatID:    msg.Chat.ChatID(),
+			MessageID: msg.GetMessageID(),
+			Text:      "获取图片文件失败: " + err.Error(),
+		})
 		return
 	}
-	text, _, err := getSearchResult(ctx, hasPermission, bytes.NewReader(file))
+	text, dbExists, err := getDBSearchResultText(ctx, file)
 	if err != nil {
-		utils.ReplyMessage(bot, message, err.Error())
+		common.Logger.Errorf("search in db failed: %s", err)
+	}
+	if dbExists {
+		bot.EditMessageText(&telego.EditMessageTextParams{
+			ChatID:    msg.Chat.ChatID(),
+			MessageID: msg.GetMessageID(),
+			Text:      text,
+			ParseMode: telego.ModeMarkdownV2,
+		})
+		return
+	} else {
+		go bot.EditMessageText(&telego.EditMessageTextParams{
+			ChatID:    msg.Chat.ChatID(),
+			MessageID: msg.GetMessageID(),
+			Text:      "数据库搜索无结果, 使用 ascii2d 搜索中...",
+		})
+	}
+
+	ascii2dResults, err := getAscii2dSearchResult(file)
+	if err != nil {
+		common.Logger.Errorf("search in ascii2d failed: %s", err)
+		bot.EditMessageText(&telego.EditMessageTextParams{
+			ChatID:    msg.Chat.ChatID(),
+			MessageID: msg.GetMessageID(),
+			Text:      "ascii2d 搜索失败",
+		})
 		return
 	}
-	utils.ReplyMessageWithMarkdown(bot, message, text)
+	if len(ascii2dResults) == 0 {
+		bot.EditMessageText(&telego.EditMessageTextParams{
+			ChatID:    msg.Chat.ChatID(),
+			MessageID: msg.GetMessageID(),
+			Text:      "没有搜索到相似图片",
+		})
+		return
+	}
+	text = fmt.Sprintf("在 ascii2d 搜索到%d张相似的图片\n\n", len(ascii2dResults))
+	for _, result := range ascii2dResults {
+		text += fmt.Sprintf("[%s](%s)\n\n", common.EscapeMarkdown(result.Name), common.EscapeMarkdown(result.Link))
+	}
+	thumbFile, err := common.DownloadWithCache(ctx, ascii2dResults[0].Thumbnail, nil)
+	if err != nil {
+		common.Logger.Errorf("download thumbnail failed: %s", err)
+		bot.EditMessageText(&telego.EditMessageTextParams{
+			ChatID:    msg.Chat.ChatID(),
+			MessageID: msg.GetMessageID(),
+			Text:      text,
+			ParseMode: telego.ModeMarkdownV2,
+		})
+	} else {
+		_, err = bot.EditMessageMedia(&telego.EditMessageMediaParams{
+			ChatID:    msg.Chat.ChatID(),
+			MessageID: msg.GetMessageID(),
+			Media: telegoutil.MediaPhoto(telegoutil.File(telegoutil.NameReader(bytes.NewReader(thumbFile), path.Base(ascii2dResults[0].Thumbnail)))).
+				WithCaption(text).
+				WithParseMode(telego.ModeMarkdownV2),
+		})
+		if err != nil {
+			common.Logger.Errorf("edit message media failed: %s", err)
+		}
+	}
 }
 
 func SearchPictureCallbackQuery(ctx context.Context, bot *telego.Bot, query telego.CallbackQuery) {
@@ -49,7 +115,7 @@ func SearchPictureCallbackQuery(ctx context.Context, bot *telego.Bot, query tele
 		bot.AnswerCallbackQuery(telegoutil.CallbackQuery(query.ID).WithText("获取图片文件失败: " + err.Error()).WithShowAlert().WithCacheTime(5))
 		return
 	}
-	text, hasResult, err := getSearchResult(ctx, true, bytes.NewReader(file))
+	text, hasResult, err := getDBSearchResultText(ctx, file)
 	if err != nil {
 		bot.AnswerCallbackQuery(telegoutil.CallbackQuery(query.ID).WithText(err.Error()).WithShowAlert().WithCacheTime(5))
 		return
@@ -62,8 +128,8 @@ func SearchPictureCallbackQuery(ctx context.Context, bot *telego.Bot, query tele
 	utils.ReplyMessageWithMarkdown(bot, *message, text)
 }
 
-func getSearchResult(ctx context.Context, hasPermission bool, fileReader io.Reader) (string, bool, error) {
-	hash, err := common.GetImagePhashFromReader(fileReader)
+func getDBSearchResultText(ctx context.Context, file []byte) (string, bool, error) {
+	hash, err := common.GetImagePhashFromReader(bytes.NewReader(file))
 	if err != nil {
 		return "", false, fmt.Errorf("获取图片哈希失败: %w", err)
 	}
@@ -100,9 +166,77 @@ func getSearchResult(ctx context.Context, hasPermission bool, fileReader io.Read
 		}
 		return text, true, nil
 	}
-	if !hasPermission {
-		return "未在数据库中找到相似图片", false, nil
+	return "未在数据库中找到相似图片", false, nil
+}
+
+type ascii2dResult struct {
+	Name      string
+	Link      string
+	Thumbnail string
+}
+
+const (
+	ascii2dAPI = "https://ascii2d.net/search/file"
+	ascii2dURL = "https://ascii2d.net"
+)
+
+func getAscii2dSearchResult(file []byte) ([]*ascii2dResult, error) {
+	respcolor, err := common.Client.R().SetFileBytes("file", "image.jpg", file).Post(ascii2dAPI)
+	if err != nil {
+		return nil, fmt.Errorf("请求 ascii2d 失败: %w", err)
 	}
-	// TODO: 有权限时使用其他搜索引擎搜图
-	return "未找到相似图片", false, nil
+	if respcolor.IsErrorState() {
+		return nil, fmt.Errorf("请求 ascii2d 失败: %s", respcolor.Status)
+	}
+	bovwUrl := func() string {
+		if respcolor.Response != nil && respcolor.Response.Request != nil && respcolor.Response.Request.Response != nil && respcolor.Response.Request.Response.Header != nil {
+			return respcolor.Response.Request.Response.Header.Get("Location")
+		}
+		return ""
+	}()
+	if bovwUrl == "" {
+		return nil, errors.New("无法获取 bovw 页面")
+	}
+	common.Logger.Debugf("getting ascii2d bovw url: %s", bovwUrl)
+
+	respbovw, err := common.Client.R().Get(bovwUrl)
+	if err != nil {
+		return nil, fmt.Errorf("请求 ascii2d bovw 页面失败: %w", err)
+	}
+	if respbovw.IsErrorState() {
+		return nil, fmt.Errorf("请求 ascii2d bovw 页面失败: %s", respbovw.Status)
+	}
+
+	results := make([]*ascii2dResult, 0)
+	doc, err := goquery.NewDocumentFromReader(respbovw.Body)
+	if err != nil {
+		return nil, fmt.Errorf("解析 ascii2d 页面失败: %w", err)
+	}
+
+	doc.Find(".row.item-box").Each(func(i int, s *goquery.Selection) {
+		if i >= 10 {
+			return
+		}
+
+		detail := s.Find(".detail-box h6")
+		name := detail.First().Find("a").First().Text()
+		link, exists := detail.Find("a").First().Attr("href")
+		if !exists {
+			return
+		}
+		thumbnail, exists := s.Find(".image-box img").Attr("src")
+		if !exists {
+			return
+		}
+		thumbnail = ascii2dURL + thumbnail
+
+		results = append(results, &ascii2dResult{
+			Name:      strings.TrimSpace(name),
+			Link:      link,
+			Thumbnail: thumbnail,
+		})
+	})
+
+	return results, nil
+
 }
