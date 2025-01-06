@@ -19,13 +19,11 @@ func Help(ctx context.Context, bot *telego.Bot, message telego.Message) {
 /info - 发送作品图片和信息
 /hash - 计算图片信息
 /stats - 获取统计数据
+/files - 获取作品原图
 `
-
-	if IsChannelAvailable {
-		helpText += `/file <index> - 回复一张图片消息获取其原图文件`
-	}
 	helpText += `
-获取图片相关功能中支持使用以下格式的参数:
+	
+随机图片相关功能中支持使用以下格式的参数:
 
 使用 '|' 分隔'或'关系, 使用 '空格' 分隔'与'关系, 示例:
 
@@ -46,7 +44,6 @@ Inline 查询(在任意聊天框中@本bot)支持同样的参数格式.
 /tags - 更新作品标签(覆盖原有标签)
 /addtags - 添加作品标签
 /deltags - 删除作品标签
-/fetch - 手动开始一次抓取
 
 process_pictures_hashsize - 处理无哈希和尺寸的图片
 process_pictures_storage - 处理图片存储(生成缩略图, 迁移用)
