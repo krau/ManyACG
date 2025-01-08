@@ -44,8 +44,34 @@ var tidyArtistCmd = &cobra.Command{
 	},
 }
 
+// TODO: remove this command after v0.66.0 is released
+var migrateCmd = &cobra.Command{
+	Use:   "migrate",
+	Short: "Migrate database From v0.64.1 To v0.65.0",
+	Run: func(cmd *cobra.Command, args []string) {
+		config.InitConfig()
+		common.Init()
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+		common.Logger.Info("Start migrating")
+		dao.InitDB(ctx)
+		defer func() {
+			if err := dao.Client.Disconnect(ctx); err != nil {
+				common.Logger.Fatal(err)
+				os.Exit(1)
+			}
+		}()
+		if err := dao.AddAliasToAllTags(ctx); err != nil {
+			common.Logger.Fatal(err)
+			os.Exit(1)
+		}
+		common.Logger.Info("Migrate completed")
+	},
+}
+
 func init() {
 	rootCmd.AddCommand(dbCmd)
 	dbCmd.AddCommand(artistCmd)
+	dbCmd.AddCommand(migrateCmd)
 	artistCmd.AddCommand(tidyArtistCmd)
 }

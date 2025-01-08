@@ -210,3 +210,25 @@ func ConvertArtistUIDToString(ctx context.Context) error {
 	_, err := artistCollection.UpdateMany(ctx, bson.M{}, pipeline)
 	return err
 }
+
+func AddAliasToAllTags(ctx context.Context) error {
+	// 为所有 tag 添加 alias 属性, 默认值为包含其 name 的数组
+	// 用于从 v0.64.1 及之前的版本迁移
+	_, err := tagCollection.UpdateMany(
+		ctx,
+		bson.M{"alias": bson.M{"$exists": false}},
+		bson.A{
+			bson.M{
+				"$set": bson.M{
+					"alias": bson.M{
+						"$ifNull": bson.A{
+							"$alias",
+							bson.A{"$name"},
+						},
+					},
+				},
+			},
+		},
+	)
+	return err
+}
