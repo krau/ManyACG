@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"errors"
 
 	"github.com/duke-git/lancet/v2/slice"
 	"github.com/krau/ManyACG/dao"
@@ -67,7 +68,10 @@ func AddTagAliasByID(ctx context.Context, tagID primitive.ObjectID, alias ...str
 			if alias == tagModel.Name {
 				continue
 			}
-			aliasTag, _ := dao.GetTagByName(ctx, alias)
+			aliasTag, err := dao.GetTagByName(ctx, alias)
+			if err != nil && !errors.Is(err, mongo.ErrNoDocuments) {
+				return nil, err
+			}
 			if aliasTag == nil {
 				continue
 			}
@@ -85,29 +89,50 @@ func AddTagAliasByID(ctx context.Context, tagID primitive.ObjectID, alias ...str
 
 			// 迁移 artwork 中的 tag
 			artworkCollection := dao.GetCollection(ctx, collections.Artworks)
-			_, err = artworkCollection.UpdateMany(ctx,
-				bson.M{"tags": bson.M{"$in": []primitive.ObjectID{aliasTag.ID}}},
-				bson.M{
-					"$pull": bson.M{"tags": aliasTag.ID},
-				},
-			)
+
+			filter := bson.M{"tags": bson.M{"$in": []primitive.ObjectID{aliasTag.ID}}}
+			cursor, err := artworkCollection.Find(ctx, filter, options.Find().SetProjection(bson.M{"_id": 1}))
 			if err != nil {
 				return nil, err
 			}
-			_, err = artworkCollection.UpdateMany(ctx,
-				bson.M{"tags": bson.M{"$nin": []primitive.ObjectID{tagID}}},
-				bson.M{
-					"$addToSet": bson.M{"tags": tagID},
-				},
-			)
-			if err != nil {
+			var matchedDocs []bson.M
+			if err = cursor.All(ctx, &matchedDocs); err != nil {
 				return nil, err
 			}
+
+			if len(matchedDocs) > 0 {
+				var docIDs []primitive.ObjectID
+				for _, doc := range matchedDocs {
+					docIDs = append(docIDs, doc["_id"].(primitive.ObjectID))
+				}
+
+				_, err = artworkCollection.UpdateMany(ctx,
+					bson.M{"_id": bson.M{"$in": docIDs}},
+					bson.M{
+						"$pull": bson.M{"tags": aliasTag.ID},
+					},
+				)
+				if err != nil {
+					return nil, err
+				}
+
+				_, err = artworkCollection.UpdateMany(ctx,
+					bson.M{"_id": bson.M{"$in": docIDs}},
+					bson.M{
+						"$addToSet": bson.M{"tags": tagID},
+					},
+				)
+				if err != nil {
+					return nil, err
+				}
+			}
+
 			// 删除别名对应的 tag
 			if _, err := dao.DeleteTagByID(ctx, aliasTag.ID); err != nil {
 				return nil, err
 			}
 		}
+
 		tagModel, err := dao.GetTagByID(ctx, tagID)
 		if err != nil {
 			return nil, err
