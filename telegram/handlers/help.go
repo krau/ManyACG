@@ -44,6 +44,8 @@ Inline 查询(在任意聊天框中@本bot)支持同样的参数格式.
 /tags - 更新作品标签(覆盖原有标签)
 /addtags - 添加作品标签
 /deltags - 删除作品标签
+/tagalias - 为标签添加别名
+/dump - 输出 json 格式作品信息
 
 process_pictures_hashsize - 处理无哈希和尺寸的图片
 process_pictures_storage - 处理图片存储(生成缩略图, 迁移用)

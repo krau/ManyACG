@@ -12,6 +12,9 @@ import (
 var tagCollection *mongo.Collection
 
 func CreateTag(ctx context.Context, tag *types.TagModel) (*mongo.InsertOneResult, error) {
+	if tag.Alias == nil {
+		tag.Alias = []string{tag.Name}
+	}
 	return tagCollection.InsertOne(ctx, tag)
 }
 
@@ -23,9 +26,32 @@ func CreateTags(ctx context.Context, tags []*types.TagModel) (*mongo.InsertManyR
 	return tagCollection.InsertMany(ctx, docs)
 }
 
+func RemoveTagAliasByID(ctx context.Context, id primitive.ObjectID, alias []string) error {
+	_, err := tagCollection.UpdateOne(ctx, bson.M{"_id": id}, bson.M{"$pull": bson.M{"alias": bson.M{"$in": alias}}})
+	return err
+}
+
+func UpdateTagAliasByID(ctx context.Context, id primitive.ObjectID, alias []string) error {
+	_, err := tagCollection.UpdateOne(ctx, bson.M{"_id": id}, bson.M{"$set": bson.M{"alias": alias}})
+	return err
+}
+
 func GetTagByID(ctx context.Context, id primitive.ObjectID) (*types.TagModel, error) {
 	var tag types.TagModel
 	if err := tagCollection.FindOne(ctx, bson.M{"_id": id}).Decode(&tag); err != nil {
+		return nil, err
+	}
+	return &tag, nil
+}
+
+func GetTagByNameWithAlias(ctx context.Context, name string) (*types.TagModel, error) {
+	var tag types.TagModel
+	if err := tagCollection.FindOne(ctx, bson.M{
+		"$or": []bson.M{
+			{"name": name},
+			{"alias": bson.M{"$in": []string{name}}},
+		},
+	}).Decode(&tag); err != nil {
 		return nil, err
 	}
 	return &tag, nil
@@ -48,10 +74,16 @@ func QueryTagsByName(ctx context.Context, name string) ([]*types.TagModel, error
 		return nil, mongo.ErrNoDocuments
 	}
 	var tags []*types.TagModel
-	cursor, err := tagCollection.Find(ctx, bson.M{"name": primitive.Regex{Pattern: name, Options: "i"}})
+	cursor, err := tagCollection.Find(ctx, bson.M{
+		"$or": []bson.M{
+			{"name": primitive.Regex{Pattern: name, Options: "i"}},
+			{"alias": primitive.Regex{Pattern: name, Options: "i"}},
+		},
+	})
 	if err != nil {
 		return nil, err
 	}
+	defer cursor.Close(ctx)
 	if err = cursor.All(ctx, &tags); err != nil {
 		return nil, err
 	}
@@ -72,8 +104,13 @@ func GetRandomTags(ctx context.Context, limit int) ([]*types.TagModel, error) {
 	if err = cursor.All(ctx, &tags); err != nil {
 		return nil, err
 	}
+	defer cursor.Close(ctx)
 	if len(tags) == 0 {
 		return nil, mongo.ErrNoDocuments
 	}
 	return tags, nil
+}
+
+func DeleteTagByID(ctx context.Context, id primitive.ObjectID) (*mongo.DeleteResult, error) {
+	return tagCollection.DeleteOne(ctx, bson.M{"_id": id})
 }

@@ -41,7 +41,7 @@ func CreateArtwork(ctx context.Context, artwork *types.Artwork) (*types.Artwork,
 		// 创建 Tag
 		tagIDs := make([]primitive.ObjectID, len(artwork.Tags))
 		for i, tag := range artwork.Tags {
-			tagModel, err := dao.GetTagByName(ctx, tag)
+			tagModel, err := dao.GetTagByNameWithAlias(ctx, tag)
 			if err != nil && !errors.Is(err, mongo.ErrNoDocuments) {
 				return nil, err
 			}

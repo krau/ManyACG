@@ -32,12 +32,8 @@ var (
 			Description: "开始涩涩",
 		},
 		{
-			Command:     "file",
-			Description: "获取原图文件",
-		},
-		{
 			Command:     "files",
-			Description: "获取作品所有图片文件",
+			Description: "获取作品所有原图文件",
 		},
 		{
 			Command:     "setu",
@@ -97,6 +93,10 @@ var (
 		{
 			Command:     "deltags",
 			Description: "删除作品标签",
+		},
+		{
+			Command:     "tagalias",
+			Description: "为标签添加别名 <原标签名> <别名1> <别名2> ...",
 		},
 		{
 			Command:     "post",

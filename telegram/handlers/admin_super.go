@@ -20,7 +20,8 @@ import (
 func ProcessPicturesHashAndSize(ctx context.Context, bot *telego.Bot, message telego.Message) {
 	userAdmin, err := service.GetAdminByUserID(ctx, message.From.ID)
 	if err != nil {
-		utils.ReplyMessage(bot, message, "获取管理员信息失败: "+err.Error())
+		common.Logger.Errorf("获取管理员信息失败: %s", err)
+		utils.ReplyMessage(bot, message, "获取管理员信息失败")
 		return
 	}
 	if userAdmin != nil && !userAdmin.SuperAdmin {
@@ -34,7 +35,8 @@ func ProcessPicturesHashAndSize(ctx context.Context, bot *telego.Bot, message te
 func ProcessPicturesStorage(ctx context.Context, bot *telego.Bot, message telego.Message) {
 	userAdmin, err := service.GetAdminByUserID(ctx, message.From.ID)
 	if err != nil {
-		utils.ReplyMessage(bot, message, "获取管理员信息失败: "+err.Error())
+		common.Logger.Errorf("获取管理员信息失败: %s", err)
+		utils.ReplyMessage(bot, message, "获取管理员信息失败")
 		return
 	}
 	if userAdmin != nil && !userAdmin.SuperAdmin {
@@ -48,7 +50,8 @@ func ProcessPicturesStorage(ctx context.Context, bot *telego.Bot, message telego
 func FixTwitterArtists(ctx context.Context, bot *telego.Bot, message telego.Message) {
 	userAdmin, err := service.GetAdminByUserID(ctx, message.From.ID)
 	if err != nil {
-		utils.ReplyMessage(bot, message, "获取管理员信息失败: "+err.Error())
+		common.Logger.Errorf("获取管理员信息失败: %s", err)
+		utils.ReplyMessage(bot, message, "获取管理员信息失败")
 		return
 	}
 	if userAdmin != nil && !userAdmin.SuperAdmin {
@@ -154,4 +157,34 @@ func SetAdmin(ctx context.Context, bot *telego.Bot, message telego.Message) {
 		utils.ReplyMessage(bot, message, "更新管理员成功")
 		return
 	}
+}
+
+func AddTagAlias(ctx context.Context, bot *telego.Bot, message telego.Message) {
+	userAdmin, err := service.GetAdminByUserID(ctx, message.From.ID)
+	if err != nil {
+		common.Logger.Errorf("获取管理员信息失败: %s", err)
+		utils.ReplyMessage(bot, message, "获取管理员信息失败")
+		return
+	}
+	if userAdmin != nil && !userAdmin.SuperAdmin {
+		utils.ReplyMessage(bot, message, "你没有权限添加标签别名")
+		return
+	}
+	_, _, args := utils.ParseCommandBy(message.Text, " ", "\"")
+	if len(args) < 2 {
+		utils.ReplyMessage(bot, message, "请提供原标签名和需要添加的别名")
+		return
+	}
+	tagName := args[0]
+	tagAliases := args[1:]
+	tag, err := service.GetTagByName(ctx, tagName)
+	if err != nil {
+		utils.ReplyMessage(bot, message, "获取标签失败: "+err.Error())
+		return
+	}
+	if _, err := service.AddTagAliasByID(ctx, tag.ID, tagAliases...); err != nil {
+		utils.ReplyMessage(bot, message, "添加标签别名失败: "+err.Error())
+		return
+	}
+	utils.ReplyMessage(bot, message, "添加标签别名成功")
 }

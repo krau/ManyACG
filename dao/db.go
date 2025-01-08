@@ -239,3 +239,7 @@ func createIndex(ctx context.Context) {
 		// },
 	})
 }
+
+func GetCollection(ctx context.Context, name string) *mongo.Collection {
+	return DB.Collection(name)
+}

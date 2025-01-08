@@ -55,3 +55,30 @@ func BenchmarkGetArtworkHTMLCaption(b *testing.B) {
 		GetArtworkHTMLCaption(artwork)
 	}
 }
+
+func TestParseCommandBy(t *testing.T) {
+	text := "/tagalias@mybot 普拉娜 '普拉娜 (碧蓝档案)'"
+	cmd, username, args := ParseCommandBy(text, " ", "'")
+
+	expectedCmd := "tagalias"
+	expectedUsername := "@mybot"
+	expectedArgs := []string{"普拉娜", "普拉娜 (碧蓝档案)"}
+
+	if cmd != expectedCmd {
+		t.Errorf("命令不匹配, 期望 %s, 实际 %s", expectedCmd, cmd)
+	}
+
+	if username != expectedUsername {
+		t.Errorf("用户名不匹配, 期望 %s, 实际 %s", expectedUsername, username)
+	}
+
+	if len(args) != len(expectedArgs) {
+		t.Errorf("参数数量不匹配, 期望 %d, 实际 %d", len(expectedArgs), len(args))
+	}
+
+	for i := range expectedArgs {
+		if args[i] != expectedArgs[i] {
+			t.Errorf("参数不匹配, 索引 %d, 期望 %s, 实际 %s", i, expectedArgs[i], args[i])
+		}
+	}
+}

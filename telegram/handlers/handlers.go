@@ -43,6 +43,8 @@ func RegisterHandlers(hg *telegohandler.HandlerGroup) {
 	mg.HandleMessageCtx(PostArtworkCommand, telegohandler.CommandEqual("post"))
 	mg.HandleMessageCtx(RefreshArtwork, telegohandler.CommandEqual("refresh"))
 	// hg.HandleMessageCtx(BatchPostArtwork, telegohandler.CommandEqual("batch_post")) // TODO: 兼容无频道模式
+	mg.HandleMessageCtx(AddTagAlias, telegohandler.CommandEqual("tagalias"))
+	mg.HandleMessageCtx(DumpArtworkInfo, telegohandler.CommandEqual("dump"))
 
 	hg.HandleCallbackQueryCtx(PostArtworkCallbackQuery, telegohandler.CallbackDataContains("post_artwork"))
 	hg.HandleCallbackQueryCtx(SearchPictureCallbackQuery, telegohandler.CallbackDataPrefix("search_picture"))

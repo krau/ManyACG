@@ -28,9 +28,17 @@ type ArtistModel struct {
 }
 
 type TagModel struct {
-	ID   primitive.ObjectID `bson:"_id,omitempty" json:"id"`
-	Name string             `bson:"name" json:"name"`
-	// Alias []string           `bson:"alias"`
+	// example:
+	/*
+		{
+			id: objectId,
+			name: "碧蓝档案",
+			alias: ["碧蓝档案","蔚蓝档案","blue archive"]
+		}
+	*/
+	ID    primitive.ObjectID `bson:"_id,omitempty" json:"id,omitempty"`
+	Name  string             `bson:"name" json:"name"`
+	Alias []string           `bson:"alias" json:"alias"`
 }
 
 type PictureModel struct {
