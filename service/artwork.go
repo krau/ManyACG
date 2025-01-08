@@ -234,7 +234,7 @@ func GetArtworksByTags(ctx context.Context, tags [][]string, r18 types.R18Type, 
 	for i, tagGroup := range tags {
 		tagIDs[i] = make([]primitive.ObjectID, len(tagGroup))
 		for j, tagName := range tagGroup {
-			tagModel, err := dao.GetTagByName(ctx, tagName)
+			tagModel, err := dao.GetTagByNameWithAlias(ctx, tagName)
 			if err != nil {
 				return nil, err
 			}
@@ -324,7 +324,7 @@ func UpdateArtworkTagsByURL(ctx context.Context, sourceURL string, tags []string
 	tagIDs := make([]primitive.ObjectID, len(tags))
 	_, err = session.WithTransaction(ctx, func(ctx mongo.SessionContext) (interface{}, error) {
 		for i, tag := range tags {
-			tagModel, err := dao.GetTagByName(ctx, tag)
+			tagModel, err := dao.GetTagByNameWithAlias(ctx, tag)
 			if err != nil && !errors.Is(err, mongo.ErrNoDocuments) {
 				return nil, err
 			}
