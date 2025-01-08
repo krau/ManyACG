@@ -73,6 +73,7 @@ var tagCharsReplacer = strings.NewReplacer(
 	" ", "_",
 )
 
+// 获取作品的 HTML 格式描述, 已转义
 func GetArtworkHTMLCaption(artwork *types.Artwork) string {
 	caption := fmt.Sprintf("<a href=\"%s\"><b>%s</b></a>", artwork.SourceURL, common.EscapeHTML(artwork.Title))
 	caption += "\n<b>Author:</b> " + common.EscapeHTML(artwork.Artist.Name)

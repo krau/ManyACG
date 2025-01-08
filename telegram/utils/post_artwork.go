@@ -229,7 +229,8 @@ func afterCreate(ctx context.Context, artwork *types.Artwork, bot *telego.Bot, f
 	for _, picture := range artwork.Pictures {
 		service.AddProcessPictureTask(ctx, picture)
 	}
-	checkDuplicate(ctx, artwork, bot, fromID)
+	go checkDuplicate(ctx, artwork, bot, fromID)
+	go prettyPostedArtworkTagCaption(ctx, artwork, bot)
 }
 
 func checkDuplicate(ctx context.Context, artwork *types.Artwork, bot *telego.Bot, fromID int64) {
@@ -325,4 +326,22 @@ func checkDuplicate(ctx context.Context, artwork *types.Artwork, bot *telego.Bot
 			common.Logger.Errorf("error when sending similar pictures: %s", err)
 		}
 	}
+}
+
+func prettyPostedArtworkTagCaption(ctx context.Context, artwork *types.Artwork, bot *telego.Bot) {
+	newArtwork, err := service.GetArtworkByURL(ctx, artwork.SourceURL)
+	if err != nil {
+		common.Logger.Errorf("error when getting artwork by URL: %s", err)
+		return
+	}
+	if newArtwork.Pictures[0].TelegramInfo == nil || newArtwork.Pictures[0].TelegramInfo.MessageID == 0 {
+		return
+	}
+	newCaption := GetArtworkHTMLCaption(newArtwork)
+	bot.EditMessageCaption(&telego.EditMessageCaptionParams{
+		ChatID:    ChannelChatID,
+		MessageID: newArtwork.Pictures[0].TelegramInfo.MessageID,
+		Caption:   newCaption,
+		ParseMode: telego.ModeHTML,
+	})
 }
