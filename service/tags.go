@@ -79,7 +79,7 @@ func AddTagAliasByID(ctx context.Context, tagID primitive.ObjectID, alias ...str
 			if alias == aliasTag.Name {
 				continue
 			}
-			return nil, fmt.Errorf("%w: %s used by %s", errs.ErrAliasAlreadyUsed, alias, aliasTag.Name)
+			return nil, fmt.Errorf("%w: '%s' used by '%s'", errs.ErrAliasAlreadyUsed, alias, aliasTag.Name)
 		}
 	}
 
