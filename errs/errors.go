@@ -29,4 +29,6 @@ var (
 	ErrSettingsKey = errors.New("settings key not found")
 
 	ErrChatIDNotSet = errors.New("chat id not set")
+
+	ErrAliasAlreadyUsed = errors.New("alias already used")
 )

@@ -3,10 +3,12 @@ package service
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	"github.com/duke-git/lancet/v2/slice"
 	"github.com/krau/ManyACG/dao"
 	"github.com/krau/ManyACG/dao/collections"
+	"github.com/krau/ManyACG/errs"
 	"github.com/krau/ManyACG/types"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -57,7 +59,29 @@ func AddTagAliasByID(ctx context.Context, tagID primitive.ObjectID, alias ...str
 	if tagModel.Alias == nil {
 		tagModel.Alias = make([]string, 0)
 	}
-	tagAlias := slice.Union(slice.Concat(tagModel.Alias, alias))
+	tagAlias := slice.Compact(slice.Union(slice.Concat(tagModel.Alias, alias)))
+
+	for _, alias := range tagAlias {
+		if alias == tagModel.Name {
+			continue
+		}
+		// 检查 alias 是否已经作为其他 tag 的别名存在
+		aliasTag, err := dao.GetTagByAlias(ctx, alias)
+		if err != nil && !errors.Is(err, mongo.ErrNoDocuments) {
+			return nil, err
+		}
+
+		if aliasTag != nil {
+			if aliasTag.ID == tagID {
+				continue
+			}
+			// 处理查询到的 tag name 和 alias 相同的情况
+			if alias == aliasTag.Name {
+				continue
+			}
+			return nil, fmt.Errorf("%w: %s used by %s", errs.ErrAliasAlreadyUsed, alias, aliasTag.Name)
+		}
+	}
 
 	result, err := session.WithTransaction(ctx, func(ctx mongo.SessionContext) (interface{}, error) {
 		if err := dao.UpdateTagAliasByID(ctx, tagID, tagAlias); err != nil {
