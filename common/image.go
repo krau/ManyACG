@@ -247,8 +247,8 @@ func CompressImageForTelegramByFFmpegFromBytes(input []byte) ([]byte, error) {
 	}
 
 	scaleFactor := float64(types.TelegramMaxPhotoTotalSideLength) / float64(currentTotalSideLength)
-	newWidth := int(math.Round(float64(img.Width) * scaleFactor))
-	newHeight := int(math.Round(float64(img.Height) * scaleFactor))
+	newWidth := int(math.Floor(float64(img.Width) * scaleFactor))
+	newHeight := int(math.Floor(float64(img.Height) * scaleFactor))
 	if newWidth == 0 || newHeight == 0 {
 		return nil, fmt.Errorf("failed to calculate new image size")
 	}
