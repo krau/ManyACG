@@ -57,6 +57,14 @@ func GetTagByNameWithAlias(ctx context.Context, name string) (*types.TagModel, e
 	return &tag, nil
 }
 
+func GetTagByAlias(ctx context.Context, alias string) (*types.TagModel, error) {
+	var tag types.TagModel
+	if err := tagCollection.FindOne(ctx, bson.M{"alias": bson.M{"$in": []string{alias}}}).Decode(&tag); err != nil {
+		return nil, err
+	}
+	return &tag, nil
+}
+
 func GetTagByName(ctx context.Context, name string) (*types.TagModel, error) {
 	var tag types.TagModel
 	if err := tagCollection.FindOne(ctx, bson.M{"name": name}).Decode(&tag); err != nil {
