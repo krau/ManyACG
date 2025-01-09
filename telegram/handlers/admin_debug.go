@@ -5,11 +5,13 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/krau/ManyACG/adapter"
 	"github.com/krau/ManyACG/common"
 	"github.com/krau/ManyACG/service"
-	"github.com/krau/ManyACG/sources"
 	"github.com/krau/ManyACG/telegram/utils"
+	"github.com/krau/ManyACG/types"
 	"github.com/mymmrac/telego"
+	"github.com/mymmrac/telego/telegoutil"
 )
 
 func DumpArtworkInfo(ctx context.Context, bot *telego.Bot, message telego.Message) {
@@ -24,18 +26,33 @@ func DumpArtworkInfo(ctx context.Context, bot *telego.Bot, message telego.Messag
 		return
 	}
 
-	var sourceURL string
-	if message.ReplyToMessage != nil {
-		sourceURL = utils.FindSourceURLForMessage(message.ReplyToMessage)
-	} else {
-		sourceURL = sources.FindSourceURL(message.Text)
-	}
-	if sourceURL == "" {
-		utils.ReplyMessage(bot, message, "请回复一条消息, 或者指定作品链接")
+	if message.ReplyToMessage == nil {
+		utils.ReplyMessage(bot, message, "请回复一条包含作品链接的消息")
 		return
 	}
+	sourceURL := utils.FindSourceURLForMessage(message.ReplyToMessage)
+	if sourceURL == "" {
+		utils.ReplyMessage(bot, message, "回复的消息中没有支持的链接")
+		return
+	}
+	_, _, args := telegoutil.ParseCommand(message.Text)
+	adapterOpt := &types.AdapterOption{}
+	if len(args) > 0 {
+		for _, arg := range args {
+			switch arg {
+			case "tags":
+				adapterOpt.LoadTag = true
+			case "artist":
+				adapterOpt.LoadArtist = true
+			case "pictures":
+				adapterOpt.LoadPicture = true
+			}
+		}
+	} else {
+		adapterOpt = adapter.LoadAll()
+	}
 
-	artwork, err := service.GetArtworkByURL(ctx, sourceURL)
+	artwork, err := service.GetArtworkByURL(ctx, sourceURL, adapterOpt)
 	if err != nil {
 		common.Logger.Errorf("获取作品信息失败: %s", err)
 		utils.ReplyMessageWithHTML(bot, message, fmt.Sprintf("获取作品信息失败\n<code>%s</code>", common.EscapeHTML(err.Error())))
@@ -47,5 +64,7 @@ func DumpArtworkInfo(ctx context.Context, bot *telego.Bot, message telego.Messag
 		utils.ReplyMessageWithHTML(bot, message, fmt.Sprintf("序列化作品信息失败\n<code>%s</code>", common.EscapeHTML(err.Error())))
 		return
 	}
-	utils.ReplyMessageWithHTML(bot, message, "<pre>"+common.EscapeHTML(string(artworkJSON))+"</pre>")
+	if _, err := utils.ReplyMessageWithHTML(bot, message, "<pre>"+common.EscapeHTML(string(artworkJSON))+"</pre>"); err != nil {
+		utils.ReplyMessageWithHTML(bot, message, fmt.Sprintf("回复消息失败\n<code>%s</code>", common.EscapeHTML(err.Error())))
+	}
 }
