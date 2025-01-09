@@ -1,3 +1,5 @@
+// 此文件内所有操作应停机执行
+
 package dao
 
 import (
@@ -231,4 +233,58 @@ func AddAliasToAllTags(ctx context.Context) error {
 		},
 	)
 	return err
+}
+
+func TidyTag(ctx context.Context) error {
+	fmt.Println("正在清理未使用的标签")
+
+	pipeline := mongo.Pipeline{
+		{{Key: "$lookup", Value: bson.D{
+			{Key: "from", Value: "Artworks"},
+			{Key: "localField", Value: "_id"},
+			{Key: "foreignField", Value: "tags"},
+			{Key: "as", Value: "artwork_tags"},
+		}}},
+		{{Key: "$match", Value: bson.D{
+			{Key: "artwork_tags", Value: bson.D{{Key: "$eq", Value: bson.A{}}}},
+		}}},
+		{{Key: "$project", Value: bson.D{
+			{Key: "_id", Value: 1},
+			{Key: "name", Value: 1},
+			{Key: "alias", Value: 1},
+		}}},
+	}
+
+	cursor, err := tagCollection.Aggregate(ctx, pipeline)
+	if err != nil {
+		return fmt.Errorf("查找未使用的标签失败: %w", err)
+	}
+	defer cursor.Close(ctx)
+
+	var tagsToDelete []primitive.ObjectID
+	for cursor.Next(ctx) {
+		var result struct {
+			ID    primitive.ObjectID `bson:"_id"`
+			Name  string             `bson:"name"`
+			Alias []string           `bson:"alias"`
+		}
+		if err := cursor.Decode(&result); err != nil {
+			return fmt.Errorf("解析标签数据失败: %w", err)
+		}
+		tagsToDelete = append(tagsToDelete, result.ID)
+		fmt.Printf("将删除未使用的标签: %s (别名: %v)\n", result.Name, result.Alias)
+	}
+
+	if len(tagsToDelete) == 0 {
+		fmt.Println("没有需要删除的标签")
+		return nil
+	}
+
+	res, err := tagCollection.DeleteMany(ctx, bson.M{"_id": bson.M{"$in": tagsToDelete}})
+	if err != nil {
+		return fmt.Errorf("删除未使用的标签失败: %w", err)
+	}
+
+	fmt.Printf("总共删除了 %d 个未使用的标签\n", res.DeletedCount)
+	return nil
 }

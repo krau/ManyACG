@@ -293,10 +293,3 @@ func FixTwitterArtists(ctx context.Context, bot *telego.Bot, message *telego.Mes
 		))
 	}
 }
-
-func TidyArtist(ctx context.Context) {
-	common.Logger.Infof("Tidying artist")
-	if err := dao.TidyArtist(ctx); err != nil {
-		common.Logger.Errorf("Failed to tidy artist: %v", err)
-	}
-}
