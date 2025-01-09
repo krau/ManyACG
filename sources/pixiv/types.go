@@ -6,6 +6,9 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/duke-git/lancet/v2/slice"
+	"github.com/duke-git/lancet/v2/strutil"
+	"github.com/duke-git/lancet/v2/validator"
 	"github.com/krau/ManyACG/config"
 	"github.com/krau/ManyACG/types"
 )
@@ -65,7 +68,7 @@ type PixivAjaxRespBodyTagsTag struct {
 }
 
 type PixivAjaxRespBodyTagTranslation struct {
-	En string `json:"en"`
+	En string `json:"en"` // 实际上会出现其他语言翻译
 }
 
 type PixivIllustPages struct {
@@ -86,8 +89,9 @@ type PixivIllustPagesBody struct {
 }
 
 var (
-	tagsSet = map[string]bool{"R-18": true, "R-18G": true, "R18": true, "R18G": true}
-	htmlRe  = regexp.MustCompile("<[^>]+>")
+	tagsSet             = map[string]bool{"R-18": true, "R-18G": true, "R18": true, "R18G": true}
+	bookmarksTagsSuffix = []string{"users入り", "users 入り", "+ bookmarks", "0收藏", "+ users", "加入书籤"}
+	htmlRe              = regexp.MustCompile("<[^>]+>")
 )
 
 func (resp *PixivAjaxResp) ToArtwork() (*types.Artwork, error) {
@@ -115,21 +119,24 @@ func (resp *PixivAjaxResp) ToArtwork() (*types.Artwork, error) {
 
 	tags := make([]string, 0)
 	for _, tag := range resp.Body.Tags.Tags {
-		if tag.Translation != nil && tag.Translation.En != "" {
+		if tag.Translation != nil && tag.Translation.En != "" && validator.ContainChinese(tag.Translation.En) {
 			tags = append(tags, tag.Translation.En)
 		} else {
 			tags = append(tags, tag.Tag)
 		}
 	}
 	r18 := false
-	for i, tag := range tags {
+	for _, tag := range tags {
 		if tagsSet[tag] {
 			r18 = true
-		}
-		if tag == "" {
-			tags = append(tags[:i], tags[i+1:]...)
+			break
 		}
 	}
+
+	tags = slice.Compact(slice.Filter(tags, func(index int, item string) bool {
+		return !strutil.HasSuffixAny(item, bookmarksTagsSuffix)
+	}))
+
 	return &types.Artwork{
 		Title:       resp.Body.IlustTitle,
 		Description: htmlRe.ReplaceAllString(strings.ReplaceAll(resp.Body.Description, "<br />", "\n"), ""),
