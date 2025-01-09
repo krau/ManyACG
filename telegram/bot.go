@@ -106,6 +106,10 @@ var (
 			Command:     "refresh",
 			Description: "删除作品缓存 <url>",
 		},
+		{
+			Command:     "recaption",
+			Description: "重新生成作品描述 <url>",
+		},
 	}
 )
 

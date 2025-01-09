@@ -22,7 +22,6 @@ func Help(ctx context.Context, bot *telego.Bot, message telego.Message) {
 /files - 获取作品原图
 `
 	helpText += `
-	
 随机图片相关功能中支持使用以下格式的参数:
 
 使用 '|' 分隔'或'关系, 使用 '空格' 分隔'与'关系, 示例:
@@ -46,6 +45,7 @@ Inline 查询(在任意聊天框中@本bot)支持同样的参数格式.
 /deltags - 删除作品标签
 /tagalias - 为标签添加别名
 /dump - 输出 json 格式作品信息
+/recaption - 重新生成作品描述
 
 process_pictures_hashsize - 处理无哈希和尺寸的图片
 process_pictures_storage - 处理图片存储(生成缩略图, 迁移用)

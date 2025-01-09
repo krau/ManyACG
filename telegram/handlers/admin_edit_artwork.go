@@ -291,3 +291,36 @@ func RefreshArtwork(ctx context.Context, bot *telego.Bot, message telego.Message
 	}
 	utils.ReplyMessage(bot, message, "已刷新作品信息")
 }
+
+func ReCaptionArtwork(ctx context.Context, bot *telego.Bot, message telego.Message) {
+	if !CheckPermissionInGroup(ctx, message, types.PermissionEditArtwork) {
+		utils.ReplyMessage(bot, message, "你没有编辑作品的权限")
+		return
+	}
+	var sourceURL string
+	if message.ReplyToMessage != nil {
+		sourceURL = utils.FindSourceURLForMessage(message.ReplyToMessage)
+	} else {
+		sourceURL = sources.FindSourceURL(message.Text)
+	}
+	if sourceURL == "" {
+		utils.ReplyMessage(bot, message, "请回复一条消息, 或者指定作品链接")
+		return
+	}
+	artwork, err := service.GetArtworkByURL(ctx, sourceURL)
+	if err != nil {
+		utils.ReplyMessage(bot, message, "获取作品信息失败: "+err.Error())
+		return
+	}
+	if artwork.Pictures[0].TelegramInfo == nil || artwork.Pictures[0].TelegramInfo.MessageID == 0 {
+		utils.ReplyMessage(bot, message, "该作品未在频道发布")
+		return
+	}
+	bot.EditMessageCaption(&telego.EditMessageCaptionParams{
+		ChatID:    ChannelChatID,
+		MessageID: artwork.Pictures[0].TelegramInfo.MessageID,
+		Caption:   utils.GetArtworkHTMLCaption(artwork),
+		ParseMode: telego.ModeHTML,
+	})
+	utils.ReplyMessage(bot, message, "已重新生成作品描述")
+}

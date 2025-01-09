@@ -10,7 +10,6 @@ import (
 	"github.com/krau/ManyACG/sources"
 	"github.com/krau/ManyACG/telegram/utils"
 	"github.com/mymmrac/telego"
-	"github.com/mymmrac/telego/telegoutil"
 )
 
 func DumpArtworkInfo(ctx context.Context, bot *telego.Bot, message telego.Message) {
@@ -25,26 +24,14 @@ func DumpArtworkInfo(ctx context.Context, bot *telego.Bot, message telego.Messag
 		return
 	}
 
-	_, _, args := telegoutil.ParseCommand(message.Text)
-	if len(args) == 0 && message.ReplyToMessage == nil {
-		utils.ReplyMessage(bot, message, "请提供作品链接, 或回复一条消息")
-		return
-	}
 	var sourceURL string
 	if message.ReplyToMessage != nil {
 		sourceURL = utils.FindSourceURLForMessage(message.ReplyToMessage)
-		if sourceURL == "" {
-			if len(args) == 0 {
-				utils.ReplyMessage(bot, message, "不支持的链接")
-				return
-			}
-		}
-	}
-	if len(args) > 0 {
-		sourceURL = sources.FindSourceURL(args[0])
+	} else {
+		sourceURL = sources.FindSourceURL(message.Text)
 	}
 	if sourceURL == "" {
-		utils.ReplyMessage(bot, message, "不支持的链接")
+		utils.ReplyMessage(bot, message, "请回复一条消息, 或者指定作品链接")
 		return
 	}
 
