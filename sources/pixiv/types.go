@@ -90,7 +90,7 @@ type PixivIllustPagesBody struct {
 
 var (
 	tagsSet             = map[string]bool{"R-18": true, "R-18G": true, "R18": true, "R18G": true}
-	bookmarksTagsSuffix = []string{"users入り", "users 入り", "+ bookmarks", "0收藏", "+ users", "加入书籤"}
+	bookmarksTagsSuffix = []string{"入り", "bookmarks", "0收藏", "+ users", "加入书籤"}
 	htmlRe              = regexp.MustCompile("<[^>]+>")
 )
 

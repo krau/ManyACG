@@ -5,6 +5,7 @@ package dao
 import (
 	"context"
 	"fmt"
+	"regexp"
 
 	"github.com/krau/ManyACG/types"
 	"go.mongodb.org/mongo-driver/bson"
@@ -287,4 +288,64 @@ func TidyTag(ctx context.Context) error {
 
 	fmt.Printf("总共删除了 %d 个未使用的标签\n", res.DeletedCount)
 	return nil
+}
+
+func CleanTag(ctx context.Context, regex string) error {
+	fmt.Printf("正在清理匹配正则表达式 '%s' 的标签\n", regex)
+
+	re, err := regexp.Compile(regex)
+	if err != nil {
+		return fmt.Errorf("正则表达式编译失败: %w", err)
+	}
+
+	cursor, err := tagCollection.Find(ctx, bson.M{})
+	if err != nil {
+		return fmt.Errorf("查找标签失败: %w", err)
+	}
+	defer cursor.Close(ctx)
+
+	var tagsToDelete []primitive.ObjectID
+	for cursor.Next(ctx) {
+		var tag types.TagModel
+		if err := cursor.Decode(&tag); err != nil {
+			return fmt.Errorf("解析标签数据失败: %w", err)
+		}
+
+		if re.MatchString(tag.Name) {
+			tagsToDelete = append(tagsToDelete, tag.ID)
+			fmt.Printf("删除标签: %s (ID: %s)\n", tag.Name, tag.ID.Hex())
+		}
+	}
+
+	if len(tagsToDelete) == 0 {
+		fmt.Println("没有找到匹配的标签")
+		return nil
+	}
+
+	session, err := Client.StartSession()
+	if err != nil {
+		return fmt.Errorf("创建会话失败: %w", err)
+	}
+	defer session.EndSession(ctx)
+
+	_, err = session.WithTransaction(ctx, func(sessCtx mongo.SessionContext) (interface{}, error) {
+		updatedArtworks, err := artworkCollection.UpdateMany(
+			sessCtx,
+			bson.M{"tags": bson.M{"$in": tagsToDelete}},
+			bson.M{"$pull": bson.M{"tags": bson.M{"$in": tagsToDelete}}},
+		)
+		if err != nil {
+			return nil, fmt.Errorf("从作品中移除标签失败: %w", err)
+		}
+
+		res, err := tagCollection.DeleteMany(sessCtx, bson.M{"_id": bson.M{"$in": tagsToDelete}})
+		if err != nil {
+			return nil, fmt.Errorf("删除标签失败: %w", err)
+		}
+
+		fmt.Printf("成功删除了 %d 个标签, 从 %d 个作品中移除了这些标签\n", res.DeletedCount, updatedArtworks.ModifiedCount)
+		return nil, nil
+	})
+
+	return err
 }

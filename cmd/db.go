@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"time"
 
@@ -77,10 +78,40 @@ var tidyTagCmd = &cobra.Command{
 	},
 }
 
+var cleanTagCmd = &cobra.Command{
+	Use:   "clean",
+	Short: "Clean tags",
+	Long:  "按给定的正则表达式清理 tag",
+	Run: func(cmd *cobra.Command, args []string) {
+		if len(args) == 0 {
+			fmt.Println("请提供表达式")
+			os.Exit(1)
+		}
+		config.InitConfig()
+		common.Init()
+		ctx, cancel := context.WithTimeout(context.TODO(), 30*time.Second)
+		defer cancel()
+		common.Logger.Info("Start migrating")
+		dao.InitDB(ctx)
+		defer func() {
+			if err := dao.Client.Disconnect(ctx); err != nil {
+				common.Logger.Fatal(err)
+				os.Exit(1)
+			}
+		}()
+		if err := dao.CleanTag(ctx, args[0]); err != nil {
+			common.Logger.Fatal(err)
+			os.Exit(1)
+		}
+		common.Logger.Info("Clean tag completed")
+	},
+}
+
 func init() {
 	rootCmd.AddCommand(dbCmd)
 	dbCmd.AddCommand(artistCmd)
 	artistCmd.AddCommand(tidyArtistCmd)
 	dbCmd.AddCommand(tagCmd)
 	tagCmd.AddCommand(tidyTagCmd)
+	tagCmd.AddCommand(cleanTagCmd)
 }
