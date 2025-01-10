@@ -16,42 +16,42 @@ import (
 // 检查是否能查看 R18 作品 (仅适用于使用了 OptionalJWTMiddleware 的路由)
 //
 // 在内部做响应处理，如果不能查看则返回 false
-func checkR18Permission(ctx *gin.Context) bool {
-	logged := ctx.GetBool("logged")
-	if !logged {
-		ctx.JSON(http.StatusUnauthorized, common.RestfulCommonResponse[any]{
-			Status:  http.StatusUnauthorized,
-			Message: "You must log in to view R18 content",
-		})
-		return false
-	}
-	claims := ctx.MustGet("claims").(jwt.MapClaims)
-	username := claims["id"].(string)
-	user, err := service.GetUserByUsername(ctx, username)
-	if err != nil {
-		if errors.Is(err, mongo.ErrNoDocuments) {
-			ctx.JSON(http.StatusForbidden, common.RestfulCommonResponse[any]{
-				Status:  http.StatusForbidden,
-				Message: "Account not found",
-			})
-			return false
-		}
-		common.Logger.Errorf("Failed to get user: %v", err)
-		ctx.JSON(http.StatusInternalServerError, common.RestfulCommonResponse[any]{
-			Status:  http.StatusInternalServerError,
-			Message: "Failed to get user",
-		})
-		return false
-	}
-	if !user.Settings.R18 {
-		ctx.JSON(http.StatusForbidden, common.RestfulCommonResponse[any]{
-			Status:  http.StatusForbidden,
-			Message: "Your settings do not allow you to view R18 content",
-		})
-		return false
-	}
-	return true
-}
+// func checkR18Permission(ctx *gin.Context) bool {
+// 	logged := ctx.GetBool("logged")
+// 	if !logged {
+// 		ctx.JSON(http.StatusUnauthorized, common.RestfulCommonResponse[any]{
+// 			Status:  http.StatusUnauthorized,
+// 			Message: "You must log in to view R18 content",
+// 		})
+// 		return false
+// 	}
+// 	claims := ctx.MustGet("claims").(jwt.MapClaims)
+// 	username := claims["id"].(string)
+// 	user, err := service.GetUserByUsername(ctx, username)
+// 	if err != nil {
+// 		if errors.Is(err, mongo.ErrNoDocuments) {
+// 			ctx.JSON(http.StatusForbidden, common.RestfulCommonResponse[any]{
+// 				Status:  http.StatusForbidden,
+// 				Message: "Account not found",
+// 			})
+// 			return false
+// 		}
+// 		common.Logger.Errorf("Failed to get user: %v", err)
+// 		ctx.JSON(http.StatusInternalServerError, common.RestfulCommonResponse[any]{
+// 			Status:  http.StatusInternalServerError,
+// 			Message: "Failed to get user",
+// 		})
+// 		return false
+// 	}
+// 	if !user.Settings.R18 {
+// 		ctx.JSON(http.StatusForbidden, common.RestfulCommonResponse[any]{
+// 			Status:  http.StatusForbidden,
+// 			Message: "Your settings do not allow you to view R18 content",
+// 		})
+// 		return false
+// 	}
+// 	return true
+// }
 
 func validateArtworkIDMiddleware(ctx *gin.Context) {
 	var request ArtworkIDRequest
