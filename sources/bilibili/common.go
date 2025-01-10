@@ -10,9 +10,10 @@ import (
 var reqClient *req.Client
 
 var (
-	dynamicURLRegexp *regexp.Regexp = regexp.MustCompile(`t.bilibili.com/(\d+)|bilibili.com/opus/(\d+)`)
-	numberRegexp     *regexp.Regexp = regexp.MustCompile(`\d+`)
-	apiURLFormat     string         = "https://api.bilibili.com/x/polymer/web-dynamic/v1/detail?timezone_offset=-480&platform=web&id=%s&features=itemOpusStyle"
+	dynamicURLRegexp           *regexp.Regexp = regexp.MustCompile(`t.bilibili.com/(\d+)|bilibili.com/opus/(\d+)`)
+	numberRegexp               *regexp.Regexp = regexp.MustCompile(`\d+`)
+	webDynamicAPIURLFormat     string         = "https://api.bilibili.com/x/polymer/web-dynamic/v1/detail?id=%s"
+	desktopDynamicAPIURLFormat string         = "https://api.bilibili.com/x/polymer/web-dynamic/desktop/v1/detail?id=%s"
 )
 
 var (

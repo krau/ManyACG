@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 	"regexp"
 
+	"github.com/krau/ManyACG/common"
 	"github.com/krau/ManyACG/config"
 	sourceCommon "github.com/krau/ManyACG/sources/common"
 	"github.com/krau/ManyACG/types"
@@ -19,11 +20,10 @@ func init() {
 }
 
 func (b *Bilibili) Init(_ types.Service) {
-	reqClient = req.C().ImpersonateChrome().SetUserAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Safari/537.36")
+	reqClient = req.C().ImpersonateChrome()
 	if config.Cfg.Source.Proxy != "" {
 		reqClient.SetProxyURL(config.Cfg.Source.Proxy)
 	}
-	reqClient.SetCommonHeader("referer", "https://t.bilibili.com/")
 	reqClient.SetCommonRetryCount(3)
 }
 
@@ -36,11 +36,31 @@ func (b *Bilibili) FetchNewArtworks(limit int) ([]*types.Artwork, error) {
 }
 
 func (b *Bilibili) GetArtworkInfo(sourceURL string) (*types.Artwork, error) {
-	resp, err := reqApiResp(sourceURL)
-	if err != nil {
-		return nil, err
+	dynamicID := getDynamicID(sourceURL)
+	if dynamicID == "" {
+		return nil, ErrInvalidURL
 	}
-	return resp.ToArtwork()
+	common.Logger.Tracef("request artwork info: https://t.bilibili.com/%s", dynamicID)
+	var err error
+	var desktopResp *BilibiliDesktopDynamicApiResp
+	desktopResp, err = reqDesktopDynamicApiResp(dynamicID)
+	if err == nil {
+		var artwork *types.Artwork
+		artwork, err = desktopResp.ToArtwork()
+		if err == nil {
+			return artwork, nil
+		}
+	}
+	var webResp *BilibiliWebDynamicApiResp
+	webResp, err = reqWebDynamicApiResp(dynamicID)
+	if err == nil {
+		var artwork *types.Artwork
+		artwork, err = webResp.ToArtwork()
+		if err == nil {
+			return artwork, nil
+		}
+	}
+	return nil, err
 }
 
 func (b *Bilibili) GetPictureInfo(sourceURL string, index uint) (*types.Picture, error) {
