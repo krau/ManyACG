@@ -3,9 +3,9 @@ package danbooru
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"path/filepath"
 	"regexp"
-	"strings"
 
 	"github.com/imroc/req/v3"
 	"github.com/krau/ManyACG/common"
@@ -80,8 +80,8 @@ func (d *Danbooru) GetCommonSourceURL(url string) string {
 }
 
 func (d *Danbooru) GetFileName(artwork *types.Artwork, picture *types.Picture) string {
-	idStr := strings.Split(artwork.Title, "/")[1]
-	return idStr + filepath.Ext(picture.Original)
+	idStr := GetPostID(artwork.SourceURL)
+	return fmt.Sprintf("%s_%d%s", idStr, picture.Index, filepath.Ext(picture.Original))
 }
 
 func (d *Danbooru) Config() *config.SourceCommonConfig {

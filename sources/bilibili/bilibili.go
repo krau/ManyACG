@@ -92,7 +92,7 @@ func (b *Bilibili) GetCommonSourceURL(url string) string {
 
 func (b *Bilibili) GetFileName(artwork *types.Artwork, picture *types.Picture) string {
 	dynamicID := getDynamicID(artwork.SourceURL)
-	return fmt.Sprintf("%s_%d.%s", dynamicID, picture.Index, filepath.Ext(picture.Original))
+	return fmt.Sprintf("%s_%d%s", dynamicID, picture.Index, filepath.Ext(picture.Original))
 }
 
 func (b *Bilibili) Config() *config.SourceCommonConfig {
