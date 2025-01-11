@@ -2,9 +2,11 @@ package artwork
 
 import (
 	"net/http"
+	"path"
 	"path/filepath"
 
 	"github.com/krau/ManyACG/common"
+	"github.com/krau/ManyACG/sources"
 	"github.com/krau/ManyACG/types"
 )
 
@@ -106,5 +108,73 @@ func ResponseFromArtworks(artworks []*types.Artwork, isAuthorized bool) *common.
 		Status:  http.StatusOK,
 		Message: "Success",
 		Data:    responses,
+	}
+}
+
+type FetchedArtworkResponseData struct {
+	Title       string                    `json:"title"`
+	Description string                    `json:"description"`
+	SourceURL   string                    `json:"source_url"`
+	R18         bool                      `json:"r18"`
+	Tags        []string                  `json:"tags"`
+	Artist      *FetchedArtistResponse    `json:"artist"`
+	SourceType  types.SourceType          `json:"source_type"`
+	Pictures    []*FetchedPictureResponse `json:"pictures"`
+}
+
+type FetchedArtistResponse struct {
+	Name     string `json:"name"`
+	Username string `json:"username"`
+	UID      string `json:"uid"`
+}
+
+type FetchedPictureResponse struct {
+	Width     uint   `json:"width"`
+	Height    uint   `json:"height"`
+	Index     uint   `json:"index"`
+	Thumbnail string `json:"thumbnail"`
+	Original  string `json:"original"`
+	FileName  string `json:"file_name"`
+}
+
+func ResponseFromFetchedArtwork(artwork *types.Artwork) *common.RestfulCommonResponse[FetchedArtworkResponseData] {
+	return &common.RestfulCommonResponse[FetchedArtworkResponseData]{
+		Status:  http.StatusOK,
+		Message: "Success",
+		Data:    ResponseDataFromFetchedArtwork(artwork),
+	}
+}
+
+func ResponseDataFromFetchedArtwork(artwork *types.Artwork) FetchedArtworkResponseData {
+	pictures := make([]*FetchedPictureResponse, 0, len(artwork.Pictures))
+	for _, picture := range artwork.Pictures {
+		pictures = append(pictures, &FetchedPictureResponse{
+			Width:     picture.Width,
+			Height:    picture.Height,
+			Index:     picture.Index,
+			Thumbnail: picture.Thumbnail,
+			Original:  picture.Original,
+			FileName: func() string {
+				fileName, err := sources.GetFileName(artwork, picture)
+				if err != nil {
+					return path.Base(picture.Original)
+				}
+				return fileName
+			}(),
+		})
+	}
+	return FetchedArtworkResponseData{
+		Title:       artwork.Title,
+		Description: artwork.Description,
+		SourceURL:   artwork.SourceURL,
+		R18:         artwork.R18,
+		Tags:        artwork.Tags,
+		Artist: &FetchedArtistResponse{
+			Name:     artwork.Artist.Name,
+			Username: artwork.Artist.Username,
+			UID:      artwork.Artist.UID,
+		},
+		SourceType: artwork.SourceType,
+		Pictures:   pictures,
 	}
 }

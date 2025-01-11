@@ -23,3 +23,8 @@ type ArtworkIDRequest struct {
 type R18Request struct {
 	R18 int `form:"r18,default=0" binding:"gte=0,lte=2" json:"r18"`
 }
+
+type FetchArtworkRequest struct {
+	URL      string `form:"url" binding:"required" json:"url"`
+	UseCache bool   `form:"use_cache,default=false" json:"use_cache"`
+}

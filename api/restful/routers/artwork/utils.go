@@ -2,10 +2,12 @@ package artwork
 
 import (
 	"errors"
+	"fmt"
 	"net/http"
 
 	"github.com/krau/ManyACG/common"
 	"github.com/krau/ManyACG/service"
+	"github.com/krau/ManyACG/types"
 
 	jwt "github.com/appleboy/gin-jwt/v2"
 	"github.com/gin-gonic/gin"
@@ -95,5 +97,15 @@ func checkArtworkAndUserMiddleware(ctx *gin.Context) {
 		return
 	}
 	ctx.Set("user", user)
+	ctx.Next()
+}
+
+func checkApiKeyFetchArtworkPermission(ctx *gin.Context) {
+	apiKey := ctx.MustGet("api_key").(*types.ApiKeyModel)
+	if !apiKey.HasPermission(types.ApiKeyPermissionFetchArtwork) {
+		common.GinErrorResponse(ctx, fmt.Errorf("api key does not have permission: %s", types.ApiKeyPermissionFetchArtwork), http.StatusForbidden, "Forbidden")
+		ctx.Abort()
+		return
+	}
 	ctx.Next()
 }

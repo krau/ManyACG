@@ -7,6 +7,7 @@ import (
 	"github.com/krau/ManyACG/common"
 	"github.com/krau/ManyACG/errs"
 	"github.com/krau/ManyACG/service"
+	"github.com/krau/ManyACG/sources"
 	"github.com/krau/ManyACG/types"
 
 	"github.com/gin-gonic/gin"
@@ -160,4 +161,43 @@ func UnfavoriteArtwork(ctx *gin.Context) {
 		Status:  http.StatusOK,
 		Message: "Success",
 	})
+}
+
+func FetchArtwork(ctx *gin.Context) {
+	var request FetchArtworkRequest
+	if err := ctx.ShouldBind(&request); err != nil {
+		common.GinBindError(ctx, err)
+		return
+	}
+	apiKey := ctx.MustGet("api_key").(*types.ApiKeyModel)
+	sourceURL := sources.FindSourceURL(request.URL)
+	if sourceURL == "" {
+		common.GinErrorResponse(ctx, errs.ErrSourceNotSupported, http.StatusBadRequest, "Source not supported")
+		return
+	}
+	if request.UseCache {
+		artwork, err := service.GetArtworkByURLWithCacheFetch(ctx, sourceURL)
+		if err != nil {
+			common.GinErrorResponse(ctx, err, http.StatusInternalServerError, "Failed to fetch artwork")
+			return
+		}
+		ctx.JSON(http.StatusOK, ResponseFromFetchedArtwork(artwork))
+		return
+	}
+	artwork, err := sources.GetArtworkInfo(sourceURL)
+	if errors.Is(err, errs.ErrSourceNotSupported) {
+		common.GinErrorResponse(ctx, err, http.StatusBadRequest, "Source not supported")
+		return
+	}
+	if err != nil {
+		common.GinErrorResponse(ctx, err, http.StatusInternalServerError, "Failed to fetch artwork")
+		return
+	}
+	ctx.JSON(http.StatusOK, ResponseFromFetchedArtwork(artwork))
+	if _, err := service.GetCachedArtworkByURL(ctx, sourceURL); err != nil {
+		service.CreateCachedArtwork(ctx, artwork, types.ArtworkStatusCached)
+	}
+	if err := service.IncreaseApiKeyUsed(ctx, apiKey.Key); err != nil {
+		common.Logger.Errorf("Failed to increase api key used: %v", err)
+	}
 }

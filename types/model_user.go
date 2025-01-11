@@ -55,8 +55,17 @@ type ApiKeyModel struct {
 	Permissions []ApiKeyPermission `bson:"permissions"`
 }
 
+func (apiKey *ApiKeyModel) HasPermission(permission ApiKeyPermission) bool {
+	for _, p := range apiKey.Permissions {
+		if p == permission {
+			return true
+		}
+	}
+	return false
+}
+
 type ApiKeyPermission string
 
 const (
-	ApiKeyPermissionFetchArtwork    ApiKeyPermission = "fetch_artwork"
+	ApiKeyPermissionFetchArtwork ApiKeyPermission = "fetch_artwork"
 )

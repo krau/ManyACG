@@ -24,6 +24,11 @@ func RegisterRouter(r *gin.RouterGroup) {
 		middleware.OptionalJWTMiddleware,
 		GetArtworkList)
 	r.GET("/count", GetArtworkCount)
+	r.Match([]string{http.MethodGet, http.MethodPost},
+		"/fetch",
+		middleware.CheckApiKey,
+		checkApiKeyFetchArtworkPermission,
+		FetchArtwork)
 	r.GET("/:id",
 		middleware.OptionalJWTMiddleware,
 		GetArtwork)
@@ -44,6 +49,12 @@ func registerRoutesWithCache(r *gin.RouterGroup) {
 	r.GET("/count",
 		cache.CacheByRequestURI(middleware.CacheStore, middleware.GetCacheDuration("/artwork/count")),
 		GetArtworkCount)
+	r.Match([]string{http.MethodGet, http.MethodPost},
+		"/fetch",
+		cache.CacheByRequestURI(middleware.CacheStore, middleware.GetCacheDuration("/artwork/fetch/:url")),
+		middleware.CheckApiKey,
+		checkApiKeyFetchArtworkPermission,
+		FetchArtwork)
 	r.GET("/:id",
 		cache.CacheByRequestPath(middleware.CacheStore, middleware.GetCacheDuration("/artwork/:id")),
 		middleware.OptionalJWTMiddleware,

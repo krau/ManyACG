@@ -133,3 +133,25 @@ func ValidateParamObjectID(ctx *gin.Context) {
 	ctx.Set("object_id", objectID)
 	ctx.Next()
 }
+
+func CheckApiKey(ctx *gin.Context) {
+	key := ctx.GetHeader("X-API-KEY")
+	if key == "" {
+		common.GinErrorResponse(ctx, errors.New("api key is required"), http.StatusUnauthorized, "Unauthorized")
+		ctx.Abort()
+		return
+	}
+	apiKey, err := service.GetApiKeyByKey(ctx, key)
+	if err != nil {
+		common.GinErrorResponse(ctx, err, http.StatusUnauthorized, "Unauthorized")
+		ctx.Abort()
+		return
+	}
+	if apiKey.Used >= apiKey.Quota {
+		common.GinErrorResponse(ctx, errors.New("api key quota exceeded"), http.StatusForbidden, "Forbidden")
+		ctx.Abort()
+		return
+	}
+	ctx.Set("api_key", apiKey)
+	ctx.Next()
+}
