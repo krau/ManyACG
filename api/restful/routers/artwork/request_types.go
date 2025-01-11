@@ -26,5 +26,5 @@ type R18Request struct {
 
 type FetchArtworkRequest struct {
 	URL      string `form:"url" binding:"required" json:"url"`
-	UseCache bool   `form:"use_cache,default=false" json:"use_cache"`
+	NoCache  bool   `form:"no_cache,default=false" json:"no_cache"`
 }

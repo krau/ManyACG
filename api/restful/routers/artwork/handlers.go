@@ -175,7 +175,7 @@ func FetchArtwork(ctx *gin.Context) {
 		common.GinErrorResponse(ctx, errs.ErrSourceNotSupported, http.StatusBadRequest, "Source not supported")
 		return
 	}
-	if request.UseCache {
+	if !request.NoCache {
 		artwork, err := service.GetArtworkByURLWithCacheFetch(ctx, sourceURL)
 		if err != nil {
 			common.GinErrorResponse(ctx, err, http.StatusInternalServerError, "Failed to fetch artwork")
