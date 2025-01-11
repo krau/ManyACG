@@ -7,7 +7,6 @@ import (
 
 	"github.com/duke-git/lancet/v2/slice"
 	"github.com/krau/ManyACG/dao"
-	"github.com/krau/ManyACG/dao/collections"
 	"github.com/krau/ManyACG/errs"
 	"github.com/krau/ManyACG/types"
 	"go.mongodb.org/mongo-driver/bson"
@@ -112,7 +111,7 @@ func AddTagAliasByID(ctx context.Context, tagID primitive.ObjectID, alias ...str
 			}
 
 			// 迁移 artwork 中的 tag
-			artworkCollection := dao.GetCollection(ctx, collections.Artworks)
+			artworkCollection := dao.GetCollection("Artworks")
 
 			filter := bson.M{"tags": bson.M{"$in": []primitive.ObjectID{aliasTag.ID}}}
 			cursor, err := artworkCollection.Find(ctx, filter, options.Find().SetProjection(bson.M{"_id": 1}))

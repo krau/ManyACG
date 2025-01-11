@@ -46,3 +46,18 @@ type UnauthUserModel struct {
 	AuthMethod AuthMethod         `bson:"auth_method"`
 	CreatedAt  primitive.DateTime `bson:"created_at"`
 }
+
+type ApiKeyModel struct {
+	ID          primitive.ObjectID `bson:"_id,omitempty"`
+	Key         string             `bson:"key"`
+	Quota       int                `bson:"quota"`
+	Used        int                `bson:"used"`
+	Permissions []ApiKeyPermission `bson:"permissions"`
+}
+
+type ApiKeyPermission string
+
+const (
+	ApiKeyPermissionFetchArtwork    ApiKeyPermission = "fetch_artwork"
+	ApiKeyPermissionSendArtworkInfo ApiKeyPermission = "send_artwork_info"
+)

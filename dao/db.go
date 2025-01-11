@@ -54,32 +54,37 @@ func InitDB(ctx context.Context) {
 }
 
 func createCollection(ctx context.Context) {
-	DB.CreateCollection(ctx, collections.Artworks)
+	for _, collection := range collections.AllCollections {
+		DB.CreateCollection(ctx, collection)
+	}
+
 	artworkCollection = DB.Collection(collections.Artworks)
-	DB.CreateCollection(ctx, collections.Tags)
+
 	tagCollection = DB.Collection(collections.Tags)
-	DB.CreateCollection(ctx, collections.Pictures)
+
 	pictureCollection = DB.Collection(collections.Pictures)
-	DB.CreateCollection(ctx, collections.Artists)
+
 	artistCollection = DB.Collection(collections.Artists)
-	DB.CreateCollection(ctx, collections.Admins)
+
 	adminCollection = DB.Collection(collections.Admins)
-	DB.CreateCollection(ctx, collections.Deleted)
+
 	deletedCollection = DB.Collection(collections.Deleted)
-	DB.CreateCollection(ctx, collections.CallbackData)
+
 	callbackDataCollection = DB.Collection(collections.CallbackData)
-	DB.CreateCollection(ctx, collections.CachedArtworks)
+
 	cachedArtworkCollection = DB.Collection(collections.CachedArtworks)
-	DB.CreateCollection(ctx, collections.EtcData)
+
 	etcDataCollection = DB.Collection(collections.EtcData)
-	DB.CreateCollection(ctx, collections.Users)
+
 	userCollection = DB.Collection(collections.Users)
-	DB.CreateCollection(ctx, collections.Likes)
+
 	likeCollection = DB.Collection(collections.Likes)
-	DB.CreateCollection(ctx, collections.Favorites)
+
 	favoriteCollection = DB.Collection(collections.Favorites)
-	DB.CreateCollection(ctx, collections.UnauthUser)
+
 	unauthUserCollection = DB.Collection(collections.UnauthUser)
+
+	apiKeyCollection = DB.Collection(collections.ApiKeys)
 }
 
 func createIndex(ctx context.Context) {
@@ -240,6 +245,6 @@ func createIndex(ctx context.Context) {
 	})
 }
 
-func GetCollection(ctx context.Context, name string) *mongo.Collection {
+func GetCollection(name string) *mongo.Collection {
 	return DB.Collection(name)
 }

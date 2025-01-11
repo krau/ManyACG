@@ -63,13 +63,13 @@ func GetCacheDuration(route string) time.Duration {
 	return time.Duration(ttl) * time.Second
 }
 
-func CheckKey(ctx *gin.Context) {
+func CheckAdminKey(ctx *gin.Context) {
 	if config.Cfg.Debug {
 		ctx.Set("auth", true)
 		ctx.Next()
 		return
 	}
-	keyHeader := ctx.GetHeader("X-API-KEY")
+	keyHeader := ctx.GetHeader("X-ADMIN-API-KEY")
 	if keyHeader == config.Cfg.API.Key {
 		ctx.Set("auth", true)
 		ctx.Next()
@@ -79,7 +79,7 @@ func CheckKey(ctx *gin.Context) {
 	ctx.Next()
 }
 
-func KeyRequired(ctx *gin.Context) {
+func AdminKeyRequired(ctx *gin.Context) {
 	if ctx.GetBool("auth") {
 		ctx.Next()
 		return

@@ -15,6 +15,7 @@ const (
 	Likes      string = "Likes"
 	Favorites  string = "Favorites"
 	UnauthUser string = "UnauthUsers"
+	ApiKeys    string = "ApiKeys"
 )
 
 var AllCollections = []string{
@@ -31,4 +32,5 @@ var AllCollections = []string{
 	Likes,
 	Favorites,
 	UnauthUser,
+	ApiKeys,
 }

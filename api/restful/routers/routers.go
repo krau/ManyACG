@@ -17,10 +17,10 @@ import (
 )
 
 func RegisterAllRouters(r *gin.RouterGroup, authMiddleware *jwt.GinJWTMiddleware) {
-	r.Use(middleware.CheckKey)
+	r.Use(middleware.CheckAdminKey)
 
 	if config.Cfg.API.MustKey {
-		r.Use(middleware.KeyRequired)
+		r.Use(middleware.AdminKeyRequired)
 	}
 
 	auth.RegisterRouter(r, authMiddleware)
@@ -35,7 +35,6 @@ func RegisterAllRouters(r *gin.RouterGroup, authMiddleware *jwt.GinJWTMiddleware
 	artwork.RegisterRouter(artworkGroup)
 
 	botGroup := r.Group("/bot")
-	botGroup.Use(middleware.KeyRequired)
 	bot.RegisterRouter(botGroup)
 
 	tagGroup := r.Group("/tag")
