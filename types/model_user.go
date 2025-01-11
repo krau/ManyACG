@@ -59,5 +59,4 @@ type ApiKeyPermission string
 
 const (
 	ApiKeyPermissionFetchArtwork    ApiKeyPermission = "fetch_artwork"
-	ApiKeyPermissionSendArtworkInfo ApiKeyPermission = "send_artwork_info"
 )
