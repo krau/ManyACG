@@ -452,7 +452,7 @@ func GetArtworkByURLWithCacheFetch(ctx context.Context, sourceURL string) (*type
 	artwork, err := sources.GetArtworkInfo(sourceURL)
 	if err != nil {
 		common.Logger.Errorf("获取作品信息失败: %s", err)
-		return nil, errs.ErrFailedToGetArtwork
+		return nil, errs.ErrFailedToFetchArtwork
 	}
 	err = CreateCachedArtwork(ctx, artwork, types.ArtworkStatusCached)
 	if err != nil {

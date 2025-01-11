@@ -16,7 +16,7 @@ var (
 	ErrArtworkAlreadyExist = errors.New("artwork already exists")
 	ErrSourceNotSupported  = errors.New("source not supported")
 	ErrIndexOOB            = errors.New("index out of bounds")
-	ErrFailedToGetArtwork  = errors.New("failed to get artwork")
+	ErrFailedToFetchArtwork  = errors.New("failed to fetch artwork")
 
 	ErrStorageUnkown = errors.New("unknown storage")
 
