@@ -54,11 +54,11 @@ func Init() {
 
 func GetCacheDuration(route string) time.Duration {
 	if CacheStore == nil {
-		return 0
+		return time.Second
 	}
 	ttl, ok := config.Cfg.API.Cache.TTL[route]
 	if !ok {
-		return 0
+		return time.Second
 	}
 	return time.Duration(ttl) * time.Second
 }
