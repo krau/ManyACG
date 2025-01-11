@@ -3,6 +3,7 @@ package routers
 import (
 	cache "github.com/chenyahui/gin-cache"
 	"github.com/krau/ManyACG/api/restful/middleware"
+	"github.com/krau/ManyACG/api/restful/routers/apikey"
 	"github.com/krau/ManyACG/api/restful/routers/artist"
 	"github.com/krau/ManyACG/api/restful/routers/artwork"
 	"github.com/krau/ManyACG/api/restful/routers/auth"
@@ -30,6 +31,9 @@ func RegisterAllRouters(r *gin.RouterGroup, authMiddleware *jwt.GinJWTMiddleware
 	} else {
 		r.GET("/atom", GenerateAtom)
 	}
+
+	apikeyGroup := r.Group("/apikey")
+	apikey.RegisterRouter(apikeyGroup)
 
 	artworkGroup := r.Group("/artwork")
 	artwork.RegisterRouter(artworkGroup)

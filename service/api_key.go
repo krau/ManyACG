@@ -7,12 +7,13 @@ import (
 	"github.com/krau/ManyACG/types"
 )
 
-func CreateApiKey(ctx context.Context, key string, quota int, permissions []types.ApiKeyPermission) (*types.ApiKeyModel, error) {
+func CreateApiKey(ctx context.Context, key string, quota int, permissions []types.ApiKeyPermission, description string) (*types.ApiKeyModel, error) {
 	apiKey := &types.ApiKeyModel{
 		Key:         key,
 		Quota:       quota,
 		Used:        0,
 		Permissions: permissions,
+		Description: description,
 	}
 	_, err := dao.CreateApiKey(ctx, apiKey)
 	if err != nil {

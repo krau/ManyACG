@@ -53,6 +53,7 @@ type ApiKeyModel struct {
 	Quota       int                `bson:"quota"`
 	Used        int                `bson:"used"`
 	Permissions []ApiKeyPermission `bson:"permissions"`
+	Description string             `bson:"description"`
 }
 
 func (apiKey *ApiKeyModel) HasPermission(permission ApiKeyPermission) bool {
@@ -69,3 +70,7 @@ type ApiKeyPermission string
 const (
 	ApiKeyPermissionFetchArtwork ApiKeyPermission = "fetch_artwork"
 )
+
+var ValidApiKeyPermissions = []string{
+	string(ApiKeyPermissionFetchArtwork),
+}

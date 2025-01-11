@@ -85,6 +85,7 @@ func AdminKeyRequired(ctx *gin.Context) {
 		return
 	}
 	ctx.JSON(http.StatusUnauthorized, gin.H{
+		"status":  http.StatusUnauthorized,
 		"message": "Unauthorized",
 	})
 	ctx.Abort()

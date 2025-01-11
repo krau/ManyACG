@@ -243,6 +243,14 @@ func createIndex(ctx context.Context) {
 		// 	Options: options.Index().SetName("telegram_id").SetUnique(true),
 		// },
 	})
+
+	// API Key
+	apiKeyCollection.Indexes().CreateMany(ctx, []mongo.IndexModel{
+		{
+			Keys:    bson.D{{Key: "key", Value: 1}},
+			Options: options.Index().SetName("key").SetUnique(true),
+		},
+	})
 }
 
 func GetCollection(name string) *mongo.Collection {
