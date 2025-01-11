@@ -51,7 +51,7 @@ func registerRoutesWithCache(r *gin.RouterGroup) {
 		GetArtworkCount)
 	r.Match([]string{http.MethodGet, http.MethodPost},
 		"/fetch",
-		cache.CacheByRequestURI(middleware.CacheStore, middleware.GetCacheDuration("/artwork/fetch/:url")),
+		cache.CacheByRequestURI(middleware.CacheStore, middleware.GetCacheDuration("/artwork/fetch")),
 		middleware.CheckApiKey,
 		checkApiKeyFetchArtworkPermission,
 		FetchArtwork)
