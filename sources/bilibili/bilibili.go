@@ -1,6 +1,7 @@
 package bilibili
 
 import (
+	"errors"
 	"fmt"
 	"path/filepath"
 	"regexp"
@@ -47,6 +48,9 @@ func (b *Bilibili) GetArtworkInfo(sourceURL string) (*types.Artwork, error) {
 	if err == nil {
 		var artwork *types.Artwork
 		artwork, err = desktopResp.ToArtwork()
+		if errors.Is(err, ErrInvalidURL) {
+			return nil, err
+		}
 		if err == nil {
 			return artwork, nil
 		}
