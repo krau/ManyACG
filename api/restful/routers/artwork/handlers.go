@@ -182,20 +182,20 @@ func FetchArtwork(ctx *gin.Context) {
 			return
 		}
 		ctx.JSON(http.StatusOK, ResponseFromFetchedArtwork(artwork))
-		return
-	}
-	artwork, err := sources.GetArtworkInfo(sourceURL)
-	if errors.Is(err, errs.ErrSourceNotSupported) {
-		common.GinErrorResponse(ctx, err, http.StatusBadRequest, "Source not supported")
-		return
-	}
-	if err != nil {
-		common.GinErrorResponse(ctx, err, http.StatusInternalServerError, "Failed to fetch artwork")
-		return
-	}
-	ctx.JSON(http.StatusOK, ResponseFromFetchedArtwork(artwork))
-	if _, err := service.GetCachedArtworkByURL(ctx, sourceURL); err != nil {
-		service.CreateCachedArtwork(ctx, artwork, types.ArtworkStatusCached)
+	} else {
+		artwork, err := sources.GetArtworkInfo(sourceURL)
+		if errors.Is(err, errs.ErrSourceNotSupported) {
+			common.GinErrorResponse(ctx, err, http.StatusBadRequest, "Source not supported")
+			return
+		}
+		if err != nil {
+			common.GinErrorResponse(ctx, err, http.StatusInternalServerError, "Failed to fetch artwork")
+			return
+		}
+		ctx.JSON(http.StatusOK, ResponseFromFetchedArtwork(artwork))
+		if _, err := service.GetCachedArtworkByURL(ctx, sourceURL); err != nil {
+			service.CreateCachedArtwork(ctx, artwork, types.ArtworkStatusCached)
+		}
 	}
 	if err := service.IncreaseApiKeyUsed(ctx, apiKey.Key); err != nil {
 		common.Logger.Errorf("Failed to increase api key used: %v", err)
