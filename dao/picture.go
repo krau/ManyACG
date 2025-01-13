@@ -9,6 +9,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 var pictureCollection *mongo.Collection
@@ -88,10 +89,14 @@ func GetRandomPictures(ctx context.Context, limit int) ([]*types.PictureModel, e
 全库遍历搜索
 */
 func GetPicturesByHashHammingDistance(ctx context.Context, hashStr string, distance int) ([]*types.PictureModel, error) {
+	hashToCompare, err := goimagehash.ImageHashFromString(hashStr)
+	if err != nil {
+		return nil, err
+	}
 	filter := bson.M{
 		"hash": bson.M{"$ne": ""},
 	}
-	cursor, err := pictureCollection.Find(ctx, filter)
+	cursor, err := pictureCollection.Find(ctx, filter, options.Find().SetProjection(bson.M{"hash": 1, "artwork_id": 1, "index": 1, "telegram_info": 1}))
 	if err != nil {
 		return nil, err
 	}
@@ -106,11 +111,6 @@ func GetPicturesByHashHammingDistance(ctx context.Context, hashStr string, dista
 		}
 
 		hash, err := goimagehash.ImageHashFromString(picture.Hash)
-		if err != nil {
-			return nil, err
-		}
-
-		hashToCompare, err := goimagehash.ImageHashFromString(hashStr)
 		if err != nil {
 			return nil, err
 		}
