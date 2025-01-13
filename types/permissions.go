@@ -5,17 +5,21 @@ type Permission string
 const (
 	PermissionPostArtwork    Permission = "post_artwork"
 	PermissionDeleteArtwork  Permission = "delete_artwork"
-	PermissionFetchArtwork   Permission = "fetch_artwork"
 	PermissionGetArtworkInfo Permission = "get_artwork_info"
-	PermissionSearchPicture  Permission = "search_picture"
 	PermissionEditArtwork    Permission = "edit_artwork"
+
+	// deprecated
+	PermissionFetchArtwork  Permission = "fetch_artwork"
+	PermissionSearchPicture Permission = "search_picture"
 )
 
 var AllPermissions = []Permission{
 	PermissionPostArtwork,
 	PermissionDeleteArtwork,
-	PermissionFetchArtwork,
 	PermissionGetArtworkInfo,
-	PermissionSearchPicture,
 	PermissionEditArtwork,
+
+	// deprecated
+	PermissionFetchArtwork,
+	PermissionSearchPicture,
 }
