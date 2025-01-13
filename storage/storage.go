@@ -110,8 +110,7 @@ func SaveAll(ctx context.Context, artwork *types.Artwork, picture *types.Picture
 			common.Logger.Fatalf("Unknown storage type: %s", config.Cfg.Storage.ThumbType)
 			return nil, fmt.Errorf("%w: %s", errs.ErrStorageUnkown, config.Cfg.Storage.ThumbType)
 		}
-		// thumbOutputPath := filePath[:len(filePath)-len(filepath.Ext(filePath))] + "_thumb.webp"
-		thumbOutputPath := fmt.Sprintf("%s_thumb.webp", filePath[:len(filePath)-len(filepath.Ext(filePath))])
+		thumbOutputPath := fmt.Sprintf("%s_thumb.%s", filePath[:len(filePath)-len(filepath.Ext(filePath))], config.Cfg.Storage.ThumbFormat)
 		if err := common.CompressImageByFFmpeg(filePath, thumbOutputPath, types.ThumbPhotoSideLength); err != nil {
 			return nil, err
 		}
