@@ -7,6 +7,7 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/duke-git/lancet/v2/slice"
 	"github.com/krau/ManyACG/common"
 	"github.com/krau/ManyACG/config"
 	"github.com/krau/ManyACG/types"
@@ -159,6 +160,12 @@ func (resp *KemonoPostResp) ToArtwork() (*types.Artwork, error) {
 		if pic, ok := pictureMap[i]; ok {
 			pictures = append(pictures, pic)
 		}
+	}
+	pictures = slice.UniqueByComparator(pictures, func(item, other *types.Picture) bool {
+		return strings.EqualFold(item.Original, other.Original)
+	})
+	for i, pic := range pictures {
+		pic.Index = uint(i)
 	}
 
 	if len(pictures) == 0 {

@@ -3,7 +3,10 @@ package kemono
 import (
 	"encoding/json"
 	"fmt"
+	"path"
 	"strings"
+
+	"github.com/duke-git/lancet/v2/strutil"
 )
 
 func getPostPath(sourceURL string) string {
@@ -23,6 +26,8 @@ func getAuthorProfile(service, creatorId string) (*KemonoCreatorProfileResp, err
 	return &kemonoResp, nil
 }
 
-func isImage(path string) bool {
-	return strings.HasSuffix(path, ".jpg") || strings.HasSuffix(path, ".jpeg") || strings.HasSuffix(path, ".png")
+var imgSuffixes = []string{".jpg", ".jpeg", ".png", ".gif", ".webp"}
+
+func isImage(kemonoPath string) bool {
+	return strutil.HasSuffixAny(path.Ext(strings.Split(kemonoPath, "?")[0]), imgSuffixes)
 }
