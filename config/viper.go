@@ -61,6 +61,7 @@ func InitConfig() {
 	viper.SetDefault("source.bilibili.enable", true)
 	viper.SetDefault("source.danbooru.enable", true)
 	viper.SetDefault("source.kemono.enable", true)
+	viper.SetDefault("source.kemono.worker", 5)
 	viper.SetDefault("source.yandere.enable", true)
 	viper.SetDefault("source.nhentai.enable", true)
 

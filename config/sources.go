@@ -38,6 +38,7 @@ type SourceDanbooruConfig struct {
 
 type SourceKemonoConfig struct {
 	Enable  bool   `toml:"enable" mapstructure:"enable" json:"enable" yaml:"enable"`
+	Worker  int    `toml:"worker" mapstructure:"worker" json:"worker" yaml:"worker"`
 	Session string `toml:"session" mapstructure:"session" json:"session" yaml:"session"`
 }
 

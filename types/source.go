@@ -33,7 +33,7 @@ type Source interface {
 	FetchNewArtworksWithCh(artworkCh chan *Artwork, limit int) error
 	FetchNewArtworks(limit int) ([]*Artwork, error)
 	GetArtworkInfo(sourceURL string) (*Artwork, error)
-	GetPictureInfo(sourceURL string, index uint) (*Picture, error)
+	// GetPictureInfo(sourceURL string, index uint) (*Picture, error)
 	GetSourceURLRegexp() *regexp.Regexp
 	// CommonSourceURl should has prefix "https://"
 	GetCommonSourceURL(url string) string

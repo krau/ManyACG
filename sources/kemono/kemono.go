@@ -80,7 +80,7 @@ func (k *Kemono) GetSourceURLRegexp() *regexp.Regexp {
 }
 
 func (k *Kemono) GetCommonSourceURL(url string) string {
-	return "https://" + url
+	return "https://" + kemonoSourceURLRegex.FindString(url)
 }
 
 func (k *Kemono) GetFileName(artwork *types.Artwork, picture *types.Picture) string {
