@@ -26,7 +26,7 @@ func getAuthorProfile(service, creatorId string) (*KemonoCreatorProfileResp, err
 	return &kemonoResp, nil
 }
 
-var imgSuffixes = []string{".jpg", ".jpeg", ".png", ".gif", ".webp"}
+var imgSuffixes = []string{".jpg", ".jpeg", ".png", ".webp"}
 
 func isImage(kemonoPath string) bool {
 	return strutil.HasSuffixAny(path.Ext(strings.Split(kemonoPath, "?")[0]), imgSuffixes)
