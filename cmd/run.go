@@ -79,7 +79,7 @@ func Run() {
 	if err := service.Cleanup(context.TODO()); err != nil {
 		common.Logger.Error(err)
 	}
-	if config.Cfg.Storage.CacheDir != "" {
+	if config.Cfg.Storage.CacheDir != "" && !config.Cfg.Debug {
 		for _, path := range []string{"/", ".", "\\", ".."} {
 			if filepath.Clean(config.Cfg.Storage.CacheDir) == path {
 				common.Logger.Error("Invalid cache dir: ", config.Cfg.Storage.CacheDir)
