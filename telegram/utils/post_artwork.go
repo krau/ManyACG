@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -17,6 +18,7 @@ import (
 	"github.com/krau/ManyACG/types"
 
 	"github.com/mymmrac/telego"
+	"github.com/mymmrac/telego/telegoapi"
 	"github.com/mymmrac/telego/telegoutil"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -43,6 +45,8 @@ func SendArtworkMediaGroup(ctx context.Context, bot *telego.Bot, chatID telego.C
 		)
 	}
 	allMessages := make([]telego.Message, len(artwork.Pictures))
+	retryCount := 0
+	maxRetry := config.Cfg.Telegram.Retry.MaxAttempts
 	for i := 0; i < len(artwork.Pictures); i += 10 {
 		end := i + 10
 		if end > len(artwork.Pictures) {
@@ -61,12 +65,42 @@ func SendArtworkMediaGroup(ctx context.Context, bot *telego.Bot, chatID telego.C
 		}
 		messages, err := bot.SendMediaGroup(mediaGroup)
 		if err != nil {
+			var apiError *telegoapi.Error
+			if errors.As(err, &apiError) {
+				switch apiError.ErrorCode {
+				case 429:
+					if apiError.Parameters == nil {
+						return nil, err
+					}
+					if retryCount > maxRetry {
+						return nil, fmt.Errorf("rate limited: %w", err)
+					}
+					retryAfter := apiError.Parameters.RetryAfter + (retryCount * int(config.Cfg.Telegram.Sleep))
+					common.Logger.Warnf("Rate limited, retry after %d seconds", retryAfter)
+					time.Sleep(time.Duration(retryAfter) * time.Second)
+					i -= 10
+					retryCount++
+					continue
+				default:
+					return nil, apiError
+				}
+			} else if strings.Contains(err.Error(), "Too Many Requests") {
+				// 偶尔会有无法 As 到 telegoapi.Error 的情况
+				if retryCount > maxRetry {
+					return nil, fmt.Errorf("rate limited: %w", err)
+				}
+				retryAfter := len(inputMediaPhotos) * int(config.Cfg.Telegram.Sleep)
+				common.Logger.Warnf("Rate limited, retry after %d seconds", retryAfter)
+				time.Sleep(time.Duration(retryAfter) * time.Second)
+				i -= 10
+				retryCount++
+				continue
+			}
+			common.Logger.Errorf("failed to send media group: %s", err)
 			return nil, err
 		}
 		copy(allMessages[i:], messages)
-		if i+10 < len(artwork.Pictures) {
-			time.Sleep(time.Duration(int(config.Cfg.Telegram.Sleep)*len(inputMediaPhotos)) * time.Second)
-		}
+		retryCount = 0
 	}
 	return allMessages, nil
 }
@@ -140,26 +174,14 @@ func PostAndCreateArtwork(ctx context.Context, artwork *types.Artwork, bot *tele
 	}
 	for i, picture := range artwork.Pictures {
 		if showProgress {
-			if len(storage.Storages) > 0 {
-				go bot.EditMessageReplyMarkup(&telego.EditMessageReplyMarkupParams{
-					ChatID:    telegoutil.ID(fromID),
-					MessageID: messageID,
-					ReplyMarkup: telegoutil.InlineKeyboard(
-						[]telego.InlineKeyboardButton{
-							telegoutil.InlineKeyboardButton(fmt.Sprintf("正在保存图片 %d/%d", i+1, len(artwork.Pictures))).WithCallbackData("noop"),
-						},
-					),
-				})
-			} else if i == 0 {
-				go bot.EditMessageReplyMarkup(&telego.EditMessageReplyMarkupParams{
-					ChatID:    telegoutil.ID(fromID),
-					MessageID: messageID,
-					ReplyMarkup: telegoutil.InlineKeyboard(
-						[]telego.InlineKeyboardButton{
-							telegoutil.InlineKeyboardButton("正在处理存储...").WithCallbackData("noop")},
-					),
-				})
-			}
+			go bot.EditMessageReplyMarkup(&telego.EditMessageReplyMarkupParams{
+				ChatID:    telegoutil.ID(fromID),
+				MessageID: messageID,
+				ReplyMarkup: telegoutil.InlineKeyboard(
+					[]telego.InlineKeyboardButton{
+						telegoutil.InlineKeyboardButton("正在处理存储...").WithCallbackData("noop")},
+				),
+			})
 		}
 		info, err := storage.SaveAll(ctx, artwork, picture)
 		if err != nil {
