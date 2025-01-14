@@ -58,7 +58,7 @@ func AddTagAliasByID(ctx context.Context, tagID primitive.ObjectID, alias ...str
 	if tagModel.Alias == nil {
 		tagModel.Alias = make([]string, 0)
 	}
-	tagAlias := slice.Compact(slice.Union(slice.Concat(tagModel.Alias, alias)))
+	tagAlias := slice.Compact(slice.Unique(slice.Concat(tagModel.Alias, alias)))
 
 	for _, alias := range tagAlias {
 		if alias == tagModel.Name {
@@ -104,7 +104,7 @@ func AddTagAliasByID(ctx context.Context, tagID primitive.ObjectID, alias ...str
 				if err != nil {
 					return nil, err
 				}
-				tagAliasWithaliasTagOriginAlias := slice.Union(slice.Concat(regetTagModel.Alias, aliasTag.Alias))
+				tagAliasWithaliasTagOriginAlias := slice.Unique(slice.Concat(regetTagModel.Alias, aliasTag.Alias))
 				if err := dao.UpdateTagAliasByID(ctx, tagID, tagAliasWithaliasTagOriginAlias); err != nil {
 					return nil, err
 				}

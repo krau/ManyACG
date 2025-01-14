@@ -88,7 +88,7 @@ func (resp YandereJsonResp) ToArtwork() *types.Artwork {
 		})
 	}
 
-	tags = slice.Union(tags)
+	tags = slice.Unique(tags)
 
 	return &types.Artwork{
 		Title:       title,
