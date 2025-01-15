@@ -20,6 +20,7 @@ import (
 	"github.com/krau/ManyACG/types"
 
 	"github.com/mymmrac/telego"
+	"github.com/mymmrac/telego/telegoapi"
 	"github.com/mymmrac/telego/telegoutil"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -131,70 +132,87 @@ func GetPictureFile(ctx context.Context, bot *telego.Bot, message telego.Message
 
 func getArtworkFiles(ctx context.Context, bot *telego.Bot, message telego.Message, artwork *types.Artwork) {
 	for i, picture := range artwork.Pictures {
-		var file telego.InputFile
-		alreadyCached := picture.TelegramInfo != nil && picture.TelegramInfo.DocumentFileID != ""
-		if alreadyCached {
-			file = telegoutil.FileFromID(picture.TelegramInfo.DocumentFileID)
-		} else if picture.StorageInfo != nil && picture.StorageInfo.Original != nil {
-			data, err := storage.GetFile(ctx, picture.StorageInfo.Original)
-			if err != nil {
-				data, err = common.DownloadWithCache(ctx, picture.Original, nil)
+		buildDocument := func() (*telego.SendDocumentParams, error) {
+			var file telego.InputFile
+			alreadyCached := picture.TelegramInfo != nil && picture.TelegramInfo.DocumentFileID != ""
+			if alreadyCached {
+				file = telegoutil.FileFromID(picture.TelegramInfo.DocumentFileID)
+			} else if picture.StorageInfo != nil && picture.StorageInfo.Original != nil {
+				data, err := storage.GetFile(ctx, picture.StorageInfo.Original)
+				if err != nil {
+					data, err = common.DownloadWithCache(ctx, picture.Original, nil)
+					if err != nil {
+						common.Logger.Errorf("获取文件失败: %s", err)
+						utils.ReplyMessage(bot, message, fmt.Sprintf("获取第 %d 张图片失败", i+1))
+						return nil, err
+					}
+				}
+				filename := func() string {
+					if picture.StorageInfo.Original != nil && picture.StorageInfo.Original.Path != "" {
+						return filepath.Base(picture.StorageInfo.Original.Path)
+					}
+					return path.Base(strings.Split(picture.Original, "?")[0])
+				}()
+				file = telegoutil.File(telegoutil.NameReader(bytes.NewReader(data), filename))
+			} else {
+				data, err := common.DownloadWithCache(ctx, picture.Original, nil)
 				if err != nil {
 					common.Logger.Errorf("获取文件失败: %s", err)
 					utils.ReplyMessage(bot, message, fmt.Sprintf("获取第 %d 张图片失败", i+1))
-					return
+					return nil, err
 				}
+				file = telegoutil.File(telegoutil.NameReader(bytes.NewReader(data), path.Base(strings.Split(picture.Original, "?")[0])))
 			}
-			filename := func() string {
-				if picture.StorageInfo.Original != nil && picture.StorageInfo.Original.Path != "" {
-					return filepath.Base(picture.StorageInfo.Original.Path)
-				}
-				return path.Base(strings.Split(picture.Original, "?")[0])
-			}()
-			file = telegoutil.File(telegoutil.NameReader(bytes.NewReader(data), filename))
-		} else {
-			data, err := common.DownloadWithCache(ctx, picture.Original, nil)
+			document := telegoutil.Document(message.Chat.ChatID(), file).
+				WithReplyParameters(&telego.ReplyParameters{
+					MessageID: message.MessageID,
+				}).WithCaption(artwork.Title + "_" + strconv.Itoa(i+1)).WithDisableContentTypeDetection()
+			if IsChannelAvailable && picture.TelegramInfo != nil && picture.TelegramInfo.MessageID != 0 {
+				document.WithReplyMarkup(telegoutil.InlineKeyboard([]telego.InlineKeyboardButton{
+					telegoutil.InlineKeyboardButton("详情").WithURL(utils.GetArtworkPostMessageURL(picture.TelegramInfo.MessageID, ChannelChatID)),
+				}))
+			} else {
+				document.WithReplyMarkup(telegoutil.InlineKeyboard([]telego.InlineKeyboardButton{
+					telegoutil.InlineKeyboardButton("详情").WithURL(artwork.SourceURL),
+				}))
+			}
+			return document, nil
+		}
+		maxRetry := config.Cfg.Telegram.Retry.MaxAttempts
+		for retryCount := 0; retryCount < maxRetry; retryCount++ {
+			document, err := buildDocument()
 			if err != nil {
-				common.Logger.Errorf("获取文件失败: %s", err)
-				utils.ReplyMessage(bot, message, fmt.Sprintf("获取第 %d 张图片失败", i+1))
-				return
+				break
 			}
-			file = telegoutil.File(telegoutil.NameReader(bytes.NewReader(data), path.Base(strings.Split(picture.Original, "?")[0])))
-		}
-		document := telegoutil.Document(message.Chat.ChatID(), file).
-			WithReplyParameters(&telego.ReplyParameters{
-				MessageID: message.MessageID,
-			}).WithCaption(artwork.Title + "_" + strconv.Itoa(i+1)).WithDisableContentTypeDetection()
-		if IsChannelAvailable && picture.TelegramInfo != nil && picture.TelegramInfo.MessageID != 0 {
-			document.WithReplyMarkup(telegoutil.InlineKeyboard([]telego.InlineKeyboardButton{
-				telegoutil.InlineKeyboardButton("详情").WithURL(utils.GetArtworkPostMessageURL(picture.TelegramInfo.MessageID, ChannelChatID)),
-			}))
-		} else {
-			document.WithReplyMarkup(telegoutil.InlineKeyboard([]telego.InlineKeyboardButton{
-				telegoutil.InlineKeyboardButton("详情").WithURL(artwork.SourceURL),
-			}))
-		}
-		documentMessage, err := bot.SendDocument(document)
-		if err != nil {
-			common.Logger.Errorf("发送文件失败: %s", err)
-			bot.SendMessage(telegoutil.Messagef(
-				message.Chat.ChatID(),
-				"发送第 %d 张图片时失败",
-				i+1,
-			).WithReplyParameters(&telego.ReplyParameters{
-				MessageID: message.MessageID,
-			}))
-			continue
-		}
-		if documentMessage != nil {
-			if picture.TelegramInfo == nil {
-				picture.TelegramInfo = &types.TelegramInfo{}
+			documentMessage, err := bot.SendDocument(document)
+			if err != nil {
+				var apiErr *telegoapi.Error
+				if errors.As(err, &apiErr) && apiErr.ErrorCode == 429 && apiErr.Parameters != nil {
+					retryAfter := apiErr.Parameters.RetryAfter + (retryCount * int(config.Cfg.Telegram.Sleep))
+					common.Logger.Warnf("Rate limited, retry after %d seconds", retryAfter)
+					time.Sleep(time.Duration(retryAfter) * time.Second)
+					continue
+				}
+				common.Logger.Errorf("发送文件失败: %s", err)
+				bot.SendMessage(telegoutil.Messagef(
+					message.Chat.ChatID(),
+					"发送第 %d 张图片时失败",
+					i+1,
+				).WithReplyParameters(&telego.ReplyParameters{
+					MessageID: message.MessageID,
+				}))
+				break
 			}
-			picture.TelegramInfo.DocumentFileID = documentMessage.Document.FileID
-			if err := service.UpdatePictureTelegramInfo(ctx, picture, picture.TelegramInfo); err != nil {
-				common.Logger.Warnf("更新图片信息失败: %s", err)
+			if documentMessage != nil {
+				if picture.TelegramInfo == nil {
+					picture.TelegramInfo = &types.TelegramInfo{}
+				}
+				picture.TelegramInfo.DocumentFileID = documentMessage.Document.FileID
+				if err := service.UpdatePictureTelegramInfo(ctx, picture, picture.TelegramInfo); err != nil {
+					common.Logger.Warnf("更新图片信息失败: %s", err)
+				}
 			}
+			break
 		}
-		time.Sleep(time.Duration(config.Cfg.Telegram.Sleep) * time.Second)
 	}
 }
