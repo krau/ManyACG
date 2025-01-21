@@ -176,7 +176,7 @@ func createIndex(ctx context.Context) {
 	callbackDataCollection.Indexes().CreateMany(ctx, []mongo.IndexModel{
 		{
 			Keys:    bson.D{{Key: "created_at", Value: 1}},
-			Options: options.Index().SetExpireAfterSeconds(86400 * 3).SetName("created_at"),
+			Options: options.Index().SetExpireAfterSeconds(86400 * 30).SetName("created_at"),
 		},
 	})
 
