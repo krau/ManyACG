@@ -30,13 +30,13 @@ func RegisterHandlers(hg *telegohandler.HandlerGroup) {
 	mg.HandleMessageCtx(GetArtworkInfoCommand, telegohandler.CommandEqual("info"))
 	mg.HandleMessageCtx(CalculatePicture, telegohandler.CommandEqual("hash"))
 	mg.HandleMessageCtx(GetStats, telegohandler.CommandEqual("stats"))
+	mg.HandleMessageCtx(HybridSearchArtworks, telegohandler.CommandEqual("query"))
 
 	mg.HandleMessageCtx(SetAdmin, telegohandler.CommandEqual("set_admin"))
 	mg.HandleMessageCtx(DeleteArtwork, telegohandler.Or(telegohandler.CommandEqual("delete"), telegohandler.CommandEqual("del")))
 	mg.HandleMessageCtx(ProcessPicturesHashAndSize, telegohandler.CommandEqual("process_pictures_hashsize"))
 	mg.HandleMessageCtx(ProcessPicturesStorage, telegohandler.CommandEqual("process_pictures_storage"))
 	mg.HandleMessageCtx(FixTwitterArtists, telegohandler.CommandEqual("fix_twitter_artists"))
-
 	mg.HandleMessageCtx(ToggleArtworkR18, telegohandler.CommandEqual("r18"))
 	mg.HandleMessageCtx(SetArtworkTags, telegohandler.Or(telegohandler.CommandEqual("tags"), telegohandler.CommandEqual("addtags"), telegohandler.CommandEqual("deltags")))
 	mg.HandleMessageCtx(EditArtworkTitle, telegohandler.CommandEqual("title"))

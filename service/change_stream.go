@@ -68,12 +68,14 @@ func (m *artworkSyncManager) ProcessArtworkChangeEvent(event bson.M) {
 	}()
 	operationType := event["operationType"].(string)
 	switch operationType {
-	case "insert", "update":
+	case "update":
 		m.ProcessArtworkUpdateEvent(event)
 	case "delete":
 		m.ProcessArtworkDeleteEvent(event)
 	case "replace":
 		m.ProcessArtworkReplaceEvent(event)
+	case "insert":
+		// do nothing
 	default:
 		common.Logger.Debugf("unknown operation type: %s", operationType)
 	}

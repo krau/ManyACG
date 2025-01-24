@@ -63,6 +63,10 @@ var (
 			Command:     "help",
 			Description: "食用指南",
 		},
+		{
+			Command:     "query",
+			Description: "混合搜索作品",
+		},
 	}
 
 	AdminCommands = []telego.BotCommand{

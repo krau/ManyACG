@@ -5,10 +5,12 @@ import (
 	"errors"
 	"fmt"
 	"math/rand"
+	"strconv"
 	"strings"
 
 	"github.com/krau/ManyACG/adapter"
 	"github.com/krau/ManyACG/common"
+	"github.com/krau/ManyACG/config"
 
 	"github.com/krau/ManyACG/service"
 	"github.com/krau/ManyACG/sources"
@@ -75,4 +77,63 @@ func RandomPicture(ctx context.Context, bot *telego.Bot, message telego.Message)
 			common.Logger.Warnf("更新图片信息失败: %s", err)
 		}
 	}
+}
+
+func HybridSearchArtworks(ctx context.Context, bot *telego.Bot, message telego.Message) {
+	if common.MeilisearchClient == nil {
+		utils.ReplyMessage(bot, message, "未启用混合搜索功能")
+		return
+	}
+	_, _, args := telegoutil.ParseCommand(message.Text)
+	if len(args) == 0 {
+		utils.ReplyMessage(bot, message, "使用方法: /query <搜索内容> [语义比例]\n语义比例为0-1的浮点数, 应位于参数列表最后, 越大越趋向于基于语义搜索, 若不提供, 使用默认值0.8")
+		return
+	}
+	var hybridSemanticRatio float64
+	var queryText string
+	hybridSemanticRatio, err := strconv.ParseFloat(args[len(args)-1], 64)
+	if err != nil {
+		hybridSemanticRatio = 0.8
+		queryText = strings.Join(args, " ")
+	} else {
+		if hybridSemanticRatio < 0 || hybridSemanticRatio > 1 {
+			utils.ReplyMessage(bot, message, "参数错误: 语义比例应为0-1的浮点数")
+			return
+		}
+		queryText = strings.Join(args[:len(args)-1], " ")
+	}
+	artworks, err := service.HybridSearchArtworks(ctx, queryText, hybridSemanticRatio, 10)
+	if err != nil {
+		common.Logger.Errorf("搜索失败: %s", err)
+		utils.ReplyMessage(bot, message, "搜索失败, 请联系管理员检查搜索引擎设置与状态")
+		return
+	}
+	if len(artworks) == 0 {
+		utils.ReplyMessage(bot, message, "未找到相关图片")
+		return
+	}
+
+	if len(artworks) > 10 {
+		artworks = artworks[:10]
+	}
+
+	inputMedias := make([]telego.InputMedia, 0, len(artworks))
+	for _, artwork := range artworks {
+		picture := artwork.Pictures[0]
+		var file telego.InputFile
+		if picture.TelegramInfo != nil && picture.TelegramInfo.PhotoFileID != "" {
+			file = telegoutil.FileFromID(picture.TelegramInfo.PhotoFileID)
+		} else {
+			photoURL := fmt.Sprintf("%s/?url=%s&w=2560&h=2560&we&output=jpg", config.Cfg.WSRVURL, picture.Original)
+			file = telegoutil.FileFromURL(photoURL)
+		}
+		caption := fmt.Sprintf("<a href=\"%s\">%s</a>", artwork.SourceURL, common.EscapeHTML(artwork.Title))
+		inputMedias = append(inputMedias, telegoutil.MediaPhoto(file).WithCaption(caption).WithParseMode(telego.ModeHTML))
+	}
+	mediaGroup := telegoutil.MediaGroup(message.Chat.ChatID(), inputMedias...)
+	_, err = bot.SendMediaGroup(mediaGroup)
+	if err != nil {
+		common.Logger.Errorf("发送图片失败: %s", err)
+	}
+
 }

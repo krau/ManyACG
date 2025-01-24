@@ -20,6 +20,7 @@ func Help(ctx context.Context, bot *telego.Bot, message telego.Message) {
 /hash - 计算图片信息
 /stats - 获取统计数据
 /files - 获取作品原图
+/query - 混合搜索作品
 `
 	helpText += `
 随机图片相关功能中支持使用以下格式的参数:

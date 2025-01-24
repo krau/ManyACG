@@ -11,12 +11,12 @@ var (
 	ErrFileTooLarge     = errors.New("file too large (>20MB)")
 	ErrNoAvailableFile  = errors.New("no available file")
 
-	ErrNilArtwork          = errors.New("artwork is nil")
-	ErrNotFoundArtworks    = errors.New("artworks not found")
-	ErrArtworkAlreadyExist = errors.New("artwork already exists")
-	ErrSourceNotSupported  = errors.New("source not supported")
-	ErrIndexOOB            = errors.New("index out of bounds")
-	ErrFailedToFetchArtwork  = errors.New("failed to fetch artwork")
+	ErrNilArtwork           = errors.New("artwork is nil")
+	ErrNotFoundArtworks     = errors.New("artworks not found")
+	ErrArtworkAlreadyExist  = errors.New("artwork already exists")
+	ErrSourceNotSupported   = errors.New("source not supported")
+	ErrIndexOOB             = errors.New("index out of bounds")
+	ErrFailedToFetchArtwork = errors.New("failed to fetch artwork")
 
 	ErrStorageUnkown = errors.New("unknown storage")
 
@@ -31,4 +31,6 @@ var (
 	ErrChatIDNotSet = errors.New("chat id not set")
 
 	ErrAliasAlreadyUsed = errors.New("alias already used")
+
+	ErrNotEnabledHybridSearch = errors.New("hybrid search not enabled")
 )
