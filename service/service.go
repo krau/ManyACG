@@ -10,7 +10,7 @@ import (
 func InitService() {
 	go listenProcessPictureTask()
 	if config.Cfg.Search.Enable {
-		go syncArtworkChangeStream()
+		go syncArtworkToSearchEngine()
 	}
 }
 

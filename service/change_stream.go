@@ -26,44 +26,60 @@ func GetArtworkChangeStream(ctx context.Context) (*mongo.ChangeStream, error) {
 	return changeStream, nil
 }
 
-func syncArtworkChangeStream() {
+func syncArtworkToSearchEngine() {
 	ctx := context.Background()
 	changeStream, err := GetArtworkChangeStream(ctx)
 	if err != nil {
-		common.Logger.Errorf("get artwork change stream error: %s", err)
-		return
+		common.Logger.Fatalf("get artwork change stream error: %s", err)
 	}
-	defer changeStream.Close(ctx)
-	for changeStream.Next(ctx) {
+	manager := &artworkSyncManager{
+		ctx:          ctx,
+		changeStream: changeStream,
+	}
+	manager.Start()
+}
+
+type artworkSyncManager struct {
+	ctx          context.Context
+	changeStream *mongo.ChangeStream
+}
+
+func (m *artworkSyncManager) Start() {
+	defer m.Close()
+	for m.changeStream.Next(m.ctx) {
 		var event bson.M
-		if err := changeStream.Decode(&event); err != nil {
+		if err := m.changeStream.Decode(&event); err != nil {
 			common.Logger.Errorf("decode change stream error: %s", err)
 			continue
 		}
-		processArtworkChangeEvent(event)
+		m.ProcessArtworkChangeEvent(event)
 	}
 }
 
-func processArtworkChangeEvent(event bson.M) {
+func (m *artworkSyncManager) Close() {
+	m.changeStream.Close(m.ctx)
+}
+
+func (m *artworkSyncManager) ProcessArtworkChangeEvent(event bson.M) {
 	defer func() {
 		if r := recover(); r != nil {
-			common.Logger.Errorf("panic when processing artwork change event: %s", r)
+			common.Logger.Fatalf("panic when processing artwork change event: %s", r)
 		}
 	}()
 	operationType := event["operationType"].(string)
 	switch operationType {
 	case "insert", "update":
-		processArtworkUpdateEvent(event)
+		m.ProcessArtworkUpdateEvent(event)
 	case "delete":
-		processArtworkDeleteEvent(event)
+		m.ProcessArtworkDeleteEvent(event)
 	case "replace":
-		processArtworkReplaceEvent(event)
+		m.ProcessArtworkReplaceEvent(event)
 	default:
 		common.Logger.Debugf("unknown operation type: %s", operationType)
 	}
 }
 
-func decodeArtworkFromEvent(event bson.M) (*types.ArtworkModel, error) {
+func (m *artworkSyncManager) DecodeArtworkFromEvent(event bson.M) (*types.ArtworkModel, error) {
 	doc := event["fullDocument"].(bson.M)
 	var artwork types.ArtworkModel
 	docBytes, err := bson.Marshal(doc)
@@ -76,8 +92,8 @@ func decodeArtworkFromEvent(event bson.M) (*types.ArtworkModel, error) {
 	return &artwork, nil
 }
 
-func processArtworkUpdateEvent(event bson.M) {
-	artwork, err := decodeArtworkFromEvent(event)
+func (m *artworkSyncManager) ProcessArtworkUpdateEvent(event bson.M) {
+	artwork, err := m.DecodeArtworkFromEvent(event)
 	if err != nil {
 		common.Logger.Errorf("decode artwork from event error: %s", err)
 		return
@@ -100,7 +116,7 @@ func processArtworkUpdateEvent(event bson.M) {
 	common.Logger.Debugf("commited add artwork task to meilisearch: %d", task.TaskUID)
 }
 
-func processArtworkDeleteEvent(event bson.M) {
+func (m *artworkSyncManager) ProcessArtworkDeleteEvent(event bson.M) {
 	docID := event["documentKey"].(bson.M)["_id"].(primitive.ObjectID).Hex()
 	task, err := common.MeilisearchClient.Index(config.Cfg.Search.MeiliSearch.Index).DeleteDocument(docID)
 	if err != nil {
@@ -110,9 +126,9 @@ func processArtworkDeleteEvent(event bson.M) {
 	common.Logger.Debugf("commited delete artwork task to meilisearch: %d", task.TaskUID)
 }
 
-func processArtworkReplaceEvent(event bson.M) {
+func (m *artworkSyncManager) ProcessArtworkReplaceEvent(event bson.M) {
 	// just update the artwork?
-	artwork, err := decodeArtworkFromEvent(event)
+	artwork, err := m.DecodeArtworkFromEvent(event)
 	if err != nil {
 		common.Logger.Errorf("decode artwork from event error: %s", err)
 		return
