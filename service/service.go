@@ -3,11 +3,15 @@ package service
 import (
 	"context"
 
+	"github.com/krau/ManyACG/config"
 	"github.com/krau/ManyACG/types"
 )
 
 func InitService() {
 	go listenProcessPictureTask()
+	if config.Cfg.Search.Enable {
+		go syncArtworkChangeStream()
+	}
 }
 
 type Service struct{}

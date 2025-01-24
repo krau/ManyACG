@@ -2,12 +2,11 @@ module github.com/krau/ManyACG
 
 go 1.23
 
-toolchain go1.23.2
-
 require (
 	github.com/PuerkitoBio/goquery v1.10.0
 	github.com/appleboy/gin-jwt/v2 v2.10.0
 	github.com/blang/semver v3.5.1+incompatible
+	github.com/bytedance/sonic v1.12.6
 	github.com/chenyahui/gin-cache v1.9.0
 	github.com/corona10/goimagehash v1.1.0
 	github.com/duke-git/lancet/v2 v2.3.4
@@ -18,6 +17,7 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/gookit/slog v0.5.7
 	github.com/gorilla/feeds v1.2.0
+	github.com/meilisearch/meilisearch-go v0.30.0
 	github.com/mmcdole/gofeed v1.3.0
 	github.com/penglongli/gin-metrics v0.1.12
 	github.com/resend/resend-go/v2 v2.13.0
@@ -37,7 +37,6 @@ require (
 	github.com/aws/aws-sdk-go v1.55.5 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/bits-and-blooms/bitset v1.20.0 // indirect
-	github.com/bytedance/sonic v1.12.6 // indirect
 	github.com/bytedance/sonic/loader v0.2.1 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/cloudflare/circl v1.5.0 // indirect
@@ -63,10 +62,12 @@ require (
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/jellydator/ttlcache/v2 v2.11.1 // indirect
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
+	github.com/josharian/intern v1.0.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/klauspost/compress v1.17.11 // indirect
 	github.com/klauspost/cpuid/v2 v2.2.9 // indirect
 	github.com/leodido/go-urn v1.4.0 // indirect
+	github.com/mailru/easyjson v0.7.7 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/mmcdole/goxpp v1.1.1 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect

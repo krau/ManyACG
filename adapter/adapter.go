@@ -6,6 +6,7 @@ import (
 	"html"
 	"sync"
 
+	"github.com/duke-git/lancet/v2/slice"
 	"github.com/krau/ManyACG/common"
 	"github.com/krau/ManyACG/config"
 	"github.com/krau/ManyACG/dao"
@@ -187,4 +188,18 @@ func ConvertToFeedItems(ctx context.Context, artworks []*types.Artwork) []*feeds
 	}
 	wg.Wait()
 	return items
+}
+
+func ConvertToSearchDoc(ctx context.Context, artworkModel *types.ArtworkModel) (*types.ArtworkSearchDocument, error) {
+	artwork, err := ConvertToArtwork(ctx, artworkModel)
+	if err != nil {
+		return nil, err
+	}
+	return &types.ArtworkSearchDocument{
+		ID:          artwork.ID,
+		Title:       artwork.Title,
+		Artist:      artwork.Artist.Name + " " + artwork.Artist.Username,
+		Description: artwork.Description,
+		Tags:        slice.Join(artwork.Tags, ","),
+	}, nil
 }
