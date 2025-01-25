@@ -12,7 +12,6 @@ import (
 type Config struct {
 	Debug    bool           `toml:"debug" mapstructure:"debug" json:"debug" yaml:"debug"`
 	WSRVURL  string         `toml:"wsrv_url" mapstructure:"wsrv_url" json:"wsrv_url" yaml:"wsrv_url"`
-	Search   searchConfig   `toml:"search" mapstructure:"search" json:"search" yaml:"search"`
 	API      apiConfig      `toml:"api" mapstructure:"api" json:"api" yaml:"api"`
 	Auth     authConfig     `toml:"auth" mapstructure:"auth" json:"auth" yaml:"auth"`
 	Fetcher  fetcherConfig  `toml:"fetcher" mapstructure:"fetcher" json:"fetcher" yaml:"fetcher"`
@@ -21,6 +20,8 @@ type Config struct {
 	Storage  storageConfigs `toml:"storage" mapstructure:"storage" json:"storage" yaml:"storage"`
 	Telegram telegramConfig `toml:"telegram" mapstructure:"telegram" json:"telegram" yaml:"telegram"`
 	Database databaseConfig `toml:"database" mapstructure:"database" json:"database" yaml:"database"`
+	Search   searchConfig   `toml:"search" mapstructure:"search" json:"search" yaml:"search"`
+	Tagger   taggerConfig   `toml:"tagger" mapstructure:"tagger" json:"tagger" yaml:"tagger"`
 }
 
 type fetcherConfig struct {

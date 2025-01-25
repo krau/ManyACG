@@ -3,12 +3,15 @@ package handlers
 import (
 	"context"
 	"errors"
+	"fmt"
 	"strconv"
 	"strings"
 
+	"github.com/duke-git/lancet/v2/slice"
 	"github.com/krau/ManyACG/common"
 	"github.com/krau/ManyACG/service"
 	"github.com/krau/ManyACG/sources"
+	"github.com/krau/ManyACG/storage"
 	"github.com/krau/ManyACG/telegram/utils"
 	"github.com/krau/ManyACG/types"
 
@@ -323,4 +326,120 @@ func ReCaptionArtwork(ctx context.Context, bot *telego.Bot, message telego.Messa
 		ParseMode: telego.ModeHTML,
 	})
 	utils.ReplyMessage(bot, message, "已重新生成作品描述")
+}
+
+func AutoTaggingArtwork(ctx context.Context, bot *telego.Bot, message telego.Message) {
+	if !CheckPermissionInGroup(ctx, message, types.PermissionEditArtwork) {
+		utils.ReplyMessage(bot, message, "你没有编辑作品的权限")
+		return
+	}
+	if common.TaggerClient == nil {
+		utils.ReplyMessage(bot, message, "Tagger is not available")
+	}
+	var sourceURL string
+	var findUrlInArgs bool
+	if message.ReplyToMessage != nil {
+		sourceURL = utils.FindSourceURLForMessage(message.ReplyToMessage)
+	} else {
+		sourceURL = sources.FindSourceURL(message.Text)
+		findUrlInArgs = true
+	}
+	if sourceURL == "" {
+		utils.ReplyMessage(bot, message, "请回复一条消息, 或者指定作品链接")
+		return
+	}
+
+	artwork, err := service.GetArtworkByURL(ctx, sourceURL)
+	if err != nil {
+		utils.ReplyMessage(bot, message, "获取作品信息失败: "+err.Error())
+		return
+	}
+	selectAllPictures := true
+	pictureIndex := 1
+	_, _, args := telegoutil.ParseCommand(message.Text)
+	if len(args) > func() int {
+		if findUrlInArgs {
+			return 1
+		}
+		return 0
+	}() {
+		selectAllPictures = false
+		pictureIndex, err := strconv.Atoi(args[len(args)-1])
+		if err != nil {
+			utils.ReplyMessage(bot, message, "图片序号错误")
+			return
+		}
+		if pictureIndex < 1 || pictureIndex > len(artwork.Pictures) {
+			utils.ReplyMessage(bot, message, "图片序号超出范围")
+			return
+		}
+	}
+	pictures := make([]*types.Picture, 0)
+	if selectAllPictures {
+		pictures = artwork.Pictures
+	} else {
+		picture := artwork.Pictures[pictureIndex-1]
+		pictures[0] = picture
+	}
+	msg, err := utils.ReplyMessage(bot, message, "正在请求...")
+	if err != nil {
+		common.Logger.Errorf("Reply message failed: %s", err)
+		return
+	}
+	for i, picture := range pictures {
+		var file []byte
+		file, err = storage.GetFile(ctx, func() *types.StorageDetail {
+			if picture.StorageInfo.Regular != nil {
+				return picture.StorageInfo.Regular
+			} else {
+				return picture.StorageInfo.Original
+			}
+		}())
+		if err != nil {
+			file, err = common.DownloadWithCache(ctx, picture.Original, nil)
+		}
+		if err != nil {
+			common.Logger.Errorf("Download picture %s failed: %s", picture.Original, err)
+			continue
+		}
+		common.Logger.Debugf("Predicting tags for %s", picture.Original)
+		predict, err := common.TaggerClient.Predict(ctx, file)
+		if err != nil {
+			common.Logger.Errorf("Predict tags failed: %s", err)
+			utils.ReplyMessage(bot, message, "Predict tags failed")
+			return
+		}
+		if len(predict.PredictedTags) == 0 {
+			utils.ReplyMessage(bot, message, "No tags predicted")
+			return
+		}
+		newTags := slice.Union(artwork.Tags, predict.PredictedTags)
+		if err := service.UpdateArtworkTagsByURL(ctx, artwork.SourceURL, newTags); err != nil {
+			utils.ReplyMessage(bot, message, "更新作品标签失败: "+err.Error())
+			return
+		}
+		artwork, err = service.GetArtworkByURL(ctx, artwork.SourceURL)
+		if err != nil {
+			utils.ReplyMessage(bot, message, "获取更新后的作品信息失败: "+err.Error())
+			return
+		}
+		if artwork.Pictures[0].TelegramInfo.MessageID != 0 {
+			bot.EditMessageCaption(&telego.EditMessageCaptionParams{
+				ChatID:    ChannelChatID,
+				MessageID: artwork.Pictures[0].TelegramInfo.MessageID,
+				Caption:   utils.GetArtworkHTMLCaption(artwork),
+				ParseMode: telego.ModeHTML,
+			})
+		}
+		bot.EditMessageText(&telego.EditMessageTextParams{
+			ChatID:    msg.Chat.ChatID(),
+			MessageID: msg.MessageID,
+			Text:      fmt.Sprintf("选择的第 %d 张图片预测标签成功", i+1),
+		})
+	}
+	bot.EditMessageText(&telego.EditMessageTextParams{
+		ChatID:    msg.Chat.ChatID(),
+		MessageID: msg.MessageID,
+		Text:      "更新作品标签成功",
+	})
 }

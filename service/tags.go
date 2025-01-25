@@ -6,8 +6,10 @@ import (
 	"fmt"
 
 	"github.com/duke-git/lancet/v2/slice"
+	"github.com/krau/ManyACG/common"
 	"github.com/krau/ManyACG/dao"
 	"github.com/krau/ManyACG/errs"
+	"github.com/krau/ManyACG/storage"
 	"github.com/krau/ManyACG/types"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -166,4 +168,65 @@ func AddTagAliasByID(ctx context.Context, tagID primitive.ObjectID, alias ...str
 		return nil, err
 	}
 	return result.(*types.TagModel), nil
+}
+
+func PredictArtworkTagsByIDAndUpdate(ctx context.Context, artworkID primitive.ObjectID) error {
+	if common.TaggerClient == nil {
+		return errors.New("tagger not available")
+	}
+	artwork, err := GetArtworkByID(ctx, artworkID)
+	if err != nil {
+		return err
+	}
+	predictedTags := make([]string, 0)
+	for _, picture := range artwork.Pictures {
+		var pictureFile []byte
+		if picture.StorageInfo.Regular != nil {
+			pictureFile, err = storage.GetFile(ctx, picture.StorageInfo.Regular)
+		} else if picture.StorageInfo.Original != nil {
+			pictureFile, err = storage.GetFile(ctx, picture.StorageInfo.Original)
+		} else {
+			pictureFile, err = common.DownloadWithCache(ctx, picture.Original, nil)
+		}
+		if err != nil {
+			return err
+		}
+		common.Logger.Debugf("predict picture %s", picture.Original)
+		result, err := common.TaggerClient.Predict(ctx, pictureFile)
+		if err != nil {
+			common.Logger.Errorf("predict picture %s error: %s", picture.Original, err)
+			continue
+		}
+		if len(result.PredictedTags) == 0 {
+			continue
+		}
+		predictedTags = slice.Union(predictedTags, result.PredictedTags)
+	}
+	newTags := slice.Compact(slice.Union(artwork.Tags, predictedTags))
+	if err := UpdateArtworkTagsByURL(ctx, artwork.SourceURL, newTags); err != nil {
+		return err
+	}
+	return nil
+}
+
+type predictArtworkTagsTask struct {
+	ArtworkID primitive.ObjectID
+	Ctx       context.Context
+}
+
+var predictArtworkTagsTaskChan = make(chan *predictArtworkTagsTask)
+
+func AddPredictArtworkTagTask(ctx context.Context, artworkID primitive.ObjectID) {
+	predictArtworkTagsTaskChan <- &predictArtworkTagsTask{
+		ArtworkID: artworkID,
+		Ctx:       ctx,
+	}
+}
+
+func listenPredictArtworkTagsTask() {
+	for task := range predictArtworkTagsTaskChan {
+		if err := PredictArtworkTagsByIDAndUpdate(task.Ctx, task.ArtworkID); err != nil {
+			common.Logger.Errorf("predict artwork %s tags error: %s", task.ArtworkID.Hex(), err)
+		}
+	}
 }

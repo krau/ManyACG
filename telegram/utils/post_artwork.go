@@ -248,8 +248,18 @@ func PostAndCreateArtwork(ctx context.Context, artwork *types.Artwork, bot *tele
 }
 
 func afterCreate(ctx context.Context, artwork *types.Artwork, bot *telego.Bot, fromID int64) {
-	for _, picture := range artwork.Pictures {
-		service.AddProcessPictureTask(ctx, picture)
+	go func() {
+		for _, picture := range artwork.Pictures {
+			service.AddProcessPictureTask(ctx, picture)
+		}
+	}()
+	if config.Cfg.Tagger.TagNew {
+		objectID, err := primitive.ObjectIDFromHex(artwork.ID)
+		if err != nil {
+			common.Logger.Fatalf("invalid ObjectID: %s", artwork.ID)
+			return
+		}
+		go service.AddPredictArtworkTagTask(ctx, objectID)
 	}
 	go checkDuplicate(ctx, artwork, bot, fromID)
 	go prettyPostedArtworkTagCaption(ctx, artwork, bot)

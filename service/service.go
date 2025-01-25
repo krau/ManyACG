@@ -12,6 +12,9 @@ func InitService() {
 	if config.Cfg.Search.Enable {
 		go syncArtworkToSearchEngine()
 	}
+	if config.Cfg.Tagger.Enable {
+		go listenPredictArtworkTagsTask()
+	}
 }
 
 type Service struct{}

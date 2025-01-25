@@ -8,8 +8,10 @@ import (
 
 func Init() {
 	initHttpClient()
-	initResendClient()
 	initLogger()
+	if config.Cfg.Auth.Resend.APIKey != "" {
+		initResendClient()
+	}
 	if searchCfg := config.Cfg.Search; searchCfg.Enable {
 		switch searchCfg.Engine {
 		case "meilisearch":
@@ -18,5 +20,8 @@ func Init() {
 			Logger.Fatalf("Unsupported search engine: %s", searchCfg.Engine)
 			os.Exit(1)
 		}
+	}
+	if taggerCfg := config.Cfg.Tagger; taggerCfg.Enable {
+		initTaggerClient()
 	}
 }

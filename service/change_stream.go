@@ -112,10 +112,10 @@ func (m *artworkSyncManager) ProcessArtworkUpdateEvent(event bson.M) {
 	}
 	task, err := common.MeilisearchClient.Index(config.Cfg.Search.MeiliSearch.Index).UpdateDocuments(artworkJSON)
 	if err != nil {
-		common.Logger.Errorf("add artwork to meilisearch error: %s", err)
+		common.Logger.Errorf("update artwork to meilisearch error: %s", err)
 		return
 	}
-	common.Logger.Debugf("commited add artwork task to meilisearch: %d", task.TaskUID)
+	common.Logger.Debugf("commited update artwork task to meilisearch: %d", task.TaskUID)
 }
 
 func (m *artworkSyncManager) ProcessArtworkDeleteEvent(event bson.M) {

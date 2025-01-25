@@ -46,6 +46,7 @@ func RegisterHandlers(hg *telegohandler.HandlerGroup) {
 	mg.HandleMessageCtx(AddTagAlias, telegohandler.CommandEqual("tagalias"))
 	mg.HandleMessageCtx(DumpArtworkInfo, telegohandler.CommandEqual("dump"))
 	mg.HandleMessageCtx(ReCaptionArtwork, telegohandler.CommandEqual("recaption"))
+	mg.HandleMessageCtx(AutoTaggingArtwork, telegohandler.CommandEqual("autotag"))
 
 	hg.HandleCallbackQueryCtx(PostArtworkCallbackQuery, telegohandler.CallbackDataContains("post_artwork"))
 	hg.HandleCallbackQueryCtx(SearchPictureCallbackQuery, telegohandler.CallbackDataPrefix("search_picture"))
