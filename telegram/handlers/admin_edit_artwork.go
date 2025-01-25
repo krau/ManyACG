@@ -335,6 +335,7 @@ func AutoTaggingArtwork(ctx context.Context, bot *telego.Bot, message telego.Mes
 	}
 	if common.TaggerClient == nil {
 		utils.ReplyMessage(bot, message, "Tagger is not available")
+		return
 	}
 	var sourceURL string
 	var findUrlInArgs bool
