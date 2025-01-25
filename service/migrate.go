@@ -293,3 +293,56 @@ func FixTwitterArtists(ctx context.Context, bot *telego.Bot, message *telego.Mes
 		))
 	}
 }
+
+func PredictAllArtworkTagsAndUpdate(ctx context.Context, bot *telego.Bot, message *telego.Message) {
+	cursor, err := dao.GetCollection("Artworks").Find(ctx, bson.M{})
+	sendMessage := bot != nil && message != nil
+	if err != nil {
+		common.Logger.Errorf("Failed to find artworks: %v", err)
+		if sendMessage {
+			bot.SendMessage(telegoutil.Messagef(
+				message.Chat.ChatID(),
+				"Failed to find artworks: %s",
+				err.Error(),
+			))
+		}
+		return
+	}
+	defer cursor.Close(ctx)
+	total, err := dao.GetArtworkCount(ctx, types.R18TypeAll)
+	if err != nil {
+		common.Logger.Errorf("Failed to count artworks: %v", err)
+		if sendMessage {
+			bot.SendMessage(telegoutil.Messagef(
+				message.Chat.ChatID(),
+				"Failed to count artworks: %s",
+				err.Error(),
+			))
+		}
+		return
+	}
+	failed, count := 0, 0
+	for cursor.Next(ctx) {
+		count++
+		var artwork types.ArtworkModel
+		if err := cursor.Decode(&artwork); err != nil {
+			common.Logger.Errorf("Failed to decode artwork: %v", err)
+			failed++
+			continue
+		}
+		if err := PredictArtworkTagsByIDAndUpdate(ctx, artwork.ID); err != nil {
+			common.Logger.Errorf("Failed to predict artwork tags: %v", err)
+			failed++
+		}
+	}
+	common.Logger.Infof("Total %d artworks, processed %d, failed %d", total, count, failed)
+	if sendMessage {
+		bot.SendMessage(telegoutil.Messagef(
+			message.Chat.ChatID(),
+			"Total %d artworks, processed %d, failed %d",
+			total,
+			count,
+			failed,
+		))
+	}
+}

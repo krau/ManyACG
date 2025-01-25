@@ -188,3 +188,18 @@ func AddTagAlias(ctx context.Context, bot *telego.Bot, message telego.Message) {
 	}
 	utils.ReplyMessage(bot, message, "添加标签别名成功")
 }
+
+func AutoTagAllArtwork(ctx context.Context, bot *telego.Bot, message telego.Message) {
+	userAdmin, err := service.GetAdminByUserID(ctx, message.From.ID)
+	if err != nil {
+		common.Logger.Errorf("获取管理员信息失败: %s", err)
+		utils.ReplyMessage(bot, message, "获取管理员信息失败")
+		return
+	}
+	if userAdmin != nil && !userAdmin.SuperAdmin {
+		utils.ReplyMessage(bot, message, "你没有权限")
+		return
+	}
+	go service.PredictAllArtworkTagsAndUpdate(context.TODO(), bot, &message)
+	utils.ReplyMessage(bot, message, "开始处理了")
+}

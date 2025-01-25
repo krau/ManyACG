@@ -51,6 +51,7 @@ Inline 查询(在任意聊天框中@本bot)支持同样的参数格式.
 process_pictures_hashsize - 处理无哈希和尺寸的图片
 process_pictures_storage - 处理图片存储(生成缩略图, 迁移用)
 fix_twitter_artists - 修复Twitter作者信息(更新所有推特作品的作者信息)
+autotag_all - 自动tag所有作品
 
 发送作品链接可以获取信息或发布到频道
 `
