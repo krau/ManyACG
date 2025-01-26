@@ -2,9 +2,7 @@ package storage
 
 import (
 	"context"
-	"errors"
 	"fmt"
-	"io"
 	"path/filepath"
 	"sync"
 	"time"
@@ -171,28 +169,28 @@ func GetFile(ctx context.Context, detail *types.StorageDetail) ([]byte, error) {
 	}
 }
 
-func GetFileStream(ctx context.Context, detail *types.StorageDetail) (io.ReadCloser, error) {
-	if detail == nil {
-		return nil, errors.New("storage detail is nil")
-	}
-	if detail.Type != types.StorageTypeLocal {
-		lock, _ := storageLocks.LoadOrStore(detail.String(), &sync.Mutex{})
-		lock.(*sync.Mutex).Lock()
-		defer func() {
-			lock.(*sync.Mutex).Unlock()
-			storageLocks.Delete(detail)
-		}()
-	}
-	if storage, ok := Storages[detail.Type]; ok {
-		file, err := storage.GetFileStream(ctx, detail)
-		if err != nil {
-			return nil, err
-		}
-		return file, nil
-	} else {
-		return nil, fmt.Errorf("%w: %s", errs.ErrStorageUnkown, detail.Type)
-	}
-}
+// func GetFileStream(ctx context.Context, detail *types.StorageDetail) (io.ReadCloser, error) {
+// 	if detail == nil {
+// 		return nil, errors.New("storage detail is nil")
+// 	}
+// 	if detail.Type != types.StorageTypeLocal {
+// 		lock, _ := storageLocks.LoadOrStore(detail.String(), &sync.Mutex{})
+// 		lock.(*sync.Mutex).Lock()
+// 		defer func() {
+// 			lock.(*sync.Mutex).Unlock()
+// 			storageLocks.Delete(detail)
+// 		}()
+// 	}
+// 	if storage, ok := Storages[detail.Type]; ok {
+// 		file, err := storage.GetFileStream(ctx, detail)
+// 		if err != nil {
+// 			return nil, err
+// 		}
+// 		return file, nil
+// 	} else {
+// 		return nil, fmt.Errorf("%w: %s", errs.ErrStorageUnkown, detail.Type)
+// 	}
+// }
 
 func Delete(ctx context.Context, info *types.StorageDetail) error {
 	if storage, ok := Storages[info.Type]; ok {
