@@ -11,6 +11,7 @@ import (
 	"github.com/krau/ManyACG/errs"
 	"github.com/krau/ManyACG/storage"
 	"github.com/krau/ManyACG/types"
+	"github.com/mymmrac/telego"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -170,10 +171,11 @@ func AddTagAliasByID(ctx context.Context, tagID primitive.ObjectID, alias ...str
 	return result.(*types.TagModel), nil
 }
 
-func PredictArtworkTagsByIDAndUpdate(ctx context.Context, artworkID primitive.ObjectID) error {
+func PredictArtworkTagsByIDAndUpdate(ctx context.Context, artworkID primitive.ObjectID, tg types.TelegramService) error {
 	if common.TaggerClient == nil {
 		return errors.New("tagger not available")
 	}
+	recaption := tg != nil && tg.Bot() != nil
 	artwork, err := GetArtworkByID(ctx, artworkID)
 	if err != nil {
 		return err
@@ -206,26 +208,50 @@ func PredictArtworkTagsByIDAndUpdate(ctx context.Context, artworkID primitive.Ob
 	if err := UpdateArtworkTagsByURL(ctx, artwork.SourceURL, newTags); err != nil {
 		return err
 	}
+	if recaption {
+		go func() {
+			artwork, err := GetArtworkByID(ctx, artworkID)
+			if err != nil {
+				common.Logger.Errorf("get artwork %s error: %s", artworkID.Hex(), err)
+				return
+			}
+			if artwork.Pictures[0].TelegramInfo == nil || artwork.Pictures[0].TelegramInfo.MessageID == 0 {
+				return
+			}
+			artworkHTMLCaption := tg.GetArtworkHTMLCaption(artwork)
+			if _, err := tg.Bot().EditMessageCaption(&telego.EditMessageCaptionParams{
+				ChatID:    tg.ChannelChatID(),
+				MessageID: artwork.Pictures[0].TelegramInfo.MessageID,
+				Caption:   artworkHTMLCaption,
+				ParseMode: telego.ModeHTML,
+			}); err != nil {
+				common.Logger.Errorf("edit message caption error: %s", err)
+			}
+		}()
+	}
+
 	return nil
 }
 
 type predictArtworkTagsTask struct {
 	ArtworkID primitive.ObjectID
 	Ctx       context.Context
+	Tg        types.TelegramService
 }
 
 var predictArtworkTagsTaskChan = make(chan *predictArtworkTagsTask)
 
-func AddPredictArtworkTagTask(ctx context.Context, artworkID primitive.ObjectID) {
+func AddPredictArtworkTagTask(ctx context.Context, artworkID primitive.ObjectID, tg types.TelegramService) {
 	predictArtworkTagsTaskChan <- &predictArtworkTagsTask{
 		ArtworkID: artworkID,
 		Ctx:       ctx,
+		Tg:        tg,
 	}
 }
 
 func listenPredictArtworkTagsTask() {
 	for task := range predictArtworkTagsTaskChan {
-		if err := PredictArtworkTagsByIDAndUpdate(task.Ctx, task.ArtworkID); err != nil {
+		if err := PredictArtworkTagsByIDAndUpdate(task.Ctx, task.ArtworkID, task.Tg); err != nil {
 			common.Logger.Errorf("predict artwork %s tags error: %s", task.ArtworkID.Hex(), err)
 		}
 	}

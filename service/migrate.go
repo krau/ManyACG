@@ -330,7 +330,7 @@ func PredictAllArtworkTagsAndUpdate(ctx context.Context, bot *telego.Bot, messag
 			failed++
 			continue
 		}
-		if err := PredictArtworkTagsByIDAndUpdate(ctx, artwork.ID); err != nil {
+		if err := PredictArtworkTagsByIDAndUpdate(ctx, artwork.ID, nil); err != nil {
 			common.Logger.Errorf("Failed to predict artwork tags: %v", err)
 			failed++
 		}

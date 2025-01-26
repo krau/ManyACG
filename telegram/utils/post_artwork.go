@@ -248,21 +248,20 @@ func PostAndCreateArtwork(ctx context.Context, artwork *types.Artwork, bot *tele
 }
 
 func afterCreate(ctx context.Context, artwork *types.Artwork, bot *telego.Bot, fromID int64) {
-	go func() {
-		for _, picture := range artwork.Pictures {
-			service.AddProcessPictureTask(ctx, picture)
-		}
-	}()
-	if config.Cfg.Tagger.TagNew {
-		objectID, err := primitive.ObjectIDFromHex(artwork.ID)
-		if err != nil {
-			common.Logger.Fatalf("invalid ObjectID: %s", artwork.ID)
-			return
-		}
-		go service.AddPredictArtworkTagTask(ctx, objectID)
+	objectID, err := primitive.ObjectIDFromHex(artwork.ID)
+	if err != nil {
+		common.Logger.Fatalf("invalid ObjectID: %s", artwork.ID)
+		return
+	}
+	for _, picture := range artwork.Pictures {
+		service.AddProcessPictureTask(ctx, picture)
 	}
 	go checkDuplicate(ctx, artwork, bot, fromID)
-	go prettyPostedArtworkTagCaption(ctx, artwork, bot)
+	if common.TaggerClient != nil && config.Cfg.Tagger.TagNew {
+		go service.AddPredictArtworkTagTask(ctx, objectID, TgService)
+	} else {
+		go recaptionArtwork(ctx, artwork, bot)
+	}
 }
 
 func checkDuplicate(ctx context.Context, artwork *types.Artwork, bot *telego.Bot, fromID int64) {
@@ -360,7 +359,7 @@ func checkDuplicate(ctx context.Context, artwork *types.Artwork, bot *telego.Bot
 	}
 }
 
-func prettyPostedArtworkTagCaption(ctx context.Context, artwork *types.Artwork, bot *telego.Bot) {
+func recaptionArtwork(ctx context.Context, artwork *types.Artwork, bot *telego.Bot) {
 	newArtwork, err := service.GetArtworkByURL(ctx, artwork.SourceURL)
 	if err != nil {
 		common.Logger.Errorf("error when getting artwork by URL: %s", err)

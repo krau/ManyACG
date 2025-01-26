@@ -22,3 +22,21 @@ func PostAndCreateArtwork(ctx context.Context, artwork *types.Artwork, bot *tele
 	}
 	return utils.PostAndCreateArtwork(ctx, artwork, bot, fromID, messageID)
 }
+
+type Telegram struct{}
+
+func NewTelegram() *Telegram {
+	return &Telegram{}
+}
+
+func (t *Telegram) GetArtworkHTMLCaption(artwork *types.Artwork) string {
+	return utils.GetArtworkHTMLCaption(artwork)
+}
+
+func (t *Telegram) Bot() *telego.Bot {
+	return Bot
+}
+
+func (t *Telegram) ChannelChatID() telego.ChatID {
+	return ChannelChatID
+}

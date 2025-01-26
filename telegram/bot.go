@@ -167,7 +167,7 @@ func InitBot() {
 	BotUsername = me.Username
 
 	handlers.Init(ChannelChatID, BotUsername)
-	utils.Init(ChannelChatID, GroupChatID, BotUsername)
+	utils.Init(ChannelChatID, GroupChatID, BotUsername, NewTelegram())
 
 	Bot.SetMyCommands(&telego.SetMyCommandsParams{
 		Commands: CommonCommands,
