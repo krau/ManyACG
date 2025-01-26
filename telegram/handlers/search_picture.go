@@ -139,34 +139,34 @@ func getDBSearchResultText(ctx context.Context, file []byte) (string, bool, erro
 	}
 	channelMessageAvailable := ChannelChatID.ID != 0 || ChannelChatID.Username != ""
 	enableSite := config.Cfg.API.SiteURL != ""
-	if len(pictures) > 0 {
-		text := fmt.Sprintf("找到%d张相似的图片\n\n", len(pictures))
-		for _, picture := range pictures {
-			artworkObjectID, err := primitive.ObjectIDFromHex(picture.ArtworkID)
-			if err != nil {
-				common.Logger.Errorf("无效的ObjectID: %s", picture.ID)
-				continue
-			}
-			artwork, err := service.GetArtworkByID(ctx, artworkObjectID)
-			if err != nil {
-				common.Logger.Errorf("获取作品信息失败: %s", err)
-				continue
-			}
-			text += fmt.Sprintf("[%s\\_%d](%s)\n",
-				common.EscapeMarkdown(artwork.Title),
-				picture.Index+1,
-				common.EscapeMarkdown(artwork.SourceURL),
-			)
-			if channelMessageAvailable && picture.TelegramInfo != nil && picture.TelegramInfo.MessageID != 0 {
-				text += fmt.Sprintf("[频道消息](%s)\n", utils.GetArtworkPostMessageURL(picture.TelegramInfo.MessageID, ChannelChatID))
-			}
-			if enableSite {
-				text += fmt.Sprintf("[ManyACG](%s)\n\n", config.Cfg.API.SiteURL+"/artwork/"+artwork.ID)
-			}
-		}
-		return text, true, nil
+	if len(pictures) == 0 {
+		return "未在数据库中找到相似图片", false, nil
 	}
-	return "未在数据库中找到相似图片", false, nil
+	text := fmt.Sprintf("找到%d张相似的图片\n\n", len(pictures))
+	for _, picture := range pictures {
+		artworkObjectID, err := primitive.ObjectIDFromHex(picture.ArtworkID)
+		if err != nil {
+			common.Logger.Errorf("无效的ObjectID: %s", picture.ID)
+			continue
+		}
+		artwork, err := service.GetArtworkByID(ctx, artworkObjectID)
+		if err != nil {
+			common.Logger.Errorf("获取作品信息失败: %s", err)
+			continue
+		}
+		text += fmt.Sprintf("[%s\\_%d](%s)\n",
+			common.EscapeMarkdown(artwork.Title),
+			picture.Index+1,
+			common.EscapeMarkdown(artwork.SourceURL),
+		)
+		if channelMessageAvailable && picture.TelegramInfo != nil && picture.TelegramInfo.MessageID != 0 {
+			text += fmt.Sprintf("[频道消息](%s)\n", utils.GetArtworkPostMessageURL(picture.TelegramInfo.MessageID, ChannelChatID))
+		}
+		if enableSite {
+			text += fmt.Sprintf("[ManyACG](%s)\n\n", config.Cfg.API.SiteURL+"/artwork/"+artwork.ID)
+		}
+	}
+	return text, true, nil
 }
 
 type ascii2dResult struct {
