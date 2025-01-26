@@ -130,6 +130,7 @@ func ApplyApiPathRule(originPath string) string {
 		if strings.HasPrefix(originPath, rule.Path) {
 			parsedUrl, err := url.JoinPath(rule.JoinPrefix, strings.TrimPrefix(originPath, rule.TrimPrefix))
 			if err != nil {
+				Logger.Warnf("Failed to join path: %s", err)
 				return originPath
 			}
 			return parsedUrl
