@@ -64,8 +64,8 @@ var (
 			Description: "食用指南",
 		},
 		{
-			Command:     "query",
-			Description: "混合搜索作品",
+			Command:     "hybrid",
+			Description: "基于语义与关键字混合搜索作品",
 		},
 	}
 
