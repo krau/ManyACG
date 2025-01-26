@@ -130,7 +130,10 @@ func HybridSearchArtworks(ctx context.Context, bot *telego.Bot, message telego.M
 		caption := fmt.Sprintf("<a href=\"%s\">%s</a>", artwork.SourceURL, common.EscapeHTML(artwork.Title))
 		inputMedias = append(inputMedias, telegoutil.MediaPhoto(file).WithCaption(caption).WithParseMode(telego.ModeHTML))
 	}
-	mediaGroup := telegoutil.MediaGroup(message.Chat.ChatID(), inputMedias...)
+	mediaGroup := telegoutil.MediaGroup(message.Chat.ChatID(), inputMedias...).WithReplyParameters(&telego.ReplyParameters{
+		MessageID: message.MessageID,
+		ChatID:    message.Chat.ChatID(),
+	})
 	_, err = bot.SendMediaGroup(mediaGroup)
 	if err != nil {
 		common.Logger.Errorf("发送图片失败: %s", err)
@@ -184,7 +187,10 @@ func SearchSimilarArtworks(ctx context.Context, bot *telego.Bot, message telego.
 		caption := fmt.Sprintf("<a href=\"%s\">%s</a>", artwork.SourceURL, common.EscapeHTML(artwork.Title))
 		inputMedias = append(inputMedias, telegoutil.MediaPhoto(file).WithCaption(caption).WithParseMode(telego.ModeHTML))
 	}
-	mediaGroup := telegoutil.MediaGroup(message.Chat.ChatID(), inputMedias...)
+	mediaGroup := telegoutil.MediaGroup(message.Chat.ChatID(), inputMedias...).WithReplyParameters(&telego.ReplyParameters{
+		MessageID: message.MessageID,
+		ChatID:    message.Chat.ChatID(),
+	})
 	_, err = bot.SendMediaGroup(mediaGroup)
 	if err != nil {
 		common.Logger.Errorf("发送图片失败: %s", err)
