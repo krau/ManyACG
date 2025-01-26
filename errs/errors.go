@@ -32,5 +32,6 @@ var (
 
 	ErrAliasAlreadyUsed = errors.New("alias already used")
 
-	ErrNotEnabledHybridSearch = errors.New("hybrid search not enabled")
+	ErrSearchEngineUnavailable = errors.New("search engine unavailable")
+	ErrArtworksNotFound        = errors.New("artworks not found")
 )

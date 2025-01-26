@@ -67,6 +67,10 @@ var (
 			Command:     "hybrid",
 			Description: "基于语义与关键字混合搜索作品",
 		},
+		{
+			Command:     "similar",
+			Description: "获取与回复的图片相似的作品",
+		},
 	}
 
 	AdminCommands = []telego.BotCommand{

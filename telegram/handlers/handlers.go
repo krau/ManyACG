@@ -31,6 +31,7 @@ func RegisterHandlers(hg *telegohandler.HandlerGroup) {
 	mg.HandleMessageCtx(CalculatePicture, telegohandler.CommandEqual("hash"))
 	mg.HandleMessageCtx(GetStats, telegohandler.CommandEqual("stats"))
 	mg.HandleMessageCtx(HybridSearchArtworks, telegohandler.CommandEqual("hybrid"))
+	mg.HandleMessageCtx(SearchSimilarArtworks, telegohandler.CommandEqual("similar"))
 
 	// Admin commands
 	mg.HandleMessageCtx(SetAdmin, telegohandler.CommandEqual("set_admin"))

@@ -66,20 +66,14 @@ func InitConfig() {
 	viper.SetDefault("source.kemono.worker", 5)
 	viper.SetDefault("source.yandere.enable", true)
 	viper.SetDefault("source.nhentai.enable", true)
-
 	viper.SetDefault("source.pixiv.intervel", 60)
 	viper.SetDefault("source.pixiv.sleep", 1)
-
 	viper.SetDefault("source.twitter.fx_twitter_domain", "fxtwitter.com")
 	viper.SetDefault("source.twitter.sleep", 1)
 	viper.SetDefault("source.twitter.intervel", 60)
 
 	viper.SetDefault("storage.cache_dir", "./cache")
 	viper.SetDefault("storage.cache_ttl", 86400)
-	// viper.SetDefault("storage.original_type", "local")
-	// viper.SetDefault("storage.regular_type", "local")
-	// viper.SetDefault("storage.thumb_type", "local")
-	// viper.SetDefault("storage.local.enable", true)
 	viper.SetDefault("storage.local.path", "./manyacg")
 	viper.SetDefault("storage.alist.token_expire", 86400)
 	viper.SetDefault("storage.regular_format", "webp")
@@ -94,6 +88,9 @@ func InitConfig() {
 
 	viper.SetDefault("database.database", "manyacg")
 	viper.SetDefault("database.max_staleness", 120)
+
+	viper.SetDefault("search.meilisearch.index", "manyacg")
+	viper.SetDefault("search.meilisearch.embedder", "default")
 
 	if err := viper.ReadInConfig(); err != nil {
 		fmt.Printf("error when reading config: %s\n", err)

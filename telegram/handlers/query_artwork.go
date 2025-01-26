@@ -102,7 +102,7 @@ func HybridSearchArtworks(ctx context.Context, bot *telego.Bot, message telego.M
 		}
 		queryText = strings.Join(args[:len(args)-1], " ")
 	}
-	artworks, err := service.HybridSearchArtworks(ctx, queryText, hybridSemanticRatio, 10)
+	artworks, err := service.HybridSearchArtworks(ctx, queryText, hybridSemanticRatio, 0, 10)
 	if err != nil {
 		common.Logger.Errorf("搜索失败: %s", err)
 		utils.ReplyMessage(bot, message, "搜索失败, 请联系管理员检查搜索引擎设置与状态")
@@ -136,4 +136,57 @@ func HybridSearchArtworks(ctx context.Context, bot *telego.Bot, message telego.M
 		common.Logger.Errorf("发送图片失败: %s", err)
 	}
 
+}
+
+func SearchSimilarArtworks(ctx context.Context, bot *telego.Bot, message telego.Message) {
+	if common.MeilisearchClient == nil {
+		utils.ReplyMessage(bot, message, "搜索引擎不可用")
+		return
+	}
+	if message.ReplyToMessage == nil {
+		utils.ReplyMessage(bot, message, "请回复一张图片")
+		return
+	}
+	sourceURL := utils.FindSourceURLForMessage(message.ReplyToMessage)
+	if sourceURL == "" {
+		utils.ReplyMessage(bot, message, "回复的消息中未找到支持的链接")
+		return
+	}
+	artwork, err := service.GetArtworkByURL(ctx, sourceURL)
+	if err != nil || artwork == nil {
+		common.Logger.Errorf("获取作品信息失败: %s", err)
+		utils.ReplyMessage(bot, message, "获取作品信息失败")
+		return
+	}
+	artworks, err := service.SearchSimilarArtworks(ctx, artwork.ID, 0, 10)
+	if err != nil {
+		common.Logger.Errorf("搜索失败: %s", err)
+		utils.ReplyMessage(bot, message, "搜索失败")
+		return
+	}
+	if len(artworks) == 0 {
+		utils.ReplyMessage(bot, message, "未找到相似的作品")
+		return
+	}
+	if len(artworks) > 10 {
+		artworks = artworks[:10]
+	}
+	inputMedias := make([]telego.InputMedia, 0, len(artworks))
+	for _, artwork := range artworks {
+		picture := artwork.Pictures[0]
+		var file telego.InputFile
+		if picture.TelegramInfo != nil && picture.TelegramInfo.PhotoFileID != "" {
+			file = telegoutil.FileFromID(picture.TelegramInfo.PhotoFileID)
+		} else {
+			photoURL := fmt.Sprintf("%s/?url=%s&w=2560&h=2560&we&output=jpg", config.Cfg.WSRVURL, picture.Original)
+			file = telegoutil.FileFromURL(photoURL)
+		}
+		caption := fmt.Sprintf("<a href=\"%s\">%s</a>", artwork.SourceURL, common.EscapeHTML(artwork.Title))
+		inputMedias = append(inputMedias, telegoutil.MediaPhoto(file).WithCaption(caption).WithParseMode(telego.ModeHTML))
+	}
+	mediaGroup := telegoutil.MediaGroup(message.Chat.ChatID(), inputMedias...)
+	_, err = bot.SendMediaGroup(mediaGroup)
+	if err != nil {
+		common.Logger.Errorf("发送图片失败: %s", err)
+	}
 }

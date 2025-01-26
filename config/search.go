@@ -7,7 +7,8 @@ type searchConfig struct {
 }
 
 type meiliSearchConfig struct {
-	Host  string `toml:"host" mapstructure:"host" json:"host" yaml:"host"`
-	Key   string `toml:"key" mapstructure:"key" json:"key" yaml:"key"`
-	Index string `toml:"index" mapstructure:"index" json:"index" yaml:"index"`
+	Host     string `toml:"host" mapstructure:"host" json:"host" yaml:"host"`
+	Key      string `toml:"key" mapstructure:"key" json:"key" yaml:"key"`
+	Index    string `toml:"index" mapstructure:"index" json:"index" yaml:"index"`
+	Embedder string `toml:"embedder" mapstructure:"embedder" json:"embedder" yaml:"embedder"`
 }
