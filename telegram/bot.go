@@ -91,6 +91,10 @@ var (
 			Description: "设置作品标签(覆盖)",
 		},
 		{
+			Command:     "autotag",
+			Description: "自动添加作品标签(AI)",
+		},
+		{
 			Command:     "addtags",
 			Description: "添加作品标签",
 		},
