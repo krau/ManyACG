@@ -5,7 +5,7 @@ import (
 	"encoding/hex"
 	"html"
 	"math/rand"
-	"path"
+	"net/url"
 	"regexp"
 	"strings"
 
@@ -128,7 +128,10 @@ func ExtractTagsFromText(text string) []string {
 func ApplyApiPathRule(originPath string) string {
 	for _, rule := range config.Cfg.API.PathRules {
 		if strings.HasPrefix(originPath, rule.Path) {
-			parsedUrl := path.Join(rule.JoinPrefix, strings.TrimPrefix(originPath, rule.TrimPrefix))
+			parsedUrl, err := url.JoinPath(rule.JoinPrefix, strings.TrimPrefix(originPath, rule.TrimPrefix))
+			if err != nil {
+				return originPath
+			}
 			return parsedUrl
 		}
 	}
