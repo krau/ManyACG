@@ -8,9 +8,30 @@ type storageConfigs struct {
 	ThumbFormat   string              `toml:"thumb_format" mapstructure:"thumb_format" json:"thumb_format" yaml:"thumb_format"`
 	CacheDir      string              `toml:"cache_dir" mapstructure:"cache_dir" json:"cache_dir" yaml:"cache_dir"`
 	CacheTTL      uint                `toml:"cache_ttl" mapstructure:"cache_ttl" json:"cache_ttl" yaml:"cache_ttl"`
+	Rules         []storageRuleConfig `toml:"rules" mapstructure:"rules" json:"rules" yaml:"rules"`
 	Webdav        StorageWebdavConfig `toml:"webdav" mapstructure:"webdav" json:"webdav" yaml:"webdav"`
 	Local         StorageLocalConfig  `toml:"local" mapstructure:"local" json:"local" yaml:"local"`
 	Alist         StorageAlistConfig  `toml:"alist" mapstructure:"alist" json:"alist" yaml:"alist"`
+}
+
+type storageRuleConfig struct {
+	/*
+		Match: 进行 与 匹配
+		Replace: 依次进行替换
+		example:
+		  match: {storage_type: "webdav", path_prefix: "/onedrive"}
+		  replace: {rewrite_storage: "local", trim_prefix: "/onedrive", join_prefix: "/local/manyacg"}
+		此规则被应用后, storage 在获取 webdav 存储驱动下的以 /onedrive 开头的图片时, 会去寻找 local 存储驱动下的以 /local/manyacg 开头的图片(路径前缀被替换)
+	*/
+
+	// Match
+	StorageType string `toml:"storage_type" mapstructure:"storage_type" json:"storage_type" yaml:"storage_type"`
+	PathPrefix  string `toml:"path_prefix" mapstructure:"path_prefix" json:"path_prefix" yaml:"path_prefix"`
+
+	// Replace
+	RewriteStorage string `toml:"rewrite_storage" mapstructure:"rewrite_storage" json:"rewrite_storage" yaml:"rewrite_storage"`
+	TrimPrefix     string `toml:"trim_prefix" mapstructure:"trim_prefix" json:"trim_prefix" yaml:"trim_prefix"`
+	JoinPrefix     string `toml:"join_prefix" mapstructure:"join_prefix" json:"join_prefix" yaml:"join_prefix"`
 }
 
 type StorageWebdavConfig struct {

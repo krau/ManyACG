@@ -5,7 +5,7 @@ import (
 	"encoding/hex"
 	"html"
 	"math/rand"
-	"net/url"
+	"path"
 	"regexp"
 	"strings"
 
@@ -125,16 +125,12 @@ func ExtractTagsFromText(text string) []string {
 	return tags
 }
 
-func ApplyPathRule(path string) string {
+func ApplyApiPathRule(originPath string) string {
 	for _, rule := range config.Cfg.API.PathRules {
-		if strings.HasPrefix(path, rule.Path) {
-			parsedUrl, err := url.JoinPath(rule.JoinPrefix, strings.TrimPrefix(path, rule.TrimPrefix))
-			if err != nil {
-				Logger.Errorf("Failed to parse url: %s", err)
-				return rule.JoinPrefix + strings.TrimPrefix(path, rule.TrimPrefix)
-			}
+		if strings.HasPrefix(originPath, rule.Path) {
+			parsedUrl := path.Join(rule.JoinPrefix, strings.TrimPrefix(originPath, rule.TrimPrefix))
 			return parsedUrl
 		}
 	}
-	return path
+	return originPath
 }

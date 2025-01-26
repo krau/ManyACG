@@ -2,6 +2,10 @@ package types
 
 type StorageType string
 
+func (s StorageType) String() string {
+	return string(s)
+}
+
 const (
 	StorageTypeWebdav StorageType = "webdav"
 	StorageTypeLocal  StorageType = "local"

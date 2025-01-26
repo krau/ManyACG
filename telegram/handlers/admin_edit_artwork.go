@@ -397,6 +397,7 @@ func AutoTaggingArtwork(ctx context.Context, bot *telego.Bot, message telego.Mes
 			}
 		}())
 		if err != nil {
+			common.Logger.Errorf("Get picture file from storage failed: %s", err)
 			file, err = common.DownloadWithCache(ctx, picture.Original, nil)
 		}
 		if err != nil {

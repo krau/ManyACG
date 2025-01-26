@@ -148,6 +148,10 @@ func Save(ctx context.Context, filePath string, storagePath string, storageType 
 var storageLocks sync.Map
 
 func GetFile(ctx context.Context, detail *types.StorageDetail) ([]byte, error) {
+	detail, err := applyRule(detail)
+	if err != nil {
+		return nil, err
+	}
 	if detail.Type != types.StorageTypeLocal {
 		lock, _ := storageLocks.LoadOrStore(detail.String(), &sync.Mutex{})
 		lock.(*sync.Mutex).Lock()

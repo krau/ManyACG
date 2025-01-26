@@ -100,7 +100,7 @@ func RandomPicture(ctx *gin.Context) {
 	case types.StorageTypeLocal:
 		ctx.File(picture.StorageInfo.Regular.Path)
 	case types.StorageTypeAlist:
-		ctx.Redirect(http.StatusFound, common.ApplyPathRule(picture.StorageInfo.Regular.Path))
+		ctx.Redirect(http.StatusFound, common.ApplyApiPathRule(picture.StorageInfo.Regular.Path))
 	default:
 		data, err := storage.GetFile(ctx, picture.StorageInfo.Regular)
 		if err != nil {

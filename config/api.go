@@ -18,12 +18,12 @@ type apiConfig struct {
 	TokenExpire        int      `toml:"token_expire" mapstructure:"token_expire" json:"token_expire" yaml:"token_expire"`
 	RefreshTokenExpire int      `toml:"refresh_token_expire" mapstructure:"refresh_token_expire" json:"refresh_token_expire" yaml:"refresh_token_expire"`
 
-	PathRules []PathRule `toml:"path_rules" mapstructure:"path_rules" json:"path_rules" yaml:"path_rules"`
+	PathRules []ApiPathRule `toml:"path_rules" mapstructure:"path_rules" json:"path_rules" yaml:"path_rules"`
 
 	Cache apiCacheConfig `toml:"cache" mapstructure:"cache" json:"cache" yaml:"cache"`
 }
 
-type PathRule struct {
+type ApiPathRule struct {
 	Path       string `toml:"path" mapstructure:"path" json:"path" yaml:"path"`
 	TrimPrefix string `toml:"trim_prefix" mapstructure:"trim_prefix" json:"trim_prefix" yaml:"trim_prefix"`
 	JoinPrefix string `toml:"join_prefix" mapstructure:"join_prefix" json:"join_prefix" yaml:"join_prefix"`

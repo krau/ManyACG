@@ -50,6 +50,7 @@ func (l *Local) Save(ctx context.Context, filePath string, storagePath string) (
 }
 
 func (l *Local) GetFile(ctx context.Context, detail *types.StorageDetail) ([]byte, error) {
+	common.Logger.Debugf("getting file %s", detail.Path)
 	return os.ReadFile(detail.Path)
 }
 
@@ -58,5 +59,6 @@ func (l *Local) GetFileStream(ctx context.Context, detail *types.StorageDetail) 
 }
 
 func (l *Local) Delete(ctx context.Context, detail *types.StorageDetail) error {
+	common.Logger.Debugf("deleting file %s", detail.Path)
 	return common.PurgeFile(detail.Path)
 }
