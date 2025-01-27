@@ -33,7 +33,12 @@ func ToggleArtworkR18(ctx context.Context, bot *telego.Bot, message telego.Messa
 		sourceURL = sources.FindSourceURL(message.Text)
 	}
 	if sourceURL == "" {
-		utils.ReplyMessage(bot, message, "请回复一条消息, 或者指定作品链接")
+		helpText := `
+[管理员] <b>使用 /r18 命令回复一条包含作品链接的消息, 或在参数中提供作品链接, 将切换该作品的 R18 值</b>
+
+命令语法: /r18 [作品链接]
+`
+		utils.ReplyMessageWithHTML(bot, message, helpText)
 		return
 	}
 
@@ -346,7 +351,14 @@ func AutoTaggingArtwork(ctx context.Context, bot *telego.Bot, message telego.Mes
 		findUrlInArgs = true
 	}
 	if sourceURL == "" {
-		utils.ReplyMessage(bot, message, "请回复一条消息, 或者指定作品链接")
+		helpText := `
+[管理员] <b>使用 /autotag 命令回复一条包含作品链接的消息, 或在参数中提供作品链接, 将基于AI自动为该作品添加标签</b>
+
+命令语法: /autotag [作品链接] [图片序号]
+
+若不提供参数, 默认选择所有图片
+`
+		utils.ReplyMessageWithHTML(bot, message, helpText)
 		return
 	}
 

@@ -22,7 +22,10 @@ import (
 
 func SearchPicture(ctx context.Context, bot *telego.Bot, message telego.Message) {
 	if message.ReplyToMessage == nil {
-		utils.ReplyMessage(bot, message, "请使用该命令回复一条图片消息")
+		helpText := `
+<b>使用 /search 命令回复一条图片消息, 将搜索图片来源</b>
+`
+		utils.ReplyMessageWithHTML(bot, message, helpText)
 		return
 	}
 	msg, err := utils.ReplyMessage(bot, message, "少女祈祷中...")

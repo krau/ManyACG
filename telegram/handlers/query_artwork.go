@@ -85,7 +85,16 @@ func HybridSearchArtworks(ctx context.Context, bot *telego.Bot, message telego.M
 	}
 	_, _, args := telegoutil.ParseCommand(message.Text)
 	if len(args) == 0 {
-		utils.ReplyMessage(bot, message, "使用方法: /hybrid <搜索内容> [语义比例]\n语义比例为0-1的浮点数, 应位于参数列表最后, 越大越趋向于基于语义搜索, 若不提供, 使用默认值0.8")
+		helpText := fmt.Sprintf(`
+<b>使用 /hybrid 命令并提供查询参数, 将使用混合搜索引擎搜索相关图片</b>
+
+命令语法: %s
+
+语义比例为0-1的浮点数, 应位于参数列表最后, 越大越趋向于基于语义搜索, 若不提供, 使用默认值0.8
+
+<i>Tips: 该命令将基于文本语义进行搜索, 而非关键词匹配</i>
+`, common.EscapeHTML("/hybrid <搜索内容> [语义比例]"))
+		utils.ReplyMessageWithHTML(bot, message, helpText)
 		return
 	}
 	var hybridSemanticRatio float64
@@ -124,7 +133,14 @@ func SearchSimilarArtworks(ctx context.Context, bot *telego.Bot, message telego.
 		return
 	}
 	if message.ReplyToMessage == nil {
-		utils.ReplyMessage(bot, message, "请回复一条包含图片或作品链接的消息")
+		helpText := `
+<b>使用 /similar 命令回复一条包含图片或作品链接的消息, 将搜索与该图片相关的作品</b>
+
+命令语法: /similar [偏移量] [限制数量]
+
+若回复的消息中未找到支持的链接, 将尝试识别图片内容并搜索相关作品
+`
+		utils.ReplyMessageWithHTML(bot, message, helpText)
 		return
 	}
 	var sourceURL string

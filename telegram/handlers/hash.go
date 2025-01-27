@@ -14,7 +14,10 @@ import (
 
 func CalculatePicture(ctx context.Context, bot *telego.Bot, message telego.Message) {
 	if message.ReplyToMessage == nil {
-		utils.ReplyMessage(bot, message, "请使用该命令回复一条图片消息")
+		helpText := `
+<b>使用 /hash 命令回复一条图片消息, 将计算图片信息</b>
+		`
+		utils.ReplyMessageWithHTML(bot, message, helpText)
 		return
 	}
 	var waitMessageID int

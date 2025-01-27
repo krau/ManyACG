@@ -56,7 +56,12 @@ func GetPictureFile(ctx context.Context, bot *telego.Bot, message telego.Message
 		}
 		picture := getPictureByHash()
 		if picture == nil {
-			utils.ReplyMessage(bot, message, "请回复一条频道的图片消息")
+			helpText := fmt.Sprintf(`
+<b>使用 /files 命令回复一条含有图片或支持的链接的消息, 或在参数中提供作品链接, 将发送作品全部原图文件</b>
+
+命令语法: %s
+`, common.EscapeHTML("/files [作品链接]"))
+			utils.ReplyMessageWithHTML(bot, message, helpText)
 			return
 		}
 		if !multiple {

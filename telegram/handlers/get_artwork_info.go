@@ -57,7 +57,12 @@ func GetArtworkInfoCommand(ctx context.Context, bot *telego.Bot, message telego.
 		sourceURL = utils.FindSourceURLForMessage(message.ReplyToMessage)
 	}
 	if sourceURL == "" {
-		utils.ReplyMessage(bot, message, "命令参数或回复的消息中没有找到支持的链接")
+		helpText := `
+<b>使用 /info 命令并在参数中提供作品链接, 或使用该命令回复一条包含支持的链接的消息, 将获取作品信息并发送全部图片</b>
+
+命令语法: /info [作品链接]
+`
+		utils.ReplyMessageWithHTML(bot, message, helpText)
 		return
 	}
 	if err := utils.SendFullArtworkInfo(ctx, bot, message, sourceURL); err != nil {

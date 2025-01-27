@@ -30,8 +30,13 @@ func DeleteArtwork(ctx context.Context, bot *telego.Bot, message telego.Message)
 	} else {
 		sourceURL = sources.FindSourceURL(message.Text)
 	}
+	helpText := fmt.Sprintf(`
+[管理员] <b>使用 /delete 命令回复一条包含作品链接的消息, 或在参数中提供作品链接, 将删除该作品</b>
+
+命令语法: %s
+`, common.EscapeHTML("/delete [作品链接]"))
 	if sourceURL == "" {
-		utils.ReplyMessage(bot, message, "请回复一条消息, 或者指定作品链接")
+		utils.ReplyMessageWithHTML(bot, message, helpText)
 		return
 	}
 	artwork, err := service.GetArtworkByURL(ctx, sourceURL)
@@ -56,7 +61,7 @@ func DeleteArtwork(ctx context.Context, bot *telego.Bot, message telego.Message)
 	}
 
 	if len(args) == 0 {
-		utils.ReplyMessage(bot, message, "请提供要删除的图片需要 (从1开始)")
+		utils.ReplyMessage(bot, message, "请提供要删除的图片序号 (从1开始)")
 		return
 	}
 

@@ -52,7 +52,10 @@ func InlineQuery(ctx context.Context, bot *telego.Bot, query telego.InlineQuery)
 	artworks, err := service.QueryArtworksByTexts(ctx, texts, types.R18TypeAll, 48, adapter.OnlyLoadPicture())
 	if err != nil || len(artworks) == 0 {
 		common.Logger.Errorf("获取图片失败: %s", err)
-		bot.AnswerInlineQuery(telegoutil.InlineQuery(query.ID, telegoutil.ResultArticle(uuid.NewString(), "未找到相关图片", telegoutil.TextMessage("/setu"))))
+		bot.AnswerInlineQuery(telegoutil.InlineQuery(query.ID, telegoutil.ResultArticle(uuid.NewString(), "未找到相关图片", telegoutil.TextMessage(fmt.Sprintf(`
+未找到相关图片 (搜索: %s)
+
+<b>在任意聊天框中输入 @%s [关键词参数] 来查找相关图片</b>`, common.EscapeHTML(queryText), common.EscapeHTML(BotUsername))).WithParseMode(telego.ModeHTML))))
 		return
 	}
 	results := make([]telego.InlineQueryResult, 0, len(artworks))

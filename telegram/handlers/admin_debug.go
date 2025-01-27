@@ -25,14 +25,20 @@ func DumpArtworkInfo(ctx context.Context, bot *telego.Bot, message telego.Messag
 		utils.ReplyMessage(bot, message, "你没有权限执行此操作")
 		return
 	}
+	helpText := fmt.Sprintf(`
+[管理员] <b>使用 /dump 命令回复一条包含作品链接的消息, 将获取作品信息并以JSON格式回复</b>
+	
+命令语法: %s
 
+若不提供参数, 默认获取所有信息
+			`, common.EscapeHTML("/dump [tags] [artist] [pictures]"))
 	if message.ReplyToMessage == nil {
-		utils.ReplyMessage(bot, message, "请回复一条包含作品链接的消息")
+		utils.ReplyMessageWithHTML(bot, message, helpText)
 		return
 	}
 	sourceURL := utils.FindSourceURLForMessage(message.ReplyToMessage)
 	if sourceURL == "" {
-		utils.ReplyMessage(bot, message, "回复的消息中没有支持的链接")
+		utils.ReplyMessageWithHTML(bot, message, "回复的消息中没有支持的链接, 命令帮助:\n"+helpText)
 		return
 	}
 	_, _, args := telegoutil.ParseCommand(message.Text)
