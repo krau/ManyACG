@@ -131,12 +131,43 @@ func GetArtworkList(ctx *gin.Context) {
 		return
 	}
 	if request.Keyword != "" {
+		if request.Hybrid {
+			getArtworkListHybrid(ctx, request.Keyword, 0.8, request.Page*request.PageSize, request.PageSize, adapterOption)
+			return
+		}
 		keywordSlice := common.ParseStringTo2DArray(request.Keyword, ",", ";")
 		if len(keywordSlice) == 0 {
 			common.GinErrorResponse(ctx, errors.New("invalid keyword"), http.StatusBadRequest, "Invalid keyword")
 			return
 		}
 		getArtworkListByKeyword(ctx, keywordSlice, r18Type, request.Page, request.PageSize, adapterOption)
+		return
+	}
+	if request.SimilarTarget != "" {
+		artworkID, err := primitive.ObjectIDFromHex(request.SimilarTarget)
+		if err != nil {
+			common.GinErrorResponse(ctx, err, http.StatusBadRequest, "Invalid similar target ID")
+			return
+		}
+		_, err = service.GetArtworkByID(ctx, artworkID, adapter.LoadNone())
+		if err != nil {
+			if errors.Is(err, mongo.ErrNoDocuments) {
+				common.GinErrorResponse(ctx, err, http.StatusNotFound, "Target Artwork not exist")
+				return
+			}
+			common.GinErrorResponse(ctx, err, http.StatusInternalServerError, "Failed to get target artwork")
+			return
+		}
+		artworks, err := service.SearchSimilarArtworks(ctx, artworkID.Hex(), request.Page*request.PageSize, request.PageSize, adapterOption)
+		if err != nil {
+			common.GinErrorResponse(ctx, err, http.StatusInternalServerError, "Failed to get similar artworks")
+			return
+		}
+		if len(artworks) == 0 {
+			common.GinErrorResponse(ctx, errs.ErrNotFoundArtworks, http.StatusNotFound, "Artworks not found")
+			return
+		}
+		ctx.JSON(http.StatusOK, ResponseFromArtworks(artworks, hasKey))
 		return
 	}
 
@@ -198,6 +229,23 @@ func getArtworkListByKeyword(ctx *gin.Context, keywordSlice [][]string, r18Type 
 			return
 		}
 		common.GinErrorResponse(ctx, err, http.StatusInternalServerError, "Failed to get artworks by keyword")
+		return
+	}
+	if len(artworks) == 0 {
+		common.GinErrorResponse(ctx, errs.ErrNotFoundArtworks, http.StatusNotFound, "Artworks not found")
+		return
+	}
+	ctx.JSON(http.StatusOK, ResponseFromArtworks(artworks, ctx.GetBool("auth")))
+}
+
+func getArtworkListHybrid(ctx *gin.Context, queryText string, hybridSemanticRatio float64, offset, limit int64, adapterOption ...*types.AdapterOption) {
+	artworks, err := service.HybridSearchArtworks(ctx, queryText, hybridSemanticRatio, offset, limit, adapterOption...)
+	if err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			common.GinErrorResponse(ctx, err, http.StatusNotFound, "Artworks not found")
+			return
+		}
+		common.GinErrorResponse(ctx, err, http.StatusInternalServerError, "Failed to hybrid search artworks")
 		return
 	}
 	if len(artworks) == 0 {
