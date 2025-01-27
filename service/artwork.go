@@ -324,18 +324,6 @@ func UpdateArtworkTagsByURL(ctx context.Context, sourceURL string, tags []string
 	}
 	defer session.EndSession(ctx)
 	tags = slice.Unique(tags)
-	// 将中文排在前
-	slices.SortStableFunc(tags, func(i, j string) int {
-		iChinese := validator.ContainChinese(i)
-		jChinese := validator.ContainChinese(j)
-		if iChinese && !jChinese {
-			return -1
-		}
-		if !iChinese && jChinese {
-			return 1
-		}
-		return 0
-	})
 	tagIDs := make([]primitive.ObjectID, len(tags))
 	_, err = session.WithTransaction(ctx, func(ctx mongo.SessionContext) (interface{}, error) {
 		for i, tag := range tags {
@@ -357,7 +345,34 @@ func UpdateArtworkTagsByURL(ctx context.Context, sourceURL string, tags []string
 			tagIDs[i] = res.InsertedID.(primitive.ObjectID)
 		}
 		tagIDs = slice.Unique(tagIDs)
-		_, err = dao.UpdateArtworkTagsByID(ctx, artworkModel.ID, tagIDs)
+		newTags := make([]string, len(tagIDs))
+		for i, tagID := range tagIDs {
+			tagModel, err := dao.GetTagByID(ctx, tagID)
+			if err != nil {
+				return nil, err
+			}
+			newTags[i] = tagModel.Name
+		}
+		slices.SortStableFunc(newTags, func(i, j string) int {
+			iChinese := validator.ContainChinese(i)
+			jChinese := validator.ContainChinese(j)
+			if iChinese && !jChinese {
+				return -1
+			}
+			if !iChinese && jChinese {
+				return 1
+			}
+			return 0
+		})
+		sortedTagIDs := make([]primitive.ObjectID, len(newTags))
+		for i, tag := range newTags {
+			tagModel, err := dao.GetTagByName(ctx, tag)
+			if err != nil {
+				return nil, err
+			}
+			sortedTagIDs[i] = tagModel.ID
+		}
+		_, err = dao.UpdateArtworkTagsByID(ctx, artworkModel.ID, sortedTagIDs)
 		if err != nil {
 			return nil, err
 		}
