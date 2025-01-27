@@ -1,6 +1,8 @@
 package service
 
 import (
+	"slices"
+
 	"github.com/krau/ManyACG/adapter"
 	"github.com/krau/ManyACG/common"
 	"github.com/krau/ManyACG/dao"
@@ -13,6 +15,7 @@ import (
 	"github.com/krau/ManyACG/types"
 
 	"github.com/duke-git/lancet/v2/slice"
+	"github.com/duke-git/lancet/v2/validator"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -321,6 +324,18 @@ func UpdateArtworkTagsByURL(ctx context.Context, sourceURL string, tags []string
 	}
 	defer session.EndSession(ctx)
 	tags = slice.Unique(tags)
+	// 将中文排在前
+	slices.SortStableFunc(tags, func(i, j string) int {
+		iChinese := validator.ContainChinese(i)
+		jChinese := validator.ContainChinese(j)
+		if iChinese && !jChinese {
+			return -1
+		}
+		if !iChinese && jChinese {
+			return 1
+		}
+		return 0
+	})
 	tagIDs := make([]primitive.ObjectID, len(tags))
 	_, err = session.WithTransaction(ctx, func(ctx mongo.SessionContext) (interface{}, error) {
 		for i, tag := range tags {
