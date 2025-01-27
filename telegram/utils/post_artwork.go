@@ -369,10 +369,13 @@ func recaptionArtwork(ctx context.Context, artwork *types.Artwork, bot *telego.B
 		return
 	}
 	newCaption := GetArtworkHTMLCaption(newArtwork)
-	bot.EditMessageCaption(&telego.EditMessageCaptionParams{
+	_, err = bot.EditMessageCaption(&telego.EditMessageCaptionParams{
 		ChatID:    ChannelChatID,
 		MessageID: newArtwork.Pictures[0].TelegramInfo.MessageID,
 		Caption:   newCaption,
 		ParseMode: telego.ModeHTML,
 	})
+	if err != nil {
+		common.Logger.Warnf("error when recaption artwork: %s", err)
+	}
 }

@@ -99,7 +99,16 @@ func GetArtworkHTMLCaption(artwork *types.Artwork) string {
 		tag = tagCharsReplacer.Replace(tag)
 		tags += "#" + strings.TrimSpace(common.EscapeHTML(tag)) + " "
 	}
-	caption += fmt.Sprintf("\n<blockquote expandable=true>%s</blockquote>", tags)
+	caption += fmt.Sprintf("\n<blockquote expandable=true>%s</blockquote>\n", tags)
+	if ChannelChatID.Username != "" {
+		caption += common.EscapeHTML(ChannelChatID.Username)
+	}
+	if artwork.ID != "" && config.Cfg.API.SiteURL != "" {
+		if ChannelChatID.Username != "" {
+			caption += " | "
+		}
+		caption += fmt.Sprintf("<a href=\"%s/artwork/%s\">在网站查看</a>", config.Cfg.API.SiteURL, artwork.ID)
+	}
 	return caption
 }
 
