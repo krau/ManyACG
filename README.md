@@ -4,9 +4,9 @@ Kawaii is All You Need! ᕕ(◠ڼ◠)ᕗ
 
 Demo:
 
-- [Telegram @KirakaBot](https://t.me/kirakabot)
-- [Telegram @MoreACG Channel](https://t.me/MoreACG)
-- [ManyACG Website](https://manyacg.top)
+- Telegram Bot [@KirakaBot](https://t.me/kirakabot)
+- Telegram Channel [@MoreACG](https://t.me/MoreACG)
+- Website [ManyACG](https://manyacg.top)
 
 ## 特性
 
@@ -26,14 +26,21 @@ Demo:
 - 带有逻辑控制的关键词搜图
 - 以 Telegram 所接受的最高质量发送图片
 - Web API
+- 基于 AI 的图片标签生成
+- 集成 [MeiliSearch](https://www.meilisearch.com/) , 支持混合搜索与相似作品检索.
 - 轻量, 原生跨平台, 部署简单 (大概)
   ...
 
 ## 部署
+### 安装依赖组件
+
+#### MongoDB
 
 项目需要启用了副本集的 MongoDB 作为数据库, [MongoDB Cloud](https://www.mongodb.com/) 提供的免费实例足够使用, 也可以选择自行搭建.
 
 > 你可以参考这个 repo 使用 docker compose 快速启动一个 MongoDB 副本集: [mongodb-rs-compose](https://github.com/krau/mongodb-rs-compose)
+
+#### FFmpeg
 
 项目使用 [FFmpeg](https://ffmpeg.org/) 进行一些图像处理, 请在自己的系统上安装, 以下是一些系统的安装示例:
 
@@ -50,9 +57,46 @@ Windows:
 1. 在 [gyan.dev](https://www.gyan.dev/ffmpeg/builds/) 下载 [ffmpeg-release-full.7z](https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-full.7z)
 2. 解压并将 `bin` 目录添加到环境变量 `PATH`
 
+### 从二进制文件部署 ManyACG
+
 完成数据库和 FFmpeg 的安装后, 需要为准备使用的 Bot 设置一个头像, 然后在 [release](https://github.com/krau/ManyACG/releases) 页面下载与自己系统和架构对应的文件, 解压.
 
-在与解压出的二进制文件的相同目录下创建 `config.toml` 文件, 参考以下内容修改各项配置:
+在与解压出的二进制文件的相同目录下创建 `config.toml` 文件, 修改各项配置.
+
+#### 最简配置
+
+如果你只需要将 ManyACG 作为一个 Telegram 频道的自动发图与管理 Bot 使用, 使用以下简单的配置即可:
+
+```toml
+[database]
+database = "manyacg"
+uri = "mongodb://admin:password@localhost:27017"
+
+[telegram]
+token="token"
+admins = [123456789]
+channel = true
+username = "@moreacg"
+
+# 配置 pixiv cookies 可以提高大部分作品的爬取成功率
+[source.pixiv]
+[[source.pixiv.cookies]]
+name = "PHPSESSID"
+value = ""
+[[source.pixiv.cookies]]
+name = "yuid_b"
+value = ""
+
+# 如果你不需要存储原图, 以下配置也可以删除
+[storage]
+original_type = "local"
+
+[storage.local]
+enable = true
+path = "./downloads"
+```
+
+#### 完整配置
 
 ```toml
 # 数据库
@@ -235,9 +279,37 @@ memory_ttl = 10
 
 更详细的配置可以参考 `config` 目录源码
 
+---
+
 赋予二进制文件执行权限并运行即可:
 
 ```bash
 chmod +x manyacg
 ./manyacg
+```
+
+### 安装为服务
+
+适用于 Linux 系统, 以 systemd 为例:
+
+`/etc/systemd/system/manyacg.service`
+
+```ini
+[Unit]
+Description=ManyACG
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/path/to/manyacg
+ExecStart=/path/to/manyacg/manyacg
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
+```
+
+```bash
+systemctl enable manyacg
+systemctl start manyacg
 ```

@@ -1,0 +1,16 @@
+[database]
+database = "manyacg"
+uri = "mongodb://admin:password@localhost:27017"
+
+[storage]
+original_type = "local"
+
+[storage.local]
+enable = true
+path = "./downloads"
+
+[telegram]
+token="token"
+admins = [123456789]
+channel = true
+username = "@moreacg"
