@@ -256,7 +256,7 @@ func afterCreate(ctx context.Context, artwork *types.Artwork, bot *telego.Bot, f
 	for _, picture := range artwork.Pictures {
 		service.AddProcessPictureTask(ctx, picture)
 	}
-	go checkDuplicate(ctx, artwork, bot, fromID)
+	checkDuplicate(ctx, artwork, bot, fromID)
 	if common.TaggerClient != nil && config.Cfg.Tagger.TagNew {
 		go service.AddPredictArtworkTagTask(ctx, objectID, TgService)
 	} else {
