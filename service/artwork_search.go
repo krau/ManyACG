@@ -20,8 +20,9 @@ func HybridSearchArtworks(ctx context.Context, queryText string, hybridSemanticR
 	}
 	index := common.MeilisearchClient.Index(config.Cfg.Search.MeiliSearch.Index)
 	resp, err := index.SearchWithContext(ctx, queryText, &meilisearch.SearchRequest{
-		Offset: offset,
-		Limit:  limit,
+		Offset:               offset,
+		Limit:                limit,
+		AttributesToRetrieve: []string{"id"},
 		Hybrid: &meilisearch.SearchRequestHybrid{
 			Embedder:      config.Cfg.Search.MeiliSearch.Embedder,
 			SemanticRatio: hybridSemanticRatio,
@@ -62,10 +63,11 @@ func SearchSimilarArtworks(ctx context.Context, artworkIdStr string, offset, lim
 	index := common.MeilisearchClient.Index(config.Cfg.Search.MeiliSearch.Index)
 	var resp meilisearch.SimilarDocumentResult
 	if err := index.SearchSimilarDocumentsWithContext(ctx, &meilisearch.SimilarDocumentQuery{
-		Id:       artworkIdStr,
-		Embedder: config.Cfg.Search.MeiliSearch.Embedder,
-		Offset:   offset,
-		Limit:    limit,
+		AttributesToRetrieve: []string{"id"},
+		Id:                   artworkIdStr,
+		Embedder:             config.Cfg.Search.MeiliSearch.Embedder,
+		Offset:               offset,
+		Limit:                limit,
 	}, &resp); err != nil {
 		return nil, err
 	}
