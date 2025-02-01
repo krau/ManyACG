@@ -2,6 +2,7 @@ package config
 
 type apiConfig struct {
 	Enable  bool   `toml:"enable" mapstructure:"enable" json:"enable" yaml:"enable"`
+	Metrics bool   `toml:"metrics" mapstructure:"metrics" json:"metrics" yaml:"metrics"`
 	Address string `toml:"address" mapstructure:"address" json:"address" yaml:"address"`
 	Key     string `toml:"key" mapstructure:"key" json:"key" yaml:"key"`
 	MustKey bool   `toml:"must_key" mapstructure:"must_key" json:"must_key" yaml:"must_key"`

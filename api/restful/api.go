@@ -24,9 +24,11 @@ func Run() {
 
 	r := gin.Default()
 
-	metrics := ginmetrics.GetMonitor()
-	metrics.SetMetricPath("/metrics")
-	metrics.Use(r)
+	if config.Cfg.API.Metrics {
+		metrics := ginmetrics.GetMonitor()
+		metrics.SetMetricPath("/metrics")
+		metrics.Use(r)
+	}
 
 	corsConfig := cors.DefaultConfig()
 	corsConfig.AllowCredentials = true
