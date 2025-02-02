@@ -1,12 +1,30 @@
+<div align="center">
+  
 # ManyACG
 
-Kawaii is All You Need! ᕕ(◠ڼ◠)ᕗ
+![ManyACG_banner](https://github.com/user-attachments/assets/1d2d7835-18c1-4a50-9cb9-c14ae69659be)
 
-Demo:
+Collect, Download, Organize and Share your Favorite Anime Pictures.
 
-- Telegram Bot [@KirakaBot](https://t.me/kirakabot)
-- Telegram Channel [@MoreACG](https://t.me/MoreACG)
-- Website [ManyACG](https://manyacg.top)
+</div
+  
+---
+
+这里是 ManyACG 的后端代码.
+
+ManyACG 是为收集与整理二次元插画作品而生的项目, 目前主要通过 Telegram Bot 完成数据交互. 
+
+在充当 Telegram 插画频道的爬虫与管理 Bot 的同时, ManyACG 还能使用已存入数据库的作品构建一个自己的二次元图片分享网站.
+
+> 前端代码 -> [ManyACG/web](https://github.com/ManyACG/web)
+
+![manyacg-web](https://github.com/user-attachments/assets/670a6092-1406-4f51-ab2b-49a6d9be286f)
+
+## Demo
+
+- Bot - [@KirakaBot](https://t.me/kirakabot)
+- 频道 - [@MoreACG](https://t.me/MoreACG)
+- 网站 - [ManyACG](https://manyacg.top)
 
 ## 特性
 
@@ -26,10 +44,9 @@ Demo:
 - 带有逻辑控制的关键词搜图
 - 以 Telegram 所接受的最高质量发送图片
 - Web API
-- 基于 AI 的图片标签生成
+- 基于 AI 的图片标签生成 -> [konatagger](https://github.com/krau/konatagger)
 - 集成 [MeiliSearch](https://www.meilisearch.com/) , 支持混合搜索与相似作品检索.
-- 轻量, 原生跨平台, 部署简单 (大概)
-  ...
+- 轻量, 原生跨平台, 部署简单
 
 ## 部署
 ### 安装依赖组件
