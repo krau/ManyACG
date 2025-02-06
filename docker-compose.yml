@@ -2,13 +2,11 @@ services:
     manyacg:
         container_name: manyacg
         image: ghcr.io/krau/manyacg:latest
-        ports:
-            - "39080:39080"
-        environment:
-            - TZ=Asia/Shanghai
         restart: unless-stopped
         volumes:
             - ./cache:/opt/manyacg/cache
             - ./config:/etc/manyacg
             - ./logs:/opt/manyacg/logs
             - ./downloads:/opt/manyacg/downloads
+        env_file:
+            - .env

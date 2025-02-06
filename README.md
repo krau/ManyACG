@@ -12,7 +12,7 @@ Collect, Download, Organize and Share your Favorite Anime Pictures.
 
 这里是 ManyACG 的后端代码.
 
-ManyACG 是为收集与整理二次元插画作品而生的项目, 目前主要通过 Telegram Bot 完成数据交互. 
+ManyACG 是为收集与整理二次元插画作品而生的项目, 目前主要通过 Telegram Bot 完成数据交互.
 
 在充当 Telegram 插画频道的爬虫与管理 Bot 的同时, ManyACG 还能使用已存入数据库的作品构建一个自己的二次元图片分享网站.
 
@@ -49,13 +49,14 @@ ManyACG 是为收集与整理二次元插画作品而生的项目, 目前主要�
 - 轻量, 原生跨平台, 部署简单
 
 ## 部署
+
 ### 安装依赖组件
 
 #### MongoDB
 
 项目需要启用了副本集的 MongoDB 作为数据库, [MongoDB Cloud](https://www.mongodb.com/) 提供的免费实例足够使用, 也可以选择自行搭建.
 
-> 你可以参考这个 repo 使用 docker compose 快速启动一个 MongoDB 副本集: [mongodb-rs-compose](https://github.com/krau/mongodb-rs-compose)
+你可以参考这个 repo 使用 docker compose 快速启动一个 MongoDB 副本集: [mongodb-rs-compose](https://github.com/krau/mongodb-rs-compose)
 
 #### FFmpeg
 
@@ -115,184 +116,7 @@ path = "./downloads"
 
 #### 完整配置
 
-```toml
-# 数据库
-[database]
-# 数据库名
-database = "manyacg"
-# 连接 uri
-uri = "mongodb+srv://user:pass@mongodb.com/"
-# 当未配置 uri 时使用下列四项配置连接数据库
-host = "mongodb.com"
-port = 27017
-user = "user"
-password = "pass"
-
-# 日志
-[log]
-# 等级
-level = "DEBUG"
-# 输出文件
-file_path = "logs/trace.log"
-# 日志备份份数
-backup_num = 5
-
-# 图源配置
-[source]
-# 请求代理, 支持 http(s), socks5
-proxy = "http://user:pass@127.0.0.1:7890"
-
-# pixiv
-[source.pixiv]
-enable = true
-# 用于解决防盗链的代理
-proxy = "pixiv.re"
-# 自动从此连接列表中爬图, 兼容 rsshub pixiv 相关路由
-urls = [
-    'https://rsshub.app/pixiv/user/bookmarks/114514',
-    'https://rsshub.app/pixiv/user/illustfollows',
-]
-# 爬取间隔, 单位: 分钟
-intervel = 120
-# 单个作品请求间隔, 单位: 秒
-sleep = 1
-# pixiv cookies 配置, 可选
-# 若不配置无法请求成功部分作品
-[[source.pixiv.cookies]]
-name = "PHPSESSID"
-value = "value"
-[[source.pixiv.cookies]]
-name = "yuid_b"
-value = "value"
-
-# twitter
-[source.twitter]
-enable = true
-# FxTwitter 主域名
-fx_twitter_domain = "fxtwitter.com"
-# 自动从此连接列表中爬图, 兼容 rsshub twitter 相关路由
-urls = []
-
-intervel = 120
-sleep = 1
-
-# bilibili, 无需额外配置
-[source.bilibili]
-enable = true
-
-# danbooru
-[source.danbooru]
-enable = true
-
-# kemono
-[source.kemono]
-enable = true
-
-# yandere
-[source.yandere]
-enable = true
-
-# nhentai
-[source.nhentai]
-enable = true
-
-# 抓取配置, 建议都保持默认
-[fetcher]
-# 最大并发数, 影响自动爬图
-max_concurrent = 1
-# 单次爬取限制量
-limit = 50
-
-# 存储端配置, 可选
-[storage]
-# 原图存储类型
-original_type = "webdav"
-# 普通尺寸图片存储类型
-regular_type = "alist"
-# 缩略图存储类型
-thumb_type = "local"
-# 缓存目录
-cache_dir = "./cache"
-# 缓存文件过期时间, 单位: 秒
-# 不建议设置过短
-cache_ttl = 3600
-
-# webdav
-[storage.webdav]
-enable = false
-url = "https://example.com/dav"
-username = "user"
-password = "password"
-# 存储 base 路径
-path = ""
-
-# 本地存储
-[storage.local]
-enable = false
-# 存储 base 路径
-path = "./downloads"
-
-# Alist
-[storage.alist]
-enable = false
-username = "krau"
-password = "password"
-url = "https://alist.example.com"
-# alist 的 token 过期时间, 用于自动刷新 token
-token_expire = 86400
-# 存储 base 路径
-path = "/manyacg"
-
-# Telegram 相关配置
-[telegram]
-# Bot API
-api_url = "https://api.telegram.org"
-token="bot_token"
-# bot 管理员 user id
-admins = [777000]
-# 启用图片发布到频道
-channel = true
-# 频道 username
-username = "@moreacg"
-# 频道 chat_id , 支持私有频道, 与 username 配置至少一项即可
-chat_id = -1000721
-# 可选, 评论组 id
-group_id = -100114514
-# 图片发布间隔, 单位: 秒
-# 过小的间隔会导致 Flood Limit 而无法成功发送图片
-sleep = 5
-
-# Web API 配置
-[api]
-# 启用 Web API
-enable = false
-# 监听地址
-address = "127.0.0.1:39088"
-# CORS 允许来源
-allowed_origins = ["https://manyacg.top"]
-# API Key
-key = "5LiA5Liq5aSN5p2C55qE5a+G56CB"
-# JWT 相关
-secret = "5LiA5Liq5b6I6Zq+55qE5py65a+G"
-realm = "manyacg"
-token_expire = 43200 # 单位: 秒
-refresh_token_expire = 43200
-# API 缓存
-[api.cache]
-# 启用缓存
-enable = false
-# 使用 redis 而不是直接使用内存
-redis = false
-# 全局默认过期时间, 单位: 秒
-memory_ttl = 10
-# 为路由配置独立过期时间, 单位: 秒
-[api.cache.ttl]
-"/atom" = 600
-"/artwork/random" = 5
-"/artwork/:id" = 600
-"/artwork/list" = 10
-"/artwork/count" = 5
-```
+如果你需要使用 ManyACG 的全部功能, 请参考 [config.all.toml](https://github.com/krau/ManyACG/blob/main/config.all.toml) 文件.
 
 更详细的配置可以参考 `config` 目录源码
 
@@ -305,7 +129,7 @@ chmod +x manyacg
 ./manyacg
 ```
 
-### 安装为服务
+#### 安装为服务
 
 适用于 Linux 系统, 以 systemd 为例:
 
@@ -329,4 +153,12 @@ WantedBy=multi-user.target
 ```bash
 systemctl enable manyacg
 systemctl start manyacg
+```
+
+### 使用 Docker 部署 ManyACG
+
+下载 [docker-compose.yml](https://github.com/ManyACG/ManyACG/blob/main/docker-compose.yml) 和 [.env](https://github.com/ManyACG/ManyACG/blob/main/.env) 文件, 修改 `.env` 文件中的配置.
+
+```bash
+docker compose up -d
 ```

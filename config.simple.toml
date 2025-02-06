@@ -2,15 +2,25 @@
 database = "manyacg"
 uri = "mongodb://admin:password@localhost:27017"
 
+[telegram]
+token = "token"
+admins = [123456789]
+channel = true
+username = "@moreacg"
+
+# 配置 pixiv cookies 可以提高大部分作品的爬取成功率
+[source.pixiv]
+[[source.pixiv.cookies]]
+name = "PHPSESSID"
+value = ""
+[[source.pixiv.cookies]]
+name = "yuid_b"
+value = ""
+
+# 如果你不需要存储原图, 以下配置也可以删除
 [storage]
 original_type = "local"
 
 [storage.local]
 enable = true
 path = "./downloads"
-
-[telegram]
-token="token"
-admins = [123456789]
-channel = true
-username = "@moreacg"
