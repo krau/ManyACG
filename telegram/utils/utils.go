@@ -76,7 +76,7 @@ var tagCharsReplacer = strings.NewReplacer(
 // 获取作品的 HTML 格式描述, 已转义
 func GetArtworkHTMLCaption(artwork *types.Artwork) string {
 	caption := fmt.Sprintf("<a href=\"%s\"><b>%s</b></a>", artwork.SourceURL, common.EscapeHTML(artwork.Title))
-	caption += "\n<b>Author:</b> " + common.EscapeHTML(artwork.Artist.Name)
+	caption += fmt.Sprintf("\nAuthor: <b>%s</b>", common.EscapeHTML(artwork.Artist.Name))
 	if artwork.Description != "" {
 		desc := artwork.Description
 		if len(artwork.Description) > 500 {
@@ -100,11 +100,12 @@ func GetArtworkHTMLCaption(artwork *types.Artwork) string {
 		tags += "#" + strings.TrimSpace(common.EscapeHTML(tag)) + " "
 	}
 	caption += fmt.Sprintf("\n<blockquote expandable=true>%s</blockquote>\n", tags)
-	if ChannelChatID.Username != "" {
+	posted := ChannelChatID.Username != "" && artwork.ID != ""
+	if posted {
 		caption += common.EscapeHTML(ChannelChatID.Username)
 	}
 	if artwork.ID != "" && config.Cfg.API.SiteURL != "" {
-		if ChannelChatID.Username != "" {
+		if posted {
 			caption += " | "
 		}
 		caption += fmt.Sprintf("<a href=\"%s/artwork/%s\">在网站查看</a>", config.Cfg.API.SiteURL, artwork.ID)
