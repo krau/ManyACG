@@ -5,7 +5,6 @@ services:
         restart: unless-stopped
         volumes:
             - ./cache:/opt/manyacg/cache
-            - ./config:/etc/manyacg
             - ./logs:/opt/manyacg/logs
             - ./downloads:/opt/manyacg/downloads
         env_file:

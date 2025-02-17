@@ -32,6 +32,18 @@ type fetcherConfig struct {
 var Cfg *Config
 
 func InitConfig() {
+	if Cfg != nil {
+		return
+	}
+	if _, err := os.Stat("config.toml"); os.IsNotExist(err) {
+		if _, err := os.Stat("/etc/manyacg/config.toml"); os.IsNotExist(err) {
+			if _, err := os.Create("config.toml"); err != nil {
+				fmt.Println("create config file failed")
+				os.Exit(1)
+			}
+		}
+	}
+
 	viper.SetConfigName("config")
 	viper.AddConfigPath(".")
 	viper.AddConfigPath("/etc/manyacg/")

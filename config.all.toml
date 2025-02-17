@@ -174,3 +174,23 @@ memory_ttl = 10
 "/artwork/:id" = 600
 "/artwork/list" = 10
 "/artwork/count" = 5
+
+# 混合搜索引擎
+[search]
+enable = false
+engine = "meilisearch" # 当前只支持 meilisearch
+[search.meilisearch]
+host = "http://localhost:7700"
+key = "api-key"
+index = "manyacg"
+# 请自行在 meilisearch 处配置 embedder 后, 改为你设置的值
+embedder = "default"
+
+# 图片自动标签
+# https://github.com/krau/konatagger
+[tagger]
+enable = false
+host = "http://localhost:39917"
+token = "token"
+timeout = 3000 # 超时时间
+tagnew = true # 自动标注新的作品

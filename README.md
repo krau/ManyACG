@@ -157,7 +157,7 @@ systemctl start manyacg
 
 ### 使用 Docker 部署 ManyACG
 
-下载 [docker-compose.yml](https://github.com/ManyACG/ManyACG/blob/main/docker-compose.yml) 和 [.env](https://github.com/ManyACG/ManyACG/blob/main/.env) 文件, 修改 `.env` 文件中的配置.
+下载 [docker-compose.yml](https://github.com/krau/ManyACG/blob/main/docker-compose.yml) 和 [.env](https://github.com/krau/ManyACG/blob/main/.env) 文件, 修改 `.env` 文件中的配置.
 
 ```bash
 docker compose up -d
