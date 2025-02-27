@@ -41,6 +41,7 @@ func applyRule(detail *types.StorageDetail) (*types.StorageDetail, error) {
 		}
 		newValue.Type = types.StorageType(rule.RewriteStorage)
 		newValue.Path = path.Join(rule.JoinPrefix, strings.TrimPrefix(currentPath, rule.TrimPrefix))
+		break
 	}
 	if newValue.Type == "" {
 		return detail, nil
