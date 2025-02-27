@@ -7,6 +7,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/gabriel-vasile/mimetype"
 	"github.com/krau/ManyACG/common"
 	"github.com/krau/ManyACG/config"
 	"github.com/krau/ManyACG/errs"
@@ -57,7 +58,9 @@ func SaveAll(ctx context.Context, artwork *types.Artwork, picture *types.Picture
 	if err != nil {
 		return nil, err
 	}
-	filePath := filepath.Join(config.Cfg.Storage.CacheDir, common.MD5Hash(picture.Original))
+	mimeType := mimetype.Detect(originalBytes)
+
+	filePath := filepath.Join(config.Cfg.Storage.CacheDir, common.MD5Hash(picture.Original)) + mimeType.Extension()
 	if err := common.MkFile(filePath, originalBytes); err != nil {
 		return nil, err
 	}

@@ -27,11 +27,15 @@ func initHttpClient() {
 
 var cacheLocks sync.Map
 
+func getCachePath(url string) string {
+	return filepath.Join(config.Cfg.Storage.CacheDir, "req", MD5Hash(url))
+}
+
 func DownloadWithCache(ctx context.Context, url string, client *req.Client) ([]byte, error) {
 	if client == nil {
 		client = Client
 	}
-	cachePath := filepath.Join(config.Cfg.Storage.CacheDir, "req", MD5Hash(url))
+	cachePath := getCachePath(url)
 
 	data, err := os.ReadFile(cachePath)
 	if err == nil {
@@ -67,7 +71,7 @@ func GetBodyReader(ctx context.Context, url string, client *req.Client) (io.Read
 	if client == nil {
 		client = Client
 	}
-	cachePath := filepath.Join(config.Cfg.Storage.CacheDir, "req", MD5Hash(url))
+	cachePath := getCachePath(url)
 	if file, err := os.Open(cachePath); err == nil {
 		return file, nil
 	}
@@ -94,7 +98,7 @@ func GetBodyReader(ctx context.Context, url string, client *req.Client) (io.Read
 }
 
 func GetReqCachedFile(url string) ([]byte, error) {
-	cachePath := filepath.Join(config.Cfg.Storage.CacheDir, "req", MD5Hash(url))
+	cachePath := getCachePath(url)
 	data, err := os.ReadFile(cachePath)
 	if err != nil {
 		return nil, err
