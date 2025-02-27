@@ -43,11 +43,13 @@ func (t *TelegramStorage) Save(ctx context.Context, filePath string, _ string) (
 	common.Logger.Debugf("saving file %s", filePath)
 	fileBytes, err := os.ReadFile(filePath)
 	if err != nil {
-		return nil, err
+		common.Logger.Errorf("failed to read file: %s", err)
+		return nil, ErrReadFile
 	}
 	msg, err := Bot.SendDocument(telegoutil.Document(ChatID, telegoutil.File(telegoutil.NameReader(bytes.NewReader(fileBytes), filepath.Base(filePath)))))
 	if err != nil {
-		return nil, err
+		common.Logger.Errorf("failed to send document: %s", err)
+		return nil, ErrFailedSendDocument
 	}
 	fileMessage := &fileMessage{
 		ChatID:     ChatID.ID,
@@ -56,7 +58,8 @@ func (t *TelegramStorage) Save(ctx context.Context, filePath string, _ string) (
 	}
 	data, err := json.Marshal(fileMessage)
 	if err != nil {
-		return nil, err
+		common.Logger.Errorf("failed to marshal file message: %s", err)
+		return nil, ErrFailedMarshalFileMessage
 	}
 	cachePath := filepath.Join(config.Cfg.Storage.CacheDir, common.MD5Hash(fileMessage.FileID))
 	go common.MkCache(cachePath, fileBytes, time.Duration(config.Cfg.Storage.CacheTTL)*time.Second)

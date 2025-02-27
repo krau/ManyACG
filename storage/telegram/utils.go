@@ -1,7 +1,14 @@
 package telegram
 
 import (
+	"errors"
 	"fmt"
+)
+
+var (
+	ErrReadFile                 = errors.New("failed to read file")
+	ErrFailedSendDocument       = errors.New("failed to send document")
+	ErrFailedMarshalFileMessage = errors.New("failed to marshal file message")
 )
 
 type fileMessage struct {

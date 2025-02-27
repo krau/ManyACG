@@ -47,7 +47,7 @@ func (w *Webdav) Save(ctx context.Context, filePath string, storagePath string) 
 	fileBytes, err := os.ReadFile(filePath)
 	if err != nil {
 		common.Logger.Errorf("failed to read file: %s", err)
-		return nil, err
+		return nil, ErrReadFile
 	}
 
 	if err := Client.Write(storagePath, fileBytes, os.ModePerm); err != nil {
