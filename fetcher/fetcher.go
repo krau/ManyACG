@@ -47,7 +47,7 @@ func StartScheduler(ctx context.Context) {
 				if es.Is(err, errs.ErrArtworkAlreadyExist) || es.Is(err, errs.ErrArtworkDeleted) {
 					continue
 				}
-				common.Logger.Errorf(err.Error())
+				common.Logger.Error(err.Error())
 			}
 			time.Sleep(time.Duration(int(config.Cfg.Telegram.Sleep)*len(artwork.Pictures)) * time.Second)
 		} else {
