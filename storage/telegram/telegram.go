@@ -1,10 +1,12 @@
 package telegram
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/krau/ManyACG/common"
 	"github.com/krau/ManyACG/config"
@@ -39,11 +41,11 @@ func (t *TelegramStorage) Init() {
 
 func (t *TelegramStorage) Save(ctx context.Context, filePath string, _ string) (*types.StorageDetail, error) {
 	common.Logger.Debugf("saving file %s", filePath)
-	file, err := os.Open(filePath)
+	fileBytes, err := os.ReadFile(filePath)
 	if err != nil {
 		return nil, err
 	}
-	msg, err := Bot.SendDocument(telegoutil.Document(ChatID, telegoutil.File(telegoutil.NameReader(file, filepath.Base(filePath)))))
+	msg, err := Bot.SendDocument(telegoutil.Document(ChatID, telegoutil.File(telegoutil.NameReader(bytes.NewReader(fileBytes), filepath.Base(filePath)))))
 	if err != nil {
 		return nil, err
 	}
@@ -56,6 +58,8 @@ func (t *TelegramStorage) Save(ctx context.Context, filePath string, _ string) (
 	if err != nil {
 		return nil, err
 	}
+	cachePath := filepath.Join(config.Cfg.Storage.CacheDir, common.MD5Hash(fileMessage.FileID))
+	go common.MkCache(cachePath, fileBytes, time.Duration(config.Cfg.Storage.CacheTTL)*time.Second)
 	return &types.StorageDetail{
 		Type: types.StorageTypeTelegram,
 		Path: string(data),
@@ -68,13 +72,22 @@ func (t *TelegramStorage) GetFile(ctx context.Context, detail *types.StorageDeta
 		return nil, err
 	}
 	common.Logger.Debugf("getting file %s", file.String())
+	cachePath := filepath.Join(config.Cfg.Storage.CacheDir, common.MD5Hash(file.FileID))
+	if data, err := os.ReadFile(cachePath); err == nil {
+		return data, nil
+	}
 	tgFile, err := Bot.GetFile(&telego.GetFileParams{
 		FileID: file.FileID,
 	})
 	if err != nil {
 		return nil, err
 	}
-	return telegoutil.DownloadFile(Bot.FileDownloadURL(tgFile.FilePath))
+	data, err := telegoutil.DownloadFile(Bot.FileDownloadURL(tgFile.FilePath))
+	if err != nil {
+		return nil, err
+	}
+	go common.MkCache(cachePath, data, time.Duration(config.Cfg.Storage.CacheTTL)*time.Second)
+	return data, nil
 }
 
 func (t *TelegramStorage) Delete(ctx context.Context, detail *types.StorageDetail) error {
