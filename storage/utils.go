@@ -12,6 +12,7 @@ import (
 var (
 	ErrNilStorageDetail = errors.New("storage detail is nil")
 	ErrStorageNotFound  = errors.New("storage not found")
+	ErrNoStorages       = errors.New("no storage found")
 )
 
 func applyRule(detail *types.StorageDetail) (*types.StorageDetail, error) {
@@ -26,6 +27,7 @@ func applyRule(detail *types.StorageDetail) (*types.StorageDetail, error) {
 		return detail, nil
 	}
 
+	newValue := &types.StorageDetail{}
 	for _, rule := range config.Cfg.Storage.Rules {
 		if !(currentType == rule.StorageType && strings.HasPrefix(currentPath, rule.PathPrefix)) {
 			continue
@@ -37,8 +39,12 @@ func applyRule(detail *types.StorageDetail) (*types.StorageDetail, error) {
 		if !ok {
 			return nil, ErrStorageNotFound
 		}
-		detail.Type = types.StorageType(rule.RewriteStorage)
-		detail.Path = path.Join(rule.JoinPrefix, strings.TrimPrefix(currentPath, rule.TrimPrefix))
+		newValue.Type = types.StorageType(rule.RewriteStorage)
+		newValue.Path = path.Join(rule.JoinPrefix, strings.TrimPrefix(currentPath, rule.TrimPrefix))
 	}
-	return detail, nil
+	if newValue.Type == "" {
+		return detail, nil
+	}
+
+	return newValue, nil
 }

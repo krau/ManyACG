@@ -45,7 +45,7 @@ func SaveAll(ctx context.Context, artwork *types.Artwork, picture *types.Picture
 			Original: nil,
 			Regular:  nil,
 			Thumb:    nil,
-		}, nil
+		}, ErrNoStorages
 	}
 	common.Logger.Infof("saving picture %d of artwork %s", picture.Index, artwork.Title)
 	originalBytes, err := common.DownloadWithCache(ctx, picture.Original, nil)
