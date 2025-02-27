@@ -1,6 +1,8 @@
 package types
 
 import (
+	"path"
+	"strings"
 	"time"
 )
 
@@ -41,6 +43,22 @@ type Picture struct {
 
 	TelegramInfo *TelegramInfo `json:"telegram_info" bson:"telegram_info"`
 	StorageInfo  *StorageInfo  `json:"storage_info" bson:"storage_info"`
+}
+
+func (picture *Picture) GetFileName() string {
+	if picture == nil || picture.Original == "" {
+		return ""
+	}
+	if picture.StorageInfo == nil || picture.StorageInfo.Original == nil {
+		return path.Base(strings.Split(picture.Original, "?")[0])
+	}
+	if picture.StorageInfo.Original.Path != "" {
+		orgPath := picture.StorageInfo.Original.Path
+		if path.Ext(orgPath) != "" {
+			return path.Base(orgPath)
+		}
+	}
+	return path.Base(strings.Split(picture.Original, "?")[0])
 }
 
 type TelegramInfo struct {

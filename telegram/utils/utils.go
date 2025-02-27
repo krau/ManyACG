@@ -4,8 +4,6 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"path"
-	"path/filepath"
 	"strings"
 
 	"github.com/krau/ManyACG/common"
@@ -232,13 +230,7 @@ func SendPictureFileByID(ctx context.Context, bot *telego.Bot, message telego.Me
 				return nil, err
 			}
 		}
-		filename := func() string {
-			if picture.StorageInfo.Original != nil && picture.StorageInfo.Original.Path != "" {
-				return filepath.Base(picture.StorageInfo.Original.Path)
-			}
-			return path.Base(strings.Split(picture.Original, "?")[0])
-		}()
-		file = telegoutil.File(telegoutil.NameReader(bytes.NewReader(data), filename))
+		file = telegoutil.File(telegoutil.NameReader(bytes.NewReader(data), picture.GetFileName()))
 	}
 	document := telegoutil.Document(message.Chat.ChatID(), file).
 		WithReplyParameters(&telego.ReplyParameters{

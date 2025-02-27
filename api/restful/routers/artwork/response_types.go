@@ -2,8 +2,6 @@ package artwork
 
 import (
 	"net/http"
-	"path"
-	"path/filepath"
 
 	"github.com/krau/ManyACG/common"
 	"github.com/krau/ManyACG/sources"
@@ -79,7 +77,7 @@ func ResponseDataFromArtwork(artwork *types.Artwork) *ArtworkResponseData {
 			Height:    picture.Height,
 			Index:     picture.Index,
 			Hash:      picture.Hash,
-			FileName:  filepath.Base(picture.StorageInfo.Original.Path),
+			FileName:  picture.GetFileName(),
 			MessageID: picture.TelegramInfo.MessageID,
 			Thumbnail: thumbnail,
 			Regular:   regular,
@@ -165,7 +163,7 @@ func ResponseDataFromFetchedArtwork(artwork *types.Artwork) FetchedArtworkRespon
 			FileName: func() string {
 				fileName, err := sources.GetFileName(artwork, picture)
 				if err != nil {
-					return path.Base(picture.Original)
+					return picture.GetFileName()
 				}
 				return fileName
 			}(),

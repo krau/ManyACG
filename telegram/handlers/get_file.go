@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"path"
-	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
@@ -152,13 +151,7 @@ func getArtworkFiles(ctx context.Context, bot *telego.Bot, message telego.Messag
 						return nil, err
 					}
 				}
-				filename := func() string {
-					if picture.StorageInfo.Original != nil && picture.StorageInfo.Original.Path != "" {
-						return filepath.Base(picture.StorageInfo.Original.Path)
-					}
-					return path.Base(strings.Split(picture.Original, "?")[0])
-				}()
-				file = telegoutil.File(telegoutil.NameReader(bytes.NewReader(data), filename))
+				file = telegoutil.File(telegoutil.NameReader(bytes.NewReader(data), picture.GetFileName()))
 			} else {
 				data, err := common.DownloadWithCache(ctx, picture.Original, nil)
 				if err != nil {
