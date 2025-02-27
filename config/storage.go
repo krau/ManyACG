@@ -1,17 +1,18 @@
 package config
 
 type storageConfigs struct {
-	OriginalType  string              `toml:"original_type" mapstructure:"original_type" json:"original_type" yaml:"original_type"`
-	RegularType   string              `toml:"regular_type" mapstructure:"regular_type" json:"regular_type" yaml:"regular_type"`
-	RegularFormat string              `toml:"regular_format" mapstructure:"regular_format" json:"regular_format" yaml:"regular_format"`
-	ThumbType     string              `toml:"thumb_type" mapstructure:"thumb_type" json:"thumb_type" yaml:"thumb_type"`
-	ThumbFormat   string              `toml:"thumb_format" mapstructure:"thumb_format" json:"thumb_format" yaml:"thumb_format"`
-	CacheDir      string              `toml:"cache_dir" mapstructure:"cache_dir" json:"cache_dir" yaml:"cache_dir"`
-	CacheTTL      uint                `toml:"cache_ttl" mapstructure:"cache_ttl" json:"cache_ttl" yaml:"cache_ttl"`
-	Rules         []storageRuleConfig `toml:"rules" mapstructure:"rules" json:"rules" yaml:"rules"`
-	Webdav        StorageWebdavConfig `toml:"webdav" mapstructure:"webdav" json:"webdav" yaml:"webdav"`
-	Local         StorageLocalConfig  `toml:"local" mapstructure:"local" json:"local" yaml:"local"`
-	Alist         StorageAlistConfig  `toml:"alist" mapstructure:"alist" json:"alist" yaml:"alist"`
+	OriginalType  string                `toml:"original_type" mapstructure:"original_type" json:"original_type" yaml:"original_type"`
+	RegularType   string                `toml:"regular_type" mapstructure:"regular_type" json:"regular_type" yaml:"regular_type"`
+	RegularFormat string                `toml:"regular_format" mapstructure:"regular_format" json:"regular_format" yaml:"regular_format"`
+	ThumbType     string                `toml:"thumb_type" mapstructure:"thumb_type" json:"thumb_type" yaml:"thumb_type"`
+	ThumbFormat   string                `toml:"thumb_format" mapstructure:"thumb_format" json:"thumb_format" yaml:"thumb_format"`
+	CacheDir      string                `toml:"cache_dir" mapstructure:"cache_dir" json:"cache_dir" yaml:"cache_dir"`
+	CacheTTL      uint                  `toml:"cache_ttl" mapstructure:"cache_ttl" json:"cache_ttl" yaml:"cache_ttl"`
+	Rules         []storageRuleConfig   `toml:"rules" mapstructure:"rules" json:"rules" yaml:"rules"`
+	Webdav        StorageWebdavConfig   `toml:"webdav" mapstructure:"webdav" json:"webdav" yaml:"webdav"`
+	Local         StorageLocalConfig    `toml:"local" mapstructure:"local" json:"local" yaml:"local"`
+	Alist         StorageAlistConfig    `toml:"alist" mapstructure:"alist" json:"alist" yaml:"alist"`
+	Telegram      StorageTelegramConfig `toml:"telegram" mapstructure:"telegram" json:"telegram" yaml:"telegram"`
 }
 
 type storageRuleConfig struct {
@@ -55,4 +56,11 @@ type StorageAlistConfig struct {
 	Path         string `toml:"path" mapstructure:"path" json:"path" yaml:"path"`
 	PathPassword string `toml:"path_password" mapstructure:"path_password" json:"path_password" yaml:"path_password"`
 	TokenExpire  int    `toml:"token_expire" mapstructure:"token_expire" json:"token_expire" yaml:"token_expire"`
+}
+
+type StorageTelegramConfig struct {
+	Enable bool   `toml:"enable" mapstructure:"enable" json:"enable" yaml:"enable"`
+	Token  string `toml:"token" mapstructure:"token" json:"token" yaml:"token"`
+	ChatID int64  `toml:"chat_id" mapstructure:"chat_id" json:"chat_id" yaml:"chat_id"`
+	ApiUrl string `toml:"api_url" mapstructure:"api_url" json:"api_url" yaml:"api_url"`
 }

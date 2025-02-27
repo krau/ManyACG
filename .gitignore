@@ -6,3 +6,4 @@ downloads/
 tmp/
 .air.toml
 .vscode/
+*session.db

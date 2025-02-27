@@ -14,6 +14,7 @@ import (
 	"github.com/krau/ManyACG/sources"
 	"github.com/krau/ManyACG/storage/alist"
 	"github.com/krau/ManyACG/storage/local"
+	"github.com/krau/ManyACG/storage/telegram"
 	"github.com/krau/ManyACG/storage/webdav"
 	"github.com/krau/ManyACG/types"
 
@@ -35,6 +36,10 @@ func InitStorage() {
 	if config.Cfg.Storage.Alist.Enable {
 		Storages[types.StorageTypeAlist] = new(alist.Alist)
 		Storages[types.StorageTypeAlist].Init()
+	}
+	if config.Cfg.Storage.Telegram.Enable {
+		Storages[types.StorageTypeTelegram] = new(telegram.TelegramStorage)
+		Storages[types.StorageTypeTelegram].Init()
 	}
 }
 

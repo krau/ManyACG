@@ -7,13 +7,15 @@ func (s StorageType) String() string {
 }
 
 const (
-	StorageTypeWebdav StorageType = "webdav"
-	StorageTypeLocal  StorageType = "local"
-	StorageTypeAlist  StorageType = "alist"
+	StorageTypeWebdav   StorageType = "webdav"
+	StorageTypeLocal    StorageType = "local"
+	StorageTypeAlist    StorageType = "alist"
+	StorageTypeTelegram StorageType = "telegram"
 )
 
 var StorageTypes []StorageType = []StorageType{
 	StorageTypeWebdav,
 	StorageTypeLocal,
 	StorageTypeAlist,
+	StorageTypeTelegram,
 }
