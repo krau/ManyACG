@@ -125,6 +125,13 @@ token_expire = 86400
 # 存储 base 路径
 path = "/manyacg"
 
+# Telegram 存储端, 仅用于存储原图
+[storage.telegram]
+enable = false
+token = ""
+chat_id = -100
+api_url = "https://api.telegram.org"
+
 # Telegram 相关配置
 [telegram]
 # Bot API
