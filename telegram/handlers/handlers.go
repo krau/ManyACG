@@ -23,7 +23,7 @@ func Init(channelChatID telego.ChatID, botUsername string) {
 }
 
 func RegisterHandlers(hg *telegohandler.HandlerGroup) {
-	mg := hg.Group(telegohandler.AnyMessage(), mentionIsBot)
+	mg := hg.Group(telegohandler.AnyMessage(), commandToMe)
 	mg.HandleMessage(Start, telegohandler.CommandEqual("start"))
 	mg.HandleMessage(GetPictureFile, telegohandler.Or(telegohandler.CommandEqual("file"), telegohandler.CommandEqual("files")))
 	mg.HandleMessage(RandomPicture, telegohandler.Or(telegohandler.CommandEqual("setu"), telegohandler.CommandEqual("random")))

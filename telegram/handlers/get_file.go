@@ -179,7 +179,7 @@ func getArtworkFiles(ctx context.Context, bot *telego.Bot, message telego.Messag
 			return document, nil
 		}
 		maxRetry := config.Cfg.Telegram.Retry.MaxAttempts
-		for retryCount := 0; retryCount < maxRetry; retryCount++ {
+		for retryCount := range maxRetry {
 			document, err := buildDocument()
 			if err != nil {
 				break
