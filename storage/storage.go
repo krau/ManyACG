@@ -24,23 +24,23 @@ import (
 
 var Storages = make(map[types.StorageType]Storage)
 
-func InitStorage() {
+func InitStorage(ctx context.Context) {
 	common.Logger.Info("Initializing storage")
 	if config.Cfg.Storage.Local.Enable {
 		Storages[types.StorageTypeLocal] = new(local.Local)
-		Storages[types.StorageTypeLocal].Init()
+		Storages[types.StorageTypeLocal].Init(ctx)
 	}
 	if config.Cfg.Storage.Webdav.Enable {
 		Storages[types.StorageTypeWebdav] = new(webdav.Webdav)
-		Storages[types.StorageTypeWebdav].Init()
+		Storages[types.StorageTypeWebdav].Init(ctx)
 	}
 	if config.Cfg.Storage.Alist.Enable {
 		Storages[types.StorageTypeAlist] = new(alist.Alist)
-		Storages[types.StorageTypeAlist].Init()
+		Storages[types.StorageTypeAlist].Init(ctx)
 	}
 	if config.Cfg.Storage.Telegram.Enable {
 		Storages[types.StorageTypeTelegram] = new(telegram.TelegramStorage)
-		Storages[types.StorageTypeTelegram].Init()
+		Storages[types.StorageTypeTelegram].Init(ctx)
 	}
 }
 

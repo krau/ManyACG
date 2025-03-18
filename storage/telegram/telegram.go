@@ -22,7 +22,7 @@ var (
 	ChatID telego.ChatID
 )
 
-func (t *TelegramStorage) Init() {
+func (t *TelegramStorage) Init(ctx context.Context) {
 	common.Logger.Infof("Initializing telegram storage")
 	ChatID = telegoutil.ID(config.Cfg.Storage.Telegram.ChatID)
 	var err error
@@ -31,8 +31,6 @@ func (t *TelegramStorage) Init() {
 		common.Logger.Fatalf("failed to create telegram bot: %s", err)
 		os.Exit(1)
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Minute)
-	defer cancel()
 	botInfo, err := Bot.GetMe(ctx)
 	if err != nil {
 		common.Logger.Fatalf("failed to get bot info: %s", err)

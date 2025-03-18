@@ -25,13 +25,12 @@ var (
 	basePath string
 )
 
-func (w *Webdav) Init() {
+func (w *Webdav) Init(ctx context.Context) {
 	webdavConfig := config.Cfg.Storage.Webdav
 	basePath = strings.TrimSuffix(webdavConfig.Path, "/")
 	Client = gowebdav.NewClient(webdavConfig.URL, webdavConfig.Username, webdavConfig.Password)
 	if err := Client.Connect(); err != nil {
-		common.Logger.Fatalf("Failed to connect to webdav server: %v", err)
-		os.Exit(1)
+		common.Logger.Panicf("Failed to connect to webdav server: %v", err)
 	}
 }
 

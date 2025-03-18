@@ -17,7 +17,7 @@ import (
 	"github.com/mymmrac/telego/telegoutil"
 )
 
-func InitBot() {
+func InitBot(ctx context.Context) {
 	common.Logger.Info("Initializing bot")
 	var err error
 	apiUrl := config.Cfg.Telegram.APIURL
@@ -37,8 +37,7 @@ func InitBot() {
 		}),
 	)
 	if err != nil {
-		common.Logger.Fatalf("Error when creating bot: %s", err)
-		os.Exit(1)
+		common.Logger.Panicf("Error when creating bot: %s", err)
 	}
 
 	if config.Cfg.Telegram.Username != "" {
@@ -48,8 +47,7 @@ func InitBot() {
 	}
 	if ChannelChatID.ID == 0 && ChannelChatID.Username == "" {
 		if config.Cfg.Telegram.Channel {
-			common.Logger.Fatalf("Enabled channel mode but no channel ID or username is provided")
-			os.Exit(1)
+			common.Logger.Panicf("Enabled channel mode but no channel ID or username is provided")
 		}
 	} else {
 		IsChannelAvailable = config.Cfg.Telegram.Channel
@@ -58,8 +56,6 @@ func InitBot() {
 	if config.Cfg.Telegram.GroupID != 0 {
 		GroupChatID = telegoutil.ID(config.Cfg.Telegram.GroupID)
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
-	defer cancel()
 	me, err := Bot.GetMe(ctx)
 	if err != nil {
 		common.Logger.Errorf("Error when getting bot info: %s", err)
@@ -125,40 +121,34 @@ func InitBot() {
 		Limit:  1,
 	})
 	if err != nil {
-		common.Logger.Errorf("Error when getting bot photo: %s", err)
-		os.Exit(1)
+		common.Logger.Panicf("Error when getting bot photo: %s", err)
 	}
 	photoSize := botPhoto.Photos[0][len(botPhoto.Photos[0])-1]
 	photoFile, err := Bot.GetFile(ctx, &telego.GetFileParams{
 		FileID: photoSize.FileID,
 	})
 	if err != nil {
-		common.Logger.Errorf("Error when getting bot photo: %s", err)
-		os.Exit(1)
+		common.Logger.Panicf("Error when getting bot photo: %s", err)
 	}
 	fileBytes, err := telegoutil.DownloadFile(Bot.FileDownloadURL(photoFile.FilePath))
 	if err != nil {
-		common.Logger.Errorf("Error when downloading bot photo: %s", err)
-		os.Exit(1)
+		common.Logger.Panicf("Error when downloading bot photo: %s", err)
 	}
 	_, err = service.SetEtcData(context.TODO(), "bot_photo_bytes", fileBytes)
 	if err != nil {
-		common.Logger.Errorf("Error when setting bot photo bytes: %s", err)
-		os.Exit(1)
+		common.Logger.Panicf("Error when setting bot photo bytes: %s", err)
 	}
 	_, err = service.SetEtcData(context.TODO(), "bot_photo_file_id", photoSize.FileID)
 	if err != nil {
-		common.Logger.Errorf("Error when setting bot photo file ID: %s", err)
-		os.Exit(1)
+		common.Logger.Panicf("Error when setting bot photo file ID: %s", err)
 	}
 }
 
-func RunPolling() {
+func RunPolling(ctx context.Context) {
 	if Bot == nil {
-		InitBot()
+		InitBot(ctx)
 	}
 	common.Logger.Info("Start polling")
-	ctx := context.Background()
 	updates, err := Bot.UpdatesViaLongPolling(ctx, &telego.GetUpdatesParams{
 		Offset: -1,
 		AllowedUpdates: []string{
@@ -169,16 +159,22 @@ func RunPolling() {
 		},
 	})
 	if err != nil {
-		common.Logger.Fatalf("Error when getting updates: %s", err)
-		os.Exit(1)
+		common.Logger.Panicf("Error when getting updates: %s", err)
 	}
 
 	botHandler, err := telegohandler.NewBotHandler(Bot, updates)
 	if err != nil {
-		common.Logger.Fatalf("Error when creating bot handler: %s", err)
-		os.Exit(1)
+		common.Logger.Panicf("Error when creating bot handler: %s", err)
 	}
-	defer botHandler.Stop()
+	go func() {
+		<-ctx.Done()
+		stopCtx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
+		defer cancel()
+		if err := botHandler.StopWithContext(stopCtx); err != nil {
+			common.Logger.Warnf("Error when stopping bot handler: %s", err)
+		}
+		common.Logger.Info("Stopped bot handler")
+	}()
 
 	if !config.Cfg.Debug {
 		botHandler.Use(telegohandler.PanicRecovery())
@@ -187,8 +183,10 @@ func RunPolling() {
 
 	baseGroup := botHandler.BaseGroup()
 	handlers.RegisterHandlers(baseGroup)
-	if err := botHandler.Start(); err != nil {
-		common.Logger.Fatalf("Error when starting bot handler: %s", err)
-		os.Exit(1)
-	}
+	go func() {
+		if err := botHandler.Start(); err != nil {
+			common.Logger.Panicf("Error when starting bot handler: %s", err)
+		}
+	}()
+
 }

@@ -26,8 +26,7 @@ func GetArtworkChangeStream(ctx context.Context) (*mongo.ChangeStream, error) {
 	return changeStream, nil
 }
 
-func syncArtworkToSearchEngine() {
-	ctx := context.Background()
+func syncArtworkToSearchEngine(ctx context.Context) {
 	changeStream, err := GetArtworkChangeStream(ctx)
 	if err != nil {
 		common.Logger.Fatalf("get artwork change stream error: %s", err)

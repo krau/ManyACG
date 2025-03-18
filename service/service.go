@@ -7,10 +7,10 @@ import (
 	"github.com/krau/ManyACG/types"
 )
 
-func InitService() {
+func InitService(ctx context.Context) {
 	go listenProcessPictureTask()
 	if config.Cfg.Search.Enable {
-		go syncArtworkToSearchEngine()
+		go syncArtworkToSearchEngine(ctx)
 	}
 	if config.Cfg.Tagger.Enable {
 		go listenPredictArtworkTagsTask()

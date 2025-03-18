@@ -1,6 +1,7 @@
 package alist
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -12,8 +13,8 @@ import (
 	"github.com/imroc/req/v3"
 )
 
-func getJwtToken() (string, error) {
-	resp, err := reqClient.R().SetBodyJsonMarshal(loginReq).Post("/api/auth/login")
+func getJwtToken(ctx context.Context) (string, error) {
+	resp, err := reqClient.R().SetContext(ctx).SetBodyJsonMarshal(loginReq).Post("/api/auth/login")
 	if err != nil {
 		return "", err
 	}
@@ -30,7 +31,7 @@ func getJwtToken() (string, error) {
 func refreshJwtToken(client *req.Client) {
 	for {
 		time.Sleep(time.Duration(config.Cfg.Storage.Alist.TokenExpire) * time.Second)
-		token, err := getJwtToken()
+		token, err := getJwtToken(context.Background())
 		if err != nil {
 			common.Logger.Errorf("Failed to refresh jwt token: %v", err)
 			continue

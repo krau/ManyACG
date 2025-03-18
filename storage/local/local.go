@@ -19,7 +19,7 @@ var (
 	basePath string
 )
 
-func (l *Local) Init() {
+func (l *Local) Init(ctx context.Context) {
 	basePath = strings.TrimSuffix(config.Cfg.Storage.Local.Path, "/")
 	if basePath == "" {
 		common.Logger.Fatalf("Local storage path not set,for example: manyacg/storage")

@@ -51,34 +51,40 @@ func Run() {
 		}()
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-	common.Logger.Info("Start running")
+	ctx, stop := signal.NotifyContext(context.TODO(), syscall.SIGINT, syscall.SIGTERM, os.Interrupt)
+	defer stop()
+	common.Logger.Info("Starting...")
 	dao.InitDB(ctx)
 	defer func() {
 		if err := dao.Client.Disconnect(ctx); err != nil {
 			common.Logger.Fatal(err)
-			os.Exit(1)
 		}
 	}()
-	service.InitService()
-	if config.Cfg.Telegram.Token != "" {
-		go telegram.RunPolling()
-	}
-	storage.InitStorage()
+	service.InitService(ctx)
 	sources.InitSources(service.NewService())
-	go fetcher.StartScheduler(context.TODO())
-	if config.Cfg.API.Enable {
-		go restful.Run()
+	storage.InitStorage(ctx)
+	if config.Cfg.Telegram.Token != "" {
+		telegram.RunPolling(ctx)
 	}
-	quit := make(chan os.Signal, 1)
-	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
-	sig := <-quit
-	common.Logger.Info(sig, " Exiting...")
+
+	go fetcher.StartScheduler(ctx)
+	if config.Cfg.API.Enable {
+		restful.Run(ctx)
+	}
+
+	common.Logger.Info("ManyACG is running !")
+
 	defer common.Logger.Info("Exited.")
-	if err := service.Cleanup(context.TODO()); err != nil {
+	<-ctx.Done()
+	cleanCtx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+	if err := service.Cleanup(cleanCtx); err != nil {
 		common.Logger.Error(err)
 	}
+	cleanCacheDir()
+}
+
+func cleanCacheDir() {
 	if config.Cfg.Storage.CacheDir != "" && !config.Cfg.Debug {
 		for _, path := range []string{"/", ".", "\\", ".."} {
 			if filepath.Clean(config.Cfg.Storage.CacheDir) == path {

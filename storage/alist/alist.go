@@ -33,7 +33,7 @@ var (
 	loginReq  *loginRequset
 )
 
-func (a *Alist) Init() {
+func (a *Alist) Init(ctx context.Context) {
 	alistConfig := config.Cfg.Storage.Alist
 	basePath = strings.TrimSuffix(alistConfig.Path, "/")
 	baseUrl = strings.TrimSuffix(alistConfig.URL, "/")
@@ -45,7 +45,7 @@ func (a *Alist) Init() {
 		Username: alistConfig.Username,
 		Password: alistConfig.Password,
 	}
-	token, err := getJwtToken()
+	token, err := getJwtToken(ctx)
 	if err != nil {
 		common.Logger.Errorf("Failed to login to Alist: %v", err)
 		os.Exit(1)
