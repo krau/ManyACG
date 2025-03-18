@@ -28,13 +28,11 @@ func (t *TelegramStorage) Init(ctx context.Context) {
 	var err error
 	Bot, err = telego.NewBot(config.Cfg.Storage.Telegram.Token, telego.WithAPIServer(config.Cfg.Storage.Telegram.ApiUrl))
 	if err != nil {
-		common.Logger.Fatalf("failed to create telegram bot: %s", err)
-		os.Exit(1)
+		common.Logger.Panicf("failed to create telegram bot: %s", err)
 	}
 	botInfo, err := Bot.GetMe(ctx)
 	if err != nil {
-		common.Logger.Fatalf("failed to get bot info: %s", err)
-		os.Exit(1)
+		common.Logger.Panicf("failed to get bot info: %s", err)
 	}
 	common.Logger.Infof("telegram storage bot %s is ready", botInfo.Username)
 }

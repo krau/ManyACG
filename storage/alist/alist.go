@@ -47,8 +47,7 @@ func (a *Alist) Init(ctx context.Context) {
 	}
 	token, err := getJwtToken(ctx)
 	if err != nil {
-		common.Logger.Errorf("Failed to login to Alist: %v", err)
-		os.Exit(1)
+		common.Logger.Panicf("Failed to login to Alist: %v", err)
 	}
 	common.Logger.Debugf("Login to Alist successfully")
 	reqClient.SetCommonHeader("Authorization", token)

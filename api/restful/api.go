@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"os"
 	"time"
 
 	"github.com/krau/ManyACG/api/restful/middleware"
@@ -67,8 +66,7 @@ func Run(ctx context.Context) {
 
 	go func() {
 		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			common.Logger.Fatalf("Failed to start server: %v", err)
-			os.Exit(1)
+			common.Logger.Panicf("Failed to start server: %v", err)
 		}
 	}()
 }

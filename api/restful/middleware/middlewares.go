@@ -3,7 +3,6 @@ package middleware
 import (
 	"errors"
 	"net/http"
-	"os"
 
 	jwt "github.com/appleboy/gin-jwt/v2"
 	"github.com/krau/ManyACG/common"
@@ -28,12 +27,10 @@ func Init() {
 	var err error
 	JWTAuthMiddleware, err = jwt.New(JWTInitParamas())
 	if err != nil {
-		common.Logger.Fatalf("JWT init error: %v", err)
-		os.Exit(1)
+		common.Logger.Panicf("JWT init error: %v", err)
 	}
 	if err := JWTAuthMiddleware.MiddlewareInit(); err != nil {
-		common.Logger.Fatalf("JWT middleware init error: %v", err)
-		os.Exit(1)
+		common.Logger.Panicf("JWT middleware init error: %v", err)
 	}
 
 	// Init Cache
@@ -42,8 +39,7 @@ func Init() {
 		if cacheConfig.Redis {
 			opt, err := redis.ParseURL(cacheConfig.URL)
 			if err != nil {
-				common.Logger.Fatalf("Failed to parse redis url: %v", err)
-				os.Exit(1)
+				common.Logger.Panicf("Failed to parse redis url: %v", err)
 			}
 			CacheStore = persist.NewRedisStore(redis.NewClient(opt))
 		} else {

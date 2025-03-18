@@ -3,7 +3,6 @@ package dao
 import (
 	"context"
 	"fmt"
-	"os"
 	"time"
 
 	"github.com/krau/ManyACG/common"
@@ -34,18 +33,15 @@ func InitDB(ctx context.Context) {
 	client, err := mongo.Connect(ctx, options.Client().ApplyURI(uri),
 		options.Client().SetReadPreference(readpref.Nearest(readpref.WithMaxStaleness(time.Duration(config.Cfg.Database.MaxStaleness)*time.Second))))
 	if err != nil {
-		common.Logger.Fatal(err)
-		os.Exit(1)
+		common.Logger.Panic(err)
 	}
 	if err = client.Ping(ctx, nil); err != nil {
-		common.Logger.Fatal(err)
-		os.Exit(1)
+		common.Logger.Panic(err)
 	}
 	Client = client
 	DB = Client.Database(config.Cfg.Database.Database)
 	if DB == nil {
-		common.Logger.Fatal("Failed to get database")
-		os.Exit(1)
+		common.Logger.Panic("Failed to get database")
 	}
 	createCollection(ctx)
 	createIndex(ctx)

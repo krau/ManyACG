@@ -22,12 +22,10 @@ var (
 func (l *Local) Init(ctx context.Context) {
 	basePath = strings.TrimSuffix(config.Cfg.Storage.Local.Path, "/")
 	if basePath == "" {
-		common.Logger.Fatalf("Local storage path not set,for example: manyacg/storage")
-		os.Exit(1)
+		common.Logger.Panic("Local storage path not set,for example: manyacg/storage")
 	}
 	if err := os.MkdirAll(basePath, os.ModePerm); err != nil {
-		common.Logger.Fatalf("Failed to create directory: %v", err)
-		os.Exit(1)
+		common.Logger.Panicf("Failed to create directory: %v", err)
 	}
 }
 
