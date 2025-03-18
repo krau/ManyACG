@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"context"
 	"strings"
 
 	"github.com/krau/ManyACG/common"
@@ -9,11 +8,12 @@ import (
 	"github.com/krau/ManyACG/telegram/utils"
 
 	"github.com/mymmrac/telego"
+	"github.com/mymmrac/telego/telegohandler"
 	"github.com/mymmrac/telego/telegoutil"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-func Start(ctx context.Context, bot *telego.Bot, message telego.Message) {
+func Start(ctx *telegohandler.Context, message telego.Message) error {
 	_, _, args := telegoutil.ParseCommand(message.Text)
 	if len(args) > 0 {
 		common.Logger.Debugf("start: args=%v", args)
@@ -21,42 +21,42 @@ func Start(ctx context.Context, bot *telego.Bot, message telego.Message) {
 		switch action {
 		case "file":
 			pictureID := args[0][5:]
-			_, err := utils.SendPictureFileByID(ctx, bot, message, ChannelChatID, pictureID)
+			_, err := utils.SendPictureFileByID(ctx, ctx.Bot(), message, ChannelChatID, pictureID)
 			if err != nil {
-				utils.ReplyMessage(bot, message, "获取失败: "+err.Error())
+				utils.ReplyMessage(ctx, ctx.Bot(), message, "获取失败: "+err.Error())
 			}
 		case "files":
 			artworkID := args[0][6:]
 			objectID, err := primitive.ObjectIDFromHex(artworkID)
 			if err != nil {
-				utils.ReplyMessage(bot, message, "无效的ID")
-				return
+				utils.ReplyMessage(ctx, ctx.Bot(), message, "无效的ID")
+				return nil
 			}
 			artwork, err := service.GetArtworkByID(ctx, objectID)
 			if err != nil {
-				utils.ReplyMessage(bot, message, "获取失败: "+err.Error())
-				return
+				utils.ReplyMessage(ctx, ctx.Bot(), message, "获取失败: "+err.Error())
+				return nil
 			}
-			getArtworkFiles(ctx, bot, message, artwork)
+			getArtworkFiles(ctx, ctx.Bot(), message, artwork)
 		case "code":
 			userID := message.From.ID
 			userModel, _ := service.GetUserByTelegramID(ctx, userID)
 			if userModel != nil {
-				bot.SendMessage(telegoutil.Messagef(message.Chat.ChatID(), "您的此 Telegram 账号 ( %d ) 已经绑定了 ManyACG 账号 %s", userID, userModel.Username))
-				return
+				ctx.Bot().SendMessage(ctx, telegoutil.Messagef(message.Chat.ChatID(), "您的此 Telegram 账号 ( %d ) 已经绑定了 ManyACG 账号 %s", userID, userModel.Username))
+				return nil
 			}
 			unauthUserID := args[0][5:]
 			objectID, err := primitive.ObjectIDFromHex(unauthUserID)
 			if err != nil {
-				utils.ReplyMessage(bot, message, "无效的ID")
-				return
+				utils.ReplyMessage(ctx, ctx.Bot(), message, "无效的ID")
+				return nil
 			}
 			unauthUser, err := service.GetUnauthUserByID(ctx, objectID)
 			if err != nil {
-				utils.ReplyMessage(bot, message, "获取失败: "+err.Error())
-				return
+				utils.ReplyMessage(ctx, ctx.Bot(), message, "获取失败: "+err.Error())
+				return nil
 			}
-			_, err = bot.SendMessage(telegoutil.Messagef(message.Chat.ChatID(),
+			_, err = ctx.Bot().SendMessage(ctx, telegoutil.Messagef(message.Chat.ChatID(),
 				"您的此 Telegram 账号 ( %d ) 将与 ManyACG 账号 %s 绑定\n验证码: <code>%s</code>",
 				userID,
 				common.EscapeHTML(unauthUser.Username),
@@ -65,7 +65,7 @@ func Start(ctx context.Context, bot *telego.Bot, message telego.Message) {
 			)
 			if err != nil {
 				common.Logger.Errorf("Failed to send message: %v", err)
-				return
+				return nil
 			}
 			unauthUser.TelegramID = userID
 			service.UpdateUnauthUser(ctx, objectID, unauthUser)
@@ -73,14 +73,14 @@ func Start(ctx context.Context, bot *telego.Bot, message telego.Message) {
 			dataID := args[0][5:]
 			sourceURL, err := service.GetCallbackDataByID(ctx, dataID)
 			if err != nil {
-				utils.ReplyMessage(bot, message, "获取失败: "+err.Error())
-				return
+				utils.ReplyMessage(ctx, ctx.Bot(), message, "获取失败: "+err.Error())
+				return nil
 			}
-			if err := utils.SendFullArtworkInfo(ctx, bot, message, sourceURL); err != nil {
-				utils.ReplyMessage(bot, message, err.Error())
+			if err := utils.SendFullArtworkInfo(ctx, ctx.Bot(), message, sourceURL); err != nil {
+				utils.ReplyMessage(ctx, ctx.Bot(), message, err.Error())
 			}
 		}
-		return
+		return nil
 	}
-	Help(ctx, bot, message)
+	return Help(ctx, message)
 }

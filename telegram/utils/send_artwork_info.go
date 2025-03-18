@@ -77,7 +77,6 @@ func SendArtworkInfo(ctx context.Context, bot *telego.Bot, params *SendArtworkIn
 	if err != nil {
 		return fmt.Errorf("获取 ReplyMarkup 失败: %w", err)
 	}
-
 	inputFile, needUpdatePreview, err := GetPicturePreviewInputFile(ctx, artwork.Pictures[0])
 	if err != nil {
 		return fmt.Errorf("获取预览图片失败: %w", err)
@@ -101,7 +100,7 @@ func SendArtworkInfo(ctx context.Context, bot *telego.Bot, params *SendArtworkIn
 	if bot == nil {
 		return errs.ErrNilBot
 	}
-	msg, err := bot.SendPhoto(photo)
+	msg, err := bot.SendPhoto(ctx, photo)
 	if err != nil {
 		return fmt.Errorf("发送图片失败: %w", err)
 	}
@@ -131,7 +130,7 @@ func SendArtworkInfo(ctx context.Context, bot *telego.Bot, params *SendArtworkIn
 	}
 	if err := updatePreview(ctx, msg, artwork, bot, 0, photo); err != nil {
 		common.Logger.Warnf("更新预览失败: %s", err)
-		bot.EditMessageCaption(&telego.EditMessageCaptionParams{
+		bot.EditMessageCaption(ctx, &telego.EditMessageCaptionParams{
 			ChatID:      *params.ChatID,
 			MessageID:   msg.MessageID,
 			Caption:     caption + "\n<i>更新预览失败</i>",
@@ -220,7 +219,7 @@ func updatePreview(ctx context.Context, targetMessage *telego.Message, artwork *
 	if artwork.R18 {
 		mediaPhoto.WithHasSpoiler()
 	}
-	msg, err := bot.EditMessageMedia(&telego.EditMessageMediaParams{
+	msg, err := bot.EditMessageMedia(ctx, &telego.EditMessageMediaParams{
 		ChatID:      targetMessage.Chat.ChatID(),
 		MessageID:   targetMessage.MessageID,
 		Media:       mediaPhoto,
@@ -245,7 +244,7 @@ func updatePreview(ctx context.Context, targetMessage *telego.Message, artwork *
 func SendFullArtworkInfo(ctx context.Context, bot *telego.Bot, message telego.Message, sourceURL string) error {
 	var waitMessageID int
 	go func() {
-		msg, err := ReplyMessage(bot, message, "正在获取作品信息...")
+		msg, err := ReplyMessage(ctx, bot, message, "正在获取作品信息...")
 		if err != nil {
 			common.Logger.Warnf("发送消息失败: %s", err)
 			return
@@ -255,7 +254,7 @@ func SendFullArtworkInfo(ctx context.Context, bot *telego.Bot, message telego.Me
 	defer func() {
 		time.Sleep(1 * time.Second)
 		if waitMessageID != 0 {
-			bot.DeleteMessage(telegoutil.Delete(message.Chat.ChatID(), waitMessageID))
+			bot.DeleteMessage(ctx, telegoutil.Delete(message.Chat.ChatID(), waitMessageID))
 		}
 	}()
 	artwork, err := service.GetArtworkByURLWithCacheFetch(ctx, sourceURL)

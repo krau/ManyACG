@@ -21,60 +21,61 @@ import (
 	"github.com/krau/ManyACG/types"
 
 	"github.com/mymmrac/telego"
+	"github.com/mymmrac/telego/telegohandler"
 	"github.com/mymmrac/telego/telegoutil"
 )
 
-func PostArtworkCallbackQuery(ctx context.Context, bot *telego.Bot, query telego.CallbackQuery) {
+func PostArtworkCallbackQuery(ctx *telegohandler.Context, query telego.CallbackQuery) error {
 	if !CheckPermissionForQuery(ctx, query, types.PermissionPostArtwork) {
-		bot.AnswerCallbackQuery(&telego.AnswerCallbackQueryParams{
+		ctx.Bot().AnswerCallbackQuery(ctx, &telego.AnswerCallbackQueryParams{
 			CallbackQueryID: query.ID,
 			Text:            "你没有发布作品的权限",
 			ShowAlert:       true,
 			CacheTime:       60,
 		})
-		return
+		return nil
 	}
 	queryDataSlice := strings.Split(query.Data, " ")
 	reverseR18 := queryDataSlice[0] == "post_artwork_r18"
 	dataID := queryDataSlice[1]
 	sourceURL, err := service.GetCallbackDataByID(ctx, dataID)
 	if err != nil {
-		bot.AnswerCallbackQuery(&telego.AnswerCallbackQueryParams{
+		ctx.Bot().AnswerCallbackQuery(ctx, &telego.AnswerCallbackQueryParams{
 			CallbackQueryID: query.ID,
 			Text:            "获取回调数据失败 " + err.Error(),
 			ShowAlert:       true,
 			CacheTime:       60,
 		})
-		return
+		return nil
 	}
 	common.Logger.Infof("posting artwork: %s", sourceURL)
 
 	var artwork *types.Artwork
 	cachedArtwork, err := service.GetCachedArtworkByURLWithCache(ctx, sourceURL)
 	if err != nil {
-		bot.AnswerCallbackQuery(&telego.AnswerCallbackQueryParams{
+		ctx.Bot().AnswerCallbackQuery(ctx, &telego.AnswerCallbackQueryParams{
 			CallbackQueryID: query.ID,
 			Text:            "获取作品信息失败 " + err.Error(),
 			ShowAlert:       true,
 			CacheTime:       60,
 		})
-		return
+		return nil
 	}
 	if cachedArtwork.Status == types.ArtworkStatusPosting {
-		bot.AnswerCallbackQuery(&telego.AnswerCallbackQueryParams{
+		ctx.Bot().AnswerCallbackQuery(ctx, &telego.AnswerCallbackQueryParams{
 			CallbackQueryID: query.ID,
 			Text:            "该作品正在发布中",
 			ShowAlert:       true,
 			CacheTime:       60,
 		})
-		return
+		return nil
 	}
 
 	if err := service.UpdateCachedArtworkStatusByURL(ctx, sourceURL, types.ArtworkStatusPosting); err != nil {
 		common.Logger.Errorf("更新缓存作品状态失败: %s", err)
 	}
 	artwork = cachedArtwork.Artwork
-	go bot.EditMessageCaption(&telego.EditMessageCaptionParams{
+	go ctx.Bot().EditMessageCaption(ctx, &telego.EditMessageCaptionParams{
 		ChatID:      telegoutil.ID(query.Message.GetChat().ID),
 		MessageID:   query.Message.GetMessageID(),
 		Caption:     fmt.Sprintf("正在发布: %s", artwork.SourceURL),
@@ -82,21 +83,21 @@ func PostArtworkCallbackQuery(ctx context.Context, bot *telego.Bot, query telego
 	})
 	if err := service.DeleteDeletedByURL(ctx, sourceURL); err != nil {
 		common.Logger.Errorf("取消删除记录失败: %s", err)
-		bot.EditMessageCaption(&telego.EditMessageCaptionParams{
+		ctx.Bot().EditMessageCaption(ctx, &telego.EditMessageCaptionParams{
 			ChatID:    telegoutil.ID(query.Message.GetChat().ID),
 			MessageID: query.Message.GetMessageID(),
 			Caption:   "取消删除记录失败: " + err.Error(),
 		})
-		return
+		return nil
 	}
 	if reverseR18 {
 		artwork.R18 = !artwork.R18
 	}
 
 	if IsChannelAvailable {
-		if err := utils.PostAndCreateArtwork(ctx, artwork, bot, query.Message.GetChat().ID, query.Message.GetMessageID()); err != nil {
+		if err := utils.PostAndCreateArtwork(ctx, artwork, ctx.Bot(), query.Message.GetChat().ID, query.Message.GetMessageID()); err != nil {
 			common.Logger.Errorf("发布失败: %s", err)
-			bot.EditMessageCaption(&telego.EditMessageCaptionParams{
+			ctx.Bot().EditMessageCaption(ctx, &telego.EditMessageCaptionParams{
 				ChatID:    telegoutil.ID(query.Message.GetChat().ID),
 				MessageID: query.Message.GetMessageID(),
 				Caption:   "发布失败: " + err.Error() + "\n" + time.Now().Format("2006-01-02 15:04:05"),
@@ -104,14 +105,14 @@ func PostArtworkCallbackQuery(ctx context.Context, bot *telego.Bot, query telego
 			if err := service.UpdateCachedArtworkStatusByURL(ctx, sourceURL, types.ArtworkStatusCached); err != nil {
 				common.Logger.Warnf("更新缓存作品状态失败: %s", err)
 			}
-			return
+			return nil
 		}
 	} else {
 		var err error
 		createArtworkWithoutChannel := func() error {
 			for i, picture := range artwork.Pictures {
 				if len(picture.Original) > 0 {
-					bot.EditMessageCaption(&telego.EditMessageCaptionParams{
+					ctx.Bot().EditMessageCaption(ctx, &telego.EditMessageCaptionParams{
 						ChatID:    telegoutil.ID(query.Message.GetChat().ID),
 						MessageID: query.Message.GetMessageID(),
 						ReplyMarkup: telegoutil.InlineKeyboard(
@@ -121,7 +122,7 @@ func PostArtworkCallbackQuery(ctx context.Context, bot *telego.Bot, query telego
 						),
 					})
 				} else if i == 0 {
-					bot.EditMessageCaption(&telego.EditMessageCaptionParams{
+					ctx.Bot().EditMessageCaption(ctx, &telego.EditMessageCaptionParams{
 						ChatID:    telegoutil.ID(query.Message.GetChat().ID),
 						MessageID: query.Message.GetMessageID(),
 						ReplyMarkup: telegoutil.InlineKeyboard(
@@ -134,7 +135,7 @@ func PostArtworkCallbackQuery(ctx context.Context, bot *telego.Bot, query telego
 				info, err := storage.SaveAll(ctx, artwork, picture)
 				if err != nil {
 					common.Logger.Errorf("保存第 %d 张图片失败: %s", i, err)
-					bot.EditMessageCaption(&telego.EditMessageCaptionParams{
+					ctx.Bot().EditMessageCaption(ctx, &telego.EditMessageCaptionParams{
 						ChatID:    telegoutil.ID(query.Message.GetChat().ID),
 						MessageID: query.Message.GetMessageID(),
 						Caption:   "保存图片失败: " + err.Error(),
@@ -143,7 +144,7 @@ func PostArtworkCallbackQuery(ctx context.Context, bot *telego.Bot, query telego
 				}
 				artwork.Pictures[i].StorageInfo = info
 			}
-			bot.EditMessageCaption(&telego.EditMessageCaptionParams{
+			ctx.Bot().EditMessageCaption(ctx, &telego.EditMessageCaptionParams{
 				ChatID:    telegoutil.ID(query.Message.GetChat().ID),
 				MessageID: query.Message.GetMessageID(),
 				ReplyMarkup: telegoutil.InlineKeyboard(
@@ -155,7 +156,7 @@ func PostArtworkCallbackQuery(ctx context.Context, bot *telego.Bot, query telego
 			artwork, err = service.CreateArtwork(ctx, artwork)
 			if err != nil {
 				common.Logger.Errorf("创建作品失败: %s", err)
-				bot.EditMessageCaption(&telego.EditMessageCaptionParams{
+				ctx.Bot().EditMessageCaption(ctx, &telego.EditMessageCaptionParams{
 					ChatID:    telegoutil.ID(query.Message.GetChat().ID),
 					MessageID: query.Message.GetMessageID(),
 					Caption:   "创建作品失败: " + err.Error(),
@@ -174,7 +175,7 @@ func PostArtworkCallbackQuery(ctx context.Context, bot *telego.Bot, query telego
 			if err := service.UpdateCachedArtworkStatusByURL(ctx, sourceURL, types.ArtworkStatusCached); err != nil {
 				common.Logger.Errorf("更新缓存作品状态失败: %s", err)
 			}
-			return
+			return nil
 		}
 	}
 
@@ -184,33 +185,34 @@ func PostArtworkCallbackQuery(ctx context.Context, bot *telego.Bot, query telego
 	artwork, err = service.GetArtworkByURL(ctx, sourceURL)
 	if err != nil {
 		common.Logger.Errorf("获取作品信息失败: %s", err)
-		return
+		return nil
 	}
-	bot.EditMessageCaption(&telego.EditMessageCaptionParams{
+	ctx.Bot().EditMessageCaption(ctx, &telego.EditMessageCaptionParams{
 		ChatID:      telegoutil.ID(query.Message.GetChat().ID),
 		MessageID:   query.Message.GetMessageID(),
 		Caption:     "发布成功: " + artwork.Title,
 		ReplyMarkup: utils.GetPostedPictureReplyMarkup(artwork, 0, ChannelChatID, BotUsername),
 	})
+	return nil
 }
 
-func PostArtworkCommand(ctx context.Context, bot *telego.Bot, message telego.Message) {
+func PostArtworkCommand(ctx *telegohandler.Context, message telego.Message) error {
 	if !CheckPermissionInGroup(ctx, message, types.PermissionPostArtwork) {
-		utils.ReplyMessage(bot, message, "你没有发布作品的权限")
-		return
+		utils.ReplyMessage(ctx, ctx.Bot(), message, "你没有发布作品的权限")
+		return nil
 	}
 	_, _, args := telegoutil.ParseCommand(message.Text)
 	if len(args) == 0 && message.ReplyToMessage == nil {
-		utils.ReplyMessage(bot, message, "请提供作品链接, 或回复一条消息")
-		return
+		utils.ReplyMessage(ctx, ctx.Bot(), message, "请提供作品链接, 或回复一条消息")
+		return nil
 	}
 	var sourceURL string
 	if message.ReplyToMessage != nil {
 		sourceURL = utils.FindSourceURLForMessage(message.ReplyToMessage)
 		if sourceURL == "" {
 			if len(args) == 0 {
-				utils.ReplyMessage(bot, message, "不支持的链接")
-				return
+				utils.ReplyMessage(ctx, ctx.Bot(), message, "不支持的链接")
+				return nil
 			}
 		}
 	}
@@ -218,67 +220,67 @@ func PostArtworkCommand(ctx context.Context, bot *telego.Bot, message telego.Mes
 		sourceURL = sources.FindSourceURL(args[0])
 	}
 	if sourceURL == "" {
-		utils.ReplyMessage(bot, message, "不支持的链接")
-		return
+		utils.ReplyMessage(ctx, ctx.Bot(), message, "不支持的链接")
+		return nil
 	}
 	artwork, _ := service.GetArtworkByURL(ctx, sourceURL)
 	if artwork != nil {
-		utils.ReplyMessage(bot, message, "作品已存在")
-		return
+		utils.ReplyMessage(ctx, ctx.Bot(), message, "作品已存在")
+		return nil
 	}
-	msg, err := utils.ReplyMessage(bot, message, "正在发布...")
+	msg, err := utils.ReplyMessage(ctx, ctx.Bot(), message, "正在发布...")
 	if err == nil && msg != nil {
-		defer bot.DeleteMessage(telegoutil.Delete(msg.Chat.ChatID(), msg.MessageID))
+		defer ctx.Bot().DeleteMessage(ctx, telegoutil.Delete(msg.Chat.ChatID(), msg.MessageID))
 	}
 	cachedArtwork, err := service.GetCachedArtworkByURLWithCache(ctx, sourceURL)
 	if err != nil {
 		common.Logger.Errorf("获取作品信息失败: %s", err)
-		utils.ReplyMessage(bot, message, "获取作品信息失败: "+err.Error())
-		return
+		utils.ReplyMessage(ctx, ctx.Bot(), message, "获取作品信息失败: "+err.Error())
+		return nil
 	}
 	if cachedArtwork.Status != types.ArtworkStatusCached {
-		utils.ReplyMessage(bot, message, "该作品已发布或正在发布中")
-		return
+		utils.ReplyMessage(ctx, ctx.Bot(), message, "该作品已发布或正在发布中")
+		return nil
 	}
 	artwork = cachedArtwork.Artwork
 
 	if IsChannelAvailable {
-		if err := utils.PostAndCreateArtwork(ctx, artwork, bot, message.Chat.ID, message.MessageID); err != nil {
-			utils.ReplyMessage(bot, message, "发布失败: "+err.Error())
-			return
+		if err := utils.PostAndCreateArtwork(ctx, artwork, ctx.Bot(), message.Chat.ID, message.MessageID); err != nil {
+			utils.ReplyMessage(ctx, ctx.Bot(), message, "发布失败: "+err.Error())
+			return nil
 		}
 	} else {
 		var err error
 		for i, picture := range artwork.Pictures {
-			bot.EditMessageText(&telego.EditMessageTextParams{
+			ctx.Bot().EditMessageText(ctx, &telego.EditMessageTextParams{
 				ChatID:    message.Chat.ChatID(),
 				MessageID: msg.MessageID,
 				Text:      fmt.Sprintf("正在保存图片 %d/%d", i+1, len(artwork.Pictures)),
 			})
 			info, err := storage.SaveAll(ctx, artwork, picture)
 			if err != nil {
-				bot.EditMessageText(&telego.EditMessageTextParams{
+				ctx.Bot().EditMessageText(ctx, &telego.EditMessageTextParams{
 					ChatID:    message.Chat.ChatID(),
 					MessageID: msg.MessageID,
 					Text:      "保存图片失败: " + err.Error(),
 				})
-				return
+				return nil
 			}
 			artwork.Pictures[i].StorageInfo = info
 		}
-		bot.EditMessageText(&telego.EditMessageTextParams{
+		ctx.Bot().EditMessageText(ctx, &telego.EditMessageTextParams{
 			ChatID:    message.Chat.ChatID(),
 			MessageID: msg.MessageID,
 			Text:      "图片保存完成, 正在发布...",
 		})
 		artwork, err = service.CreateArtwork(ctx, artwork)
 		if err != nil {
-			bot.EditMessageText(&telego.EditMessageTextParams{
+			ctx.Bot().EditMessageText(ctx, &telego.EditMessageTextParams{
 				ChatID:    message.Chat.ChatID(),
 				MessageID: msg.MessageID,
 				Text:      "创建作品失败: " + err.Error(),
 			})
-			return
+			return nil
 		}
 		go func() {
 			for _, picture := range artwork.Pictures {
@@ -287,61 +289,62 @@ func PostArtworkCommand(ctx context.Context, bot *telego.Bot, message telego.Mes
 		}()
 	}
 
-	bot.SendMessage(telegoutil.Message(telegoutil.ID(message.Chat.ID), "发布成功: "+artwork.Title).
+	ctx.Bot().SendMessage(ctx, telegoutil.Message(telegoutil.ID(message.Chat.ID), "发布成功: "+artwork.Title).
 		WithReplyParameters(&telego.ReplyParameters{
 			ChatID:    message.Chat.ChatID(),
 			MessageID: message.MessageID,
 		},
 		).WithReplyMarkup(utils.GetPostedPictureReplyMarkup(artwork, 0, ChannelChatID, BotUsername)))
+	return nil
 }
 
-func ArtworkPreview(ctx context.Context, bot *telego.Bot, query telego.CallbackQuery) {
+func ArtworkPreview(ctx *telegohandler.Context, query telego.CallbackQuery) error {
 	if !CheckPermissionForQuery(ctx, query, types.PermissionPostArtwork) {
-		bot.AnswerCallbackQuery(&telego.AnswerCallbackQueryParams{
+		ctx.Bot().AnswerCallbackQuery(ctx, &telego.AnswerCallbackQueryParams{
 			CallbackQueryID: query.ID,
 			Text:            "你没有发布作品的权限",
 			ShowAlert:       true,
 			CacheTime:       60,
 		})
-		return
+		return nil
 	}
 	queryDataSlice := strings.Split(query.Data, " ")
 	dataID := queryDataSlice[1]
 	sourceURL, err := service.GetCallbackDataByID(ctx, dataID)
 	if err != nil {
-		bot.AnswerCallbackQuery(&telego.AnswerCallbackQueryParams{
+		ctx.Bot().AnswerCallbackQuery(ctx, &telego.AnswerCallbackQueryParams{
 			CallbackQueryID: query.ID,
 			Text:            "获取回调数据失败 " + err.Error(),
 			ShowAlert:       true,
 			CacheTime:       60,
 		})
-		return
+		return nil
 	}
 	cachedArtwork, err := service.GetCachedArtworkByURLWithCache(ctx, sourceURL)
 	if err != nil {
-		bot.AnswerCallbackQuery(&telego.AnswerCallbackQueryParams{
+		ctx.Bot().AnswerCallbackQuery(ctx, &telego.AnswerCallbackQueryParams{
 			CallbackQueryID: query.ID,
 			Text:            "获取作品信息失败 " + err.Error(),
 			ShowAlert:       true,
 			CacheTime:       60,
 		})
-		return
+		return nil
 	}
 	if cachedArtwork.Status != types.ArtworkStatusCached {
-		bot.AnswerCallbackQuery(&telego.AnswerCallbackQueryParams{
+		ctx.Bot().AnswerCallbackQuery(ctx, &telego.AnswerCallbackQueryParams{
 			CallbackQueryID: query.ID,
 			Text:            "该作品已发布或正在发布中",
 			ShowAlert:       true,
 			CacheTime:       60,
 		})
-		return
+		return nil
 	}
 	var callbackMessage *telego.Message
 	if query.Message.IsAccessible() {
 		callbackMessage = query.Message.(*telego.Message)
 	} else {
 		common.Logger.Warnf("callback message is not accessible")
-		return
+		return nil
 	}
 
 	postArtworkKeyboard := [][]telego.InlineKeyboardButton{
@@ -358,36 +361,36 @@ func ArtworkPreview(ctx context.Context, bot *telego.Bot, query telego.CallbackQ
 	currentPictureIndexStr := queryDataSlice[4]
 	currentPictureIndex, err := strconv.Atoi(currentPictureIndexStr)
 	if err != nil {
-		bot.AnswerCallbackQuery(&telego.AnswerCallbackQueryParams{
+		ctx.Bot().AnswerCallbackQuery(ctx, &telego.AnswerCallbackQueryParams{
 			CallbackQueryID: query.ID,
 			Text:            "解析回调数据错误: " + err.Error(),
 			ShowAlert:       true,
 			CacheTime:       60,
 		})
-		return
+		return nil
 	}
 	opera := queryDataSlice[2]
 	if opera == "delete" {
 		if err := service.DeleteCachedArtworkPicture(ctx, cachedArtwork, currentPictureIndex); err != nil {
-			bot.AnswerCallbackQuery(&telego.AnswerCallbackQueryParams{
+			ctx.Bot().AnswerCallbackQuery(ctx, &telego.AnswerCallbackQueryParams{
 				CallbackQueryID: query.ID,
 				Text:            "删除失败: " + err.Error(),
 				ShowAlert:       true,
 				CacheTime:       60,
 			})
-			return
+			return nil
 		}
 		cachedArtwork, err = service.GetCachedArtworkByURL(ctx, sourceURL)
 		if err != nil {
-			bot.AnswerCallbackQuery(&telego.AnswerCallbackQueryParams{
+			ctx.Bot().AnswerCallbackQuery(ctx, &telego.AnswerCallbackQueryParams{
 				CallbackQueryID: query.ID,
 				Text:            "已删除该图片, 但获取更新信息失败: " + err.Error(),
 				ShowAlert:       true,
 				CacheTime:       60,
 			})
-			return
+			return nil
 		}
-		go bot.AnswerCallbackQuery(&telego.AnswerCallbackQueryParams{
+		go ctx.Bot().AnswerCallbackQuery(ctx, &telego.AnswerCallbackQueryParams{
 			CallbackQueryID: query.ID,
 			Text:            "删除成功, 稍后发布作品时将不包含该图片",
 			CacheTime:       1,
@@ -427,16 +430,16 @@ func ArtworkPreview(ctx context.Context, bot *telego.Bot, query telego.CallbackQ
 		inputFile, _, err := utils.GetPicturePreviewInputFile(ctx, cachedArtwork.Artwork.Pictures[currentPictureIndex])
 		if err != nil {
 			common.Logger.Errorf("获取预览图片失败: %s", err)
-			bot.AnswerCallbackQuery(&telego.AnswerCallbackQueryParams{
+			ctx.Bot().AnswerCallbackQuery(ctx, &telego.AnswerCallbackQueryParams{
 				CallbackQueryID: query.ID,
 				Text:            "获取预览图片失败: " + err.Error(),
 				ShowAlert:       true,
 				CacheTime:       60,
 			})
-			return
+			return nil
 		}
 		postArtworkKeyboard = append(postArtworkKeyboard, previewKeyboard)
-		_, err = bot.EditMessageMedia(&telego.EditMessageMediaParams{
+		_, err = ctx.Bot().EditMessageMedia(ctx, &telego.EditMessageMediaParams{
 			ChatID:      callbackMessage.Chat.ChatID(),
 			MessageID:   callbackMessage.MessageID,
 			ReplyMarkup: telegoutil.InlineKeyboard(postArtworkKeyboard...),
@@ -447,39 +450,39 @@ func ArtworkPreview(ctx context.Context, bot *telego.Bot, query telego.CallbackQ
 		if err != nil {
 			common.Logger.Errorf("编辑预览消息失败: %s", err)
 		}
-		return
+		return nil
 	}
 
 	pictureIndex, err := strconv.Atoi(queryDataSlice[3])
 	if err != nil {
-		bot.AnswerCallbackQuery(&telego.AnswerCallbackQueryParams{
+		ctx.Bot().AnswerCallbackQuery(ctx, &telego.AnswerCallbackQueryParams{
 			CallbackQueryID: query.ID,
 			Text:            "解析回调数据错误: " + err.Error(),
 			ShowAlert:       true,
 			CacheTime:       60,
 		})
-		return
+		return nil
 	}
 
 	inputFile, needUpdatePreview, err := utils.GetPicturePreviewInputFile(ctx, cachedArtwork.Artwork.Pictures[pictureIndex])
 	if err != nil {
 		common.Logger.Errorf("获取预览图片失败: %s", err)
-		bot.AnswerCallbackQuery(&telego.AnswerCallbackQueryParams{
+		ctx.Bot().AnswerCallbackQuery(ctx, &telego.AnswerCallbackQueryParams{
 			CallbackQueryID: query.ID,
 			Text:            "获取预览图片失败: " + err.Error(),
 			ShowAlert:       true,
 			CacheTime:       3,
 		})
-		return
+		return nil
 	}
 	if needUpdatePreview {
-		go bot.AnswerCallbackQuery(&telego.AnswerCallbackQueryParams{
+		go ctx.Bot().AnswerCallbackQuery(ctx, &telego.AnswerCallbackQueryParams{
 			CallbackQueryID: query.ID,
 			Text:            "图片还在加载, 请稍等",
 			CacheTime:       3,
 		})
 		go downloadAndCompressArtwork(context.TODO(), cachedArtwork.Artwork, pictureIndex)
-		return
+		return nil
 	}
 
 	previewKeyboard := []telego.InlineKeyboardButton{}
@@ -504,7 +507,7 @@ func ArtworkPreview(ctx context.Context, bot *telego.Bot, query telego.CallbackQ
 		}
 	}
 	postArtworkKeyboard = append(postArtworkKeyboard, previewKeyboard)
-	msg, err := bot.EditMessageMedia(&telego.EditMessageMediaParams{
+	msg, err := ctx.Bot().EditMessageMedia(ctx, &telego.EditMessageMediaParams{
 		ChatID:    callbackMessage.Chat.ChatID(),
 		MessageID: callbackMessage.MessageID,
 		Media: telegoutil.MediaPhoto(*inputFile).
@@ -516,7 +519,7 @@ func ArtworkPreview(ctx context.Context, bot *telego.Bot, query telego.CallbackQ
 	})
 	if err != nil {
 		common.Logger.Errorf("编辑预览消息失败: %s", err)
-		return
+		return nil
 	}
 	if !needUpdatePreview {
 		if cachedArtwork.Artwork.Pictures[pictureIndex].TelegramInfo == nil {
@@ -527,6 +530,7 @@ func ArtworkPreview(ctx context.Context, bot *telego.Bot, query telego.CallbackQ
 			common.Logger.Errorf("更新缓存作品失败: %s", err)
 		}
 	}
+	return nil
 }
 
 func downloadAndCompressArtwork(ctx context.Context, artwork *types.Artwork, startIndex int) {
@@ -559,14 +563,14 @@ func downloadAndCompressArtwork(ctx context.Context, artwork *types.Artwork, sta
 	}
 }
 
-func BatchPostArtwork(ctx context.Context, bot *telego.Bot, message telego.Message) {
+func BatchPostArtwork(ctx *telegohandler.Context, message telego.Message) error {
 	if !CheckPermissionInGroup(ctx, message, types.PermissionPostArtwork) {
-		utils.ReplyMessage(bot, message, "你没有发布作品的权限")
-		return
+		utils.ReplyMessage(ctx, ctx.Bot(), message, "你没有发布作品的权限")
+		return nil
 	}
 	if message.ReplyToMessage == nil || message.ReplyToMessage.Document == nil {
-		utils.ReplyMessage(bot, message, "请回复一个批量作品链接的文件")
-		return
+		utils.ReplyMessage(ctx, ctx.Bot(), message, "请回复一个批量作品链接的文件")
+		return nil
 	}
 
 	count, startIndex, sleepTime := 10, 0, 1
@@ -575,16 +579,16 @@ func BatchPostArtwork(ctx context.Context, bot *telego.Bot, message telego.Messa
 		var err error
 		count, err = strconv.Atoi(args[0])
 		if err != nil {
-			utils.ReplyMessage(bot, message, "参数错误"+err.Error())
-			return
+			utils.ReplyMessage(ctx, ctx.Bot(), message, "参数错误"+err.Error())
+			return nil
 		}
 	}
 	if len(args) >= 2 {
 		var err error
 		startIndex, err = strconv.Atoi(args[1])
 		if err != nil {
-			utils.ReplyMessage(bot, message, "参数错误"+err.Error())
-			return
+			utils.ReplyMessage(ctx, ctx.Bot(), message, "参数错误"+err.Error())
+			return nil
 		}
 	}
 
@@ -592,25 +596,25 @@ func BatchPostArtwork(ctx context.Context, bot *telego.Bot, message telego.Messa
 		var err error
 		sleepTime, err = strconv.Atoi(args[2])
 		if err != nil {
-			utils.ReplyMessage(bot, message, "参数错误"+err.Error())
-			return
+			utils.ReplyMessage(ctx, ctx.Bot(), message, "参数错误"+err.Error())
+			return nil
 		}
 	}
 
-	tgFile, err := bot.GetFile(&telego.GetFileParams{
+	tgFile, err := ctx.Bot().GetFile(ctx, &telego.GetFileParams{
 		FileID: message.ReplyToMessage.Document.FileID,
 	})
 	if err != nil {
-		utils.ReplyMessage(bot, message, "获取文件失败: "+err.Error())
-		return
+		utils.ReplyMessage(ctx, ctx.Bot(), message, "获取文件失败: "+err.Error())
+		return nil
 	}
-	file, err := telegoutil.DownloadFile(bot.FileDownloadURL(tgFile.FilePath))
+	file, err := telegoutil.DownloadFile(ctx.Bot().FileDownloadURL(tgFile.FilePath))
 	if err != nil {
-		utils.ReplyMessage(bot, message, "下载文件失败: "+err.Error())
-		return
+		utils.ReplyMessage(ctx, ctx.Bot(), message, "下载文件失败: "+err.Error())
+		return nil
 	}
 
-	callbackMessage, err := utils.ReplyMessage(bot, message, fmt.Sprintf("开始发布作品...\n总数: %d\n起始索引: %d\n间隔时间: %d秒", count, startIndex, sleepTime))
+	callbackMessage, err := utils.ReplyMessage(ctx, ctx.Bot(), message, fmt.Sprintf("开始发布作品...\n总数: %d\n起始索引: %d\n间隔时间: %d秒", count, startIndex, sleepTime))
 	if err != nil {
 		common.Logger.Warnf("回复消息失败: %s", err)
 		callbackMessage = nil
@@ -622,24 +626,24 @@ func BatchPostArtwork(ctx context.Context, bot *telego.Bot, message telego.Messa
 	for i := 0; i < startIndex; i++ {
 		_, err := reader.ReadString('\n')
 		if err == io.EOF {
-			utils.ReplyMessage(bot, message, "起始索引超出文件行数")
-			return
+			utils.ReplyMessage(ctx, ctx.Bot(), message, "起始索引超出文件行数")
+			return nil
 		}
 		if err != nil {
-			utils.ReplyMessage(bot, message, "读取文件失败: "+err.Error())
-			return
+			utils.ReplyMessage(ctx, ctx.Bot(), message, "读取文件失败: "+err.Error())
+			return nil
 		}
 	}
 
 	for i := startIndex; i < count+startIndex; i++ {
 		text, err := reader.ReadString('\n')
 		if err == io.EOF {
-			utils.ReplyMessage(bot, message, "文件已读取完毕")
+			utils.ReplyMessage(ctx, ctx.Bot(), message, "文件已读取完毕")
 			break
 		}
 		if err != nil {
-			utils.ReplyMessage(bot, message, "读取文件失败: "+err.Error())
-			return
+			utils.ReplyMessage(ctx, ctx.Bot(), message, "读取文件失败: "+err.Error())
+			return nil
 		}
 		sourceURL := sources.FindSourceURL(text)
 		if sourceURL == "" {
@@ -653,7 +657,7 @@ func BatchPostArtwork(ctx context.Context, bot *telego.Bot, message telego.Messa
 	for i, sourceURL := range sourceURLs {
 		if callbackMessage != nil {
 			if i == 0 || i%10 == 0 {
-				bot.EditMessageText(&telego.EditMessageTextParams{
+				ctx.Bot().EditMessageText(ctx, &telego.EditMessageTextParams{
 					ChatID:    message.Chat.ChatID(),
 					MessageID: callbackMessage.MessageID,
 					Text:      fmt.Sprintf("总数: %d\n起始索引: %d\n间隔时间: %d秒\n已处理: %d\n失败: %d", count, startIndex, sleepTime, i, failed),
@@ -676,25 +680,26 @@ func BatchPostArtwork(ctx context.Context, bot *telego.Bot, message telego.Messa
 			if err != nil {
 				common.Logger.Errorf("获取作品信息失败: %s", err)
 				failed++
-				utils.ReplyMessage(bot, message, fmt.Sprintf("获取 %s 信息失败: %s", sourceURL, err))
+				utils.ReplyMessage(ctx, ctx.Bot(), message, fmt.Sprintf("获取 %s 信息失败: %s", sourceURL, err))
 				continue
 			}
 		}
-		if err := utils.PostAndCreateArtwork(ctx, artwork, bot, message.Chat.ID, message.MessageID); err != nil {
+		if err := utils.PostAndCreateArtwork(ctx, artwork, ctx.Bot(), message.Chat.ID, message.MessageID); err != nil {
 			common.Logger.Errorf("发布失败: %s", err)
 			failed++
-			utils.ReplyMessage(bot, message, fmt.Sprintf("发布 %s 失败: %s", sourceURL, err))
+			utils.ReplyMessage(ctx, ctx.Bot(), message, fmt.Sprintf("发布 %s 失败: %s", sourceURL, err))
 			continue
 		}
 		time.Sleep(time.Duration(sleepTime) * time.Second)
 	}
 	if callbackMessage != nil {
 		text := fmt.Sprintf("发布完成\n\n总数: %d\n起始索引: %d\n已处理: %d\n失败: %d", count, startIndex, count, failed)
-		bot.EditMessageText(&telego.EditMessageTextParams{
+		ctx.Bot().EditMessageText(ctx, &telego.EditMessageTextParams{
 			ChatID:    message.Chat.ChatID(),
 			MessageID: callbackMessage.MessageID,
 			Text:      text,
 		})
 	}
-	utils.ReplyMessage(bot, message, "批量发布作品完成")
+	utils.ReplyMessage(ctx, ctx.Bot(), message, "批量发布作品完成")
+	return nil
 }

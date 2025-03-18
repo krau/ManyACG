@@ -6,7 +6,7 @@ import (
 	"github.com/mymmrac/telego/telegohandler"
 )
 
-func messageLogger(bot *telego.Bot, update telego.Update, next telegohandler.Handler) {
+func messageLogger(ctx *telegohandler.Context, update telego.Update) error {
 	if update.Message != nil {
 		chat := update.Message.Chat
 		user := update.Message.From
@@ -17,6 +17,5 @@ func messageLogger(bot *telego.Bot, update telego.Update, next telegohandler.Han
 			common.Logger.Tracef("[%s](%d) [%s](%d)", chat.Title, chat.ID, user.FirstName+user.LastName, user.ID)
 		}
 	}
-
-	next(bot, update)
+	return ctx.Next(update)
 }

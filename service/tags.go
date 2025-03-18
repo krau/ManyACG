@@ -219,7 +219,7 @@ func PredictArtworkTagsByIDAndUpdate(ctx context.Context, artworkID primitive.Ob
 				return
 			}
 			artworkHTMLCaption := tg.GetArtworkHTMLCaption(artwork)
-			if _, err := tg.Bot().EditMessageCaption(&telego.EditMessageCaptionParams{
+			if _, err := tg.Bot().EditMessageCaption(ctx, &telego.EditMessageCaptionParams{
 				ChatID:    tg.ChannelChatID(),
 				MessageID: artwork.Pictures[0].TelegramInfo.MessageID,
 				Caption:   artworkHTMLCaption,

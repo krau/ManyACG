@@ -37,7 +37,7 @@ func SendArtworkMediaGroup(ctx context.Context, bot *telego.Bot, chatID telego.C
 		if err != nil {
 			return nil, err
 		}
-		return bot.SendMediaGroup(
+		return bot.SendMediaGroup(ctx,
 			telegoutil.MediaGroup(
 				chatID,
 				inputMediaPhotos...,
@@ -63,7 +63,7 @@ func SendArtworkMediaGroup(ctx context.Context, bot *telego.Bot, chatID telego.C
 				MessageID: allMessages[i-1].MessageID,
 			})
 		}
-		messages, err := bot.SendMediaGroup(mediaGroup)
+		messages, err := bot.SendMediaGroup(ctx, mediaGroup)
 		if err != nil {
 			var apiError *telegoapi.Error
 			if errors.As(err, &apiError) {
@@ -166,7 +166,7 @@ func PostAndCreateArtwork(ctx context.Context, artwork *types.Artwork, bot *tele
 	}
 	showProgress := fromID != 0 && messageID != 0 && bot != nil
 	if showProgress {
-		defer bot.EditMessageReplyMarkup(&telego.EditMessageReplyMarkupParams{
+		defer bot.EditMessageReplyMarkup(ctx, &telego.EditMessageReplyMarkupParams{
 			ChatID:      telegoutil.ID(fromID),
 			MessageID:   messageID,
 			ReplyMarkup: nil,
@@ -174,7 +174,7 @@ func PostAndCreateArtwork(ctx context.Context, artwork *types.Artwork, bot *tele
 	}
 	for i, picture := range artwork.Pictures {
 		if showProgress {
-			go bot.EditMessageReplyMarkup(&telego.EditMessageReplyMarkupParams{
+			go bot.EditMessageReplyMarkup(ctx, &telego.EditMessageReplyMarkupParams{
 				ChatID:    telegoutil.ID(fromID),
 				MessageID: messageID,
 				ReplyMarkup: telegoutil.InlineKeyboard(
@@ -191,7 +191,7 @@ func PostAndCreateArtwork(ctx context.Context, artwork *types.Artwork, bot *tele
 		artwork.Pictures[i].StorageInfo = info
 	}
 	if showProgress {
-		go bot.EditMessageReplyMarkup(&telego.EditMessageReplyMarkupParams{
+		go bot.EditMessageReplyMarkup(ctx, &telego.EditMessageReplyMarkupParams{
 			ChatID:    telegoutil.ID(fromID),
 			MessageID: messageID,
 			ReplyMarkup: telegoutil.InlineKeyboard(
@@ -207,7 +207,7 @@ func PostAndCreateArtwork(ctx context.Context, artwork *types.Artwork, bot *tele
 	}
 	common.Logger.Infof("Posted artwork %s", artwork.Title)
 	if showProgress {
-		go bot.EditMessageReplyMarkup(&telego.EditMessageReplyMarkupParams{
+		go bot.EditMessageReplyMarkup(ctx, &telego.EditMessageReplyMarkupParams{
 			ChatID:    telegoutil.ID(fromID),
 			MessageID: messageID,
 			ReplyMarkup: telegoutil.InlineKeyboard(
@@ -234,7 +234,7 @@ func PostAndCreateArtwork(ctx context.Context, artwork *types.Artwork, bot *tele
 	artwork, err = service.CreateArtwork(ctx, artwork)
 	if err != nil {
 		go func() {
-			if bot.DeleteMessages(&telego.DeleteMessagesParams{
+			if bot.DeleteMessages(ctx, &telego.DeleteMessagesParams{
 				ChatID:     ChannelChatID,
 				MessageIDs: GetMessageIDs(messages),
 			}) != nil {
@@ -271,7 +271,7 @@ func checkDuplicate(ctx context.Context, artwork *types.Artwork, bot *telego.Bot
 	if err != nil {
 		common.Logger.Errorf("invalid ObjectID: %s", artwork.ID)
 		if sendNotify {
-			bot.SendMessage(telegoutil.Messagef(telegoutil.ID(fromID),
+			bot.SendMessage(ctx, telegoutil.Messagef(telegoutil.ID(fromID),
 				"刚刚发布的作品 [%s](%s) 后续处理失败\\: \n无效的ObjectID\\: %s", artworkTitleMarkdown, func() string {
 					if artwork.Pictures[0].TelegramInfo.MessageID != 0 {
 						return GetArtworkPostMessageURL(artwork.Pictures[0].TelegramInfo.MessageID, ChannelChatID)
@@ -352,7 +352,7 @@ func checkDuplicate(ctx context.Context, artwork *types.Artwork, bot *telego.Bot
 					return artworkOfSimilarPicture.SourceURL
 				}()))
 		}
-		_, err = bot.SendMessage(telegoutil.Message(telegoutil.ID(fromID), text).WithParseMode(telego.ModeMarkdownV2))
+		_, err = bot.SendMessage(ctx, telegoutil.Message(telegoutil.ID(fromID), text).WithParseMode(telego.ModeMarkdownV2))
 		if err != nil {
 			common.Logger.Errorf("error when sending similar pictures: %s", err)
 		}
@@ -369,7 +369,7 @@ func recaptionArtwork(ctx context.Context, artwork *types.Artwork, bot *telego.B
 		return
 	}
 	newCaption := GetArtworkHTMLCaption(newArtwork)
-	_, err = bot.EditMessageCaption(&telego.EditMessageCaptionParams{
+	_, err = bot.EditMessageCaption(ctx, &telego.EditMessageCaptionParams{
 		ChatID:    ChannelChatID,
 		MessageID: newArtwork.Pictures[0].TelegramInfo.MessageID,
 		Caption:   newCaption,

@@ -29,7 +29,7 @@ func ProcessPicturesHashAndSizeAndUpdate(ctx context.Context, bot *telego.Bot, m
 	if err != nil {
 		common.Logger.Errorf("Failed to get not processed pictures: %v", err)
 		if sendMessage {
-			bot.SendMessage(telegoutil.Messagef(
+			bot.SendMessage(ctx, telegoutil.Messagef(
 				message.Chat.ChatID(),
 				"Failed to get not processed pictures: %s",
 				err.Error(),
@@ -38,7 +38,7 @@ func ProcessPicturesHashAndSizeAndUpdate(ctx context.Context, bot *telego.Bot, m
 		return
 	}
 	if sendMessage {
-		bot.SendMessage(telegoutil.Messagef(
+		bot.SendMessage(ctx, telegoutil.Messagef(
 			message.Chat.ChatID(),
 			"Found %d not processed pictures",
 			len(pictures),
@@ -54,7 +54,7 @@ func ProcessPicturesHashAndSizeAndUpdate(ctx context.Context, bot *telego.Bot, m
 	}
 	common.Logger.Infof("Processed %d pictures, %d failed", len(pictures)-failed, failed)
 	if sendMessage {
-		bot.SendMessage(telegoutil.Messagef(
+		bot.SendMessage(ctx, telegoutil.Messagef(
 			message.Chat.ChatID(),
 			"Processed %d pictures, %d failed",
 			len(pictures)-failed,
@@ -139,7 +139,7 @@ func StoragePicturesRegularAndThumbAndUpdate(ctx context.Context, bot *telego.Bo
 	if err != nil {
 		common.Logger.Errorf("Failed to get no regular and thumb pictures: %v", err)
 		if sendMessage {
-			bot.SendMessage(telegoutil.Messagef(
+			bot.SendMessage(ctx, telegoutil.Messagef(
 				message.Chat.ChatID(),
 				"Failed to get no regular and thumb pictures: %s",
 				err.Error(),
@@ -148,7 +148,7 @@ func StoragePicturesRegularAndThumbAndUpdate(ctx context.Context, bot *telego.Bo
 		return
 	}
 	if sendMessage {
-		bot.SendMessage(telegoutil.Messagef(
+		bot.SendMessage(ctx, telegoutil.Messagef(
 			message.Chat.ChatID(),
 			"Found %d no regular and thumb pictures",
 			len(pictures),
@@ -164,7 +164,7 @@ func StoragePicturesRegularAndThumbAndUpdate(ctx context.Context, bot *telego.Bo
 	}
 	common.Logger.Infof("Processed %d pictures, %d failed", len(pictures)-failed, failed)
 	if sendMessage {
-		bot.SendMessage(telegoutil.Messagef(
+		bot.SendMessage(ctx, telegoutil.Messagef(
 			message.Chat.ChatID(),
 			"Processed %d pictures, %d failed",
 			len(pictures)-failed,
@@ -187,7 +187,7 @@ func FixTwitterArtists(ctx context.Context, bot *telego.Bot, message *telego.Mes
 	if collection == nil {
 		common.Logger.Errorf("Failed to get collection")
 		if sendMessage {
-			bot.SendMessage(telegoutil.Messagef(
+			bot.SendMessage(ctx, telegoutil.Messagef(
 				message.Chat.ChatID(),
 				"Failed to get collection",
 			))
@@ -198,7 +198,7 @@ func FixTwitterArtists(ctx context.Context, bot *telego.Bot, message *telego.Mes
 	if err != nil {
 		common.Logger.Errorf("Failed to count artists: %v", err)
 		if sendMessage {
-			bot.SendMessage(telegoutil.Messagef(
+			bot.SendMessage(ctx, telegoutil.Messagef(
 				message.Chat.ChatID(),
 				"Failed to count artists: %s",
 				err.Error(),
@@ -208,7 +208,7 @@ func FixTwitterArtists(ctx context.Context, bot *telego.Bot, message *telego.Mes
 	}
 	common.Logger.Infof("Found %d artists", total)
 	if sendMessage {
-		bot.SendMessage(telegoutil.Messagef(
+		bot.SendMessage(ctx, telegoutil.Messagef(
 			message.Chat.ChatID(),
 			"Found %d artists",
 			total,
@@ -218,7 +218,7 @@ func FixTwitterArtists(ctx context.Context, bot *telego.Bot, message *telego.Mes
 	if err != nil {
 		common.Logger.Errorf("Failed to find artists: %v", err)
 		if sendMessage {
-			bot.SendMessage(telegoutil.Messagef(
+			bot.SendMessage(ctx, telegoutil.Messagef(
 				message.Chat.ChatID(),
 				"Failed to find artists: %s",
 				err.Error(),
@@ -285,7 +285,7 @@ func FixTwitterArtists(ctx context.Context, bot *telego.Bot, message *telego.Mes
 	}
 	common.Logger.Infof("Processed %d artists, %d failed", count, failed)
 	if sendMessage {
-		bot.SendMessage(telegoutil.Messagef(
+		bot.SendMessage(ctx, telegoutil.Messagef(
 			message.Chat.ChatID(),
 			"Processed %d artists, %d failed",
 			count,
@@ -300,7 +300,7 @@ func PredictAllArtworkTagsAndUpdate(ctx context.Context, bot *telego.Bot, messag
 	if err != nil {
 		common.Logger.Errorf("Failed to find artworks: %v", err)
 		if sendMessage {
-			bot.SendMessage(telegoutil.Messagef(
+			bot.SendMessage(ctx, telegoutil.Messagef(
 				message.Chat.ChatID(),
 				"Failed to find artworks: %s",
 				err.Error(),
@@ -313,7 +313,7 @@ func PredictAllArtworkTagsAndUpdate(ctx context.Context, bot *telego.Bot, messag
 	if err != nil {
 		common.Logger.Errorf("Failed to count artworks: %v", err)
 		if sendMessage {
-			bot.SendMessage(telegoutil.Messagef(
+			bot.SendMessage(ctx, telegoutil.Messagef(
 				message.Chat.ChatID(),
 				"Failed to count artworks: %s",
 				err.Error(),
@@ -337,7 +337,7 @@ func PredictAllArtworkTagsAndUpdate(ctx context.Context, bot *telego.Bot, messag
 	}
 	common.Logger.Infof("Total %d artworks, processed %d, failed %d", total, count, failed)
 	if sendMessage {
-		bot.SendMessage(telegoutil.Messagef(
+		bot.SendMessage(ctx, telegoutil.Messagef(
 			message.Chat.ChatID(),
 			"Total %d artworks, processed %d, failed %d",
 			total,

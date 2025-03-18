@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 
@@ -11,19 +10,20 @@ import (
 	"github.com/krau/ManyACG/telegram/utils"
 	"github.com/krau/ManyACG/types"
 	"github.com/mymmrac/telego"
+	"github.com/mymmrac/telego/telegohandler"
 	"github.com/mymmrac/telego/telegoutil"
 )
 
-func DumpArtworkInfo(ctx context.Context, bot *telego.Bot, message telego.Message) {
+func DumpArtworkInfo(ctx *telegohandler.Context, message telego.Message) error {
 	userAdmin, err := service.GetAdminByUserID(ctx, message.From.ID)
 	if err != nil {
 		common.Logger.Errorf("获取管理员信息失败: %s", err)
-		utils.ReplyMessage(bot, message, "获取管理员信息失败")
-		return
+		utils.ReplyMessage(ctx, ctx.Bot(), message, "获取管理员信息失败")
+		return nil
 	}
 	if userAdmin == nil {
-		utils.ReplyMessage(bot, message, "你没有权限执行此操作")
-		return
+		utils.ReplyMessage(ctx, ctx.Bot(), message, "你没有权限执行此操作")
+		return nil
 	}
 	helpText := fmt.Sprintf(`
 [管理员] <b>使用 /dump 命令回复一条包含作品链接的消息, 将获取作品信息并以JSON格式回复</b>
@@ -33,13 +33,13 @@ func DumpArtworkInfo(ctx context.Context, bot *telego.Bot, message telego.Messag
 若不提供参数, 默认获取所有信息
 			`, common.EscapeHTML("/dump [tags] [artist] [pictures]"))
 	if message.ReplyToMessage == nil {
-		utils.ReplyMessageWithHTML(bot, message, helpText)
-		return
+		utils.ReplyMessageWithHTML(ctx, ctx.Bot(), message, helpText)
+		return nil
 	}
 	sourceURL := utils.FindSourceURLForMessage(message.ReplyToMessage)
 	if sourceURL == "" {
-		utils.ReplyMessageWithHTML(bot, message, "回复的消息中没有支持的链接, 命令帮助:\n"+helpText)
-		return
+		utils.ReplyMessageWithHTML(ctx, ctx.Bot(), message, "回复的消息中没有支持的链接, 命令帮助:\n"+helpText)
+		return nil
 	}
 	_, _, args := telegoutil.ParseCommand(message.Text)
 	adapterOpt := &types.AdapterOption{}
@@ -61,16 +61,17 @@ func DumpArtworkInfo(ctx context.Context, bot *telego.Bot, message telego.Messag
 	artwork, err := service.GetArtworkByURL(ctx, sourceURL, adapterOpt)
 	if err != nil {
 		common.Logger.Errorf("获取作品信息失败: %s", err)
-		utils.ReplyMessageWithHTML(bot, message, fmt.Sprintf("获取作品信息失败\n<code>%s</code>", common.EscapeHTML(err.Error())))
-		return
+		utils.ReplyMessageWithHTML(ctx, ctx.Bot(), message, fmt.Sprintf("获取作品信息失败\n<code>%s</code>", common.EscapeHTML(err.Error())))
+		return nil
 	}
 	artworkJSON, err := json.MarshalIndent(artwork, "", "  ")
 	if err != nil {
 		common.Logger.Errorf("序列化作品信息失败: %s", err)
-		utils.ReplyMessageWithHTML(bot, message, fmt.Sprintf("序列化作品信息失败\n<code>%s</code>", common.EscapeHTML(err.Error())))
-		return
+		utils.ReplyMessageWithHTML(ctx, ctx.Bot(), message, fmt.Sprintf("序列化作品信息失败\n<code>%s</code>", common.EscapeHTML(err.Error())))
+		return nil
 	}
-	if _, err := utils.ReplyMessageWithHTML(bot, message, "<pre>"+common.EscapeHTML(string(artworkJSON))+"</pre>"); err != nil {
-		utils.ReplyMessageWithHTML(bot, message, fmt.Sprintf("回复消息失败\n<code>%s</code>", common.EscapeHTML(err.Error())))
+	if _, err := utils.ReplyMessageWithHTML(ctx, ctx.Bot(), message, "<pre>"+common.EscapeHTML(string(artworkJSON))+"</pre>"); err != nil {
+		utils.ReplyMessageWithHTML(ctx, ctx.Bot(), message, fmt.Sprintf("回复消息失败\n<code>%s</code>", common.EscapeHTML(err.Error())))
 	}
+	return nil
 }

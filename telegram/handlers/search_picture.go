@@ -16,47 +16,48 @@ import (
 	"github.com/krau/ManyACG/telegram/utils"
 
 	"github.com/mymmrac/telego"
+	"github.com/mymmrac/telego/telegohandler"
 	"github.com/mymmrac/telego/telegoutil"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-func SearchPicture(ctx context.Context, bot *telego.Bot, message telego.Message) {
+func SearchPicture(ctx *telegohandler.Context, message telego.Message) error {
 	if message.ReplyToMessage == nil {
 		helpText := `
 <b>使用 /search 命令回复一条图片消息, 将搜索图片来源</b>
 `
-		utils.ReplyMessageWithHTML(bot, message, helpText)
-		return
+		utils.ReplyMessageWithHTML(ctx, ctx.Bot(), message, helpText)
+		return nil
 	}
-	msg, err := utils.ReplyMessage(bot, message, "少女祈祷中...")
+	msg, err := utils.ReplyMessage(ctx, ctx.Bot(), message, "少女祈祷中...")
 	if err != nil {
 		common.Logger.Errorf("reply message failed: %s", err)
-		return
+		return nil
 	}
 
-	file, err := utils.GetMessagePhotoFile(bot, message.ReplyToMessage)
+	file, err := utils.GetMessagePhotoFile(ctx, ctx.Bot(), message.ReplyToMessage)
 	if err != nil {
-		bot.EditMessageText(&telego.EditMessageTextParams{
+		ctx.Bot().EditMessageText(ctx, &telego.EditMessageTextParams{
 			ChatID:    msg.Chat.ChatID(),
 			MessageID: msg.GetMessageID(),
 			Text:      "获取图片文件失败: " + err.Error(),
 		})
-		return
+		return nil
 	}
 	text, dbExists, err := getDBSearchResultText(ctx, file)
 	if err != nil {
 		common.Logger.Errorf("search in db failed: %s", err)
 	}
 	if dbExists {
-		bot.EditMessageText(&telego.EditMessageTextParams{
+		ctx.Bot().EditMessageText(ctx, &telego.EditMessageTextParams{
 			ChatID:    msg.Chat.ChatID(),
 			MessageID: msg.GetMessageID(),
 			Text:      text,
 			ParseMode: telego.ModeMarkdownV2,
 		})
-		return
+		return nil
 	} else {
-		go bot.EditMessageText(&telego.EditMessageTextParams{
+		go ctx.Bot().EditMessageText(ctx, &telego.EditMessageTextParams{
 			ChatID:    msg.Chat.ChatID(),
 			MessageID: msg.GetMessageID(),
 			Text:      "数据库搜索无结果, 使用 ascii2d 搜索中...",
@@ -66,20 +67,20 @@ func SearchPicture(ctx context.Context, bot *telego.Bot, message telego.Message)
 	ascii2dResults, err := getAscii2dSearchResult(file)
 	if err != nil {
 		common.Logger.Errorf("search in ascii2d failed: %s", err)
-		bot.EditMessageText(&telego.EditMessageTextParams{
+		ctx.Bot().EditMessageText(ctx, &telego.EditMessageTextParams{
 			ChatID:    msg.Chat.ChatID(),
 			MessageID: msg.GetMessageID(),
 			Text:      "ascii2d 搜索失败",
 		})
-		return
+		return nil
 	}
 	if len(ascii2dResults) == 0 {
-		bot.EditMessageText(&telego.EditMessageTextParams{
+		ctx.Bot().EditMessageText(ctx, &telego.EditMessageTextParams{
 			ChatID:    msg.Chat.ChatID(),
 			MessageID: msg.GetMessageID(),
 			Text:      "没有搜索到相似图片",
 		})
-		return
+		return nil
 	}
 	text = fmt.Sprintf("在 ascii2d 搜索到%d张相似的图片\n\n", len(ascii2dResults))
 	for _, result := range ascii2dResults {
@@ -88,14 +89,14 @@ func SearchPicture(ctx context.Context, bot *telego.Bot, message telego.Message)
 	thumbFile, err := common.DownloadWithCache(ctx, ascii2dResults[0].Thumbnail, nil)
 	if err != nil {
 		common.Logger.Errorf("download thumbnail failed: %s", err)
-		bot.EditMessageText(&telego.EditMessageTextParams{
+		ctx.Bot().EditMessageText(ctx, &telego.EditMessageTextParams{
 			ChatID:    msg.Chat.ChatID(),
 			MessageID: msg.GetMessageID(),
 			Text:      text,
 			ParseMode: telego.ModeMarkdownV2,
 		})
 	} else {
-		_, err = bot.EditMessageMedia(&telego.EditMessageMediaParams{
+		_, err = ctx.Bot().EditMessageMedia(ctx, &telego.EditMessageMediaParams{
 			ChatID:    msg.Chat.ChatID(),
 			MessageID: msg.GetMessageID(),
 			Media: telegoutil.MediaPhoto(telegoutil.File(telegoutil.NameReader(bytes.NewReader(thumbFile), path.Base(ascii2dResults[0].Thumbnail)))).
@@ -106,29 +107,31 @@ func SearchPicture(ctx context.Context, bot *telego.Bot, message telego.Message)
 			common.Logger.Errorf("edit message media failed: %s", err)
 		}
 	}
+	return nil
 }
 
-func SearchPictureCallbackQuery(ctx context.Context, bot *telego.Bot, query telego.CallbackQuery) {
+func SearchPictureCallbackQuery(ctx *telegohandler.Context, query telego.CallbackQuery) error {
 	if !query.Message.IsAccessible() {
-		return
+		return nil
 	}
 	message := query.Message.(*telego.Message)
-	file, err := utils.GetMessagePhotoFile(bot, message)
+	file, err := utils.GetMessagePhotoFile(ctx, ctx.Bot(), message)
 	if err != nil {
-		bot.AnswerCallbackQuery(telegoutil.CallbackQuery(query.ID).WithText("获取图片文件失败: " + err.Error()).WithShowAlert().WithCacheTime(5))
-		return
+		ctx.Bot().AnswerCallbackQuery(ctx, telegoutil.CallbackQuery(query.ID).WithText("获取图片文件失败: "+err.Error()).WithShowAlert().WithCacheTime(5))
+		return nil
 	}
 	text, hasResult, err := getDBSearchResultText(ctx, file)
 	if err != nil {
-		bot.AnswerCallbackQuery(telegoutil.CallbackQuery(query.ID).WithText(err.Error()).WithShowAlert().WithCacheTime(5))
-		return
+		ctx.Bot().AnswerCallbackQuery(ctx, telegoutil.CallbackQuery(query.ID).WithText(err.Error()).WithShowAlert().WithCacheTime(5))
+		return nil
 	}
 	if !hasResult {
-		go bot.AnswerCallbackQuery(telegoutil.CallbackQuery(query.ID).WithText(text).WithCacheTime(5))
+		go ctx.Bot().AnswerCallbackQuery(ctx, telegoutil.CallbackQuery(query.ID).WithText(text).WithCacheTime(5))
 	} else {
-		go bot.AnswerCallbackQuery(telegoutil.CallbackQuery(query.ID).WithText("搜索到相似图片").WithCacheTime(5))
+		go ctx.Bot().AnswerCallbackQuery(ctx, telegoutil.CallbackQuery(query.ID).WithText("搜索到相似图片").WithCacheTime(5))
 	}
-	utils.ReplyMessageWithMarkdown(bot, *message, text)
+	utils.ReplyMessageWithMarkdown(ctx, ctx.Bot(), *message, text)
+	return nil
 }
 
 func getDBSearchResultText(ctx context.Context, file []byte) (string, bool, error) {

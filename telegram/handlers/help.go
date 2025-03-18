@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"context"
 	"fmt"
 
 	"github.com/krau/ManyACG/common"
@@ -9,9 +8,10 @@ import (
 	"github.com/krau/ManyACG/telegram/utils"
 
 	"github.com/mymmrac/telego"
+	"github.com/mymmrac/telego/telegohandler"
 )
 
-func Help(ctx context.Context, bot *telego.Bot, message telego.Message) {
+func Help(ctx *telegohandler.Context, message telego.Message) error {
 	helpText := `使用方法:
 /setu - 随机图片(NSFW)
 /random - 随机全年龄图片
@@ -50,5 +50,6 @@ Inline 查询(在任意聊天框中@本bot)支持同样的参数格式.
 `
 	}
 	helpText += fmt.Sprintf("\n版本: %s, 构建日期 %s, 提交 %s\nhttps://github.com/krau/ManyACG", common.Version, common.BuildTime, common.Commit[:7])
-	utils.ReplyMessage(bot, message, helpText)
+	utils.ReplyMessage(ctx, ctx.Bot(), message, helpText)
+	return nil
 }

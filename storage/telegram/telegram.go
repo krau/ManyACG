@@ -31,7 +31,9 @@ func (t *TelegramStorage) Init() {
 		common.Logger.Fatalf("failed to create telegram bot: %s", err)
 		os.Exit(1)
 	}
-	botInfo, err := Bot.GetMe()
+	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Minute)
+	defer cancel()
+	botInfo, err := Bot.GetMe(ctx)
 	if err != nil {
 		common.Logger.Fatalf("failed to get bot info: %s", err)
 		os.Exit(1)
@@ -46,7 +48,7 @@ func (t *TelegramStorage) Save(ctx context.Context, filePath string, _ string) (
 		common.Logger.Errorf("failed to read file: %s", err)
 		return nil, ErrReadFile
 	}
-	msg, err := Bot.SendDocument(telegoutil.Document(ChatID, telegoutil.File(telegoutil.NameReader(bytes.NewReader(fileBytes), filepath.Base(filePath)))))
+	msg, err := Bot.SendDocument(ctx, telegoutil.Document(ChatID, telegoutil.File(telegoutil.NameReader(bytes.NewReader(fileBytes), filepath.Base(filePath)))))
 	if err != nil {
 		common.Logger.Errorf("failed to send document: %s", err)
 		return nil, ErrFailedSendDocument
@@ -79,7 +81,7 @@ func (t *TelegramStorage) GetFile(ctx context.Context, detail *types.StorageDeta
 	if data, err := os.ReadFile(cachePath); err == nil {
 		return data, nil
 	}
-	tgFile, err := Bot.GetFile(&telego.GetFileParams{
+	tgFile, err := Bot.GetFile(ctx, &telego.GetFileParams{
 		FileID: file.FileID,
 	})
 	if err != nil {

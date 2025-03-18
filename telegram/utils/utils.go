@@ -43,7 +43,7 @@ func GetMssageOriginChannel(message telego.Message) *telego.MessageOriginChannel
 
 如果是，返回 messageOriginChannel 和 true
 */
-func GetMessageOriginChannelArtworkPost(ctx context.Context, bot *telego.Bot, message telego.Message) (*telego.MessageOriginChannel, bool) {
+func GetMessageOriginChannelArtworkPost(message telego.Message) (*telego.MessageOriginChannel, bool) {
 	if message.ReplyToMessage == nil {
 		return nil, false
 	}
@@ -111,22 +111,22 @@ func GetArtworkHTMLCaption(artwork *types.Artwork) string {
 	return caption
 }
 
-func ReplyMessage(bot *telego.Bot, message telego.Message, text string) (*telego.Message, error) {
-	return bot.SendMessage(telegoutil.Message(message.Chat.ChatID(), text).
+func ReplyMessage(ctx context.Context, bot *telego.Bot, message telego.Message, text string) (*telego.Message, error) {
+	return bot.SendMessage(ctx, telegoutil.Message(message.Chat.ChatID(), text).
 		WithReplyParameters(&telego.ReplyParameters{
 			MessageID: message.MessageID,
 		}))
 }
 
-func ReplyMessageWithMarkdown(bot *telego.Bot, message telego.Message, text string) (*telego.Message, error) {
-	return bot.SendMessage(telegoutil.Message(message.Chat.ChatID(), text).
+func ReplyMessageWithMarkdown(ctx context.Context, bot *telego.Bot, message telego.Message, text string) (*telego.Message, error) {
+	return bot.SendMessage(ctx, telegoutil.Message(message.Chat.ChatID(), text).
 		WithReplyParameters(&telego.ReplyParameters{
 			MessageID: message.MessageID,
 		}).WithParseMode(telego.ModeMarkdownV2))
 }
 
-func ReplyMessageWithHTML(bot *telego.Bot, message telego.Message, text string) (*telego.Message, error) {
-	return bot.SendMessage(telegoutil.Message(message.Chat.ChatID(), text).
+func ReplyMessageWithHTML(ctx context.Context, bot *telego.Bot, message telego.Message, text string) (*telego.Message, error) {
+	return bot.SendMessage(ctx, telegoutil.Message(message.Chat.ChatID(), text).
 		WithReplyParameters(&telego.ReplyParameters{
 			MessageID: message.MessageID,
 		}).WithParseMode(telego.ModeHTML))
@@ -166,7 +166,7 @@ func GetPostedPictureInlineKeyboardButton(artwork *types.Artwork, index uint, ch
 	}
 }
 
-func GetMessagePhotoFile(bot *telego.Bot, message *telego.Message) ([]byte, error) {
+func GetMessagePhotoFile(ctx context.Context, bot *telego.Bot, message *telego.Message) ([]byte, error) {
 	fileID := ""
 	if message.Photo != nil {
 		fileID = message.Photo[len(message.Photo)-1].FileID
@@ -180,7 +180,7 @@ func GetMessagePhotoFile(bot *telego.Bot, message *telego.Message) ([]byte, erro
 	if fileID == "" {
 		return nil, errs.ErrNoPhotoInMessage
 	}
-	tgFile, err := bot.GetFile(
+	tgFile, err := bot.GetFile(ctx,
 		&telego.GetFileParams{FileID: fileID},
 	)
 	if err != nil {
@@ -222,7 +222,7 @@ func SendPictureFileByID(ctx context.Context, bot *telego.Bot, message telego.Me
 	if picture.TelegramInfo != nil && picture.TelegramInfo.DocumentFileID != "" {
 		file = telegoutil.FileFromID(picture.TelegramInfo.DocumentFileID)
 	} else {
-		go ReplyMessage(bot, message, "正在下载原图，请稍等~")
+		go ReplyMessage(ctx, bot, message, "正在下载原图，请稍等~")
 		data, err := storage.GetFile(ctx, picture.StorageInfo.Original)
 		if err != nil {
 			data, err = common.DownloadWithCache(ctx, picture.Original, nil)
@@ -255,7 +255,7 @@ func SendPictureFileByID(ctx context.Context, bot *telego.Bot, message telego.Me
 			common.Logger.Warnf("创建 ObjectID 失败: %s", err)
 		}
 	}
-	documentMessage, err := bot.SendDocument(document)
+	documentMessage, err := bot.SendDocument(ctx, document)
 	if err != nil {
 		return nil, err
 	}
