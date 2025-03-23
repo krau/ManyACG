@@ -6,7 +6,7 @@ require (
 	github.com/PuerkitoBio/goquery v1.10.2
 	github.com/appleboy/gin-jwt/v2 v2.10.0
 	github.com/blang/semver v3.5.1+incompatible
-	github.com/bytedance/sonic v1.13.1
+	github.com/bytedance/sonic v1.13.2
 	github.com/chenyahui/gin-cache v1.9.0
 	github.com/corona10/goimagehash v1.1.0
 	github.com/duke-git/lancet/v2 v2.3.5
@@ -20,7 +20,7 @@ require (
 	github.com/meilisearch/meilisearch-go v0.31.0
 	github.com/mmcdole/gofeed v1.3.0
 	github.com/penglongli/gin-metrics v0.1.13
-	github.com/resend/resend-go/v2 v2.15.0
+	github.com/resend/resend-go/v2 v2.16.0
 	github.com/rhysd/go-github-selfupdate v1.2.3
 	github.com/spf13/cobra v1.9.1
 	github.com/spf13/viper v1.20.0
@@ -74,14 +74,14 @@ require (
 	github.com/montanaflynn/stats v0.7.1 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
 	github.com/nfnt/resize v0.0.0-20180221191011-83c6a9932646 // indirect
-	github.com/onsi/ginkgo/v2 v2.23.0 // indirect
+	github.com/onsi/ginkgo/v2 v2.23.3 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/prometheus/client_golang v1.21.1 // indirect
 	github.com/prometheus/client_model v0.6.1 // indirect
 	github.com/prometheus/common v0.63.0 // indirect
 	github.com/prometheus/procfs v0.16.0 // indirect
 	github.com/quic-go/qpack v0.5.1 // indirect
-	github.com/quic-go/quic-go v0.50.0 // indirect
+	github.com/quic-go/quic-go v0.50.1 // indirect
 	github.com/refraction-networking/utls v1.6.7 // indirect
 	github.com/rogpeppe/go-internal v1.13.1 // indirect
 	github.com/tcnksm/go-gitconfig v0.1.2 // indirect
