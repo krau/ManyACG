@@ -72,12 +72,8 @@ func (resp *FxTwitterApiResp) ToArtwork() (*types.Artwork, error) {
 			Height:    uint(photo.Height),
 		})
 	}
-	tweetPath := GetTweetPath(tweet.URL)
-	if tweetPath == "" {
-		return nil, ErrInvalidURL
-	}
 
-	title := tweetPath
+	title := fmt.Sprintf("%s/%s", tweet.Author.Username, tweet.ID)
 	tags := common.ExtractTagsFromText(tweet.Text)
 	var desc string
 
@@ -99,7 +95,7 @@ func (resp *FxTwitterApiResp) ToArtwork() (*types.Artwork, error) {
 		Title:       title,
 		Description: desc,
 		SourceType:  types.SourceTypeTwitter,
-		SourceURL:   tweet.URL,
+		SourceURL:   fmt.Sprintf("https://x.com/%s/status/%s", tweet.Author.Username, tweet.ID),
 		R18:         false,
 		Artist: &types.Artist{
 			Name:     tweet.Author.Name,

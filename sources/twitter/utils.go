@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"regexp"
-	"strings"
 	"time"
 
 	"github.com/imroc/req/v3"
@@ -35,11 +34,20 @@ func reqApiResp(url string) (*FxTwitterApiResp, error) {
 	return &fxTwitterApiResp, nil
 }
 
-func GetTweetPath(sourceURL string) string {
-	url := twitterSourceURLRegexp.FindString(sourceURL)
-	url = strings.TrimPrefix(url, "twitter.com/")
-	url = strings.TrimPrefix(url, "x.com/")
-	return url
+func getTweetID(sourceURL string) string {
+	matches := twitterSourceURLRegexp.FindStringSubmatch(sourceURL)
+	if len(matches) < 3 {
+		return ""
+	}
+	return matches[2]
+}
+
+func getTweetPath(sourceURL string) string {
+	matches := twitterSourceURLRegexp.FindStringSubmatch(sourceURL)
+	if len(matches) < 3 {
+		return ""
+	}
+	return matches[1] + "/status/" + matches[2]
 }
 
 func (t *Twitter) fetchRssURL(url string, limit int) ([]*types.Artwork, error) {

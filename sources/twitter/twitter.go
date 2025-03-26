@@ -2,12 +2,14 @@ package twitter
 
 import (
 	"fmt"
+	"net/url"
 	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
 
 	"github.com/imroc/req/v3"
+	"github.com/krau/ManyACG/common"
 	"github.com/krau/ManyACG/config"
 	sourceCommon "github.com/krau/ManyACG/sources/common"
 	"github.com/krau/ManyACG/types"
@@ -60,11 +62,11 @@ func (t *Twitter) FetchNewArtworks(limit int) ([]*types.Artwork, error) {
 }
 
 func (t *Twitter) GetArtworkInfo(sourceURL string) (*types.Artwork, error) {
-	tweetPath := GetTweetPath(sourceURL)
-	if tweetPath == "" {
+	tweetID := getTweetID(sourceURL)
+	if tweetID == "" {
 		return nil, ErrInvalidURL
 	}
-	fxTwitterApiURL := "https://api." + config.Cfg.Source.Twitter.FxTwitterDomain + "/" + tweetPath
+	fxTwitterApiURL := fmt.Sprintf("https://api.%s/_/status/%s", config.Cfg.Source.Twitter.FxTwitterDomain, tweetID)
 	resp, err := reqApiResp(fxTwitterApiURL)
 	if err != nil {
 		return nil, err
@@ -87,12 +89,17 @@ func (t *Twitter) GetSourceURLRegexp() *regexp.Regexp {
 	return twitterSourceURLRegexp
 }
 
-func (t *Twitter) GetCommonSourceURL(url string) string {
-	tweetPath := GetTweetPath(url)
-	if tweetPath == "" {
+func (t *Twitter) GetCommonSourceURL(twurl string) string {
+	tweet := getTweetPath(twurl)
+	if tweet == "" {
 		return ""
 	}
-	return "https://twitter.com/" + tweetPath
+	commonUrl, err := url.JoinPath("https://x.com", tweet)
+	if err != nil {
+		common.Logger.Errorf("failed to join path: %v", err)
+		return ""
+	}
+	return commonUrl
 }
 
 func (t *Twitter) GetFileName(artwork *types.Artwork, picture *types.Picture) string {
