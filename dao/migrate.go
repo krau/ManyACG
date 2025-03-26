@@ -6,6 +6,7 @@ import (
 	"context"
 	"fmt"
 	"regexp"
+	"strings"
 
 	"github.com/krau/ManyACG/types"
 	"go.mongodb.org/mongo-driver/bson"
@@ -348,4 +349,53 @@ func CleanTag(ctx context.Context, regex string) error {
 	})
 
 	return err
+}
+
+// 将数据库中所有的 twitter.com 链接替换为 x.com
+func MigrateTwitterDomainToX(ctx context.Context) error {
+	filter := bson.M{
+		"source_type": "twitter",
+		"source_url":  bson.M{"$regex": "twitter.com"},
+	}
+
+	cursor, err := artworkCollection.Find(ctx, filter)
+	if err != nil {
+		return fmt.Errorf("查找Twitter链接失败: %w", err)
+	}
+	defer cursor.Close(ctx)
+
+	var modifiedCount int64
+	for cursor.Next(ctx) {
+		var artwork struct {
+			ID        primitive.ObjectID `bson:"_id"`
+			SourceURL string             `bson:"source_url"`
+		}
+
+		if err := cursor.Decode(&artwork); err != nil {
+			fmt.Printf("解码文档失败: %v\n", err)
+			continue
+		}
+
+		newSourceURL := strings.Replace(artwork.SourceURL, "twitter.com", "x.com", -1)
+
+		updateResult, err := artworkCollection.UpdateOne(
+			ctx,
+			bson.M{"_id": artwork.ID},
+			bson.M{"$set": bson.M{"source_url": newSourceURL}},
+		)
+
+		if err != nil {
+			fmt.Printf("更新文档 %s 失败: %v\n", artwork.ID.Hex(), err)
+			continue
+		}
+
+		modifiedCount += updateResult.ModifiedCount
+	}
+
+	if err := cursor.Err(); err != nil {
+		return fmt.Errorf("遍历文档时发生错误: %w", err)
+	}
+
+	fmt.Printf("成功将 %d 个Twitter链接更新为X链接\n", modifiedCount)
+	return nil
 }

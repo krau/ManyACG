@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"os/signal"
 	"time"
 
 	"github.com/krau/ManyACG/common"
@@ -107,6 +108,36 @@ var cleanTagCmd = &cobra.Command{
 	},
 }
 
+// Migrate database v0.80.2 to new
+//
+// Breaking change: use x.com domain for twitter source url
+//
+// This command will be removed in the future
+var migrateCmd = &cobra.Command{
+	Use:   "migrate",
+	Short: "Migrate database v0.80.2 to new",
+	Long:  "Migrate database v0.80.2 to new (breaking change: use x.com domain for twitter source url)",
+	Run: func(cmd *cobra.Command, args []string) {
+		config.InitConfig()
+		common.Init()
+		common.Logger.Info("Start migrating")
+		ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
+		defer cancel()
+		dao.InitDB(ctx)
+		defer func() {
+			if err := dao.Client.Disconnect(ctx); err != nil {
+				common.Logger.Fatal(err)
+				os.Exit(1)
+			}
+		}()
+		if err := dao.MigrateTwitterDomainToX(ctx); err != nil {
+			common.Logger.Fatal(err)
+			os.Exit(1)
+		}
+		common.Logger.Info("Migration completed")
+	},
+}
+
 func init() {
 	rootCmd.AddCommand(dbCmd)
 	dbCmd.AddCommand(artistCmd)
@@ -114,4 +145,5 @@ func init() {
 	dbCmd.AddCommand(tagCmd)
 	tagCmd.AddCommand(tidyTagCmd)
 	tagCmd.AddCommand(cleanTagCmd)
+	dbCmd.AddCommand(migrateCmd)
 }

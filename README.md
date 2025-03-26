@@ -30,7 +30,7 @@ ManyACG 是为收集与整理二次元插画作品而生的项目, 目前主要�
 
 - **多图源支持**
   - [x] [Pixiv](https://www.pixiv.net/)
-  - [x] [Twitter](https://twitter.com/)
+  - [x] [Twitter](https://x.com/)
   - [x] [Danbooru](https://danbooru.donmai.us/)
   - [x] [Bilibili](https://www.bilibili.com/)
   - [x] [Kemono](https://www.kemono.su/)
