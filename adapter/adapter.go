@@ -6,7 +6,6 @@ import (
 	"html"
 	"sync"
 
-	"github.com/duke-git/lancet/v2/slice"
 	"github.com/krau/ManyACG/common"
 	"github.com/krau/ManyACG/config"
 	"github.com/krau/ManyACG/dao"
@@ -200,6 +199,6 @@ func ConvertToSearchDoc(ctx context.Context, artworkModel *types.ArtworkModel) (
 		Title:       artwork.Title,
 		Artist:      artwork.Artist.Name + " " + artwork.Artist.Username,
 		Description: artwork.Description,
-		Tags:        slice.Join(artwork.Tags, ","),
+		Tags:        artwork.Tags,
 	}, nil
 }
