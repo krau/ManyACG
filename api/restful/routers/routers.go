@@ -31,6 +31,7 @@ func RegisterAllRouters(r *gin.RouterGroup, authMiddleware *jwt.GinJWTMiddleware
 	} else {
 		r.GET("/atom", GenerateAtom)
 	}
+	r.GET("/myip", MyIP)
 
 	apikeyGroup := r.Group("/apikey")
 	apikey.RegisterRouter(apikeyGroup)

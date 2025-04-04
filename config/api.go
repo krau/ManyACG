@@ -21,7 +21,8 @@ type apiConfig struct {
 
 	PathRules []ApiPathRule `toml:"path_rules" mapstructure:"path_rules" json:"path_rules" yaml:"path_rules"`
 
-	Cache apiCacheConfig `toml:"cache" mapstructure:"cache" json:"cache" yaml:"cache"`
+	Cache   apiCacheConfig `toml:"cache" mapstructure:"cache" json:"cache" yaml:"cache"`
+	GeoIPDB string         `toml:"geoip_db" mapstructure:"geoip_db" json:"geoip_db" yaml:"geoip_db"`
 }
 
 type ApiPathRule struct {

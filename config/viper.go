@@ -62,6 +62,7 @@ func InitConfig() {
 	viper.SetDefault("api.realm", "ManyACG")
 	viper.SetDefault("api.token_expire", 86400*14)
 	viper.SetDefault("api.refresh_token_expire", 86400*30)
+	viper.SetDefault("api.geoip_db", "geoip.mmdb")
 
 	viper.SetDefault("fetcher.max_concurrent", 5)
 	viper.SetDefault("fetcher.limit", 50)

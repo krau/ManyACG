@@ -46,6 +46,7 @@ func Run(ctx context.Context) {
 
 	middleware.Init()
 	v1 := r.Group("/api/v1")
+	routers.Init()
 	routers.RegisterAllRouters(v1, middleware.JWTAuthMiddleware)
 
 	server := &http.Server{

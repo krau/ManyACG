@@ -7,3 +7,4 @@ tmp/
 .air.toml
 .vscode/
 *session.db
+*.mmdb

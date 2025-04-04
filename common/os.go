@@ -6,6 +6,8 @@ import (
 	"path/filepath"
 	"sync"
 	"time"
+
+	"github.com/duke-git/lancet/v2/fileutil"
 )
 
 var fileLocks sync.Map
@@ -27,8 +29,7 @@ func MkFile(path string, data []byte) error {
 }
 
 func FileExists(path string) bool {
-	_, err := os.Stat(path)
-	return err == nil
+	return fileutil.IsExist(path)
 }
 
 // 删除文件, 并清理空目录. 如果文件不存在则返回 nil
