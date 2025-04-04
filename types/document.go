@@ -6,4 +6,5 @@ type ArtworkSearchDocument struct {
 	Artist      string `json:"artist"`
 	Description string `json:"description"`
 	Tags        string `json:"tags"`
+	R18         bool   `json:"r18"`
 }
