@@ -132,7 +132,7 @@ func GetArtworkList(ctx *gin.Context) {
 	}
 	if request.Keyword != "" {
 		if request.Hybrid {
-			getArtworkListHybrid(ctx, request.Keyword, 0.8, request.Page*request.PageSize, request.PageSize, adapterOption)
+			getArtworkListHybrid(ctx, request.Keyword, 0.8, request.Page*request.PageSize, request.PageSize, r18Type, adapterOption)
 			return
 		}
 		keywordSlice := common.ParseStringTo2DArray(request.Keyword, ",", ";")
@@ -158,7 +158,7 @@ func GetArtworkList(ctx *gin.Context) {
 			common.GinErrorResponse(ctx, err, http.StatusInternalServerError, "Failed to get target artwork")
 			return
 		}
-		artworks, err := service.SearchSimilarArtworks(ctx, artworkID.Hex(), request.Page*request.PageSize, request.PageSize, adapterOption)
+		artworks, err := service.SearchSimilarArtworks(ctx, artworkID.Hex(), request.Page*request.PageSize, request.PageSize, r18Type, adapterOption)
 		if err != nil {
 			common.GinErrorResponse(ctx, err, http.StatusInternalServerError, "Failed to get similar artworks")
 			return
@@ -238,8 +238,8 @@ func getArtworkListByKeyword(ctx *gin.Context, keywordSlice [][]string, r18Type 
 	ctx.JSON(http.StatusOK, ResponseFromArtworks(artworks, ctx.GetBool("auth")))
 }
 
-func getArtworkListHybrid(ctx *gin.Context, queryText string, hybridSemanticRatio float64, offset, limit int64, adapterOption ...*types.AdapterOption) {
-	artworks, err := service.HybridSearchArtworks(ctx, queryText, hybridSemanticRatio, offset, limit, adapterOption...)
+func getArtworkListHybrid(ctx *gin.Context, queryText string, hybridSemanticRatio float64, offset, limit int64, r18Type types.R18Type, adapterOption ...*types.AdapterOption) {
+	artworks, err := service.HybridSearchArtworks(ctx, queryText, hybridSemanticRatio, offset, limit, r18Type, adapterOption...)
 	if err != nil {
 		if errors.Is(err, mongo.ErrNoDocuments) {
 			common.GinErrorResponse(ctx, err, http.StatusNotFound, "Artworks not found")

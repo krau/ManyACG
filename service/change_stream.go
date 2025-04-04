@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"time"
 
 	"github.com/bytedance/sonic"
 	"github.com/krau/ManyACG/adapter"
@@ -99,7 +100,9 @@ func (m *artworkSyncManager) ProcessArtworkUpdateEvent(event bson.M) {
 		common.Logger.Errorf("decode artwork from event error: %s", err)
 		return
 	}
-	searchDoc, err := adapter.ConvertToSearchDoc(context.Background(), artwork)
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+	searchDoc, err := adapter.ConvertToSearchDoc(ctx, artwork)
 	if err != nil {
 		common.Logger.Errorf("convert to search doc error: %s", err)
 		return
@@ -109,7 +112,7 @@ func (m *artworkSyncManager) ProcessArtworkUpdateEvent(event bson.M) {
 		common.Logger.Errorf("marshal search doc error: %s", err)
 		return
 	}
-	task, err := common.MeilisearchClient.Index(config.Cfg.Search.MeiliSearch.Index).UpdateDocuments(artworkJSON)
+	task, err := common.MeilisearchClient.Index(config.Cfg.Search.MeiliSearch.Index).UpdateDocumentsWithContext(ctx, artworkJSON)
 	if err != nil {
 		common.Logger.Errorf("update artwork to meilisearch error: %s", err)
 		return
@@ -119,7 +122,9 @@ func (m *artworkSyncManager) ProcessArtworkUpdateEvent(event bson.M) {
 
 func (m *artworkSyncManager) ProcessArtworkDeleteEvent(event bson.M) {
 	docID := event["documentKey"].(bson.M)["_id"].(primitive.ObjectID).Hex()
-	task, err := common.MeilisearchClient.Index(config.Cfg.Search.MeiliSearch.Index).DeleteDocument(docID)
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+	task, err := common.MeilisearchClient.Index(config.Cfg.Search.MeiliSearch.Index).DeleteDocumentWithContext(ctx, docID)
 	if err != nil {
 		common.Logger.Errorf("delete artwork from meilisearch error: %s", err)
 		return
@@ -134,7 +139,9 @@ func (m *artworkSyncManager) ProcessArtworkReplaceEvent(event bson.M) {
 		common.Logger.Errorf("decode artwork from event error: %s", err)
 		return
 	}
-	searchDoc, err := adapter.ConvertToSearchDoc(context.Background(), artwork)
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+	searchDoc, err := adapter.ConvertToSearchDoc(ctx, artwork)
 	if err != nil {
 		common.Logger.Errorf("convert to search doc error: %s", err)
 		return
@@ -144,7 +151,7 @@ func (m *artworkSyncManager) ProcessArtworkReplaceEvent(event bson.M) {
 		common.Logger.Errorf("marshal search doc error: %s", err)
 		return
 	}
-	task, err := common.MeilisearchClient.Index(config.Cfg.Search.MeiliSearch.Index).UpdateDocuments(artworkJSON)
+	task, err := common.MeilisearchClient.Index(config.Cfg.Search.MeiliSearch.Index).UpdateDocumentsWithContext(ctx, artworkJSON)
 	if err != nil {
 		common.Logger.Errorf("update artwork to meilisearch error: %s", err)
 		return
