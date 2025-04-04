@@ -112,7 +112,7 @@ func HybridSearchArtworks(ctx *telegohandler.Context, message telego.Message) er
 		}
 		queryText = strings.Join(args[:len(args)-1], " ")
 	}
-	artworks, err := service.HybridSearchArtworks(ctx, queryText, hybridSemanticRatio, 0, 50)
+	artworks, err := service.HybridSearchArtworks(ctx, queryText, hybridSemanticRatio, 0, 50, types.R18TypeAll)
 	if err != nil {
 		common.Logger.Errorf("搜索失败: %s", err)
 		utils.ReplyMessage(ctx, ctx.Bot(), message, "搜索失败, 请联系管理员检查搜索引擎设置与状态")
@@ -169,7 +169,7 @@ func SearchSimilarArtworks(ctx *telegohandler.Context, message telego.Message) e
 				return nil
 			}
 			queryText := strings.Join(result.PredictedTags, ",")
-			artworks, err := service.HybridSearchArtworks(ctx, queryText, 0.8, 0, 10)
+			artworks, err := service.HybridSearchArtworks(ctx, queryText, 0.8, 0, 10, types.R18TypeAll)
 			if err != nil || len(artworks) == 0 {
 				common.Logger.Errorf("搜索失败: %s", err)
 				utils.ReplyMessage(ctx, ctx.Bot(), message, "搜索失败")
@@ -205,7 +205,7 @@ func SearchSimilarArtworks(ctx *telegohandler.Context, message telego.Message) e
 			return nil
 		}
 	}
-	artworks, err := service.SearchSimilarArtworks(ctx, artwork.ID, int64(offset), int64(limit))
+	artworks, err := service.SearchSimilarArtworks(ctx, artwork.ID, int64(offset), int64(limit), types.R18TypeAll)
 	if err != nil {
 		common.Logger.Errorf("搜索失败: %s", err)
 		utils.ReplyMessage(ctx, ctx.Bot(), message, "搜索失败")
