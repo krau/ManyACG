@@ -175,15 +175,16 @@ func FetchArtwork(ctx *gin.Context) {
 		common.GinErrorResponse(ctx, errs.ErrSourceNotSupported, http.StatusBadRequest, "Source not supported")
 		return
 	}
+	var artwork *types.Artwork
+	var err error
 	if !request.NoCache {
-		artwork, err := service.GetArtworkByURLWithCacheFetch(ctx, sourceURL)
+		artwork, err = service.GetArtworkByURLWithCacheFetch(ctx, sourceURL)
 		if err != nil {
 			common.GinErrorResponse(ctx, err, http.StatusInternalServerError, "Failed to fetch artwork")
 			return
 		}
-		ctx.JSON(http.StatusOK, ResponseFromFetchedArtwork(artwork))
 	} else {
-		artwork, err := sources.GetArtworkInfo(sourceURL)
+		artwork, err = sources.GetArtworkInfo(sourceURL)
 		if errors.Is(err, errs.ErrSourceNotSupported) {
 			common.GinErrorResponse(ctx, err, http.StatusBadRequest, "Source not supported")
 			return
@@ -192,11 +193,20 @@ func FetchArtwork(ctx *gin.Context) {
 			common.GinErrorResponse(ctx, err, http.StatusInternalServerError, "Failed to fetch artwork")
 			return
 		}
-		ctx.JSON(http.StatusOK, ResponseFromFetchedArtwork(artwork))
 		if _, err := service.GetCachedArtworkByURL(ctx, sourceURL); err != nil {
 			service.CreateCachedArtwork(ctx, artwork, types.ArtworkStatusCached)
 		}
 	}
+	if artwork == nil {
+		common.GinErrorResponse(ctx, errs.ErrNotFoundArtworks, http.StatusInternalServerError, "Artwork is nil")
+		return
+	}
+	cacheId, err := service.CreateCallbackData(ctx, artwork.SourceURL)
+	if err != nil {
+		common.GinErrorResponse(ctx, err, http.StatusInternalServerError, "Failed to create cache id")
+		return
+	}
+	ctx.JSON(http.StatusOK, ResponseFromFetchedArtwork(artwork, cacheId))
 	if err := service.IncreaseApiKeyUsed(ctx, apiKey.Key); err != nil {
 		common.Logger.Errorf("Failed to increase api key used: %v", err)
 	}
