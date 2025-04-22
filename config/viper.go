@@ -10,8 +10,12 @@ import (
 )
 
 type Config struct {
-	Debug    bool           `toml:"debug" mapstructure:"debug" json:"debug" yaml:"debug"`
-	WSRVURL  string         `toml:"wsrv_url" mapstructure:"wsrv_url" json:"wsrv_url" yaml:"wsrv_url"`
+	Debug   bool   `toml:"debug" mapstructure:"debug" json:"debug" yaml:"debug"`
+	WSRVURL string `toml:"wsrv_url" mapstructure:"wsrv_url" json:"wsrv_url" yaml:"wsrv_url"`
+	Web     struct {
+		Enable  bool   `toml:"enable" mapstructure:"enable" json:"enable" yaml:"enable"`
+		Address string `toml:"address" mapstructure:"address" json:"address" yaml:"address"`
+	} `toml:"web" mapstructure:"web" json:"web" yaml:"web"`
 	API      apiConfig      `toml:"api" mapstructure:"api" json:"api" yaml:"api"`
 	Auth     authConfig     `toml:"auth" mapstructure:"auth" json:"auth" yaml:"auth"`
 	Fetcher  fetcherConfig  `toml:"fetcher" mapstructure:"fetcher" json:"fetcher" yaml:"fetcher"`

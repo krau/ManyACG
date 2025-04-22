@@ -21,6 +21,7 @@ import (
 	"github.com/krau/ManyACG/sources"
 	"github.com/krau/ManyACG/storage"
 	"github.com/krau/ManyACG/telegram"
+	"github.com/krau/ManyACG/webassets"
 )
 
 const banner = `
@@ -70,6 +71,16 @@ func Run() {
 	go fetcher.StartScheduler(ctx)
 	if config.Cfg.API.Enable {
 		restful.Run(ctx)
+	}
+	if config.Cfg.Web.Enable {
+		go func() {
+			common.Logger.Info("Starting serve web...")
+			sm := http.NewServeMux()
+			sm.Handle("/", http.FileServer(http.FS(webassets.WebAppFS)))
+			if err := http.ListenAndServe(config.Cfg.Web.Address, sm); err != nil {
+				common.Logger.Fatal(err)
+			}
+		}()
 	}
 
 	common.Logger.Info("ManyACG is running !")

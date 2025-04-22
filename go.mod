@@ -19,6 +19,7 @@ require (
 	github.com/gorilla/feeds v1.2.0
 	github.com/meilisearch/meilisearch-go v0.31.0
 	github.com/mmcdole/gofeed v1.3.0
+	github.com/oschwald/geoip2-golang v1.11.0
 	github.com/penglongli/gin-metrics v0.1.13
 	github.com/resend/resend-go/v2 v2.16.0
 	github.com/rhysd/go-github-selfupdate v1.2.3
@@ -75,7 +76,6 @@ require (
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
 	github.com/nfnt/resize v0.0.0-20180221191011-83c6a9932646 // indirect
 	github.com/onsi/ginkgo/v2 v2.23.3 // indirect
-	github.com/oschwald/geoip2-golang v1.11.0 // indirect
 	github.com/oschwald/maxminddb-golang v1.13.0 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/prometheus/client_golang v1.21.1 // indirect
