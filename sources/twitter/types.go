@@ -16,11 +16,12 @@ type FxTwitterApiResp struct {
 }
 
 type Tweet struct {
-	URL    string `json:"url"`
-	ID     string `json:"id"`
-	Text   string `json:"text"`
-	Author Author `json:"author"`
-	Media  *Media `json:"media"`
+	URL               string `json:"url"`
+	ID                string `json:"id"`
+	Text              string `json:"text"`
+	PossiblySensitive bool   `json:"possibly_sensitive"`
+	Author            Author `json:"author"`
+	Media             *Media `json:"media"`
 }
 
 type Author struct {
@@ -96,7 +97,7 @@ func (resp *FxTwitterApiResp) ToArtwork() (*types.Artwork, error) {
 		Description: desc,
 		SourceType:  types.SourceTypeTwitter,
 		SourceURL:   fmt.Sprintf("https://x.com/%s/status/%s", tweet.Author.Username, tweet.ID),
-		R18:         false,
+		R18:         tweet.PossiblySensitive,
 		Artist: &types.Artist{
 			Name:     tweet.Author.Name,
 			Username: tweet.Author.Username,
