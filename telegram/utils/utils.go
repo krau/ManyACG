@@ -73,8 +73,7 @@ var tagCharsReplacer = strings.NewReplacer(
 
 // 获取作品的 HTML 格式描述, 已转义
 func GetArtworkHTMLCaption(artwork *types.Artwork) string {
-	caption := fmt.Sprintf("<a href=\"%s\"><b>%s</b></a>", artwork.SourceURL, common.EscapeHTML(artwork.Title))
-	caption += fmt.Sprintf("\nAuthor: <b>%s</b>", common.EscapeHTML(artwork.Artist.Name))
+	caption := fmt.Sprintf("<a href=\"%s\"><b>%s</b></a> / <b>%s</b>", artwork.SourceURL, common.EscapeHTML(artwork.Title), common.EscapeHTML(artwork.Artist.Name))
 	if artwork.Description != "" {
 		desc := artwork.Description
 		if len(artwork.Description) > 500 {
