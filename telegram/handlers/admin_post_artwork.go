@@ -476,7 +476,7 @@ func ArtworkPreview(ctx *telegohandler.Context, query telego.CallbackQuery) erro
 		return nil
 	}
 	if needUpdatePreview {
-		go ctx.Bot().AnswerCallbackQuery(ctx, &telego.AnswerCallbackQueryParams{
+		go ctx.Bot().AnswerCallbackQuery(context.TODO(), &telego.AnswerCallbackQueryParams{
 			CallbackQueryID: query.ID,
 			Text:            "图片还在加载, 请稍等",
 			CacheTime:       3,
