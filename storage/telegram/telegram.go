@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
 	"time"
@@ -48,15 +50,31 @@ func (t *TelegramStorage) Init(ctx context.Context) {
 
 func (t *TelegramStorage) Save(ctx context.Context, filePath string, _ string) (*types.StorageDetail, error) {
 	common.Logger.Debugf("saving file %s", filePath)
+	var msg *telego.Message
+	var err error
 	fileBytes, err := os.ReadFile(filePath)
 	if err != nil {
 		common.Logger.Errorf("failed to read file: %s", err)
 		return nil, ErrReadFile
 	}
-	msg, err := Bot.SendDocument(ctx, telegoutil.Document(ChatID, telegoutil.File(telegoutil.NameReader(bytes.NewReader(fileBytes), filepath.Base(filePath)))))
+	for i := range config.Cfg.Storage.Telegram.Retry.MaxAttempts {
+		msg, err = Bot.SendDocument(ctx, telegoutil.Document(ChatID, telegoutil.File(telegoutil.NameReader(bytes.NewReader(fileBytes), filepath.Base(filePath)))))
+		if err != nil {
+			var apiErr *telegoapi.Error
+			if errors.As(err, &apiErr) && apiErr.ErrorCode == 429 && apiErr.Parameters != nil {
+				retryAfter := apiErr.Parameters.RetryAfter + (i * int(config.Cfg.Storage.Telegram.Retry.StartDelay))
+				common.Logger.Warnf("Rate limited, retry after %d seconds", retryAfter)
+				time.Sleep(time.Duration(retryAfter) * time.Second)
+				continue
+			}
+			common.Logger.Errorf("failed to send document: %s", err)
+			return nil, fmt.Errorf("failed to send document: %w", err)
+		}
+		break
+	}
 	if err != nil {
 		common.Logger.Errorf("failed to send document: %s", err)
-		return nil, ErrFailedSendDocument
+		return nil, fmt.Errorf("failed to send document: %w", err)
 	}
 	fileMessage := &fileMessage{
 		ChatID:     ChatID.ID,
