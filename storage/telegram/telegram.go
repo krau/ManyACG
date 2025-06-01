@@ -12,6 +12,7 @@ import (
 	"github.com/krau/ManyACG/config"
 	"github.com/krau/ManyACG/types"
 	"github.com/mymmrac/telego"
+	"github.com/mymmrac/telego/telegoapi"
 	"github.com/mymmrac/telego/telegoutil"
 )
 
@@ -26,7 +27,15 @@ func (t *TelegramStorage) Init(ctx context.Context) {
 	common.Logger.Infof("Initializing telegram storage")
 	ChatID = telegoutil.ID(config.Cfg.Storage.Telegram.ChatID)
 	var err error
-	Bot, err = telego.NewBot(config.Cfg.Storage.Telegram.Token, telego.WithAPIServer(config.Cfg.Storage.Telegram.ApiUrl))
+	Bot, err = telego.NewBot(config.Cfg.Storage.Telegram.Token, telego.WithAPIServer(config.Cfg.Storage.Telegram.ApiUrl),
+		telego.WithAPICaller(&telegoapi.RetryCaller{
+			Caller:       telegoapi.DefaultFastHTTPCaller,
+			MaxAttempts:  config.Cfg.Storage.Telegram.Retry.MaxAttempts,
+			ExponentBase: config.Cfg.Storage.Telegram.Retry.ExponentBase,
+			StartDelay:   time.Duration(config.Cfg.Storage.Telegram.Retry.StartDelay) * time.Second,
+			MaxDelay:     time.Duration(config.Cfg.Storage.Telegram.Retry.MaxDelay) * time.Second,
+			RateLimit:    telegoapi.RetryRateLimitWaitOrAbort,
+		}))
 	if err != nil {
 		common.Logger.Panicf("failed to create telegram bot: %s", err)
 	}

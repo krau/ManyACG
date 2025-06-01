@@ -31,8 +31,9 @@ func InitBot(ctx context.Context) {
 			Caller:       telegoapi.DefaultFastHTTPCaller,
 			MaxAttempts:  config.Cfg.Telegram.Retry.MaxAttempts,
 			ExponentBase: config.Cfg.Telegram.Retry.ExponentBase,
-			StartDelay:   time.Duration(config.Cfg.Telegram.Retry.StartDelay),
-			MaxDelay:     time.Duration(config.Cfg.Telegram.Retry.MaxDelay),
+			StartDelay:   time.Duration(config.Cfg.Telegram.Retry.StartDelay) * time.Second,
+			MaxDelay:     time.Duration(config.Cfg.Telegram.Retry.MaxDelay) * time.Second,
+			RateLimit:    telegoapi.RetryRateLimitWaitOrAbort,
 		}),
 	)
 	if err != nil {

@@ -59,8 +59,9 @@ type StorageAlistConfig struct {
 }
 
 type StorageTelegramConfig struct {
-	Enable bool   `toml:"enable" mapstructure:"enable" json:"enable" yaml:"enable"`
-	Token  string `toml:"token" mapstructure:"token" json:"token" yaml:"token"`
-	ChatID int64  `toml:"chat_id" mapstructure:"chat_id" json:"chat_id" yaml:"chat_id"`
-	ApiUrl string `toml:"api_url" mapstructure:"api_url" json:"api_url" yaml:"api_url"`
+	Enable bool           `toml:"enable" mapstructure:"enable" json:"enable" yaml:"enable"`
+	Token  string         `toml:"token" mapstructure:"token" json:"token" yaml:"token"`
+	ChatID int64          `toml:"chat_id" mapstructure:"chat_id" json:"chat_id" yaml:"chat_id"`
+	ApiUrl string         `toml:"api_url" mapstructure:"api_url" json:"api_url" yaml:"api_url"`
+	Retry  botRetryConfig `toml:"retry" mapstructure:"retry" json:"retry" yaml:"retry"`
 }
