@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"strconv"
@@ -28,7 +29,7 @@ func ProcessPicturesHashAndSize(ctx *telegohandler.Context, message telego.Messa
 		utils.ReplyMessage(ctx, ctx.Bot(), message, "你没有权限处理图片信息")
 		return nil
 	}
-	go service.ProcessPicturesHashAndSizeAndUpdate(ctx, ctx.Bot(), &message)
+	go service.ProcessPicturesHashAndSizeAndUpdate(context.Background(), ctx.Bot(), &message)
 	utils.ReplyMessage(ctx, ctx.Bot(), message, "开始处理了")
 	return nil
 }
