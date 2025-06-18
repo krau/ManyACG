@@ -67,7 +67,7 @@ func RandomArtworkPreview(ctx *gin.Context) {
 
 	picture := artwork[0].Pictures[0]
 	if picture.StorageInfo.Regular == nil {
-		common.GinErrorResponse(ctx, errors.New("Picture not found"), http.StatusNotFound, "Picture not found")
+		common.GinErrorResponse(ctx, errors.New("picture not found"), http.StatusNotFound, "Picture not found")
 		return
 	}
 
