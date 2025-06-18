@@ -30,5 +30,5 @@ func GetFileName(artwork *types.Artwork, picture *types.Picture) (string, error)
 		return "", errs.ErrSourceNotSupported
 	}
 	fileName := source.GetFileName(artwork, picture)
-	return common.EscapeFileName(fileName), nil
+	return common.SanitizeFileName(fileName), nil
 }

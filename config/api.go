@@ -26,9 +26,10 @@ type apiConfig struct {
 }
 
 type ApiPathRule struct {
-	Path       string `toml:"path" mapstructure:"path" json:"path" yaml:"path"`
-	TrimPrefix string `toml:"trim_prefix" mapstructure:"trim_prefix" json:"trim_prefix" yaml:"trim_prefix"`
-	JoinPrefix string `toml:"join_prefix" mapstructure:"join_prefix" json:"join_prefix" yaml:"join_prefix"`
+	Path        string `toml:"path" mapstructure:"path" json:"path" yaml:"path"`
+	StorageType string `toml:"storage_type" mapstructure:"storage_type" json:"storage_type" yaml:"storage_type"`
+	TrimPrefix  string `toml:"trim_prefix" mapstructure:"trim_prefix" json:"trim_prefix" yaml:"trim_prefix"`
+	JoinPrefix  string `toml:"join_prefix" mapstructure:"join_prefix" json:"join_prefix" yaml:"join_prefix"`
 }
 
 type apiCacheConfig struct {

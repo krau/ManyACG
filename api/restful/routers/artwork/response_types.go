@@ -56,19 +56,21 @@ func ResponseDataFromArtwork(artwork *types.Artwork) *ArtworkResponseData {
 		if picture.StorageInfo == nil || picture.StorageInfo.Thumb == nil {
 			thumbnail = picture.Thumbnail
 		} else {
-			if picture.StorageInfo.Thumb.Type == types.StorageTypeAlist {
-				thumbnail = common.ApplyApiPathRule(picture.StorageInfo.Thumb.Path)
-			} else {
+			picThumbUrl := common.ApplyApiStoragePathRule(picture.StorageInfo.Thumb)
+			if picThumbUrl == "" || picThumbUrl == picture.StorageInfo.Thumb.Path {
 				thumbnail = picture.Thumbnail
+			} else {
+				thumbnail = picThumbUrl
 			}
 		}
 		if picture.StorageInfo == nil || picture.StorageInfo.Regular == nil {
 			regular = picture.Thumbnail
 		} else {
-			if picture.StorageInfo.Regular.Type == types.StorageTypeAlist {
-				regular = common.ApplyApiPathRule(picture.StorageInfo.Regular.Path)
-			} else {
+			picRegularUrl := common.ApplyApiStoragePathRule(picture.StorageInfo.Regular)
+			if picRegularUrl == "" || picRegularUrl == picture.StorageInfo.Regular.Path {
 				regular = picture.Thumbnail
+			} else {
+				regular = picRegularUrl
 			}
 		}
 		pictures[i] = &PictureResponse{

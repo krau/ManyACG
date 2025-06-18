@@ -9,7 +9,9 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/duke-git/lancet/v2/validator"
 	"github.com/krau/ManyACG/config"
+	"github.com/krau/ManyACG/types"
 )
 
 var fileNameReplacer = strings.NewReplacer(
@@ -28,8 +30,29 @@ var fileNameReplacer = strings.NewReplacer(
 	"+", "_",
 )
 
-func EscapeFileName(str string) string {
-	return fileNameReplacer.Replace(str)
+func SanitizeFileName(fileName string) string {
+	fname := strings.TrimSpace(fileNameReplacer.Replace(fileName))
+	fname = strings.Map(func(r rune) rune {
+		if r < 0x20 || r == 0x7F {
+			return '_'
+		}
+		switch r {
+		// invalid characters
+		case '/', '\\',
+			':', '*', '?', '"', '<', '>', '|':
+			return '_'
+		// empty
+		case ' ', '\t', '\r', '\n':
+			return '_'
+		}
+		if validator.IsPrintable(string(r)) {
+			return r
+		}
+		return '_'
+	}, fname)
+	return strings.Join(strings.FieldsFunc(fname, func(r rune) bool {
+		return r == '_' || r == '-' || r == '.' || r == ' '
+	}), "_")
 }
 
 var markdownRe = regexp.MustCompile("([" + regexp.QuoteMeta(`\_*[]()~`+"`"+`>#+-=|{}.!`) + "])")
@@ -125,16 +148,25 @@ func ExtractTagsFromText(text string) []string {
 	return tags
 }
 
-func ApplyApiPathRule(originPath string) string {
+// 在api返回中重写图片路径, 用于拼接图片直链
+//
+// 例: rule.Type = "alist", rule.Path = "/pictures/", rule.JoinPrefix = "https://example.com/pictures/", rule.TrimPrefix = "/pictures/"
+//
+// -> https://example.com/pictures/1234567890abcdef.jpg
+//
+// 如果图片路径以rule.Path开头, 且rule.StorageType为空或与图片存储类型匹配, 则将图片路径转换为rule.JoinPrefix + 图片路径去掉rule.TrimPrefix的部分
+//
+// 否则返回原图片路径
+func ApplyApiStoragePathRule(detail *types.StorageDetail) string {
 	for _, rule := range config.Cfg.API.PathRules {
-		if strings.HasPrefix(originPath, rule.Path) {
-			parsedUrl, err := url.JoinPath(rule.JoinPrefix, strings.TrimPrefix(originPath, rule.TrimPrefix))
+		if strings.HasPrefix(detail.Path, rule.Path) && (rule.StorageType == "" || rule.StorageType == string(detail.Type)) {
+			parsedUrl, err := url.JoinPath(rule.JoinPrefix, strings.TrimPrefix(detail.Path, rule.TrimPrefix))
 			if err != nil {
 				Logger.Warnf("Failed to join path: %s", err)
-				return originPath
+				return detail.Path
 			}
 			return parsedUrl
 		}
 	}
-	return originPath
+	return detail.Path
 }

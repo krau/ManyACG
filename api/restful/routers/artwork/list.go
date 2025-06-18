@@ -4,7 +4,6 @@ import (
 	"errors"
 	"net/http"
 
-	"github.com/gabriel-vasile/mimetype"
 	"github.com/krau/ManyACG/adapter"
 	"github.com/krau/ManyACG/common"
 	"github.com/krau/ManyACG/errs"
@@ -27,11 +26,6 @@ func RandomArtworks(ctx *gin.Context) {
 
 	hasKey := ctx.GetBool("auth")
 	r18Type := types.R18Type(request.R18)
-	// if r18Type != types.R18TypeNone && !hasKey {
-	// 	if !checkR18Permission(ctx) {
-	// 		return
-	// 	}
-	// }
 
 	artworks, err := service.GetRandomArtworks(ctx, r18Type, request.Limit)
 	if err != nil {
@@ -56,13 +50,7 @@ func RandomArtworkPreview(ctx *gin.Context) {
 		common.GinBindError(ctx, err)
 		return
 	}
-	// hasKey := ctx.GetBool("auth")
 	r18Type := types.R18Type(request.R18)
-	// if r18Type != types.R18TypeNone && !hasKey {
-	// 	if !checkR18Permission(ctx) {
-	// 		return
-	// 	}
-	// }
 	artwork, err := service.GetRandomArtworks(ctx, r18Type, 1, adapter.OnlyLoadPicture())
 	if err != nil {
 		if errors.Is(err, mongo.ErrNoDocuments) {
@@ -78,22 +66,17 @@ func RandomArtworkPreview(ctx *gin.Context) {
 	}
 
 	picture := artwork[0].Pictures[0]
-
-	switch picture.StorageInfo.Regular.Type {
-	case types.StorageTypeLocal:
-		ctx.File(picture.StorageInfo.Regular.Path)
-	case types.StorageTypeAlist:
-		ctx.Redirect(http.StatusFound, common.ApplyApiPathRule(picture.StorageInfo.Regular.Path))
-	default:
-		data, err := storage.GetFile(ctx, picture.StorageInfo.Regular)
-		if err != nil {
-			common.Logger.Errorf("Failed to get file: %v", err)
-			common.GinErrorResponse(ctx, err, http.StatusInternalServerError, "Failed to get file")
-			return
-		}
-		mimeType := mimetype.Detect(data)
-		ctx.Data(http.StatusOK, mimeType.String(), data)
+	if picture.StorageInfo.Regular == nil {
+		common.GinErrorResponse(ctx, errors.New("Picture not found"), http.StatusNotFound, "Picture not found")
+		return
 	}
+
+	picUrl := common.ApplyApiStoragePathRule(picture.StorageInfo.Regular)
+	if picUrl == "" || picUrl == picture.StorageInfo.Regular.Path {
+		storage.ServeFile(ctx, picture.StorageInfo.Regular)
+		return
+	}
+	ctx.Redirect(http.StatusFound, picUrl)
 }
 
 func GetArtworkList(ctx *gin.Context) {
@@ -105,11 +88,6 @@ func GetArtworkList(ctx *gin.Context) {
 
 	hasKey := ctx.GetBool("auth")
 	r18Type := types.R18Type(request.R18)
-	// if r18Type != types.R18TypeNone && !hasKey {
-	// 	if !checkR18Permission(ctx) {
-	// 		return
-	// 	}
-	// }
 	adapterOption := &types.AdapterOption{}
 	if request.Simple {
 		adapterOption = adapterOption.WithLoadArtist().WithOnlyIndexPicture()

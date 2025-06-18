@@ -92,23 +92,14 @@ func RandomPicture(ctx *gin.Context) {
 		return
 	}
 	picture := pictures[0]
-	if picture.StorageInfo.Regular == nil {
+	if picture.StorageInfo == nil || picture.StorageInfo.Regular == nil {
 		ctx.Redirect(http.StatusFound, picture.Thumbnail)
 		return
 	}
-	switch picture.StorageInfo.Regular.Type {
-	case types.StorageTypeLocal:
-		ctx.File(picture.StorageInfo.Regular.Path)
-	case types.StorageTypeAlist:
-		ctx.Redirect(http.StatusFound, common.ApplyApiPathRule(picture.StorageInfo.Regular.Path))
-	default:
-		data, err := storage.GetFile(ctx, picture.StorageInfo.Regular)
-		if err != nil {
-			common.Logger.Errorf("Failed to get file: %v", err)
-			common.GinErrorResponse(ctx, err, http.StatusInternalServerError, "Failed to get file")
-			return
-		}
-		mimeType := mimetype.Detect(data)
-		ctx.Data(http.StatusOK, mimeType.String(), data)
+	picUrl := common.ApplyApiStoragePathRule(picture.StorageInfo.Regular)
+	if picUrl == "" || picUrl == picture.StorageInfo.Regular.Path {
+		storage.ServeFile(ctx, picture.StorageInfo.Regular)
+		return
 	}
+	ctx.Redirect(http.StatusFound, picUrl)
 }
