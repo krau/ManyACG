@@ -2,6 +2,8 @@ package service
 
 import (
 	"context"
+	"strings"
+	"time"
 
 	"github.com/bytedance/sonic"
 	"github.com/krau/ManyACG/adapter"
@@ -72,7 +74,7 @@ func SearchSimilarArtworks(ctx context.Context, artworkIdStr string, offset, lim
 	if common.MeilisearchClient == nil {
 		return nil, errs.ErrSearchEngineUnavailable
 	}
-	
+
 	var filter string
 	switch r18 {
 	case types.R18TypeAll:
@@ -93,6 +95,40 @@ func SearchSimilarArtworks(ctx context.Context, artworkIdStr string, offset, lim
 		Limit:                limit,
 		Filter:               filter,
 	}, &resp); err != nil {
+		if strings.Contains(err.Error(), "not_found_similar_id") {
+			// [TODO] need better error handling here but meilisearch-go does not provide a way to distinguish this error
+			go func() {
+				common.Logger.Warnf("No similar artworks found for ID %s", artworkIdStr)
+				artworkID, err := primitive.ObjectIDFromHex(artworkIdStr)
+				if err != nil {
+					common.Logger.Errorf("Invalid artwork ID: %s", artworkIdStr)
+					return
+				}
+				ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+				defer cancel()
+				artwork, err := dao.GetArtworkByID(ctx, artworkID)
+				if err != nil {
+					common.Logger.Errorf("Failed to get artwork by ID %s: %s", artworkIdStr, err)
+					return
+				}
+				doc, err := adapter.ConvertToSearchDoc(ctx, artwork)
+				if err != nil {
+					common.Logger.Errorf("Failed to convert artwork to search doc: %s", err)
+					return
+				}
+				artworkJson, err := sonic.Marshal(doc)
+				if err != nil {
+					common.Logger.Errorf("Failed to marshal artwork search doc: %s", err)
+					return
+				}
+				task, err := index.UpdateDocumentsWithContext(ctx, artworkJson)
+				if err != nil {
+					common.Logger.Errorf("Failed to update artwork to Meilisearch: %s", err)
+					return
+				}
+				common.Logger.Debugf("Committed update artwork task to Meilisearch: %d", task.TaskUID)
+			}()
+		}
 		return nil, err
 	}
 	hits := resp.Hits
