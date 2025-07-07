@@ -143,7 +143,7 @@ func SendArtworkInfo(ctx context.Context, bot *telego.Bot, params *SendArtworkIn
 
 func getArtworkInfoReplyMarkup(ctx context.Context, artwork *types.Artwork, isCreated, hasPermission bool) (telego.ReplyMarkup, error) {
 	if isCreated {
-		baseKeyboard := GetPostedPictureInlineKeyboardButton(artwork, 0, ChannelChatID, BotUsername)
+		baseKeyboard := GetPostedArtworkInlineKeyboardButton(artwork, ChannelChatID, BotUsername)
 		if hasPermission {
 			return telegoutil.InlineKeyboard(
 				baseKeyboard,

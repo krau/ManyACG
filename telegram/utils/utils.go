@@ -165,6 +165,18 @@ func GetPostedPictureInlineKeyboardButton(artwork *types.Artwork, index uint, ch
 	}
 }
 
+func GetPostedArtworkInlineKeyboardButton(artwork *types.Artwork, channelChatID telego.ChatID, botUsername string) []telego.InlineKeyboardButton {
+	detailsURL := config.Cfg.API.SiteURL + "/artwork/" + artwork.ID
+	hasValidTelegramInfo := channelChatID.ID != 0 || channelChatID.Username != ""
+	if hasValidTelegramInfo && artwork.Pictures[0].TelegramInfo != nil && artwork.Pictures[0].TelegramInfo.MessageID != 0 {
+		detailsURL = GetArtworkPostMessageURL(artwork.Pictures[0].TelegramInfo.MessageID, channelChatID)
+	}
+	return []telego.InlineKeyboardButton{
+		telegoutil.InlineKeyboardButton("详情").WithURL(detailsURL),
+		telegoutil.InlineKeyboardButton("原图").WithURL(GetDeepLink(botUsername, "files", artwork.ID)),
+	}
+}
+
 func GetMessagePhotoFile(ctx context.Context, bot *telego.Bot, message *telego.Message) ([]byte, error) {
 	fileID := ""
 	if message.Photo != nil {
