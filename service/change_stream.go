@@ -46,18 +46,39 @@ type artworkSyncManager struct {
 
 func (m *artworkSyncManager) Start() {
 	defer m.Close()
-	for m.changeStream.Next(m.ctx) {
-		var event bson.M
-		if err := m.changeStream.Decode(&event); err != nil {
-			common.Logger.Errorf("decode change stream error: %s", err)
-			continue
+	for {
+		select {
+		case <-m.ctx.Done():
+			common.Logger.Info("artwork sync manager context done, exiting...")
+			return
+		default:
+			ok := m.changeStream.Next(m.ctx)
+			if !ok {
+				if err := m.changeStream.Err(); err != nil {
+					common.Logger.Errorf("change stream error: %s", err)
+				} else {
+					// [TODO] resume the change stream
+					common.Logger.Info("change stream closed")
+					return
+				}
+			}
+			var event bson.M
+			if err := m.changeStream.Decode(&event); err != nil {
+				common.Logger.Errorf("decode change stream error: %s", err)
+				continue
+			}
+			m.ProcessArtworkChangeEvent(event)
 		}
-		m.ProcessArtworkChangeEvent(event)
+
 	}
 }
 
 func (m *artworkSyncManager) Close() {
-	m.changeStream.Close(m.ctx)
+	if err := m.changeStream.Close(m.ctx); err != nil {
+		common.Logger.Errorf("close change stream error: %s", err)
+	} else {
+		common.Logger.Info("change stream closed successfully")
+	}
 }
 
 func (m *artworkSyncManager) ProcessArtworkChangeEvent(event bson.M) {
