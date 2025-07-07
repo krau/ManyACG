@@ -76,19 +76,13 @@ func (resp *FxTwitterApiResp) ToArtwork() (*types.Artwork, error) {
 
 	title := fmt.Sprintf("%s/%s", tweet.Author.Username, tweet.ID)
 	tags := common.ExtractTagsFromText(tweet.Text)
-	var desc string
+	desc := tweet.Text
 
 	if tweet.Text != "" {
 		textLines := strings.Split(tweet.Text, "\n")
-		textLineLen := len(textLines)
 		firstLine := textLines[0]
 		if len(firstLine) <= 114 {
 			title = firstLine
-			if textLineLen > 1 {
-				desc = strings.Join(textLines[1:textLineLen-1], "\n")
-			}
-		} else {
-			desc = tweet.Text
 		}
 	}
 
