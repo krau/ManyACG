@@ -209,11 +209,12 @@ func updatePreview(ctx context.Context, targetMessage *telego.Message, artwork *
 	if err != nil {
 		return err
 	}
-	if cachedArtwork.Status == types.ArtworkStatusPosted {
+	switch cachedArtwork.Status {
+	case types.ArtworkStatusPosted:
 		replyMarkup = GetPostedPictureReplyMarkup(artwork, pictureIndex, ChannelChatID, BotUsername)
-	} else if cachedArtwork.Status == types.ArtworkStatusCached {
+	case types.ArtworkStatusCached:
 		replyMarkup = targetMessage.ReplyMarkup
-	} else {
+	default:
 		mediaPhoto.WithCaption(photoParams.Caption + "\n<i>正在发布...</i>").WithParseMode(telego.ModeHTML)
 	}
 	if artwork.R18 {
