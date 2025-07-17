@@ -49,11 +49,6 @@ func DownloadWithCache(ctx context.Context, url string, client *req.Client) ([]b
 		cacheLocks.Delete(url)
 	}()
 
-	data, err = os.ReadFile(cachePath)
-	if err == nil {
-		return data, nil
-	}
-
 	Logger.Debugf("downloading: %s", url)
 	resp, err := client.R().SetContext(ctx).Get(url)
 	if err != nil {
@@ -63,7 +58,7 @@ func DownloadWithCache(ctx context.Context, url string, client *req.Client) ([]b
 		return nil, fmt.Errorf("http error: %d", resp.GetStatusCode())
 	}
 	data = resp.Bytes()
-	go MkCache(cachePath, data, time.Duration(config.Cfg.Storage.CacheTTL)*time.Second)
+	MkCache(cachePath, data, time.Duration(config.Cfg.Storage.CacheTTL)*time.Second)
 	return data, nil
 }
 
