@@ -59,8 +59,8 @@ func (m *artworkSyncManager) Start() {
 				} else {
 					// [TODO] resume the change stream
 					common.Logger.Info("change stream closed")
-					return
 				}
+				return
 			}
 			var event bson.M
 			if err := m.changeStream.Decode(&event); err != nil {
