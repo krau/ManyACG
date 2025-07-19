@@ -191,5 +191,16 @@ func RunPolling(ctx context.Context) {
 			common.Logger.Panicf("Error when starting bot handler: %s", err)
 		}
 	}()
+	go startService()
+}
 
+func startService() {
+	go func() {
+		for params := range sendArtworkInfoCh {
+			if err := utils.SendArtworkInfo(params.Ctx, params.Bot, params.Params); err != nil {
+				common.Logger.Errorf("Error when sending artwork info: %s", err)
+			}
+			time.Sleep(time.Duration(config.Cfg.Telegram.Sleep) * time.Second)
+		}
+	}()
 }

@@ -9,11 +9,30 @@ import (
 	"github.com/mymmrac/telego"
 )
 
+var (
+	sendArtworkInfoCh = make(chan *sendArtworkInfoParams, 100)
+)
+
+type sendArtworkInfoParams struct {
+	Ctx    context.Context
+	Bot    *telego.Bot
+	Params *utils.SendArtworkInfoParams
+}
+
 func SendArtworkInfo(ctx context.Context, bot *telego.Bot, params *utils.SendArtworkInfoParams) error {
 	if bot == nil {
 		bot = Bot
 	}
-	return utils.SendArtworkInfo(ctx, bot, params)
+	select {
+	case sendArtworkInfoCh <- &sendArtworkInfoParams{
+		Ctx:    ctx,
+		Bot:    bot,
+		Params: params,
+	}:
+		return nil
+	default:
+		return utils.SendArtworkInfo(ctx, bot, params)
+	}
 }
 
 func PostAndCreateArtwork(ctx context.Context, artwork *types.Artwork, bot *telego.Bot, fromID int64, messageID int) error {
