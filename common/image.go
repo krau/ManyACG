@@ -267,8 +267,8 @@ func CompressImageForTelegramByFFmpegFromBytes(input []byte) ([]byte, error) {
 		if err != nil {
 			return nil, fmt.Errorf("failed to compress image: %w", err)
 		}
-		if buf.Len() > inputLen || buf.Len() > types.TelegramMaxPhotoFileSize {
-			Logger.Debugf("recompress...;current: compressed image len: %d, input len: %d, depth: %d;", buf.Len(), inputLen, depth)
+		if buf.Len() > types.TelegramMaxPhotoFileSize {
+			Logger.Debugf("recompressing...;current: compressed image size: %.2f MB, input size: %.2f MB, depth: %d;", float64(buf.Len())/1024/1024, float64(inputLen)/1024/1024, depth)
 			depth++
 			continue
 		}
