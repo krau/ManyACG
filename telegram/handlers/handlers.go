@@ -60,6 +60,10 @@ func RegisterHandlers(hg *telegohandler.HandlerGroup) {
 
 	hg.HandleInlineQuery(InlineQuery)
 	hg.HandleMessage(GetArtworkInfo, func(ctx context.Context, update telego.Update) bool {
+		message := update.Message
+		if message == nil {
+			return false
+		}
 		if update.Message.ViaBot != nil && update.Message.ViaBot.Username == BotUsername {
 			return false
 		}

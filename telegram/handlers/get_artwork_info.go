@@ -1,9 +1,12 @@
 package handlers
 
 import (
+	"fmt"
+	"strings"
 	"time"
 
 	"github.com/krau/ManyACG/common"
+	"github.com/krau/ManyACG/service"
 	"github.com/krau/ManyACG/telegram/utils"
 	"github.com/krau/ManyACG/types"
 
@@ -15,6 +18,25 @@ import (
 func GetArtworkInfo(ctx *telegohandler.Context, message telego.Message) error {
 	hasPermission := CheckPermissionInGroup(ctx, message, types.PermissionGetArtworkInfo)
 	sourceURL := utils.FindSourceURLForMessage(&message)
+	ogch := utils.GetMssageOriginChannel(&message)
+	if ogch != nil && (ogch.Chat.ID == ChannelChatID.ID || strings.EqualFold(ogch.Chat.Username, strings.TrimPrefix(ChannelChatID.Username, "@"))) {
+		// handle the posted artwork in our channel
+		time.Sleep(3 * time.Second)
+		artwork, err := service.GetArtworkByURL(ctx, sourceURL)
+		if err != nil {
+			common.Logger.Errorf("failed to get posted artwork: %s", err)
+			return nil
+		}
+		ctx.Bot().SendMessage(ctx, telegoutil.Message(
+			message.Chat.ChatID(),
+			fmt.Sprintf("%s\n点击下方按钮在私聊中获取原图文件", sourceURL),
+		).WithReplyParameters(&telego.ReplyParameters{
+			MessageID: message.MessageID,
+		}).WithReplyMarkup(telegoutil.InlineKeyboard(
+			utils.GetPostedArtworkInlineKeyboardButton(artwork, ChannelChatID, BotUsername),
+		)))
+		return nil
+	}
 	var waitMessageID int
 	if hasPermission {
 		go func() {

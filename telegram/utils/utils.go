@@ -27,7 +27,7 @@ func GetMessageIDs(messages []telego.Message) []int {
 	return ids
 }
 
-func GetMssageOriginChannel(message telego.Message) *telego.MessageOriginChannel {
+func GetMssageOriginChannel(message *telego.Message) *telego.MessageOriginChannel {
 	if message.ForwardOrigin == nil {
 		return nil
 	}
@@ -39,18 +39,18 @@ func GetMssageOriginChannel(message telego.Message) *telego.MessageOriginChannel
 }
 
 /*
-	检查目标消息是否为频道的作品消息
+	检查目标消息所回复的消息是否为一个频道的消息
 
 如果是，返回 messageOriginChannel 和 true
 */
-func GetMessageOriginChannelArtworkPost(message telego.Message) (*telego.MessageOriginChannel, bool) {
+func GetReplyToMessageOriginChannel(message telego.Message) (*telego.MessageOriginChannel, bool) {
 	if message.ReplyToMessage == nil {
 		return nil, false
 	}
 	if message.ReplyToMessage.Photo == nil || message.ReplyToMessage.ForwardOrigin == nil {
 		return nil, false
 	}
-	messageOriginChannel := GetMssageOriginChannel(*message.ReplyToMessage)
+	messageOriginChannel := GetMssageOriginChannel(message.ReplyToMessage)
 	if messageOriginChannel == nil {
 		return nil, false
 	}
