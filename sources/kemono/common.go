@@ -10,9 +10,9 @@ import (
 var (
 	reqClient            *req.Client
 	kemonoSourceURLRegex = regexp.MustCompile(`kemono\.(su|cr)/\w+/user/\d+/post/\d+`)
-	apiBaseURL           = "https://kemono.su/api/v1"
-	cdnBaseURL           = "https://c1.kemono.su/data"
-	thumbnailsBaseURL    = "https://img.kemono.su/thumbnail/data"
+	apiBaseURL           = "https://kemono.cr/api/v1"
+	cdnBaseURL           = "https://c1.kemono.cr/data"
+	thumbnailsBaseURL    = "https://img.kemono.cr/thumbnail/data"
 )
 
 var (
