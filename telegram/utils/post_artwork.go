@@ -248,6 +248,7 @@ func PostAndCreateArtwork(ctx context.Context, artwork *types.Artwork, bot *tele
 }
 
 func afterCreate(ctx context.Context, artwork *types.Artwork, bot *telego.Bot, fromID int64) {
+	time.Sleep(3 * time.Second) // 等待 Telegram 完全处理完消息
 	objectID, err := primitive.ObjectIDFromHex(artwork.ID)
 	if err != nil {
 		common.Logger.Fatalf("invalid ObjectID: %s", artwork.ID)
