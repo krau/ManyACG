@@ -29,7 +29,7 @@ require (
 	github.com/u2takey/ffmpeg-go v0.5.0
 	go.mongodb.org/mongo-driver v1.17.4
 	golang.org/x/crypto v0.40.0
-	golang.org/x/image v0.28.0
+	golang.org/x/image v0.29.0
 )
 
 require (
@@ -116,7 +116,7 @@ require (
 	github.com/gookit/goutil v0.6.18 // indirect
 	github.com/gookit/gsr v0.1.1 // indirect
 	github.com/imroc/req/v3 v3.52.2
-	github.com/mymmrac/telego v1.1.1
+	github.com/mymmrac/telego v1.2.0
 	github.com/pelletier/go-toml/v2 v2.2.4 // indirect
 	github.com/sagikazarmark/locafero v0.9.0 // indirect
 	github.com/sourcegraph/conc v0.3.0 // indirect
