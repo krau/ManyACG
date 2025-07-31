@@ -284,31 +284,22 @@ func SendPictureFileByID(ctx context.Context, bot *telego.Bot, message telego.Me
 	return documentMessage, nil
 }
 
-func GetPicturePreviewInputFile(ctx context.Context, picture *types.Picture) (*telego.InputFile, bool, error) {
+// GetPicturePreviewInputFile 获取图片预览的 InputFile
+func GetPicturePreviewInputFile(ctx context.Context, picture *types.Picture) (*telego.InputFile, error) {
 	if picture.TelegramInfo != nil && picture.TelegramInfo.PhotoFileID != "" {
 		inputFile := telegoutil.FileFromID(picture.TelegramInfo.PhotoFileID)
-		return &inputFile, false, nil
+		return &inputFile, nil
 	}
 	cacheFile, err := common.GetReqCachedFile(picture.Original)
 	if err == nil {
 		fileBytes, err := common.CompressImageForTelegramByFFmpegFromBytes(cacheFile)
 		if err != nil {
-			return nil, false, err
+			return nil, err
 		}
-		inputFile := telegoutil.File(telegoutil.NameReader(bytes.NewReader(fileBytes), picture.Original))
-		return &inputFile, false, nil
+		inputFile := telegoutil.File(telegoutil.NameReader(bytes.NewReader(fileBytes), picture.GetFileName()))
+		return &inputFile, nil
 	}
-	if botPhotoFileID := service.GetEtcData(ctx, "bot_photo_file_id"); botPhotoFileID != nil {
-		inputFile := telegoutil.FileFromID(botPhotoFileID.(string))
-		return &inputFile, true, nil
-	}
-	if botPhotoFileBytes := service.GetEtcData(ctx, "bot_photo_bytes"); botPhotoFileBytes != nil {
-		if data, ok := botPhotoFileBytes.(primitive.Binary); ok {
-			inputFile := telegoutil.File(telegoutil.NameReader(bytes.NewReader(data.Data), picture.Original))
-			return &inputFile, true, nil
-		}
-	}
-	return nil, true, errs.ErrNoAvailableFile
+	return nil, errs.ErrNoAvailableFile
 }
 
 func ParseCommandBy(text string, splitChar, quoteChar string) (string, string, []string) {

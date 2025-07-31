@@ -114,37 +114,6 @@ func InitBot(ctx context.Context) {
 			},
 		})
 	}
-
-	if service.GetEtcData(ctx, "bot_photo_bytes") != nil && service.GetEtcData(ctx, "bot_photo_file_id") != nil {
-		return
-	}
-
-	botPhoto, err := Bot.GetUserProfilePhotos(ctx, &telego.GetUserProfilePhotosParams{
-		UserID: me.ID,
-		Limit:  1,
-	})
-	if err != nil {
-		common.Logger.Panicf("Error when getting bot photo: %s", err)
-	}
-	photoSize := botPhoto.Photos[0][len(botPhoto.Photos[0])-1]
-	photoFile, err := Bot.GetFile(ctx, &telego.GetFileParams{
-		FileID: photoSize.FileID,
-	})
-	if err != nil {
-		common.Logger.Panicf("Error when getting bot photo: %s", err)
-	}
-	fileBytes, err := telegoutil.DownloadFile(Bot.FileDownloadURL(photoFile.FilePath))
-	if err != nil {
-		common.Logger.Panicf("Error when downloading bot photo: %s", err)
-	}
-	_, err = service.SetEtcData(ctx, "bot_photo_bytes", fileBytes)
-	if err != nil {
-		common.Logger.Panicf("Error when setting bot photo bytes: %s", err)
-	}
-	_, err = service.SetEtcData(ctx, "bot_photo_file_id", photoSize.FileID)
-	if err != nil {
-		common.Logger.Panicf("Error when setting bot photo file ID: %s", err)
-	}
 }
 
 func RunPolling(ctx context.Context) {

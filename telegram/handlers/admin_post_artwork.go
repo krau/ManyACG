@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"path/filepath"
@@ -13,6 +14,7 @@ import (
 
 	"github.com/krau/ManyACG/common"
 	"github.com/krau/ManyACG/config"
+	"github.com/krau/ManyACG/errs"
 
 	"github.com/krau/ManyACG/service"
 	"github.com/krau/ManyACG/sources"
@@ -427,7 +429,7 @@ func ArtworkPreview(ctx *telegohandler.Context, query telego.CallbackQuery) erro
 				)
 			}
 		}
-		inputFile, _, err := utils.GetPicturePreviewInputFile(ctx, cachedArtwork.Artwork.Pictures[currentPictureIndex])
+		inputFile, err := utils.GetPicturePreviewInputFile(ctx, cachedArtwork.Artwork.Pictures[currentPictureIndex])
 		if err != nil {
 			common.Logger.Errorf("获取预览图片失败: %s", err)
 			ctx.Bot().AnswerCallbackQuery(ctx, &telego.AnswerCallbackQueryParams{
@@ -464,8 +466,8 @@ func ArtworkPreview(ctx *telegohandler.Context, query telego.CallbackQuery) erro
 		return nil
 	}
 
-	inputFile, needUpdatePreview, err := utils.GetPicturePreviewInputFile(ctx, cachedArtwork.Artwork.Pictures[pictureIndex])
-	if err != nil {
+	inputFile, err := utils.GetPicturePreviewInputFile(ctx, cachedArtwork.Artwork.Pictures[pictureIndex])
+	if err != nil && !errors.Is(err, errs.ErrNoAvailableFile) {
 		common.Logger.Errorf("获取预览图片失败: %s", err)
 		ctx.Bot().AnswerCallbackQuery(ctx, &telego.AnswerCallbackQueryParams{
 			CallbackQueryID: query.ID,
@@ -475,7 +477,7 @@ func ArtworkPreview(ctx *telegohandler.Context, query telego.CallbackQuery) erro
 		})
 		return nil
 	}
-	if needUpdatePreview {
+	if inputFile == nil {
 		go ctx.Bot().AnswerCallbackQuery(context.TODO(), &telego.AnswerCallbackQueryParams{
 			CallbackQueryID: query.ID,
 			Text:            "图片还在加载, 请稍等",
@@ -521,14 +523,12 @@ func ArtworkPreview(ctx *telegohandler.Context, query telego.CallbackQuery) erro
 		common.Logger.Errorf("编辑预览消息失败: %s", err)
 		return nil
 	}
-	if !needUpdatePreview {
-		if cachedArtwork.Artwork.Pictures[pictureIndex].TelegramInfo == nil {
-			cachedArtwork.Artwork.Pictures[pictureIndex].TelegramInfo = &types.TelegramInfo{}
-		}
-		cachedArtwork.Artwork.Pictures[pictureIndex].TelegramInfo.PhotoFileID = msg.Photo[len(msg.Photo)-1].FileID
-		if err := service.UpdateCachedArtwork(ctx, cachedArtwork); err != nil {
-			common.Logger.Errorf("更新缓存作品失败: %s", err)
-		}
+	if cachedArtwork.Artwork.Pictures[pictureIndex].TelegramInfo == nil {
+		cachedArtwork.Artwork.Pictures[pictureIndex].TelegramInfo = &types.TelegramInfo{}
+	}
+	cachedArtwork.Artwork.Pictures[pictureIndex].TelegramInfo.PhotoFileID = msg.Photo[len(msg.Photo)-1].FileID
+	if err := service.UpdateCachedArtwork(ctx, cachedArtwork); err != nil {
+		common.Logger.Errorf("更新缓存作品失败: %s", err)
 	}
 	return nil
 }

@@ -31,6 +31,9 @@ type SendArtworkInfoParams struct {
 }
 
 func SendArtworkInfo(ctx context.Context, bot *telego.Bot, params *SendArtworkInfoParams) error {
+	if bot == nil {
+		return errs.ErrNilBot
+	}
 	if params.Verify {
 		originSourceURL := params.SourceURL
 		params.SourceURL = sources.FindSourceURL(originSourceURL)
@@ -77,8 +80,8 @@ func SendArtworkInfo(ctx context.Context, bot *telego.Bot, params *SendArtworkIn
 	if err != nil {
 		return fmt.Errorf("获取 ReplyMarkup 失败: %w", err)
 	}
-	inputFile, needUpdatePreview, err := GetPicturePreviewInputFile(ctx, artwork.Pictures[0])
-	if err != nil {
+	inputFile, err := GetPicturePreviewInputFile(ctx, artwork.Pictures[0])
+	if err != nil && !errors.Is(err, errs.ErrNoAvailableFile) {
 		return fmt.Errorf("获取预览图片失败: %w", err)
 	}
 	caption += fmt.Sprintf("\n%s", params.AppendCaption)
@@ -88,24 +91,21 @@ func SendArtworkInfo(ctx context.Context, bot *telego.Bot, params *SendArtworkIn
 		}
 		params.ChatID = &GroupChatID
 	}
-	photo := telegoutil.Photo(*params.ChatID, *inputFile).
-		WithReplyParameters(params.ReplyParams).
-		WithCaption(caption).
-		WithReplyMarkup(replyMarkup).
-		WithParseMode(telego.ModeHTML)
+	chatId := *params.ChatID
+	if inputFile != nil {
+		photo := telegoutil.Photo(chatId, *inputFile).
+			WithReplyParameters(params.ReplyParams).
+			WithCaption(caption).
+			WithReplyMarkup(replyMarkup).
+			WithParseMode(telego.ModeHTML)
 
-	if artwork.R18 && !needUpdatePreview {
-		photo.WithHasSpoiler()
-	}
-	if bot == nil {
-		return errs.ErrNilBot
-	}
-	msg, err := bot.SendPhoto(ctx, photo)
-	if err != nil {
-		return fmt.Errorf("发送图片失败: %w", err)
-	}
-
-	if !needUpdatePreview {
+		if artwork.R18 {
+			photo.WithHasSpoiler()
+		}
+		msg, err := bot.SendPhoto(ctx, photo)
+		if err != nil {
+			return fmt.Errorf("发送图片失败: %w", err)
+		}
 		cachedArtwork, err := service.GetCachedArtworkByURL(ctx, artwork.SourceURL)
 		if err == nil {
 			if cachedArtwork.Artwork.Pictures[0].TelegramInfo == nil {
@@ -128,10 +128,18 @@ func SendArtworkInfo(ctx context.Context, bot *telego.Bot, params *SendArtworkIn
 		}
 		return nil
 	}
-	if err := updatePreview(ctx, msg, artwork, bot, 0, photo); err != nil {
+	sendMsg := telegoutil.Message(chatId, caption).
+		WithReplyParameters(params.ReplyParams).
+		WithReplyMarkup(replyMarkup).
+		WithParseMode(telego.ModeHTML)
+	msg, err := bot.SendMessage(ctx, sendMsg)
+	if err != nil {
+		return fmt.Errorf("发送消息失败: %w", err)
+	}
+	if err := updatePreview(ctx, msg, artwork, bot, 0, caption, telego.ModeHTML); err != nil {
 		common.Logger.Warnf("更新预览失败: %s", err)
 		bot.EditMessageCaption(ctx, &telego.EditMessageCaptionParams{
-			ChatID:      *params.ChatID,
+			ChatID:      chatId,
 			MessageID:   msg.MessageID,
 			Caption:     caption + "\n<i>更新预览失败</i>",
 			ParseMode:   telego.ModeHTML,
@@ -183,7 +191,15 @@ func getArtworkInfoReplyMarkup(ctx context.Context, artwork *types.Artwork, isCr
 	), nil
 }
 
-func updatePreview(ctx context.Context, targetMessage *telego.Message, artwork *types.Artwork, bot *telego.Bot, pictureIndex uint, photoParams *telego.SendPhotoParams) error {
+func updatePreview(
+	ctx context.Context,
+	targetMessage *telego.Message,
+	artwork *types.Artwork,
+	bot *telego.Bot,
+	pictureIndex uint,
+	caption string,
+	parseMode string,
+) error {
 	if pictureIndex >= uint(len(artwork.Pictures)) {
 		return errs.ErrIndexOOB
 	}
@@ -201,7 +217,7 @@ func updatePreview(ctx context.Context, targetMessage *telego.Message, artwork *
 	}
 	inputFile = telegoutil.File(telegoutil.NameReader(bytes.NewReader(fileBytes), uuid.New().String()+".jpg"))
 	mediaPhoto := telegoutil.MediaPhoto(inputFile)
-	mediaPhoto.WithCaption(photoParams.Caption).WithParseMode(photoParams.ParseMode)
+	mediaPhoto.WithCaption(caption).WithParseMode(parseMode)
 
 	var replyMarkup *telego.InlineKeyboardMarkup
 
@@ -215,7 +231,7 @@ func updatePreview(ctx context.Context, targetMessage *telego.Message, artwork *
 	case types.ArtworkStatusCached:
 		replyMarkup = targetMessage.ReplyMarkup
 	default:
-		mediaPhoto.WithCaption(photoParams.Caption + "\n<i>正在发布...</i>").WithParseMode(telego.ModeHTML)
+		mediaPhoto.WithCaption(caption + "\n<i>正在发布...</i>").WithParseMode(telego.ModeHTML)
 	}
 	if artwork.R18 {
 		mediaPhoto.WithHasSpoiler()
