@@ -2,10 +2,12 @@ package kemono
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"path/filepath"
 	"regexp"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/imroc/req/v3"
@@ -49,7 +51,20 @@ func (k *Kemono) GetArtworkInfo(sourceURL string) (*types.Artwork, error) {
 	if kemonoPostURL == "" {
 		return nil, ErrInvalidKemonoPostURL
 	}
-	sourceURL = "https://" + kemonoPostURL
+	parts := strings.Split(kemonoPostURL, "/")
+	if len(parts) < 5 {
+		return nil, ErrInvalidKemonoPostURL
+	}
+	service := parts[1]
+	userID, err := strconv.Atoi(parts[3])
+	if err != nil {
+		return nil, fmt.Errorf("invalid user id: %w", err)
+	}
+	postID, err := strconv.Atoi(parts[5])
+	if err != nil {
+		return nil, fmt.Errorf("invalid post id: %w", err)
+	}
+	sourceURL = fmt.Sprintf("https://kemono.cr/%s/user/%d/post/%d", service, userID, postID)
 	postPath := getPostPath(sourceURL)
 	apiURL := apiBaseURL + postPath
 	common.Logger.Tracef("request artwork info: %s", apiURL)
@@ -84,7 +99,15 @@ func (k *Kemono) GetCommonSourceURL(url string) string {
 	if kemonoPostURL == "" {
 		return ""
 	}
-	return "https://" + kemonoPostURL
+	parts := strings.Split(kemonoPostURL, "/")
+	if len(parts) < 5 {
+		common.Logger.Fatalf("invalid kemono post url: %s", kemonoPostURL)
+		return ""
+	}
+	service := parts[1]
+	userID := parts[3]
+	postID := parts[5]
+	return fmt.Sprintf("https://kemono.cr/%s/user/%s/post/%s", service, userID, postID)
 }
 
 func (k *Kemono) GetFileName(artwork *types.Artwork, picture *types.Picture) string {
