@@ -11,7 +11,7 @@ import (
 	"github.com/imroc/req/v3"
 	"github.com/krau/ManyACG/common"
 	"github.com/krau/ManyACG/config"
-	sourceCommon "github.com/krau/ManyACG/sources/common"
+	scomon "github.com/krau/ManyACG/sources/common"
 
 	"github.com/krau/ManyACG/types"
 )
@@ -19,7 +19,7 @@ import (
 type Kemono struct{}
 
 func init() {
-	sourceCommon.RegisterSource(types.SourceTypeKemono, new(Kemono))
+	scomon.RegisterSource(types.SourceTypeKemono, new(Kemono))
 }
 
 func (k *Kemono) Init(_ types.Service) {

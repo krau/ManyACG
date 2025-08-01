@@ -10,7 +10,7 @@ import (
 )
 
 func getPostPath(sourceURL string) string {
-	return strings.TrimPrefix(sourceURL, "https://kemono.su")
+	return strings.TrimPrefix(sourceURL, kemonoDomainBase)
 }
 
 func getAuthorProfile(service, creatorId string) (*KemonoCreatorProfileResp, error) {

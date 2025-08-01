@@ -69,7 +69,7 @@ func (resp *KemonoPostResp) ToArtwork() (*types.Artwork, error) {
 	results := make(chan pictureResult, len(postResp.Attachments)+1)
 
 	var wg sync.WaitGroup
-	for i := 0; i < workerCount; i++ {
+	for range workerCount {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
@@ -177,7 +177,7 @@ func (resp *KemonoPostResp) ToArtwork() (*types.Artwork, error) {
 		Description: htmlRe.ReplaceAllString(strings.ReplaceAll(postResp.Content, "<br/>", "\n"), ""),
 		R18:         false,
 		SourceType:  types.SourceTypeKemono,
-		SourceURL:   fmt.Sprintf("https://kemono.su/%s/user/%s/post/%s", postResp.Service, postResp.User, postResp.ID),
+		SourceURL:   fmt.Sprintf("https://kemono.cr/%s/user/%s/post/%s", postResp.Service, postResp.User, postResp.ID),
 		Artist:      artist,
 		Tags:        nil,
 		Pictures:    pictures,

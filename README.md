@@ -33,13 +33,13 @@ ManyACG 是为收集与整理二次元插画作品而生的项目, 目前主要�
   - [x] [Twitter](https://x.com/)
   - [x] [Danbooru](https://danbooru.donmai.us/)
   - [x] [Bilibili](https://www.bilibili.com/)
-  - [x] [Kemono](https://www.kemono.su/)
+  - [x] [Kemono](https://www.kemono.cr/)
   - [x] [Yandere](https://yande.re/)
   - [x] [Nhentai](https://nhentai.net/)
 - **可选的存储原图**, 多存储端支持
   - [x] 本地存储
   - [x] WebDAV
-  - [x] [Alist](https://alistgo.com/)
+  - [x] Alist
   - [x] Telegram
 - 基于图像哈希的去重与以图搜图
 - 带有逻辑控制的关键词搜图
