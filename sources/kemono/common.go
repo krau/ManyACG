@@ -13,8 +13,7 @@ var (
 	kemonoSourceURLRegex = regexp.MustCompile(`kemono\.(su|cr)/\w+/user/\d+/post/\d+`)
 	kemonoDomainBase     = "https://kemono.cr"
 	apiBaseURL           = fmt.Sprintf("%s/api/v1", kemonoDomainBase)
-	cdnBaseURL           = "https://c1.kemono.cr/data"
-	thumbnailsBaseURL    = "https://img.kemono.cr/thumbnail/data"
+	thumbnailsBase       = "https://img.kemono.cr/thumbnail/data"
 )
 
 var (
