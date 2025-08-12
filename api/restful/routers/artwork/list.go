@@ -113,7 +113,7 @@ func GetArtworkList(ctx *gin.Context) {
 			getArtworkListHybrid(ctx, request.Keyword, 0.8, request.Page*request.PageSize, request.PageSize, r18Type, adapterOption)
 			return
 		}
-		keywordSlice := common.ParseStringTo2DArray(request.Keyword, ",", ";")
+		keywordSlice := common.ParseStringTo2DArray(request.Keyword, ",", "|")
 		if len(keywordSlice) == 0 {
 			common.GinErrorResponse(ctx, errors.New("invalid keyword"), http.StatusBadRequest, "Invalid keyword")
 			return
