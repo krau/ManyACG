@@ -6,7 +6,6 @@ require (
 	github.com/PuerkitoBio/goquery v1.10.3
 	github.com/appleboy/gin-jwt/v2 v2.10.3
 	github.com/blang/semver v3.5.1+incompatible
-	github.com/bytedance/sonic v1.13.3
 	github.com/chenyahui/gin-cache v1.10.0
 	github.com/corona10/goimagehash v1.1.0
 	github.com/duke-git/lancet/v2 v2.3.6
@@ -14,6 +13,7 @@ require (
 	github.com/gin-contrib/cors v1.7.5
 	github.com/gin-gonic/gin v1.10.1
 	github.com/go-redis/redis/v8 v8.11.5
+	github.com/goccy/go-json v0.10.5
 	github.com/google/uuid v1.6.0
 	github.com/gookit/slog v0.5.8
 	github.com/gorilla/feeds v1.2.0
@@ -38,6 +38,7 @@ require (
 	github.com/aws/aws-sdk-go v1.55.7 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/bits-and-blooms/bitset v1.22.0 // indirect
+	github.com/bytedance/sonic v1.13.3 // indirect
 	github.com/bytedance/sonic/loader v0.3.0 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/cloudflare/circl v1.6.1 // indirect
@@ -49,7 +50,6 @@ require (
 	github.com/go-playground/validator/v10 v10.26.0 // indirect
 	github.com/go-task/slim-sprig/v3 v3.0.0 // indirect
 	github.com/go-viper/mapstructure/v2 v2.3.0 // indirect
-	github.com/goccy/go-json v0.10.5 // indirect
 	github.com/golang-jwt/jwt/v4 v4.5.2 // indirect
 	github.com/golang/snappy v1.0.0 // indirect
 	github.com/google/go-github/v30 v30.1.0 // indirect

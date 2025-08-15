@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/bytedance/sonic"
+	"github.com/goccy/go-json"
 	"github.com/krau/ManyACG/adapter"
 	"github.com/krau/ManyACG/common"
 	"github.com/krau/ManyACG/config"
@@ -128,7 +128,7 @@ func (m *artworkSyncManager) ProcessArtworkUpdateEvent(event bson.M) {
 		common.Logger.Errorf("convert to search doc error: %s", err)
 		return
 	}
-	artworkJSON, err := sonic.Marshal(searchDoc)
+	artworkJSON, err := json.Marshal(searchDoc)
 	if err != nil {
 		common.Logger.Errorf("marshal search doc error: %s", err)
 		return
@@ -167,7 +167,7 @@ func (m *artworkSyncManager) ProcessArtworkReplaceEvent(event bson.M) {
 		common.Logger.Errorf("convert to search doc error: %s", err)
 		return
 	}
-	artworkJSON, err := sonic.Marshal(searchDoc)
+	artworkJSON, err := json.Marshal(searchDoc)
 	if err != nil {
 		common.Logger.Errorf("marshal search doc error: %s", err)
 		return

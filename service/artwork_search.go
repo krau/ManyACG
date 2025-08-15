@@ -5,7 +5,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/bytedance/sonic"
+	"github.com/goccy/go-json"
 	"github.com/krau/ManyACG/adapter"
 	"github.com/krau/ManyACG/common"
 	"github.com/krau/ManyACG/config"
@@ -47,11 +47,11 @@ func HybridSearchArtworks(ctx context.Context, queryText string, hybridSemanticR
 	}
 	hits := resp.Hits
 	artworkSearchDocs := make([]*types.ArtworkSearchDocument, 0, len(hits))
-	hitsBytes, err := sonic.Marshal(hits)
+	hitsBytes, err := json.Marshal(hits)
 	if err != nil {
 		return nil, err
 	}
-	err = sonic.Unmarshal(hitsBytes, &artworkSearchDocs)
+	err = json.Unmarshal(hitsBytes, &artworkSearchDocs)
 	if err != nil {
 		return nil, err
 	}
@@ -116,7 +116,7 @@ func SearchSimilarArtworks(ctx context.Context, artworkIdStr string, offset, lim
 					common.Logger.Errorf("Failed to convert artwork to search doc: %s", err)
 					return
 				}
-				artworkJson, err := sonic.Marshal(doc)
+				artworkJson, err := json.Marshal(doc)
 				if err != nil {
 					common.Logger.Errorf("Failed to marshal artwork search doc: %s", err)
 					return
@@ -133,11 +133,11 @@ func SearchSimilarArtworks(ctx context.Context, artworkIdStr string, offset, lim
 	}
 	hits := resp.Hits
 	artworkSearchDocs := make([]*types.ArtworkSearchDocument, 0, len(hits))
-	hitsBytes, err := sonic.Marshal(hits)
+	hitsBytes, err := json.Marshal(hits)
 	if err != nil {
 		return nil, err
 	}
-	err = sonic.Unmarshal(hitsBytes, &artworkSearchDocs)
+	err = json.Unmarshal(hitsBytes, &artworkSearchDocs)
 	if err != nil {
 		return nil, err
 	}
