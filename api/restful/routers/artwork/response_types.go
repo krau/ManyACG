@@ -74,12 +74,18 @@ func ResponseDataFromArtwork(artwork *types.Artwork) *ArtworkResponseData {
 			}
 		}
 		pictures[i] = &PictureResponse{
-			ID:        picture.ID,
-			Width:     picture.Width,
-			Height:    picture.Height,
-			Index:     picture.Index,
-			Hash:      picture.Hash,
-			FileName:  picture.GetFileName(),
+			ID:     picture.ID,
+			Width:  picture.Width,
+			Height: picture.Height,
+			Index:  picture.Index,
+			Hash:   picture.Hash,
+			FileName: func() string {
+				fileName, err := sources.GetFileName(artwork, picture)
+				if err != nil {
+					return picture.GetFileName()
+				}
+				return fileName
+			}(),
 			MessageID: picture.TelegramInfo.MessageID,
 			Thumbnail: thumbnail,
 			Regular:   regular,
