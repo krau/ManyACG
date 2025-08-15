@@ -9,6 +9,7 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/duke-git/lancet/v2/strutil"
 	"github.com/duke-git/lancet/v2/validator"
 	"github.com/krau/ManyACG/config"
 	"github.com/krau/ManyACG/types"
@@ -31,7 +32,7 @@ var fileNameReplacer = strings.NewReplacer(
 )
 
 func SanitizeFileName(fileName string) string {
-	fname := strings.TrimSpace(fileNameReplacer.Replace(fileName))
+	fname := strutil.RemoveWhiteSpace(fileNameReplacer.Replace(fileName), true)
 	fname = strings.Map(func(r rune) rune {
 		if r < 0x20 || r == 0x7F {
 			return '_'

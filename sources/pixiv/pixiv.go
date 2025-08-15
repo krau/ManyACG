@@ -4,7 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"path/filepath"
+	"path"
 	"regexp"
 	"strings"
 
@@ -113,7 +113,7 @@ func (p *Pixiv) GetCommonSourceURL(url string) string {
 }
 
 func (p *Pixiv) GetFileName(artwork *types.Artwork, picture *types.Picture) string {
-	return artwork.Title + "_" + filepath.Base(picture.Original)
+	return artwork.Title + "_" + path.Base(picture.Original)
 }
 
 func (p *Pixiv) Config() *config.SourceCommonConfig {

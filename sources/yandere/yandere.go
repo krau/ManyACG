@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"path/filepath"
+	"path"
 	"regexp"
 	"strconv"
 
@@ -119,7 +119,7 @@ func (y *Yandere) GetFileName(artwork *types.Artwork, picture *types.Picture) st
 	if idStr == "" {
 		idStr = common.MD5Hash(picture.Original)
 	}
-	return "yandere_" + idStr + "_" + strconv.Itoa(int(picture.Index)) + filepath.Ext(picture.Original)
+	return "yandere_" + idStr + "_" + strconv.Itoa(int(picture.Index)) + path.Ext(picture.Original)
 }
 
 func (y *Yandere) Config() *config.SourceCommonConfig {

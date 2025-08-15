@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"path/filepath"
+	"path"
 	"regexp"
 
 	"github.com/imroc/req/v3"
@@ -81,7 +81,7 @@ func (d *Danbooru) GetCommonSourceURL(url string) string {
 
 func (d *Danbooru) GetFileName(artwork *types.Artwork, picture *types.Picture) string {
 	idStr := GetPostID(artwork.SourceURL)
-	return fmt.Sprintf("%s_%d%s", idStr, picture.Index, filepath.Ext(picture.Original))
+	return fmt.Sprintf("%s_%d%s", idStr, picture.Index, path.Ext(picture.Original))
 }
 
 func (d *Danbooru) Config() *config.SourceCommonConfig {

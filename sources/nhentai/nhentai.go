@@ -1,7 +1,7 @@
 package nhentai
 
 import (
-	"path/filepath"
+	"path"
 	"regexp"
 	"strconv"
 
@@ -81,7 +81,7 @@ func (n *Nhentai) GetFileName(artwork *types.Artwork, picture *types.Picture) st
 	if galleryID == "" {
 		galleryID = common.MD5Hash(picture.Original)
 	}
-	return "nhentai_" + galleryID + "_" + strconv.Itoa(int(picture.Index)) + filepath.Ext(picture.Original)
+	return "nhentai_" + galleryID + "_" + strconv.Itoa(int(picture.Index)) + path.Ext(picture.Original)
 }
 
 func (n *Nhentai) Config() *config.SourceCommonConfig {

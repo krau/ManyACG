@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"path/filepath"
+	"path"
 	"regexp"
 	"strconv"
 	"strings"
@@ -111,7 +111,7 @@ func (k *Kemono) GetCommonSourceURL(url string) string {
 }
 
 func (k *Kemono) GetFileName(artwork *types.Artwork, picture *types.Picture) string {
-	return artwork.Title + "_" + strconv.Itoa(int(picture.Index)) + "_" + filepath.Base(picture.Original)
+	return artwork.Title + "_" + strconv.Itoa(int(picture.Index)) + "_" + path.Base(picture.Original)
 }
 
 func (k *Kemono) Config() *config.SourceCommonConfig {

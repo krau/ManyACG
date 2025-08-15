@@ -3,7 +3,7 @@ package twitter
 import (
 	"fmt"
 	"net/url"
-	"path/filepath"
+	"path"
 	"regexp"
 	"strconv"
 	"strings"
@@ -109,7 +109,7 @@ func (t *Twitter) GetFileName(artwork *types.Artwork, picture *types.Picture) st
 		original = strings.Join(urlSplit[:len(urlSplit)-1], "?")
 	}
 	tweetID := strings.Split(artwork.SourceURL, "/")[len(strings.Split(artwork.SourceURL, "/"))-1]
-	return tweetID + "_" + strconv.Itoa(int(picture.Index)) + filepath.Ext(original)
+	return tweetID + "_" + strconv.Itoa(int(picture.Index)) + path.Ext(original)
 }
 
 func (t *Twitter) Config() *config.SourceCommonConfig {
