@@ -29,6 +29,11 @@ var fileNameReplacer = strings.NewReplacer(
 	"%", "_",
 	"#", "_",
 	"+", "_",
+	"'", "_",
+	"`", "_",
+	"\t", "_",
+	"\r", "_",
+	"\n", "_",
 )
 
 func SanitizeFileName(fileName string) string {
@@ -37,23 +42,12 @@ func SanitizeFileName(fileName string) string {
 		if r < 0x20 || r == 0x7F {
 			return '_'
 		}
-		switch r {
-		// invalid characters
-		case '/', '\\',
-			':', '*', '?', '"', '<', '>', '|':
-			return '_'
-		// empty
-		case ' ', '\t', '\r', '\n':
-			return '_'
-		}
 		if validator.IsPrintable(string(r)) {
 			return r
 		}
 		return '_'
 	}, fname)
-	return strings.Join(strings.FieldsFunc(fname, func(r rune) bool {
-		return r == '_' || r == '-' || r == '.' || r == ' '
-	}), "_")
+	return fname
 }
 
 var markdownRe = regexp.MustCompile("([" + regexp.QuoteMeta(`\_*[]()~`+"`"+`>#+-=|{}.!`) + "])")
