@@ -25,7 +25,9 @@ func init() {
 }
 
 func (k *Kemono) Init(_ types.Service) {
-	reqClient = req.C().ImpersonateChrome()
+	// 25-08-17, kemono says:
+	// If you want to scrape, use "Accept: text/css" header in your requests for now. For whatever reason DDG does not like SPA and JSON, so we have to be funny. And you are no exception to caching.
+	reqClient = req.C().SetCommonHeader("Accept", "text/css").EnableAutoDecompress()
 	if config.Cfg.Source.Kemono.Session != "" {
 		reqClient.SetCommonCookies(&http.Cookie{
 			Name:  "session",
