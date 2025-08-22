@@ -3,7 +3,7 @@ package artwork
 import (
 	"net/http"
 
-	"github.com/krau/ManyACG/common"
+	"github.com/krau/ManyACG/api/restful/utils"
 	"github.com/krau/ManyACG/sources"
 	"github.com/krau/ManyACG/types"
 )
@@ -35,15 +35,15 @@ type PictureResponse struct {
 	Regular   string `json:"regular"`
 }
 
-func ResponseFromArtwork(artwork *types.Artwork, isAuthorized bool) *common.RestfulCommonResponse[any] {
+func ResponseFromArtwork(artwork *types.Artwork, isAuthorized bool) *utils.RestfulCommonResponse[any] {
 	if isAuthorized {
-		return &common.RestfulCommonResponse[any]{
+		return &utils.RestfulCommonResponse[any]{
 			Status:  http.StatusOK,
 			Message: "Success",
 			Data:    artwork,
 		}
 	}
-	return &common.RestfulCommonResponse[any]{
+	return &utils.RestfulCommonResponse[any]{
 		Status:  http.StatusOK,
 		Message: "Success",
 		Data:    ResponseDataFromArtwork(artwork),
@@ -57,7 +57,7 @@ func ResponseDataFromArtwork(artwork *types.Artwork) *ArtworkResponseData {
 		if picture.StorageInfo == nil || picture.StorageInfo.Thumb == nil {
 			thumbnail = picture.Thumbnail
 		} else {
-			picThumbUrl := common.ApplyApiStoragePathRule(picture.StorageInfo.Thumb)
+			picThumbUrl := utils.ApplyApiStoragePathRule(picture.StorageInfo.Thumb)
 			if picThumbUrl == "" || picThumbUrl == picture.StorageInfo.Thumb.Path {
 				thumbnail = picture.Thumbnail
 			} else {
@@ -67,7 +67,7 @@ func ResponseDataFromArtwork(artwork *types.Artwork) *ArtworkResponseData {
 		if picture.StorageInfo == nil || picture.StorageInfo.Regular == nil {
 			regular = picture.Thumbnail
 		} else {
-			picRegularUrl := common.ApplyApiStoragePathRule(picture.StorageInfo.Regular)
+			picRegularUrl := utils.ApplyApiStoragePathRule(picture.StorageInfo.Regular)
 			if picRegularUrl == "" || picRegularUrl == picture.StorageInfo.Regular.Path {
 				regular = picture.Thumbnail
 			} else {
@@ -108,9 +108,9 @@ func ResponseDataFromArtwork(artwork *types.Artwork) *ArtworkResponseData {
 	}
 }
 
-func ResponseFromArtworks(artworks []*types.Artwork, isAuthorized bool) *common.RestfulCommonResponse[any] {
+func ResponseFromArtworks(artworks []*types.Artwork, isAuthorized bool) *utils.RestfulCommonResponse[any] {
 	if isAuthorized {
-		return &common.RestfulCommonResponse[any]{
+		return &utils.RestfulCommonResponse[any]{
 			Status:  http.StatusOK,
 			Message: "Success",
 			Data:    artworks,
@@ -120,7 +120,7 @@ func ResponseFromArtworks(artworks []*types.Artwork, isAuthorized bool) *common.
 	for _, artwork := range artworks {
 		responses = append(responses, ResponseDataFromArtwork(artwork))
 	}
-	return &common.RestfulCommonResponse[any]{
+	return &utils.RestfulCommonResponse[any]{
 		Status:  http.StatusOK,
 		Message: "Success",
 		Data:    responses,
@@ -154,8 +154,8 @@ type FetchedPictureResponse struct {
 	FileName  string `json:"file_name"`
 }
 
-func ResponseFromFetchedArtwork(artwork *types.Artwork, cacheID string) *common.RestfulCommonResponse[FetchedArtworkResponseData] {
-	return &common.RestfulCommonResponse[FetchedArtworkResponseData]{
+func ResponseFromFetchedArtwork(artwork *types.Artwork, cacheID string) *utils.RestfulCommonResponse[FetchedArtworkResponseData] {
+	return &utils.RestfulCommonResponse[FetchedArtworkResponseData]{
 		Status:  http.StatusOK,
 		Message: "Success",
 		Data:    ResponseDataFromFetchedArtwork(artwork, cacheID),

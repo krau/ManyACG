@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"regexp"
 
+	"github.com/krau/ManyACG/api/restful/utils"
 	"github.com/krau/ManyACG/common"
 	"github.com/krau/ManyACG/config"
 
@@ -28,19 +29,19 @@ type SendCodeRequest struct {
 func handleSendCode(c *gin.Context) {
 	var request SendCodeRequest
 	if err := c.ShouldBind(&request); err != nil {
-		common.GinBindError(c, err)
+		utils.GinBindError(c, err)
 		return
 	}
 
 	if !regexp.MustCompile("^[a-zA-Z0-9_]+$").MatchString(request.Username) {
-		c.JSON(http.StatusBadRequest, common.RestfulCommonResponse[any]{Status: http.StatusBadRequest, Message: "username must be alphanumeric"})
+		c.JSON(http.StatusBadRequest, utils.RestfulCommonResponse[any]{Status: http.StatusBadRequest, Message: "username must be alphanumeric"})
 		return
 	}
 
 	user, err := service.GetUserByUsername(c, request.Username)
 	if err != nil && !errors.Is(err, mongo.ErrNoDocuments) {
 		common.Logger.Errorf("Failed to get user: %v", err)
-		common.GinErrorResponse(c, err, http.StatusInternalServerError, "Failed to get user")
+		utils.GinErrorResponse(c, err, http.StatusInternalServerError, "Failed to get user")
 		return
 	}
 	if user != nil {
@@ -54,11 +55,11 @@ func handleSendCode(c *gin.Context) {
 	unauthUserInDB, err := service.GetUnauthUserByUsername(c, request.Username)
 	if err != nil && !errors.Is(err, mongo.ErrNoDocuments) {
 		common.Logger.Errorf("Failed to get user: %v", err)
-		common.GinErrorResponse(c, err, http.StatusInternalServerError, "Failed to get user")
+		utils.GinErrorResponse(c, err, http.StatusInternalServerError, "Failed to get user")
 		return
 	}
 	if unauthUserInDB != nil {
-		common.GinErrorResponse(c, errors.New("user already exists"), http.StatusConflict, "User already exists")
+		utils.GinErrorResponse(c, errors.New("user already exists"), http.StatusConflict, "User already exists")
 		return
 	}
 	authMethod := types.AuthMethod(request.AuthMethod)
@@ -66,19 +67,19 @@ func handleSendCode(c *gin.Context) {
 	// TODO: refactor this
 	if authMethod == types.AuthMethodEmail {
 		if request.Email == "" {
-			c.JSON(http.StatusBadRequest, common.RestfulCommonResponse[any]{Status: http.StatusBadRequest, Message: "Email is required"})
+			c.JSON(http.StatusBadRequest, utils.RestfulCommonResponse[any]{Status: http.StatusBadRequest, Message: "Email is required"})
 			return
 		}
 		if !lancetValidator.IsEmail(request.Email) {
-			c.JSON(http.StatusBadRequest, common.RestfulCommonResponse[any]{Status: http.StatusBadRequest, Message: "Invalid email"})
+			c.JSON(http.StatusBadRequest, utils.RestfulCommonResponse[any]{Status: http.StatusBadRequest, Message: "Invalid email"})
 			return
 		}
 		if _, err := service.GetUserByEmail(c, request.Email); err == nil {
-			c.JSON(http.StatusConflict, common.RestfulCommonResponse[any]{Status: http.StatusConflict, Message: "Email already exists"})
+			c.JSON(http.StatusConflict, utils.RestfulCommonResponse[any]{Status: http.StatusConflict, Message: "Email already exists"})
 			return
 		}
 		if common.ResendClient == nil {
-			c.JSON(http.StatusInternalServerError, common.RestfulCommonResponse[any]{Status: http.StatusInternalServerError, Message: "Sorry, not supported yet"})
+			c.JSON(http.StatusInternalServerError, utils.RestfulCommonResponse[any]{Status: http.StatusInternalServerError, Message: "Sorry, not supported yet"})
 			return
 		}
 	}
@@ -92,7 +93,7 @@ func handleSendCode(c *gin.Context) {
 	})
 	if err != nil {
 		common.Logger.Errorf("Failed to create unauth user: %v", err)
-		common.GinErrorResponse(c, err, http.StatusInternalServerError, "Failed send code")
+		utils.GinErrorResponse(c, err, http.StatusInternalServerError, "Failed send code")
 		return
 	}
 
@@ -115,7 +116,7 @@ func handleSendCode(c *gin.Context) {
 		})
 		if err != nil {
 			common.Logger.Errorf("Failed to send email: %v", err)
-			common.GinErrorResponse(c, err, http.StatusInternalServerError, "Failed to send email")
+			utils.GinErrorResponse(c, err, http.StatusInternalServerError, "Failed to send email")
 			return
 		}
 		c.JSON(http.StatusOK, gin.H{
@@ -137,51 +138,51 @@ type RegisterRequest struct {
 func handleRegister(c *gin.Context) {
 	var register RegisterRequest
 	if err := c.ShouldBind(&register); err != nil {
-		common.GinBindError(c, err)
+		utils.GinBindError(c, err)
 		return
 	}
 
 	if !regexp.MustCompile("^[a-zA-Z0-9_]+$").MatchString(register.Username) {
-		c.JSON(http.StatusBadRequest, common.RestfulCommonResponse[any]{Status: http.StatusBadRequest, Message: "username must be alphanumeric"})
+		c.JSON(http.StatusBadRequest, utils.RestfulCommonResponse[any]{Status: http.StatusBadRequest, Message: "username must be alphanumeric"})
 		return
 	}
 
 	user, err := service.GetUserByUsername(c, register.Username)
 	if err != nil && !errors.Is(err, mongo.ErrNoDocuments) {
 		common.Logger.Errorf("Failed to get user: %v", err)
-		common.GinErrorResponse(c, err, http.StatusInternalServerError, "Failed to get user")
+		utils.GinErrorResponse(c, err, http.StatusInternalServerError, "Failed to get user")
 		return
 	}
 	if user != nil {
-		common.GinErrorResponse(c, errors.New("user already exists"), http.StatusConflict, "User already exists")
+		utils.GinErrorResponse(c, errors.New("user already exists"), http.StatusConflict, "User already exists")
 		return
 	}
 
 	unauthUser, err := service.GetUnauthUserByUsername(c, register.Username)
 	if err != nil && !errors.Is(err, mongo.ErrNoDocuments) {
 		common.Logger.Errorf("Failed to get unauth user: %v", err)
-		common.GinErrorResponse(c, err, http.StatusInternalServerError, "Failed to verify code")
+		utils.GinErrorResponse(c, err, http.StatusInternalServerError, "Failed to verify code")
 		return
 	}
 	if unauthUser == nil {
-		c.JSON(http.StatusNotFound, common.RestfulCommonResponse[any]{Status: http.StatusNotFound, Message: "User not found"})
+		c.JSON(http.StatusNotFound, utils.RestfulCommonResponse[any]{Status: http.StatusNotFound, Message: "User not found"})
 		return
 	}
 	if unauthUser.Code != register.Code {
-		c.JSON(http.StatusUnauthorized, common.RestfulCommonResponse[any]{Status: http.StatusUnauthorized, Message: "Invalid code"})
+		c.JSON(http.StatusUnauthorized, utils.RestfulCommonResponse[any]{Status: http.StatusUnauthorized, Message: "Invalid code"})
 		return
 	}
 	if unauthUser.AuthMethod == types.AuthMethodTelegram && unauthUser.TelegramID != register.TelegramID {
-		c.JSON(http.StatusUnauthorized, common.RestfulCommonResponse[any]{Status: http.StatusUnauthorized, Message: "Telegram ID does not match"})
+		c.JSON(http.StatusUnauthorized, utils.RestfulCommonResponse[any]{Status: http.StatusUnauthorized, Message: "Telegram ID does not match"})
 		return
 	}
 	if unauthUser.AuthMethod == types.AuthMethodEmail {
 		if unauthUser.Email != register.Email {
-			c.JSON(http.StatusUnauthorized, common.RestfulCommonResponse[any]{Status: http.StatusUnauthorized, Message: "Email does not match"})
+			c.JSON(http.StatusUnauthorized, utils.RestfulCommonResponse[any]{Status: http.StatusUnauthorized, Message: "Email does not match"})
 			return
 		}
 		if _, err := service.GetUserByEmail(c, register.Email); err == nil {
-			c.JSON(http.StatusConflict, common.RestfulCommonResponse[any]{Status: http.StatusConflict, Message: "Email already exists"})
+			c.JSON(http.StatusConflict, utils.RestfulCommonResponse[any]{Status: http.StatusConflict, Message: "Email already exists"})
 			return
 		}
 	}
@@ -189,7 +190,7 @@ func handleRegister(c *gin.Context) {
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(register.Password), bcrypt.DefaultCost)
 	if err != nil {
 		common.Logger.Errorf("Failed to hash password: %v", err)
-		common.GinErrorResponse(c, err, http.StatusInternalServerError, "Failed to hash password")
+		utils.GinErrorResponse(c, err, http.StatusInternalServerError, "Failed to hash password")
 		return
 	}
 	_, err = service.CreateUser(c, &types.UserModel{
@@ -200,10 +201,10 @@ func handleRegister(c *gin.Context) {
 	})
 	if err != nil {
 		common.Logger.Errorf("Failed to create user: %v", err)
-		common.GinErrorResponse(c, err, http.StatusInternalServerError, "Failed to create user")
+		utils.GinErrorResponse(c, err, http.StatusInternalServerError, "Failed to create user")
 		return
 	}
-	c.JSON(http.StatusOK, common.RestfulCommonResponse[any]{Status: http.StatusOK, Message: "User created"})
+	c.JSON(http.StatusOK, utils.RestfulCommonResponse[any]{Status: http.StatusOK, Message: "User created"})
 	if err := service.DeleteUnauthUser(c, unauthUser.ID); err != nil {
 		common.Logger.Warnf("Failed to delete unauth user: %v", err)
 	}

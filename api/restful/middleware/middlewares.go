@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	jwt "github.com/appleboy/gin-jwt/v2"
+	"github.com/krau/ManyACG/api/restful/utils"
 	"github.com/krau/ManyACG/common"
 	"github.com/krau/ManyACG/config"
 
@@ -124,7 +125,7 @@ func ValidateParamObjectID(ctx *gin.Context) {
 	id := ctx.Param("id")
 	objectID, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
-		common.GinErrorResponse(ctx, err, http.StatusBadRequest, "Invalid ID")
+		utils.GinErrorResponse(ctx, err, http.StatusBadRequest, "Invalid ID")
 		return
 	}
 	ctx.Set("object_id", objectID)
@@ -134,18 +135,18 @@ func ValidateParamObjectID(ctx *gin.Context) {
 func CheckApiKey(ctx *gin.Context) {
 	key := ctx.GetHeader("X-API-KEY")
 	if key == "" {
-		common.GinErrorResponse(ctx, errors.New("api key is required"), http.StatusUnauthorized, "Unauthorized")
+		utils.GinErrorResponse(ctx, errors.New("api key is required"), http.StatusUnauthorized, "Unauthorized")
 		ctx.Abort()
 		return
 	}
 	apiKey, err := service.GetApiKeyByKey(ctx, key)
 	if err != nil {
-		common.GinErrorResponse(ctx, err, http.StatusUnauthorized, "Unauthorized")
+		utils.GinErrorResponse(ctx, err, http.StatusUnauthorized, "Unauthorized")
 		ctx.Abort()
 		return
 	}
 	if apiKey.Used >= apiKey.Quota {
-		common.GinErrorResponse(ctx, errors.New("api key quota exceeded"), http.StatusForbidden, "Forbidden")
+		utils.GinErrorResponse(ctx, errors.New("api key quota exceeded"), http.StatusForbidden, "Forbidden")
 		ctx.Abort()
 		return
 	}

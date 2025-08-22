@@ -7,7 +7,7 @@ import (
 	"github.com/duke-git/lancet/v2/slice"
 	"github.com/gin-gonic/gin"
 	"github.com/krau/ManyACG/api/restful/middleware"
-	"github.com/krau/ManyACG/common"
+	"github.com/krau/ManyACG/api/restful/utils"
 	"github.com/krau/ManyACG/service"
 	"github.com/krau/ManyACG/types"
 )
@@ -26,12 +26,12 @@ type CreateApiKeyRequest struct {
 func CreateApiKey(ctx *gin.Context) {
 	var request CreateApiKeyRequest
 	if err := ctx.ShouldBind(&request); err != nil {
-		common.GinBindError(ctx, err)
+		utils.GinBindError(ctx, err)
 		return
 	}
 
 	if !slice.ContainSubSlice(types.ValidApiKeyPermissions, request.Permissions) {
-		common.GinBindError(ctx, errors.New("invalid permission"))
+		utils.GinBindError(ctx, errors.New("invalid permission"))
 		return
 	}
 	permissions := []types.ApiKeyPermission{}
@@ -40,7 +40,7 @@ func CreateApiKey(ctx *gin.Context) {
 	}
 	apiKey, err := service.CreateApiKey(ctx, request.Key, request.Quota, permissions, request.Description)
 	if err != nil {
-		common.GinErrorResponse(ctx, err, http.StatusInternalServerError, "Failed to create API key")
+		utils.GinErrorResponse(ctx, err, http.StatusInternalServerError, "Failed to create API key")
 		return
 	}
 	ctx.JSON(http.StatusOK, apiKey)

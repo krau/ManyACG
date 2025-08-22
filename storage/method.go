@@ -11,6 +11,7 @@ import (
 
 	"github.com/gabriel-vasile/mimetype"
 	"github.com/gin-gonic/gin"
+	"github.com/krau/ManyACG/api/restful/utils"
 	"github.com/krau/ManyACG/common"
 	"github.com/krau/ManyACG/common/imgtool"
 	"github.com/krau/ManyACG/config"
@@ -191,7 +192,7 @@ func DeleteAll(ctx context.Context, info *types.StorageInfo) error {
 
 func ServeFile(ctx *gin.Context, detail *types.StorageDetail) {
 	if detail == nil || detail.Path == "" {
-		common.GinErrorResponse(ctx, errors.New("invalid storage detail"), http.StatusInternalServerError, "Invalid storage detail")
+		utils.GinErrorResponse(ctx, errors.New("invalid storage detail"), http.StatusInternalServerError, "Invalid storage detail")
 		return
 	}
 	switch detail.Type {
@@ -201,7 +202,7 @@ func ServeFile(ctx *gin.Context, detail *types.StorageDetail) {
 		data, err := GetFile(ctx, detail)
 		if err != nil {
 			common.Logger.Errorf("Failed to get file: %v", err)
-			common.GinErrorResponse(ctx, err, http.StatusInternalServerError, "Failed to get file")
+			utils.GinErrorResponse(ctx, err, http.StatusInternalServerError, "Failed to get file")
 			return
 		}
 		mimeType := mimetype.Detect(data)

@@ -3,6 +3,7 @@ package bot
 import (
 	"net/http"
 
+	"github.com/krau/ManyACG/api/restful/utils"
 	"github.com/krau/ManyACG/common"
 	"github.com/krau/ManyACG/config"
 	"github.com/krau/ManyACG/telegram"
@@ -15,12 +16,12 @@ import (
 
 func SendArtworkInfo(ctx *gin.Context) {
 	if config.Cfg.Telegram.Token == "" {
-		ctx.JSON(http.StatusServiceUnavailable, common.RestfulCommonResponse[any]{Status: http.StatusServiceUnavailable, Message: "Telegram bot is not available"})
+		ctx.JSON(http.StatusServiceUnavailable, utils.RestfulCommonResponse[any]{Status: http.StatusServiceUnavailable, Message: "Telegram bot is not available"})
 		return
 	}
 	var request SendArtworkInfoRequest
 	if err := ctx.ShouldBindJSON(&request); err != nil {
-		common.GinBindError(ctx, err)
+		utils.GinBindError(ctx, err)
 		return
 	}
 	var chatID telego.ChatID
@@ -41,5 +42,5 @@ func SendArtworkInfo(ctx *gin.Context) {
 			common.Logger.Error(err)
 		}
 	}()
-	ctx.JSON(http.StatusOK, common.RestfulCommonResponse[any]{Status: http.StatusOK, Message: "Task created"})
+	ctx.JSON(http.StatusOK, utils.RestfulCommonResponse[any]{Status: http.StatusOK, Message: "Task created"})
 }

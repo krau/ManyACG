@@ -11,6 +11,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/feeds"
 	"github.com/krau/ManyACG/adapter"
+	"github.com/krau/ManyACG/api/restful/utils"
 	"github.com/krau/ManyACG/common"
 	"github.com/krau/ManyACG/config"
 	"github.com/oschwald/geoip2-golang"
@@ -49,7 +50,7 @@ func Init() {
 func GenerateAtom(ctx *gin.Context) {
 	artworks, err := service.GetLatestArtworks(ctx, types.R18TypeNone, 1, 50)
 	if err != nil {
-		common.GinErrorResponse(ctx, err, http.StatusInternalServerError, "Failed to get artworks")
+		utils.GinErrorResponse(ctx, err, http.StatusInternalServerError, "Failed to get artworks")
 		return
 	}
 	feed := &feeds.Feed{
@@ -63,7 +64,7 @@ func GenerateAtom(ctx *gin.Context) {
 	atom, err := feed.ToAtom()
 	if err != nil {
 		common.Logger.Errorf("Failed to generate Atom feed: %v", err)
-		common.GinErrorResponse(ctx, err, http.StatusInternalServerError, "Failed to generate Atom feed")
+		utils.GinErrorResponse(ctx, err, http.StatusInternalServerError, "Failed to generate Atom feed")
 		return
 	}
 	ctx.Data(http.StatusOK, "application/xml", []byte(atom))
@@ -81,7 +82,7 @@ func MyIP(ctx *gin.Context) {
 	record, err := geoipReader.Country(net.ParseIP(ip))
 	if err != nil {
 		common.Logger.Errorf("Failed to get geoip record: %v", err)
-		common.GinErrorResponse(ctx, err, http.StatusInternalServerError, "Failed to get geoip record")
+		utils.GinErrorResponse(ctx, err, http.StatusInternalServerError, "Failed to get geoip record")
 		return
 	}
 	country := record.Country.IsoCode

@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/krau/ManyACG/api/restful/utils"
 	"github.com/krau/ManyACG/common"
 
 	"github.com/krau/ManyACG/service"
@@ -18,14 +19,14 @@ func GetArtist(ctx *gin.Context) {
 	artist, err := service.GetArtistByID(ctx, artistID)
 	if err != nil {
 		if errors.Is(err, mongo.ErrNoDocuments) {
-			common.GinErrorResponse(ctx, err, http.StatusNotFound, "Artist not found")
+			utils.GinErrorResponse(ctx, err, http.StatusNotFound, "Artist not found")
 			return
 		}
 		common.Logger.Errorf("Failed to get artist: %v", err)
-		common.GinErrorResponse(ctx, err, http.StatusInternalServerError, "Failed to get artist")
+		utils.GinErrorResponse(ctx, err, http.StatusInternalServerError, "Failed to get artist")
 		return
 	}
-	ctx.JSON(http.StatusOK, common.RestfulCommonResponse[*types.Artist]{
+	ctx.JSON(http.StatusOK, utils.RestfulCommonResponse[*types.Artist]{
 		Status:  http.StatusOK,
 		Message: "Success",
 		Data:    artist,

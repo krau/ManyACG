@@ -6,7 +6,7 @@ import (
 	"html"
 	"sync"
 
-	"github.com/krau/ManyACG/common"
+	"github.com/krau/ManyACG/api/restful/utils"
 	"github.com/krau/ManyACG/config"
 	"github.com/krau/ManyACG/dao"
 	"github.com/krau/ManyACG/types"
@@ -181,7 +181,7 @@ func ConvertToFeedItems(ctx context.Context, artworks []*types.Artwork) []*feeds
 						if pic.StorageInfo == nil || pic.StorageInfo.Regular == nil {
 							return pic.Thumbnail
 						}
-						picUrl := common.ApplyApiStoragePathRule(pic.StorageInfo.Regular)
+						picUrl := utils.ApplyApiStoragePathRule(pic.StorageInfo.Regular)
 						if picUrl == "" || picUrl == pic.StorageInfo.Regular.Path {
 							return pic.Thumbnail
 						}

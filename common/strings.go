@@ -5,14 +5,11 @@ import (
 	"encoding/hex"
 	"html"
 	"math/rand"
-	"net/url"
 	"regexp"
 	"strings"
 
 	"github.com/duke-git/lancet/v2/strutil"
 	"github.com/duke-git/lancet/v2/validator"
-	"github.com/krau/ManyACG/config"
-	"github.com/krau/ManyACG/types"
 )
 
 var fileNameReplacer = strings.NewReplacer(
@@ -141,27 +138,4 @@ func ExtractTagsFromText(text string) []string {
 		}
 	}
 	return tags
-}
-
-// 在api返回中重写图片路径, 用于拼接图片直链
-//
-// 例: rule.Type = "alist", rule.Path = "/pictures/", rule.JoinPrefix = "https://example.com/pictures/", rule.TrimPrefix = "/pictures/"
-//
-// -> https://example.com/pictures/1234567890abcdef.jpg
-//
-// 如果图片路径以rule.Path开头, 且rule.StorageType为空或与图片存储类型匹配, 则将图片路径转换为rule.JoinPrefix + 图片路径去掉rule.TrimPrefix的部分
-//
-// 否则返回原图片路径
-func ApplyApiStoragePathRule(detail *types.StorageDetail) string {
-	for _, rule := range config.Cfg.API.PathRules {
-		if strings.HasPrefix(detail.Path, rule.Path) && (rule.StorageType == "" || rule.StorageType == string(detail.Type)) {
-			parsedUrl, err := url.JoinPath(rule.JoinPrefix, strings.TrimPrefix(detail.Path, rule.TrimPrefix))
-			if err != nil {
-				Logger.Warnf("Failed to join path: %s", err)
-				return detail.Path
-			}
-			return parsedUrl
-		}
-	}
-	return detail.Path
 }

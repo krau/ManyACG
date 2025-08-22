@@ -4,6 +4,7 @@ import (
 	"errors"
 	"net/http"
 
+	"github.com/krau/ManyACG/api/restful/utils"
 	"github.com/krau/ManyACG/common"
 
 	"github.com/krau/ManyACG/service"
@@ -25,7 +26,7 @@ func GetFile(ctx *gin.Context) {
 	}
 	if err != nil {
 		common.Logger.Errorf("Failed to get file: %v", err)
-		common.GinErrorResponse(ctx, err, http.StatusInternalServerError, "Failed to get file")
+		utils.GinErrorResponse(ctx, err, http.StatusInternalServerError, "Failed to get file")
 		return
 	}
 	mimeType := mimetype.Detect(data)
@@ -36,7 +37,7 @@ func GetFile(ctx *gin.Context) {
 	// file, err := storage.GetFileStream(ctx, picture.StorageInfo.Original)
 	// if err != nil {
 	// 	common.Logger.Errorf("Failed to get file: %v", err)
-	// 	common.GinErrorResponse(ctx, err, http.StatusInternalServerError, "Failed to get file")
+	// 	utils.GinErrorResponse(ctx, err, http.StatusInternalServerError, "Failed to get file")
 	// 	return
 	// }
 	// defer file.Close()
@@ -47,7 +48,7 @@ func GetFile(ctx *gin.Context) {
 	// _, err = io.Copy(io.Discard, tee)
 	// if err != nil {
 	// 	common.Logger.Errorf("Failed to read for mime detection: %v", err)
-	// 	common.GinErrorResponse(ctx, err, http.StatusInternalServerError, "Failed to process file")
+	// 	utils.GinErrorResponse(ctx, err, http.StatusInternalServerError, "Failed to process file")
 	// 	return
 	// }
 
@@ -57,7 +58,7 @@ func GetFile(ctx *gin.Context) {
 	// artwork, err := service.GetArtworkByID(ctx, artworkID, adapter.LoadNone())
 	// if err != nil {
 	// 	common.Logger.Errorf("Failed to get artwork: %v", err)
-	// 	common.GinErrorResponse(ctx, err, http.StatusInternalServerError, "Failed to get artwork")
+	// 	utils.GinErrorResponse(ctx, err, http.StatusInternalServerError, "Failed to get artwork")
 	// 	return
 	// }
 	// fileName, _ := sources.GetFileName(artwork, picture)
@@ -67,14 +68,14 @@ func GetFile(ctx *gin.Context) {
 
 	// if _, err := io.Copy(ctx.Writer, &mimeBuf); err != nil {
 	// 	common.Logger.Errorf("Failed to write mime buffer: %v", err)
-	// 	common.GinErrorResponse(ctx, err, http.StatusInternalServerError, "Failed to send file")
+	// 	utils.GinErrorResponse(ctx, err, http.StatusInternalServerError, "Failed to send file")
 	// 	return
 	// }
 
 	// _, err = io.Copy(ctx.Writer, file)
 	// if err != nil {
 	// 	common.Logger.Errorf("Failed to copy file: %v", err)
-	// 	common.GinErrorResponse(ctx, err, http.StatusInternalServerError, "Failed to send file")
+	// 	utils.GinErrorResponse(ctx, err, http.StatusInternalServerError, "Failed to send file")
 	// 	return
 	// }
 }
@@ -84,11 +85,11 @@ func RandomPicture(ctx *gin.Context) {
 
 	if err != nil {
 		common.Logger.Errorf("Failed to get random pictures: %v", err)
-		common.GinErrorResponse(ctx, err, http.StatusInternalServerError, "Failed to get random pictures")
+		utils.GinErrorResponse(ctx, err, http.StatusInternalServerError, "Failed to get random pictures")
 		return
 	}
 	if len(pictures) == 0 {
-		common.GinErrorResponse(ctx, errors.New("not found pictures"), http.StatusNotFound, "Pictures not found")
+		utils.GinErrorResponse(ctx, errors.New("not found pictures"), http.StatusNotFound, "Pictures not found")
 		return
 	}
 	picture := pictures[0]
@@ -96,7 +97,7 @@ func RandomPicture(ctx *gin.Context) {
 		ctx.Redirect(http.StatusFound, picture.Thumbnail)
 		return
 	}
-	picUrl := common.ApplyApiStoragePathRule(picture.StorageInfo.Regular)
+	picUrl := utils.ApplyApiStoragePathRule(picture.StorageInfo.Regular)
 	if picUrl == "" || picUrl == picture.StorageInfo.Regular.Path {
 		storage.ServeFile(ctx, picture.StorageInfo.Regular)
 		return
