@@ -166,8 +166,8 @@ func UpdatePictureTelegramInfoByID(ctx context.Context, id primitive.ObjectID, t
 	return pictureCollection.UpdateOne(ctx, bson.M{"_id": id}, bson.M{"$set": bson.M{"telegram_info": telegramInfo}})
 }
 
-func UpdatePictureHashByID(ctx context.Context, id primitive.ObjectID, hash string) (*mongo.UpdateResult, error) {
-	return pictureCollection.UpdateOne(ctx, bson.M{"_id": id}, bson.M{"$set": bson.M{"hash": hash}})
+func UpdatePictureHashByID(ctx context.Context, id primitive.ObjectID, hash string, thumbHash string) (*mongo.UpdateResult, error) {
+	return pictureCollection.UpdateOne(ctx, bson.M{"_id": id}, bson.M{"$set": bson.M{"hash": hash, "thumb_hash": thumbHash}})
 }
 
 func UpdatePictureSizeByID(ctx context.Context, id primitive.ObjectID, width, height int) (*mongo.UpdateResult, error) {

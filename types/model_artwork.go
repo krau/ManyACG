@@ -49,8 +49,9 @@ type PictureModel struct {
 	Original  string             `bson:"original" json:"original"`
 	Width     uint               `bson:"width" json:"width"`
 	Height    uint               `bson:"height" json:"height"`
-	Hash      string             `bson:"hash" json:"hash"`
-	BlurScore float64            `bson:"blur_score" json:"blur_score"`
+	Hash      string             `bson:"hash" json:"hash"`             // phash
+	BlurScore float64            `bson:"blur_score" json:"blur_score"` // deprecated
+	ThumbHash string             `bson:"thumb_hash" json:"thumb_hash"` // https://github.com/evanw/thumbhash
 
 	TelegramInfo *TelegramInfo `bson:"telegram_info" json:"telegram_info"`
 	StorageInfo  *StorageInfo  `bson:"storage_info" json:"storage_info"`

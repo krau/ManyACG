@@ -28,6 +28,7 @@ type PictureResponse struct {
 	Height    uint   `json:"height"`
 	Index     uint   `json:"index"`
 	Hash      string `json:"hash"`
+	ThumbHash string `json:"thumb_hash"`
 	FileName  string `json:"file_name"`
 	MessageID int    `json:"message_id"`
 	Thumbnail string `json:"thumbnail"`
@@ -86,6 +87,7 @@ func ResponseDataFromArtwork(artwork *types.Artwork) *ArtworkResponseData {
 				}
 				return fileName
 			}(),
+			ThumbHash: picture.ThumbHash,
 			MessageID: picture.TelegramInfo.MessageID,
 			Thumbnail: thumbnail,
 			Regular:   regular,

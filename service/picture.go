@@ -186,7 +186,15 @@ func ProcessPictureHashAndUpdate(ctx context.Context, picture *types.Picture) er
 	if err != nil {
 		return err
 	}
-	_, err = dao.UpdatePictureHashByID(ctx, pictureModel.ID, hash)
+	img, _, err = image.Decode(bytes.NewReader(file))
+	if err != nil {
+		return fmt.Errorf("failed to decode image: %w", err)
+	}
+	tbhash, err := common.GetImageThumbHash(img)
+	if err != nil {
+		return err
+	}
+	_, err = dao.UpdatePictureHashByID(ctx, pictureModel.ID, hash, tbhash)
 	if err != nil {
 		return err
 	}
