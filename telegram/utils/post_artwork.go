@@ -10,6 +10,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/krau/ManyACG/common"
+	"github.com/krau/ManyACG/common/imgtool"
 	"github.com/krau/ManyACG/config"
 	"github.com/krau/ManyACG/errs"
 
@@ -133,7 +134,7 @@ func GetArtworkInputMediaPhotos(ctx context.Context, artwork *types.Artwork, sta
 					}
 				}
 			}
-			fileBytes, err = common.CompressImageForTelegramByFFmpegFromBytes(fileBytes)
+			fileBytes, err = imgtool.CompressImageForTelegramByFFmpegFromBytes(fileBytes)
 			if err != nil {
 				common.Logger.Errorf("failed to compress image: %s", err)
 				return nil, err

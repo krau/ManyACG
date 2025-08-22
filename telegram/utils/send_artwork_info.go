@@ -9,6 +9,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/krau/ManyACG/common"
+	"github.com/krau/ManyACG/common/imgtool"
 	"github.com/krau/ManyACG/errs"
 
 	"github.com/krau/ManyACG/service"
@@ -211,7 +212,7 @@ func updatePreview(
 	if err != nil {
 		return err
 	}
-	fileBytes, err = common.CompressImageForTelegramByFFmpegFromBytes(fileBytes)
+	fileBytes, err = imgtool.CompressImageForTelegramByFFmpegFromBytes(fileBytes)
 	if err != nil {
 		return err
 	}

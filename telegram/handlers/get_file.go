@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/krau/ManyACG/common"
+	"github.com/krau/ManyACG/common/imgtool"
 	"github.com/krau/ManyACG/config"
 	"github.com/krau/ManyACG/service"
 	"github.com/krau/ManyACG/sources"
@@ -44,7 +45,7 @@ func GetPictureFile(ctx *telegohandler.Context, message telego.Message) error {
 			if err != nil {
 				return nil
 			}
-			hash, err := common.GetImagePhashFromReader(bytes.NewReader(file))
+			hash, err := imgtool.GetImagePhashFromReader(bytes.NewReader(file))
 			if err != nil {
 				return nil
 			}

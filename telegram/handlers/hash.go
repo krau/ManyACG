@@ -6,6 +6,7 @@ import (
 	"image"
 
 	"github.com/krau/ManyACG/common"
+	"github.com/krau/ManyACG/common/imgtool"
 	"github.com/krau/ManyACG/telegram/utils"
 
 	"github.com/mymmrac/telego"
@@ -36,24 +37,19 @@ func CalculatePicture(ctx *telegohandler.Context, message telego.Message) error 
 		utils.ReplyMessage(ctx, ctx.Bot(), message, "解码图片失败")
 		return nil
 	}
-	hash, err := common.GetImagePhash(img)
+	hash, err := imgtool.GetImagePhash(img)
 	if err != nil {
 		utils.ReplyMessage(ctx, ctx.Bot(), message, "计算图片信息失败: "+err.Error())
 		return nil
 	}
-	blurScore, err := common.GetImageBlurScore(img)
-	if err != nil {
-		utils.ReplyMessage(ctx, ctx.Bot(), message, "计算图片信息失败: "+err.Error())
-		return nil
-	}
-	width, height, err := common.GetImageSize(img)
+	width, height, err := imgtool.GetImageSize(img)
 	if err != nil {
 		utils.ReplyMessage(ctx, ctx.Bot(), message, "计算图片信息失败: "+err.Error())
 		return nil
 	}
 	text := fmt.Sprintf(
-		"<b>Hash</b>: <code>%s</code>\n<b>模糊度</b>: %.2f\n<b>尺寸</b>: %d x %d",
-		hash, blurScore, width, height,
+		"<b>Hash</b>: <code>%s</code>\n<b>尺寸</b>: %d x %d",
+		hash, width, height,
 	)
 	if waitMessageID == 0 {
 		utils.ReplyMessageWithHTML(ctx, ctx.Bot(), message, text)

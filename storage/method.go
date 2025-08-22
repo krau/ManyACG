@@ -12,6 +12,7 @@ import (
 	"github.com/gabriel-vasile/mimetype"
 	"github.com/gin-gonic/gin"
 	"github.com/krau/ManyACG/common"
+	"github.com/krau/ManyACG/common/imgtool"
 	"github.com/krau/ManyACG/config"
 	"github.com/krau/ManyACG/errs"
 	"github.com/krau/ManyACG/sources"
@@ -66,7 +67,7 @@ func SaveAll(ctx context.Context, artwork *types.Artwork, picture *types.Picture
 			return nil, fmt.Errorf("%w: %s", errs.ErrStorageUnkown, config.Cfg.Storage.RegularType)
 		}
 		regularOutputPath := fmt.Sprintf("%s_regular.%s", filePath[:len(filePath)-len(filepath.Ext(filePath))], config.Cfg.Storage.RegularFormat)
-		if err := common.CompressImageByFFmpeg(filePath, regularOutputPath, types.RegularPhotoSideLength); err != nil {
+		if err := imgtool.CompressImageByFFmpeg(filePath, regularOutputPath, types.RegularPhotoSideLength); err != nil {
 			return nil, err
 		}
 		defer func() {
@@ -92,7 +93,7 @@ func SaveAll(ctx context.Context, artwork *types.Artwork, picture *types.Picture
 			return nil, fmt.Errorf("%w: %s", errs.ErrStorageUnkown, config.Cfg.Storage.ThumbType)
 		}
 		thumbOutputPath := fmt.Sprintf("%s_thumb.%s", filePath[:len(filePath)-len(filepath.Ext(filePath))], config.Cfg.Storage.ThumbFormat)
-		if err := common.CompressImageByFFmpeg(filePath, thumbOutputPath, types.ThumbPhotoSideLength); err != nil {
+		if err := imgtool.CompressImageByFFmpeg(filePath, thumbOutputPath, types.ThumbPhotoSideLength); err != nil {
 			return nil, err
 		}
 

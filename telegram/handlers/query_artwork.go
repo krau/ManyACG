@@ -12,6 +12,7 @@ import (
 	"github.com/duke-git/lancet/v2/slice"
 	"github.com/krau/ManyACG/adapter"
 	"github.com/krau/ManyACG/common"
+	"github.com/krau/ManyACG/common/imgtool"
 	"github.com/krau/ManyACG/config"
 
 	"github.com/krau/ManyACG/service"
@@ -247,7 +248,7 @@ func handleGetSourceURLFromPicture(ctx *telegohandler.Context, message telego.Me
 	if err != nil {
 		return "", nil, err
 	}
-	hash, err := common.GetImagePhashFromReader(bytes.NewReader(file))
+	hash, err := imgtool.GetImagePhashFromReader(bytes.NewReader(file))
 	if err != nil {
 		return "", file, err
 	}

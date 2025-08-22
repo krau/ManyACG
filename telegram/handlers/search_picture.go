@@ -10,6 +10,7 @@ import (
 
 	"github.com/PuerkitoBio/goquery"
 	"github.com/krau/ManyACG/common"
+	"github.com/krau/ManyACG/common/imgtool"
 	"github.com/krau/ManyACG/config"
 
 	"github.com/krau/ManyACG/service"
@@ -135,7 +136,7 @@ func SearchPictureCallbackQuery(ctx *telegohandler.Context, query telego.Callbac
 }
 
 func getDBSearchResultText(ctx context.Context, file []byte) (string, bool, error) {
-	hash, err := common.GetImagePhashFromReader(bytes.NewReader(file))
+	hash, err := imgtool.GetImagePhashFromReader(bytes.NewReader(file))
 	if err != nil {
 		return "", false, fmt.Errorf("获取图片哈希失败: %w", err)
 	}

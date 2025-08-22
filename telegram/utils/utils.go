@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/krau/ManyACG/common"
+	"github.com/krau/ManyACG/common/imgtool"
 	"github.com/krau/ManyACG/config"
 	"github.com/krau/ManyACG/errs"
 	"github.com/krau/ManyACG/service"
@@ -292,7 +293,7 @@ func GetPicturePreviewInputFile(ctx context.Context, picture *types.Picture) (*t
 	}
 	cacheFile, err := common.GetReqCachedFile(picture.Original)
 	if err == nil {
-		fileBytes, err := common.CompressImageForTelegramByFFmpegFromBytes(cacheFile)
+		fileBytes, err := imgtool.CompressImageForTelegramByFFmpegFromBytes(cacheFile)
 		if err != nil {
 			return nil, err
 		}

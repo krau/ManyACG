@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/krau/ManyACG/common"
+	"github.com/krau/ManyACG/common/imgtool"
 	"github.com/krau/ManyACG/config"
 	"github.com/krau/ManyACG/dao"
 
@@ -92,7 +93,7 @@ func StoragePictureRegularAndThumbAndUpdate(ctx context.Context, picture *types.
 		}()
 
 		regularPath := migrateDir + picture.ID.Hex() + "_regular.webp"
-		if err := common.CompressImageByFFmpeg(originalPath, regularPath, types.RegularPhotoSideLength); err != nil {
+		if err := imgtool.CompressImageByFFmpeg(originalPath, regularPath, types.RegularPhotoSideLength); err != nil {
 			return nil, err
 		}
 		defer func() {
@@ -110,7 +111,7 @@ func StoragePictureRegularAndThumbAndUpdate(ctx context.Context, picture *types.
 		}
 
 		thumbPath := migrateDir + picture.ID.Hex() + "_thumb.webp"
-		if err := common.CompressImageByFFmpeg(originalPath, thumbPath, types.ThumbPhotoSideLength); err != nil {
+		if err := imgtool.CompressImageByFFmpeg(originalPath, thumbPath, types.ThumbPhotoSideLength); err != nil {
 			return nil, err
 		}
 		defer func() {

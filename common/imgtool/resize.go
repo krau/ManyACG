@@ -1,125 +1,19 @@
-package common
+package imgtool
 
 import (
 	"bytes"
-	"encoding/base64"
 	"fmt"
 	"image"
-	"image/color"
-	_ "image/gif"
 	"image/jpeg"
-	_ "image/png"
 	"io"
 	"math"
 	"os"
-	"strconv"
-
-	"github.com/krau/go-thumbhash"
-
-	_ "golang.org/x/image/webp"
-
-	"golang.org/x/image/draw"
-
 	"sync"
 
-	"github.com/corona10/goimagehash"
 	"github.com/krau/ManyACG/types"
 	ffmpeg "github.com/u2takey/ffmpeg-go"
+	"golang.org/x/image/draw"
 )
-
-func GetImagePhash(img image.Image) (string, error) {
-	return getImagePhash(img)
-}
-
-func GetImageThumbHash(img image.Image) (string, error) {
-	tbhs := thumbhash.EncodeImage(img)
-	if tbhs == nil {
-		return "", fmt.Errorf("failed to encode image to thumbhash")
-	}
-	b64Hash := base64.StdEncoding.EncodeToString(tbhs)
-	return b64Hash, nil
-}
-
-func GetImagePhashFromReader(r io.Reader) (string, error) {
-	img, _, err := image.Decode(r)
-	if err != nil {
-		return "", err
-	}
-	return getImagePhash(img)
-}
-
-func getImagePhash(img image.Image) (string, error) {
-	hash, err := goimagehash.PerceptionHash(img)
-	if err != nil {
-		return "", err
-	}
-	return hash.ToString(), nil
-}
-
-// Deprecated: sometimes inaccurate
-func GetImageBlurScore(img image.Image) (float64, error) {
-	return getImageBlurScore(img)
-}
-
-// Deprecated: sometimes inaccurate
-func GetImageBlurScoreFromReader(r io.Reader) (float64, error) {
-	img, _, err := image.Decode(r)
-	if err != nil {
-		return 0, err
-	}
-	return getImageBlurScore(img)
-}
-
-func getImageBlurScore(img image.Image) (float64, error) {
-	// TODO: use more accurate algorithm
-	bounds := img.Bounds()
-	grayImg := image.NewGray(bounds)
-	for y := bounds.Min.Y; y < bounds.Max.Y; y++ {
-		for x := bounds.Min.X; x < bounds.Max.X; x++ {
-			grayImg.Set(x, y, img.At(x, y))
-		}
-	}
-	bounds = grayImg.Bounds()
-	laplaceImg := image.NewGray(bounds)
-	for y := bounds.Min.Y + 1; y < bounds.Max.Y-1; y++ {
-		for x := bounds.Min.X + 1; x < bounds.Max.X-1; x++ {
-			sum := int(grayImg.GrayAt(x, y).
-				Y*9 - grayImg.GrayAt(x+1, y).
-				Y - grayImg.GrayAt(x-1, y).
-				Y - grayImg.GrayAt(x, y+1).
-				Y - grayImg.GrayAt(x, y-1).
-				Y - grayImg.GrayAt(x+1, y+1).
-				Y - grayImg.GrayAt(x-1, y+1).
-				Y - grayImg.GrayAt(x+1, y-1).
-				Y - grayImg.GrayAt(x-1, y-1).Y)
-			laplaceImg.SetGray(x, y, color.Gray{uint8(sum / 8)})
-		}
-	}
-
-	mean := 0.0
-	variance := 0.0
-	pixelCount := 0
-
-	for y := bounds.Min.Y; y < bounds.Max.Y; y++ {
-		for x := bounds.Min.X; x < bounds.Max.X; x++ {
-			grayValue := float64(laplaceImg.GrayAt(x, y).Y)
-			mean += grayValue
-			pixelCount++
-
-		}
-	}
-
-	mean /= float64(pixelCount)
-
-	for y := bounds.Min.Y; y < bounds.Max.Y; y++ {
-		for x := bounds.Min.X; x < bounds.Max.X; x++ {
-			grayValue := float64(laplaceImg.GrayAt(x, y).Y)
-			variance += (grayValue - mean) * (grayValue - mean)
-		}
-	}
-	variance /= float64(pixelCount)
-	return strconv.ParseFloat(strconv.FormatFloat(variance, 'f', 2, 64), 64)
-}
 
 var rgbaPool = sync.Pool{
 	New: func() any {
@@ -241,8 +135,7 @@ func CompressImageByFFmpeg(inputPath, outputPath string, maxEdgeLength int) erro
 		}
 	}
 	if err := ffmpeg.Input(inputPath).Output(outputPath, vfKwArg).OverWriteOutput().Run(); err != nil {
-		Logger.Errorf("failed to compress image: %s", err)
-		return err
+		return fmt.Errorf("failed to compress image: %w", err)
 	}
 	return nil
 }
@@ -280,7 +173,7 @@ func CompressImageForTelegramByFFmpegFromBytes(input []byte) ([]byte, error) {
 			return nil, fmt.Errorf("failed to compress image: %w", err)
 		}
 		if buf.Len() > types.TelegramMaxPhotoFileSize {
-			Logger.Debugf("recompressing...;current: compressed image size: %.2f MB, input size: %.2f MB, depth: %d;", float64(buf.Len())/1024/1024, float64(inputLen)/1024/1024, depth)
+			// Logger.Debugf("recompressing...;current: compressed image size: %.2f MB, input size: %.2f MB, depth: %d;", float64(buf.Len())/1024/1024, float64(inputLen)/1024/1024, depth)
 			depth++
 			continue
 		}

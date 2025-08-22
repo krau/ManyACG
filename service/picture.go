@@ -7,6 +7,7 @@ import (
 	"image"
 
 	"github.com/krau/ManyACG/common"
+	"github.com/krau/ManyACG/common/imgtool"
 	"github.com/krau/ManyACG/dao"
 	"github.com/krau/ManyACG/storage"
 	"github.com/krau/ManyACG/types"
@@ -182,7 +183,7 @@ func ProcessPictureHashAndUpdate(ctx context.Context, picture *types.Picture) er
 		return fmt.Errorf("failed to decode image: %w", err)
 	}
 
-	hash, err := common.GetImagePhash(img)
+	hash, err := imgtool.GetImagePhash(img)
 	if err != nil {
 		return err
 	}
@@ -190,7 +191,7 @@ func ProcessPictureHashAndUpdate(ctx context.Context, picture *types.Picture) er
 	if err != nil {
 		return fmt.Errorf("failed to decode image: %w", err)
 	}
-	tbhash, err := common.GetImageThumbHash(img)
+	tbhash, err := imgtool.GetImageThumbHash(img)
 	if err != nil {
 		return err
 	}
@@ -199,7 +200,7 @@ func ProcessPictureHashAndUpdate(ctx context.Context, picture *types.Picture) er
 		return err
 	}
 	if picture.Width == 0 || picture.Height == 0 {
-		width, height, err := common.GetImageSize(img)
+		width, height, err := imgtool.GetImageSize(img)
 		if err != nil {
 			return err
 		}
