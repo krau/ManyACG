@@ -187,10 +187,6 @@ func ProcessPictureHashAndUpdate(ctx context.Context, picture *types.Picture) er
 	if err != nil {
 		return err
 	}
-	img, _, err = image.Decode(bytes.NewReader(file))
-	if err != nil {
-		return fmt.Errorf("failed to decode image: %w", err)
-	}
 	tbhash, err := imgtool.GetImageThumbHash(img)
 	if err != nil {
 		return err

@@ -61,7 +61,7 @@ func GetImageSize(img image.Image) (int, int, error) {
 }
 
 var imageBufferPool = sync.Pool{
-	New: func() interface{} {
+	New: func() any {
 		return new(bytes.Buffer)
 	},
 }
