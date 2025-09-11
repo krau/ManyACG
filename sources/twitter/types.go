@@ -65,10 +65,11 @@ func (resp *FxTwitterApiResp) ToArtwork() (*types.Artwork, error) {
 
 	pictures := make([]*types.Picture, 0)
 	for i, photo := range media.Photos {
+		picUrl := strings.Split(photo.URL, "?")[0]
 		pictures = append(pictures, &types.Picture{
 			Index:     uint(i),
-			Thumbnail: photo.URL + "?name=medium",
-			Original:  photo.URL + "?name=orig",
+			Thumbnail: picUrl + "?name=medium",
+			Original:  picUrl + "?name=orig",
 			Width:     uint(photo.Width),
 			Height:    uint(photo.Height),
 		})
