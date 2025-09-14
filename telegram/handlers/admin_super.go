@@ -34,21 +34,21 @@ func ProcessPicturesHashAndSize(ctx *telegohandler.Context, message telego.Messa
 	return nil
 }
 
-func ProcessPicturesStorage(ctx *telegohandler.Context, message telego.Message) error {
-	userAdmin, err := service.GetAdminByUserID(ctx, message.From.ID)
-	if err != nil {
-		common.Logger.Errorf("获取管理员信息失败: %s", err)
-		utils.ReplyMessage(ctx, ctx.Bot(), message, "获取管理员信息失败")
-		return nil
-	}
-	if userAdmin != nil && !userAdmin.SuperAdmin {
-		utils.ReplyMessage(ctx, ctx.Bot(), message, "你没有权限处理图片的存储信息")
-		return nil
-	}
-	go service.StoragePicturesRegularAndThumbAndUpdate(ctx, ctx.Bot(), &message)
-	utils.ReplyMessage(ctx, ctx.Bot(), message, "开始处理了")
-	return nil
-}
+// func ProcessPicturesStorage(ctx *telegohandler.Context, message telego.Message) error {
+// 	userAdmin, err := service.GetAdminByUserID(ctx, message.From.ID)
+// 	if err != nil {
+// 		common.Logger.Errorf("获取管理员信息失败: %s", err)
+// 		utils.ReplyMessage(ctx, ctx.Bot(), message, "获取管理员信息失败")
+// 		return nil
+// 	}
+// 	if userAdmin != nil && !userAdmin.SuperAdmin {
+// 		utils.ReplyMessage(ctx, ctx.Bot(), message, "你没有权限处理图片的存储信息")
+// 		return nil
+// 	}
+// 	go service.StoragePicturesRegularAndThumbAndUpdate(ctx, ctx.Bot(), &message)
+// 	utils.ReplyMessage(ctx, ctx.Bot(), message, "开始处理了")
+// 	return nil
+// }
 
 func FixTwitterArtists(ctx *telegohandler.Context, message telego.Message) error {
 	userAdmin, err := service.GetAdminByUserID(ctx, message.From.ID)

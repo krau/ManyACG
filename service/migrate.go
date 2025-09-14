@@ -4,24 +4,18 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"path/filepath"
 	"time"
 
 	"github.com/krau/ManyACG/common"
-	"github.com/krau/ManyACG/common/imgtool"
 	"github.com/krau/ManyACG/config"
 	"github.com/krau/ManyACG/dao"
 
-	"github.com/krau/ManyACG/storage"
 	"github.com/krau/ManyACG/types"
 
 	"github.com/imroc/req/v3"
 	"github.com/mymmrac/telego"
 	"github.com/mymmrac/telego/telegoutil"
 	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
-	"go.mongodb.org/mongo-driver/mongo/readpref"
 )
 
 func ProcessPicturesHashAndSizeAndUpdate(ctx context.Context, bot *telego.Bot, message *telego.Message) {
@@ -64,115 +58,115 @@ func ProcessPicturesHashAndSizeAndUpdate(ctx context.Context, bot *telego.Bot, m
 	}
 }
 
-func StoragePictureRegularAndThumbAndUpdate(ctx context.Context, picture *types.PictureModel) error {
-	pictureModel, err := dao.GetPictureByID(ctx, picture.ID)
-	if err != nil {
-		return err
-	}
-	artwork, err := GetArtworkByID(ctx, pictureModel.ArtworkID)
-	if err != nil {
-		return err
-	}
-	session, err := dao.Client.StartSession()
-	if err != nil {
-		return err
-	}
-	defer session.EndSession(ctx)
-	migrateDir := config.Cfg.Storage.CacheDir + "/migrate/"
-	_, err = session.WithTransaction(ctx, func(ctx mongo.SessionContext) (interface{}, error) {
-		fileBytes, err := storage.GetFile(ctx, picture.StorageInfo.Original)
-		if err != nil {
-			return nil, err
-		}
-		originalPath := migrateDir + filepath.Base(picture.StorageInfo.Original.Path)
-		if err := common.MkFile(originalPath, fileBytes); err != nil {
-			return nil, err
-		}
-		defer func() {
-			common.PurgeFile(originalPath)
-		}()
+// func StoragePictureRegularAndThumbAndUpdate(ctx context.Context, picture *types.PictureModel) error {
+// 	pictureModel, err := dao.GetPictureByID(ctx, picture.ID)
+// 	if err != nil {
+// 		return err
+// 	}
+// 	artwork, err := GetArtworkByID(ctx, pictureModel.ArtworkID)
+// 	if err != nil {
+// 		return err
+// 	}
+// 	session, err := dao.Client.StartSession()
+// 	if err != nil {
+// 		return err
+// 	}
+// 	defer session.EndSession(ctx)
+// 	migrateDir := config.Cfg.Storage.CacheDir + "/migrate/"
+// 	_, err = session.WithTransaction(ctx, func(ctx mongo.SessionContext) (interface{}, error) {
+// 		fileBytes, err := storage.GetFile(ctx, picture.StorageInfo.Original)
+// 		if err != nil {
+// 			return nil, err
+// 		}
+// 		originalPath := migrateDir + filepath.Base(picture.StorageInfo.Original.Path)
+// 		if err := common.MkFile(originalPath, fileBytes); err != nil {
+// 			return nil, err
+// 		}
+// 		defer func() {
+// 			common.PurgeFile(originalPath)
+// 		}()
 
-		regularPath := migrateDir + picture.ID.Hex() + "_regular.webp"
-		if err := imgtool.CompressImageByFFmpeg(originalPath, regularPath, types.RegularPhotoSideLength); err != nil {
-			return nil, err
-		}
-		defer func() {
-			common.PurgeFile(regularPath)
-		}()
-		basePath := fmt.Sprintf("%s/%s", artwork.SourceType, artwork.Artist.UID)
-		regularStoragePath := fmt.Sprintf("/regular/%s/%s", basePath, picture.ID.Hex()+"_regular.webp")
-		regularDetail, err := storage.Save(ctx, regularPath, regularStoragePath, types.StorageType(config.Cfg.Storage.RegularType))
-		if err != nil {
-			return nil, err
-		}
-		pictureModel.StorageInfo.Regular = regularDetail
-		if _, err := dao.UpdatePictureStorageInfoByID(ctx, pictureModel.ID, pictureModel.StorageInfo); err != nil {
-			return nil, err
-		}
+// 		regularPath := migrateDir + picture.ID.Hex() + "_regular.webp"
+// 		if err := imgtool.CompressImageByFFmpeg(originalPath, regularPath, types.RegularPhotoSideLength); err != nil {
+// 			return nil, err
+// 		}
+// 		defer func() {
+// 			common.PurgeFile(regularPath)
+// 		}()
+// 		basePath := fmt.Sprintf("%s/%s", artwork.SourceType, artwork.Artist.UID)
+// 		regularStoragePath := fmt.Sprintf("/regular/%s/%s", basePath, picture.ID.Hex()+"_regular.webp")
+// 		regularDetail, err := storage.Save(ctx, regularPath, regularStoragePath, types.StorageType(config.Cfg.Storage.RegularType))
+// 		if err != nil {
+// 			return nil, err
+// 		}
+// 		pictureModel.StorageInfo.Regular = regularDetail
+// 		if _, err := dao.UpdatePictureStorageInfoByID(ctx, pictureModel.ID, pictureModel.StorageInfo); err != nil {
+// 			return nil, err
+// 		}
 
-		thumbPath := migrateDir + picture.ID.Hex() + "_thumb.webp"
-		if err := imgtool.CompressImageByFFmpeg(originalPath, thumbPath, types.ThumbPhotoSideLength); err != nil {
-			return nil, err
-		}
-		defer func() {
-			common.PurgeFile(thumbPath)
-		}()
-		thumbStoragePath := fmt.Sprintf("/thumb/%s/%s", basePath, picture.ID.Hex()+"_thumb.webp")
-		thumbDetail, err := storage.Save(ctx, thumbPath, thumbStoragePath, types.StorageType(config.Cfg.Storage.ThumbType))
-		if err != nil {
-			return nil, err
-		}
-		pictureModel.StorageInfo.Thumb = thumbDetail
-		if _, err := dao.UpdatePictureStorageInfoByID(ctx, pictureModel.ID, pictureModel.StorageInfo); err != nil {
-			return nil, err
-		}
-		return nil, nil
-	}, options.Transaction().SetReadPreference(readpref.Primary()))
-	if err != nil {
-		return err
-	}
-	return nil
-}
+// 		thumbPath := migrateDir + picture.ID.Hex() + "_thumb.webp"
+// 		if err := imgtool.CompressImageByFFmpeg(originalPath, thumbPath, types.ThumbPhotoSideLength); err != nil {
+// 			return nil, err
+// 		}
+// 		defer func() {
+// 			common.PurgeFile(thumbPath)
+// 		}()
+// 		thumbStoragePath := fmt.Sprintf("/thumb/%s/%s", basePath, picture.ID.Hex()+"_thumb.webp")
+// 		thumbDetail, err := storage.Save(ctx, thumbPath, thumbStoragePath, types.StorageType(config.Cfg.Storage.ThumbType))
+// 		if err != nil {
+// 			return nil, err
+// 		}
+// 		pictureModel.StorageInfo.Thumb = thumbDetail
+// 		if _, err := dao.UpdatePictureStorageInfoByID(ctx, pictureModel.ID, pictureModel.StorageInfo); err != nil {
+// 			return nil, err
+// 		}
+// 		return nil, nil
+// 	}, options.Transaction().SetReadPreference(readpref.Primary()))
+// 	if err != nil {
+// 		return err
+// 	}
+// 	return nil
+// }
 
-func StoragePicturesRegularAndThumbAndUpdate(ctx context.Context, bot *telego.Bot, message *telego.Message) {
-	pictures, err := dao.GetNoRegularAndThumbPictures(ctx)
-	sendMessage := bot != nil && message != nil
-	if err != nil {
-		common.Logger.Errorf("Failed to get no regular and thumb pictures: %v", err)
-		if sendMessage {
-			bot.SendMessage(ctx, telegoutil.Messagef(
-				message.Chat.ChatID(),
-				"Failed to get no regular and thumb pictures: %s",
-				err.Error(),
-			))
-		}
-		return
-	}
-	if sendMessage {
-		bot.SendMessage(ctx, telegoutil.Messagef(
-			message.Chat.ChatID(),
-			"Found %d no regular and thumb pictures",
-			len(pictures),
-		))
-	}
+// func StoragePicturesRegularAndThumbAndUpdate(ctx context.Context, bot *telego.Bot, message *telego.Message) {
+// 	pictures, err := dao.GetNoRegularAndThumbPictures(ctx)
+// 	sendMessage := bot != nil && message != nil
+// 	if err != nil {
+// 		common.Logger.Errorf("Failed to get no regular and thumb pictures: %v", err)
+// 		if sendMessage {
+// 			bot.SendMessage(ctx, telegoutil.Messagef(
+// 				message.Chat.ChatID(),
+// 				"Failed to get no regular and thumb pictures: %s",
+// 				err.Error(),
+// 			))
+// 		}
+// 		return
+// 	}
+// 	if sendMessage {
+// 		bot.SendMessage(ctx, telegoutil.Messagef(
+// 			message.Chat.ChatID(),
+// 			"Found %d no regular and thumb pictures",
+// 			len(pictures),
+// 		))
+// 	}
 
-	failed := 0
-	for _, picture := range pictures {
-		if err := StoragePictureRegularAndThumbAndUpdate(ctx, picture); err != nil {
-			common.Logger.Errorf("Failed to storage regular and thumb picture: %v", err)
-			failed++
-		}
-	}
-	common.Logger.Infof("Processed %d pictures, %d failed", len(pictures)-failed, failed)
-	if sendMessage {
-		bot.SendMessage(ctx, telegoutil.Messagef(
-			message.Chat.ChatID(),
-			"Processed %d pictures, %d failed",
-			len(pictures)-failed,
-			failed,
-		))
-	}
-}
+// 	failed := 0
+// 	for _, picture := range pictures {
+// 		if err := StoragePictureRegularAndThumbAndUpdate(ctx, picture); err != nil {
+// 			common.Logger.Errorf("Failed to storage regular and thumb picture: %v", err)
+// 			failed++
+// 		}
+// 	}
+// 	common.Logger.Infof("Processed %d pictures, %d failed", len(pictures)-failed, failed)
+// 	if sendMessage {
+// 		bot.SendMessage(ctx, telegoutil.Messagef(
+// 			message.Chat.ChatID(),
+// 			"Processed %d pictures, %d failed",
+// 			len(pictures)-failed,
+// 			failed,
+// 		))
+// 	}
+// }
 
 func FixTwitterArtists(ctx context.Context, bot *telego.Bot, message *telego.Message) {
 	client := req.C().ImpersonateChrome().SetCommonRetryCount(3).

@@ -293,7 +293,7 @@ func GetPicturePreviewInputFile(ctx context.Context, picture *types.Picture) (*t
 	}
 	cacheFile, err := common.GetReqCachedFile(picture.Original)
 	if err == nil {
-		fileBytes, err := imgtool.CompressImageForTelegramByFFmpegFromBytes(cacheFile)
+		fileBytes, err := imgtool.CompressImageForTelegram(cacheFile)
 		if err != nil {
 			return nil, err
 		}

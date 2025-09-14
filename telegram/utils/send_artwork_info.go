@@ -212,7 +212,7 @@ func updatePreview(
 	if err != nil {
 		return err
 	}
-	fileBytes, err = imgtool.CompressImageForTelegramByFFmpegFromBytes(fileBytes)
+	fileBytes, err = imgtool.CompressImageForTelegram(fileBytes)
 	if err != nil {
 		return err
 	}
