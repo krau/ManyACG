@@ -1,34 +1,45 @@
-FROM alpine:edge
+FROM archlinux:latest AS builder
 
-RUN apk add --no-cache \
-    build-base \
-    scons \
+RUN pacman -Syu --noconfirm && \
+    pacman -S --noconfirm --needed \
+    base-devel \
     go \
-    vips-dev \
-    vips \
-    vips-poppler \
-    vips-heif \
-    glib-dev \
+    scons \
+    libvips \
+    libheif \
+    poppler-glib \
+    glib2 \
     binutils \
     patchelf \
-    libjpeg-turbo-dev \
-    libpng-dev \
-    libwebp-dev \
-    tiff-dev \
-    openexr-dev \
-    expat-dev \
-    libxml2-dev \
-    zlib-dev \
-    python3 py3-pip py3-setuptools py3-wheel \
-    pkgconf    
-RUN pip3 install staticx patchelf --break-system-packages
+    libjpeg-turbo \
+    libpng \
+    libwebp \
+    libtiff \
+    openexr \
+    expat \
+    libxml2 \
+    libjxl \
+    zlib \
+    python \
+    python-pip \
+    pkgconf \
+    openslide \
+    imagemagick \
+    git && \
+    pacman -Scc --noconfirm
+
+RUN pip install --no-cache-dir staticx setuptools patchelf --break-system-packages
 
 WORKDIR /app
+
 COPY . .
-# TODO: build with version info
-RUN CGO_ENABLED=1 GOOS=linux GOARCH=amd64 go build -o manyacg -ldflags="-s -w" .
 
-RUN staticx manyacg manyacg-static
+RUN go mod download
 
-# 复制输出到 /output
-RUN mkdir -p /output && cp manyacg-static /output/
+RUN CGO_ENABLED=1 GOOS=linux GOARCH=amd64 go build -o manyacg .
+
+RUN staticx manyacg manyacg-static --strip --no-compress --loglevel DEBUG && \
+    mkdir -p /output && cp manyacg-static /output/
+
+FROM scratch AS export
+COPY --from=builder /output/manyacg-static /
