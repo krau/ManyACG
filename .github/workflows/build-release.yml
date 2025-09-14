@@ -1,65 +1,87 @@
-name: Build Binary and Release
+name: Build and Release Static Binary
 
 on:
   push:
-    tags:
-      - "v*"
-
-permissions:
-  contents: write
-  packages: write
+    branches: [vips]
+    tags: ["v*"]
 
 jobs:
-  create-release:
-    name: Create Release
+  build-and-release:
     runs-on: ubuntu-latest
+
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Create Release
-        uses: softprops/action-gh-release@v2
-
-      - name: Setup node
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-
-      - run: npx changelogithub
-        env:
-          GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
-
-  build-matrix:
-    name: Release Go Binary
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        goos: [linux, darwin, windows]
-        goarch: [amd64, arm64]
-    steps:
-      - name: Checkout
+      - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Extract version from Git Ref
-        id: extract_version
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Setup image
         run: |
-          VERSION=$(echo "${{ github.ref }}" | sed 's/refs\/tags\/v//')
-          echo "VERSION=${VERSION}" >> $GITHUB_ENV
+          cat > Dockerfile << 'EOF'
+          FROM alpine:edge
 
-      - name: Release Go Binary
-        uses: wangyoucao577/go-release-action@v1
+          RUN apk add --no-cache \
+              build-base \
+              go \
+              vips-dev \
+              vips \
+              vips-poppler \
+              vips-heif \
+              glib-dev \
+              binutils \
+              patchelf \
+              libjpeg-turbo-dev \
+              libpng-dev \
+              libwebp-dev \
+              libtiff-dev \
+              openexr-dev \
+              expat-dev \
+              libxml2-dev \
+              zlib-dev \
+              python3 \
+              py3-pip \
+              pkgconf \
+              && pip3 install staticx patchelf
+
+          WORKDIR /app
+          COPY . .
+          # TODO: build with version info
+          RUN CGO_ENABLED=1 GOOS=linux GOARCH=amd64 go build -o manyacg -ldflags="-s -w" .
+
+          RUN staticx manyacg manyacg-static
+
+          # 复制输出到 /output
+          RUN mkdir -p /output && cp manyacg-static /output/
+          EOF
+
+          docker buildx build \
+            --platform linux/amd64 \
+            -t alpine-build \
+            -f Dockerfile \
+            --load .
+
+          docker run --rm -v $(pwd)/output:/output alpine-build ls -la /output/manyacg-static || true
+          docker cp $(docker create alpine-build):/output/manyacg-static ./output/manyacg-static
+
+      - name: Verify static binary
+        run: |
+          file output/manyacg-static
+          ldd output/manyacg-static || echo "Static build confirmed"
+
+      - name: Upload static binary as artifact
+        uses: actions/upload-artifact@v4
         with:
-          pre_command: export CGO_ENABLED=1
-          goos: ${{ matrix.goos }}
-          goarch: ${{ matrix.goarch }}
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          ldflags: >-
-            -s -w
-            -X "github.com/krau/ManyACG/common.Version=${{ env.VERSION }}"
-            -X "github.com/krau/ManyACG/common.BuildTime=${{ format(github.event.repository.updated_at, 'yyyy-MM-dd HH:mm:ss') }}"
-            -X "github.com/krau/ManyACG/common.Commit=${{ github.sha }}"
-          binary_name: manyacg
+          name: manyacg-static
+          path: output/manyacg-static
+          retention-days: 30
+
+      - name: Create GitHub Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: output/manyacg-static
+          fail_on_unmatched_files: true
+          generate_release_notes: true
         env:
-          VERSION: ${{ env.VERSION }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
