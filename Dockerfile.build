@@ -1,0 +1,34 @@
+FROM alpine:edge
+
+RUN apk add --no-cache \
+    build-base \
+    scons \
+    go \
+    vips-dev \
+    vips \
+    vips-poppler \
+    vips-heif \
+    glib-dev \
+    binutils \
+    patchelf \
+    libjpeg-turbo-dev \
+    libpng-dev \
+    libwebp-dev \
+    tiff-dev \
+    openexr-dev \
+    expat-dev \
+    libxml2-dev \
+    zlib-dev \
+    python3 py3-pip py3-setuptools py3-wheel \
+    pkgconf    
+RUN pip3 install staticx patchelf --break-system-packages
+
+WORKDIR /app
+COPY . .
+# TODO: build with version info
+RUN CGO_ENABLED=1 GOOS=linux GOARCH=amd64 go build -o manyacg -ldflags="-s -w" .
+
+RUN staticx manyacg manyacg-static
+
+# 复制输出到 /output
+RUN mkdir -p /output && cp manyacg-static /output/
