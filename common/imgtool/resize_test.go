@@ -11,7 +11,7 @@ func TestCompressImageForTelegramByVIPS(t *testing.T) {
 		input    string
 		expected string
 	}{
-		{"test1", "input.png", "output1.jpg"},
+		{"test1", "test.png", "test_output_telegram.jpg"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -46,7 +46,7 @@ func TestCompressImageByVIPS(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := CompressImageByVIPS(tt.input, tt.output, tt.format, tt.maxEdgeLength)
+			err := CompressImage(tt.input, tt.output, tt.format, tt.maxEdgeLength)
 			if err != nil {
 				t.Fatalf("CompressImageByVIPS() error = %v", err)
 			}

@@ -3,10 +3,52 @@ package imgtool
 import (
 	"fmt"
 	"image"
+	"os"
+	"os/exec"
+	"runtime"
 
 	"github.com/cshum/vipsgen/vips"
 	"github.com/krau/ManyACG/types"
+	ffmpeg "github.com/u2takey/ffmpeg-go"
 )
+
+var (
+	ffmpegAvailable bool
+	vipsFormat      map[string]struct{}
+)
+
+func init() {
+	vips.Startup(nil)
+	switch runtime.GOOS {
+	case "windows":
+		_, err := exec.LookPath("ffmpeg.exe")
+		if err == nil {
+			ffmpegAvailable = true
+		}
+	default:
+		_, err := exec.LookPath("ffmpeg")
+		if err == nil {
+			ffmpegAvailable = true
+		}
+	}
+	if !ffmpegAvailable {
+		fmt.Println("ffmpeg not found in PATH, some image formats may not be supported")
+	}
+	vipsFormat = make(map[string]struct{})
+	if vips.HasOperation("jpegsave") {
+		vipsFormat["jpeg"] = struct{}{}
+		vipsFormat["jpg"] = struct{}{}
+	}
+	if vips.HasOperation("pngsave") {
+		vipsFormat["png"] = struct{}{}
+	}
+	if vips.HasOperation("webpsave") {
+		vipsFormat["webp"] = struct{}{}
+	}
+	if vips.HasOperation("heifsave") {
+		vipsFormat["avif"] = struct{}{}
+	}
+}
 
 // var rgbaPool = sync.Pool{
 // 	New: func() any {
@@ -109,31 +151,31 @@ func GetImageSize(img image.Image) (int, int, error) {
 // }
 
 // 使用 ffmpeg 压缩图片
-// func CompressImageByFFmpeg(inputPath, outputPath string, maxEdgeLength int) error {
-// 	file, err := os.Open(inputPath)
-// 	if err != nil {
-// 		return err
-// 	}
-// 	defer file.Close()
-// 	img, _, err := image.DecodeConfig(file)
-// 	if err != nil {
-// 		return err
-// 	}
-// 	var vfKwArg ffmpeg.KwArgs
-// 	if img.Width > int(maxEdgeLength) || img.Height > int(maxEdgeLength) {
-// 		if img.Width > img.Height {
-// 			vfKwArg = ffmpeg.KwArgs{"vf": fmt.Sprintf("scale=%d:-1:flags=lanczos", maxEdgeLength)}
-// 		} else {
-// 			vfKwArg = ffmpeg.KwArgs{"vf": fmt.Sprintf("scale=-1:%d:flags=lanczos", maxEdgeLength)}
-// 		}
-// 	}
-// 	if err := ffmpeg.Input(inputPath).Output(outputPath, vfKwArg).OverWriteOutput().Run(); err != nil {
-// 		return fmt.Errorf("failed to compress image: %w", err)
-// 	}
-// 	return nil
-// }
+func compressImageByFFmpeg(inputPath, outputPath string, maxEdgeLength int) error {
+	file, err := os.Open(inputPath)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+	img, _, err := image.DecodeConfig(file)
+	if err != nil {
+		return err
+	}
+	var vfKwArg ffmpeg.KwArgs
+	if img.Width > int(maxEdgeLength) || img.Height > int(maxEdgeLength) {
+		if img.Width > img.Height {
+			vfKwArg = ffmpeg.KwArgs{"vf": fmt.Sprintf("scale=%d:-1:flags=lanczos", maxEdgeLength)}
+		} else {
+			vfKwArg = ffmpeg.KwArgs{"vf": fmt.Sprintf("scale=-1:%d:flags=lanczos", maxEdgeLength)}
+		}
+	}
+	if err := ffmpeg.Input(inputPath).Output(outputPath, vfKwArg).OverWriteOutput().Run(); err != nil {
+		return fmt.Errorf("failed to compress image: %w", err)
+	}
+	return nil
+}
 
-func CompressImageByVIPS(inputPath, outputPath, format string, maxEdgeLength int) error {
+func CompressImage(inputPath, outputPath, format string, maxEdgeLength int) error {
 	img, err := vips.NewImageFromFile(inputPath, vips.DefaultLoadOptions())
 	if err != nil {
 		return fmt.Errorf("failed to create image from file: %w", err)
@@ -158,6 +200,12 @@ func CompressImageByVIPS(inputPath, outputPath, format string, maxEdgeLength int
 			return fmt.Errorf("failed to resize image: %w", err)
 		}
 	}
+	if _, ok := vipsFormat[format]; !ok {
+		if ffmpegAvailable {
+			return compressImageByFFmpeg(inputPath, outputPath, maxEdgeLength)
+		}
+		return fmt.Errorf("unsupported image format: %s", format)
+	}
 	switch format {
 	case "jpeg", "jpg":
 		err = img.Jpegsave(outputPath, vips.DefaultJpegsaveOptions())
@@ -168,7 +216,7 @@ func CompressImageByVIPS(inputPath, outputPath, format string, maxEdgeLength int
 	case "avif":
 		err = img.Heifsave(outputPath, vips.DefaultHeifsaveOptions())
 	default:
-		return fmt.Errorf("unsupported format: %s", format)
+		return fmt.Errorf("unsupported image format: %s", format)
 	}
 	if err != nil {
 		return fmt.Errorf("failed to save image to file: %w", err)
@@ -227,16 +275,17 @@ func CompressImageForTelegram(input []byte) ([]byte, error) {
 	width := img.Width()
 	height := img.Height()
 
+	inputLen := len(input)
+	currentTotalSideLength := width + height
+
+	if currentTotalSideLength <= types.TelegramMaxPhotoTotalSideLength &&
+		inputLen <= types.TelegramMaxPhotoFileSize {
+		return input, nil
+	}
+
 	var scale float64 = 1.0
-	maxLength := types.RegularPhotoSideLength
-	if width > height {
-		if width > maxLength {
-			scale = float64(maxLength) / float64(width)
-		}
-	} else {
-		if height > maxLength {
-			scale = float64(maxLength) / float64(height)
-		}
+	if currentTotalSideLength > types.TelegramMaxPhotoTotalSideLength {
+		scale = float64(types.TelegramMaxPhotoTotalSideLength) / float64(currentTotalSideLength)
 	}
 	if scale < 1.0 {
 		err = img.Resize(scale, vips.DefaultResizeOptions())
@@ -244,6 +293,7 @@ func CompressImageForTelegram(input []byte) ([]byte, error) {
 			return nil, fmt.Errorf("failed to resize image: %w", err)
 		}
 	}
+
 	result, err := img.JpegsaveBuffer(vips.DefaultJpegsaveBufferOptions())
 	if err != nil {
 		return nil, fmt.Errorf("failed to save image to buffer: %w", err)

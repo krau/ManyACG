@@ -1,4 +1,4 @@
-# build successful on libvips  8.17.1-1, but avif support is broken(it auto fallback to webp)
+# build successful on libvips 8.17.1-1, but avif support is broken(it auto fallback to webp)
 # staticx  0.14.1
 # patchelf 0.18.0
 # python 3.13.7

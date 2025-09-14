@@ -1,0 +1,43 @@
+name: Build and Release Static Binary
+
+on:
+  push:
+    branches: [vips]
+    tags: ["v*"]
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build static binary with staticx
+        run: |
+          docker buildx build \
+            --platform linux/amd64 \
+            --target export \
+            --output type=local,dest=./output \
+            -f Dockerfile.build \
+            .
+
+      - name: Upload static binary as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: manyacg-static
+          path: output/manyacg-static
+          retention-days: 30
+
+      - name: Create GitHub Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: output/manyacg-static
+          fail_on_unmatched_files: true
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -68,7 +68,7 @@ func SaveAll(ctx context.Context, artwork *types.Artwork, picture *types.Picture
 			return nil, fmt.Errorf("%w: %s", errs.ErrStorageUnkown, config.Cfg.Storage.RegularType)
 		}
 		regularOutputPath := fmt.Sprintf("%s_regular.%s", filePath[:len(filePath)-len(filepath.Ext(filePath))], config.Cfg.Storage.RegularFormat)
-		if err := imgtool.CompressImageByVIPS(filePath, regularOutputPath, config.Cfg.Storage.RegularFormat, types.RegularPhotoSideLength); err != nil {
+		if err := imgtool.CompressImage(filePath, regularOutputPath, config.Cfg.Storage.RegularFormat, types.RegularPhotoSideLength); err != nil {
 			return nil, err
 		}
 		defer func() {
@@ -94,7 +94,7 @@ func SaveAll(ctx context.Context, artwork *types.Artwork, picture *types.Picture
 			return nil, fmt.Errorf("%w: %s", errs.ErrStorageUnkown, config.Cfg.Storage.ThumbType)
 		}
 		thumbOutputPath := fmt.Sprintf("%s_thumb.%s", filePath[:len(filePath)-len(filepath.Ext(filePath))], config.Cfg.Storage.ThumbFormat)
-		if err := imgtool.CompressImageByVIPS(filePath, thumbOutputPath, config.Cfg.Storage.RegularFormat, types.ThumbPhotoSideLength); err != nil {
+		if err := imgtool.CompressImage(filePath, thumbOutputPath, config.Cfg.Storage.RegularFormat, types.ThumbPhotoSideLength); err != nil {
 			return nil, err
 		}
 
