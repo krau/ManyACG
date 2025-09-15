@@ -3,37 +3,34 @@ package imgtool
 import (
 	"fmt"
 	"image"
-	"os"
-	"os/exec"
-	"runtime"
 
 	"github.com/cshum/vipsgen/vips"
 	"github.com/krau/ManyACG/types"
-	ffmpeg "github.com/u2takey/ffmpeg-go"
+	// ffmpeg "github.com/u2takey/ffmpeg-go"
 )
 
 var (
-	ffmpegAvailable bool
+	// ffmpegAvailable bool
 	vipsFormat      map[string]struct{}
 )
 
-func init() {
+func Init() {
+	// switch runtime.GOOS {
+	// case "windows":
+	// 	_, err := exec.LookPath("ffmpeg.exe")
+	// 	if err == nil {
+	// 		ffmpegAvailable = true
+	// 	}
+	// default:
+	// 	_, err := exec.LookPath("ffmpeg")
+	// 	if err == nil {
+	// 		ffmpegAvailable = true
+	// 	}
+	// }
+	// if !ffmpegAvailable {
+	// 	fmt.Println("ffmpeg not found in PATH, some image formats may not be supported")
+	// }
 	vips.Startup(nil)
-	switch runtime.GOOS {
-	case "windows":
-		_, err := exec.LookPath("ffmpeg.exe")
-		if err == nil {
-			ffmpegAvailable = true
-		}
-	default:
-		_, err := exec.LookPath("ffmpeg")
-		if err == nil {
-			ffmpegAvailable = true
-		}
-	}
-	if !ffmpegAvailable {
-		fmt.Println("ffmpeg not found in PATH, some image formats may not be supported")
-	}
 	vipsFormat = make(map[string]struct{})
 	if vips.HasOperation("jpegsave") {
 		vipsFormat["jpeg"] = struct{}{}
@@ -151,29 +148,29 @@ func GetImageSize(img image.Image) (int, int, error) {
 // }
 
 // 使用 ffmpeg 压缩图片
-func compressImageByFFmpeg(inputPath, outputPath string, maxEdgeLength int) error {
-	file, err := os.Open(inputPath)
-	if err != nil {
-		return err
-	}
-	defer file.Close()
-	img, _, err := image.DecodeConfig(file)
-	if err != nil {
-		return err
-	}
-	var vfKwArg ffmpeg.KwArgs
-	if img.Width > int(maxEdgeLength) || img.Height > int(maxEdgeLength) {
-		if img.Width > img.Height {
-			vfKwArg = ffmpeg.KwArgs{"vf": fmt.Sprintf("scale=%d:-1:flags=lanczos", maxEdgeLength)}
-		} else {
-			vfKwArg = ffmpeg.KwArgs{"vf": fmt.Sprintf("scale=-1:%d:flags=lanczos", maxEdgeLength)}
-		}
-	}
-	if err := ffmpeg.Input(inputPath).Output(outputPath, vfKwArg).OverWriteOutput().Run(); err != nil {
-		return fmt.Errorf("failed to compress image: %w", err)
-	}
-	return nil
-}
+// func compressImageByFFmpeg(inputPath, outputPath string, maxEdgeLength int) error {
+// 	file, err := os.Open(inputPath)
+// 	if err != nil {
+// 		return err
+// 	}
+// 	defer file.Close()
+// 	img, _, err := image.DecodeConfig(file)
+// 	if err != nil {
+// 		return err
+// 	}
+// 	var vfKwArg ffmpeg.KwArgs
+// 	if img.Width > int(maxEdgeLength) || img.Height > int(maxEdgeLength) {
+// 		if img.Width > img.Height {
+// 			vfKwArg = ffmpeg.KwArgs{"vf": fmt.Sprintf("scale=%d:-1:flags=lanczos", maxEdgeLength)}
+// 		} else {
+// 			vfKwArg = ffmpeg.KwArgs{"vf": fmt.Sprintf("scale=-1:%d:flags=lanczos", maxEdgeLength)}
+// 		}
+// 	}
+// 	if err := ffmpeg.Input(inputPath).Output(outputPath, vfKwArg).OverWriteOutput().Run(); err != nil {
+// 		return fmt.Errorf("failed to compress image: %w", err)
+// 	}
+// 	return nil
+// }
 
 func CompressImage(inputPath, outputPath, format string, maxEdgeLength int) error {
 	img, err := vips.NewImageFromFile(inputPath, vips.DefaultLoadOptions())
@@ -201,9 +198,9 @@ func CompressImage(inputPath, outputPath, format string, maxEdgeLength int) erro
 		}
 	}
 	if _, ok := vipsFormat[format]; !ok {
-		if ffmpegAvailable {
-			return compressImageByFFmpeg(inputPath, outputPath, maxEdgeLength)
-		}
+		// if ffmpegAvailable {
+		// 	return compressImageByFFmpeg(inputPath, outputPath, maxEdgeLength)
+		// }
 		return fmt.Errorf("unsupported image format: %s", format)
 	}
 	switch format {
