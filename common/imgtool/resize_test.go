@@ -39,10 +39,10 @@ func TestCompressImageByVIPS(t *testing.T) {
 		format        string
 		maxEdgeLength int
 	}{
-		{"test1", "test.png", "test_output1.jpg", "jpeg", 2560},
-		{"test2", "test.png", "test_output2.png", "png", 2560},
-		{"test3", "test.png", "test_output3.webp", "webp", 2560},
-		{"test3", "test.png", "test_output4.avif", "avif", 500},
+		{"test1", "test.png", "test_output_vips1.jpg", "jpeg", 2560},
+		{"test2", "test.png", "test_output_vips2.png", "png", 2560},
+		{"test3", "test.png", "test_output_vips3.webp", "webp", 2560},
+		{"test3", "test.png", "test_output_vips4.avif", "avif", 2560},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -52,4 +52,28 @@ func TestCompressImageByVIPS(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestCompressImageNative(t *testing.T) {
+	tests := []struct {
+		name          string
+		input         string
+		output        string
+		format        string
+		maxEdgeLength int
+	}{
+		{"test1", "test.png", "test_output_native1.jpg", "jpeg", 2560},
+		{"test2", "test.png", "test_output_native2.png", "png", 2560},
+		{"test3", "test.png", "test_output_native3.webp", "webp", 2560},
+		{"test3", "test.png", "test_output_native4.avif", "avif", 2560},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := compressImageNative(tt.input, tt.output, tt.format, tt.maxEdgeLength)
+			if err != nil {
+				t.Fatalf("compressImageNative() error = %v", err)
+			}
+		})
+	}
+
 }
