@@ -3,11 +3,12 @@ package imgtool
 import (
 	"fmt"
 	"image"
+	"os"
 	"os/exec"
 	"runtime"
 
-	"github.com/cshum/vipsgen/vips"
 	"github.com/gen2brain/avif"
+	"github.com/krau/ManyACG/config"
 	"github.com/krau/ManyACG/types"
 )
 
@@ -32,22 +33,6 @@ func Init() {
 			ffmpegAvailable = true
 		}
 	}
-	vips.Startup(nil)
-	vipsFormat = make(map[string]struct{})
-	if vips.HasOperation("jpegsave") {
-		vipsFormat["jpeg"] = struct{}{}
-		vipsFormat["jpg"] = struct{}{}
-	}
-	if vips.HasOperation("pngsave") {
-		vipsFormat["png"] = struct{}{}
-	}
-	if vips.HasOperation("webpsave") {
-		vipsFormat["webp"] = struct{}{}
-	}
-	// if vips.HasOperation("heifsave") {
-	// 	vipsFormat["avif"] = struct{}{}
-	// }
-	// https://github.com/cshum/vipsgen/issues/58
 }
 
 func GetImageSize(img image.Image) (int, int, error) {
@@ -76,34 +61,44 @@ func CompressImage(inputPath, outputPath, format string, maxEdgeLength int) erro
 
 func CompressImageForTelegram(input []byte) ([]byte, error) {
 	if _, ok := vipsFormat["jpeg"]; ok {
-		img, err := vips.NewImageFromBuffer(input, vips.DefaultLoadOptions())
+		return compressImageForTelegramByVIPS(input)
+	}
+	tmpFile, err := os.CreateTemp(config.Cfg.Storage.CacheDir, "imgtool_*.png")
+	if err != nil {
+		return nil, fmt.Errorf("failed to create temp file: %w", err)
+	}
+	defer os.Remove(tmpFile.Name())
+	defer tmpFile.Close()
+
+	distFile, err := os.CreateTemp(config.Cfg.Storage.CacheDir, "imgtool_*.jpg")
+	if err != nil {
+		return nil, fmt.Errorf("failed to create temp file: %w", err)
+	}
+	defer os.Remove(distFile.Name())
+	defer distFile.Close()
+
+	err = os.WriteFile(tmpFile.Name(), input, 0644)
+	if err != nil {
+		return nil, fmt.Errorf("failed to write temp file: %w", err)
+	}
+	if ffmpegAvailable {
+		err = compressImageByFFmpeg(tmpFile.Name(), distFile.Name(), types.RegularPhotoSideLength)
 		if err != nil {
-			return nil, fmt.Errorf("failed to create image from buffer: %w", err)
+			return nil, fmt.Errorf("failed to compress image by ffmpeg: %w", err)
 		}
-		defer img.Close()
-		width := img.Width()
-		height := img.Height()
-		inputLen := len(input)
-		currentTotalSideLength := width + height
-		if currentTotalSideLength <= types.TelegramMaxPhotoTotalSideLength &&
-			inputLen <= types.TelegramMaxPhotoFileSize {
-			return input, nil
-		}
-		var scale float64 = 1.0
-		if currentTotalSideLength > types.TelegramMaxPhotoTotalSideLength {
-			scale = float64(types.TelegramMaxPhotoTotalSideLength) / float64(currentTotalSideLength)
-		}
-		if scale < 1.0 {
-			err = img.Resize(scale, vips.DefaultResizeOptions())
-			if err != nil {
-				return nil, fmt.Errorf("failed to resize image: %w", err)
-			}
-		}
-		result, err := img.JpegsaveBuffer(vips.DefaultJpegsaveBufferOptions())
+		result, err := os.ReadFile(distFile.Name())
 		if err != nil {
-			return nil, fmt.Errorf("failed to save image to buffer: %w", err)
+			return nil, fmt.Errorf("failed to read temp file: %w", err)
 		}
 		return result, nil
 	}
-	return nil, fmt.Errorf("vips not support jpeg")
+	err = compressImageNative(tmpFile.Name(), distFile.Name(), "jpeg", types.RegularPhotoSideLength)
+	if err != nil {
+		return nil, fmt.Errorf("failed to compress image natively: %w", err)
+	}
+	result, err := os.ReadFile(distFile.Name())
+	if err != nil {
+		return nil, fmt.Errorf("failed to read temp file: %w", err)
+	}
+	return result, nil
 }
