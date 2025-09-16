@@ -1,12 +1,19 @@
+#!/bin/bash
+set -e
+
 builtAt="$(date +'%F %T %z')"
 gitCommit=$(git log --pretty=format:"%h" -1)
 version=$(git describe --abbrev=0 --tags)
 
-ldflags="\
--w -s \
+ldflags="-w -s \
 -X 'github.com/krau/ManyACG/common.BuildTime=$builtAt' \
 -X 'github.com/krau/ManyACG/common.Commit=$gitCommit' \
--X 'github.com/krau/ManyACG/common.Version=$version'\
-"
+-X 'github.com/krau/ManyACG/common.Version=$version'"
 
-CGO_ENABLED=0 go build -ldflags "$ldflags" -o manyacg
+vipsFlags=$(pkg-config --static --libs vips)
+
+# nodynamic tag is for https://github.com/gen2brain/avif
+CGO_ENABLED=1 go build \
+    -tags nodynamic,netgo \
+    -ldflags "$ldflags -linkmode external -extldflags \"-static $vipsFlags\"" \
+    -o manyacg
