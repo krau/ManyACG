@@ -4,7 +4,7 @@ ENV DEBIAN_FRONTEND=noninteractive
 ENV PKG_CONFIG_PATH=/usr/local/lib/pkgconfig:/usr/lib/pkgconfig
 ENV CGO_ENABLED=1
 
-COPY alpinepkgs.txt .
+COPY scripts/alpinepkgs.txt .
 RUN xargs -n1 apk add --no-cache < alpinepkg.txt
 
 WORKDIR /build
