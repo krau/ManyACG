@@ -24,7 +24,7 @@ jobs:
             --platform linux/amd64 \
             --target exporter \
             --output type=local,dest=./output \
-            -f scripts/Dockerfile.build.vips \
+            -f scripts/Dockerfile.vips \
             .
 
       - name: Upload static binary as artifact
