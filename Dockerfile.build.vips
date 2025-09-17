@@ -1,0 +1,69 @@
+FROM alpine:edge AS builder
+
+ENV DEBIAN_FRONTEND=noninteractive
+ENV PKG_CONFIG_PATH=/usr/local/lib/pkgconfig:/usr/lib/pkgconfig
+ENV CGO_ENABLED=1
+
+COPY alpinepkgs.v.txt .
+RUN while read line; do \
+    pkg="${line%%-[0-9]*}" && ver="${line#${pkg}-}" && \
+    echo "${pkg}=${ver}"; \
+    done < alpinepkgs.v.txt | xargs apk add --no-cache
+
+WORKDIR /build
+
+# ------- libeconf -------
+RUN wget https://github.com/openSUSE/libeconf/archive/refs/tags/v0.7.10.tar.gz && \
+    tar xf v0.7.10.tar.gz && cd libeconf-0.7.10 && \
+    meson setup build -Ddefault_library=static --prefix=/usr/local && \
+    cd build && meson compile && meson install
+
+# 手动修补 mount.pc 让其依赖 libeconf
+RUN sed -i 's/^Requires\.private: blkid$/Requires.private: blkid libeconf/' /usr/lib/pkgconfig/mount.pc
+
+# ------- libtiff -------
+RUN wget https://download.osgeo.org/libtiff/tiff-4.7.1rc1.tar.gz && \
+    tar xf tiff-4.7.1rc1.tar.gz && cd tiff-4.7.1 && \
+    ./autogen.sh && ./configure --enable-static --disable-shared --prefix=/usr/local && \
+    make -j$(nproc) && make install
+
+# ------- libxau -------
+RUN wget https://gitlab.freedesktop.org/xorg/lib/libxau/-/archive/libXau-1.0.12/libxau-libXau-1.0.12.tar.gz && \
+    tar xf libxau-libXau-1.0.12.tar.gz && cd libxau-libXau-1.0.12 && \
+    ./autogen.sh && ./configure --enable-static --disable-shared --prefix=/usr/local && \
+    make -j$(nproc) && make install
+
+# ------- libwebp -------
+RUN wget https://github.com/webmproject/libwebp/archive/refs/tags/v1.6.0.tar.gz -O libwebp-1.6.0.tar.gz && \
+    tar xf libwebp-1.6.0.tar.gz && cd libwebp-1.6.0 && \
+    ./autogen.sh && ./configure --enable-static --disable-shared --with-pic --prefix=/usr/local && \
+    make -j$(nproc) && make install
+
+# ------- libvips -------
+RUN wget https://github.com/libvips/libvips/releases/download/v8.17.2/vips-8.17.2.tar.xz && \
+    tar xf vips-8.17.2.tar.xz && cd vips-8.17.2 && \
+    sed -i -E "s/^(subdir\('(tools|test|fuzz)'\))/# \1/" meson.build && \
+    meson setup build --default-library=static --prefix=/usr/local \
+    -Dmodules=disabled -Dwebp=enabled -Dheif=disabled \
+    -Dprefer_static=true -Dexamples=false && \
+    cd build && meson compile && meson install
+
+# ------- Go -------
+WORKDIR /ManyACG
+COPY . .
+
+# nodynamic 是给 avif 用的, 开启后会使用 wasm
+RUN builtAt="$(date +'%F %T %z')" && \
+    gitCommit=$(git log --pretty=format:"%h" -1) && \
+    version=$(git describe --abbrev=0 --tags) && \
+    versionFlags="-X 'github.com/krau/ManyACG/common.BuildTime=$builtAt' \
+    -X 'github.com/krau/ManyACG/common.Commit=$gitCommit' \
+    -X 'github.com/krau/ManyACG/common.Version=$version'" && \
+    vipsFlags="$(pkg-config --static --libs vips)" && \
+    go build -tags nodynamic,netgo \
+    -ldflags "-s -w $versionFlags -linkmode external -extldflags \"-static $vipsFlags\"" \
+    -o manyacg
+
+# ------- Final Image -------
+FROM scratch AS exporter
+COPY --from=builder /ManyACG/manyacg /manyacg
