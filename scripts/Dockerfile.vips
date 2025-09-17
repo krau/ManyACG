@@ -1,6 +1,6 @@
 FROM acherkrau/libvips-static:latest AS builder
 
-RUN apk add --no-cache git go
+RUN apk add --no-cache git go g++ libstdc++ libstdc++-dev
 
 WORKDIR /ManyACG
 
