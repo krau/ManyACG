@@ -48,12 +48,15 @@ func GetImageSize(img image.Image) (int, int, error) {
 
 func CompressImage(inputPath, outputPath, format string, maxEdgeLength int) error {
 	if _, ok := vipsFormat[format]; ok {
+		fmt.Printf("Using vips to compress image: %s , %s , %s\n", inputPath, outputPath, format)
 		return compressImageVIPS(inputPath, outputPath, format, maxEdgeLength)
 	}
 	if ffmpegAvailable {
+		fmt.Printf("Using ffmpeg to compress image: %s , %s , %s\n", inputPath, outputPath, format)
 		return compressImageByFFmpeg(inputPath, outputPath, maxEdgeLength)
 	}
 	if _, ok := nativeFormat[format]; ok {
+		fmt.Printf("Using native to compress image: %s , %s , %s\n", inputPath, outputPath, format)
 		return compressImageNative(inputPath, outputPath, format, maxEdgeLength)
 	}
 	return fmt.Errorf("unsupported image format: %s", format)
