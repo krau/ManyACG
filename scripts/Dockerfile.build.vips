@@ -4,13 +4,8 @@ ENV DEBIAN_FRONTEND=noninteractive
 ENV PKG_CONFIG_PATH=/usr/local/lib/pkgconfig:/usr/lib/pkgconfig
 ENV CGO_ENABLED=1
 
-COPY scripts/alpinepkgs.fixed.txt .
-RUN while read line; do \
-    pkg="${line%%-[0-9]*}" \
-    ver="${line#${pkg}-}"  \
-    ver=$(echo $ver | sed 's/[^0-9.-r]//g') \
-    echo "${pkg}=${ver}" \
-    done < alpinepkgs.fixed.txt | xargs apk add --no-cache
+COPY alpinepkgs.txt .
+RUN xargs -n1 apk add --no-cache < alpinepkg.txt
 
 WORKDIR /build
 
