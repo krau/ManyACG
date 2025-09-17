@@ -22,10 +22,9 @@ func init() {
 	if vips.HasOperation("webpsave") {
 		vipsFormat["webp"] = struct{}{}
 	}
-	// if vips.HasOperation("heifsave") {
-	// 	vipsFormat["avif"] = struct{}{}
-	// }
-	// https://github.com/cshum/vipsgen/issues/58
+	if vips.HasOperation("heifsave") {
+		vipsFormat["avif"] = struct{}{}
+	}
 }
 
 func compressImageVIPS(inputPath, outputPath, format string, maxEdgeLength int) error {
@@ -60,8 +59,8 @@ func compressImageVIPS(inputPath, outputPath, format string, maxEdgeLength int) 
 		err = img.Pngsave(outputPath, vips.DefaultPngsaveOptions())
 	case "webp":
 		err = img.Webpsave(outputPath, vips.DefaultWebpsaveOptions())
-	// case "avif":
-	// 	err = img.Heifsave(outputPath, vips.DefaultHeifsaveOptions())
+	case "avif":
+		err = img.Heifsave(outputPath, vips.DefaultHeifsaveOptions())
 	default:
 		return fmt.Errorf("unsupported image format: %s", format)
 	}
