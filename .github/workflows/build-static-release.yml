@@ -1,9 +1,8 @@
 name: Build and Release Static Binary
 
 on:
-  workflow_dispatch:
-  # push:
-  # branches: [vips]
+  push:
+    branches: [vips]
   # tags: ["v*"]
 
 jobs:
