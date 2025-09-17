@@ -4,7 +4,7 @@ ENV DEBIAN_FRONTEND=noninteractive
 ENV PKG_CONFIG_PATH=/usr/local/lib/pkgconfig:/usr/lib/pkgconfig
 ENV CGO_ENABLED=1
 
-COPY alpinepkgs.v.txt .
+COPY scripts/alpinepkgs.v.txt .
 RUN while read line; do \
     pkg="${line%%-[0-9]*}" && ver="${line#${pkg}-}" && \
     echo "${pkg}=${ver}"; \
