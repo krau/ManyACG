@@ -64,7 +64,7 @@ jobs:
       - name: Upload linux/amd64 asset via wangyoucao577/go-release-action
         uses: wangyoucao577/go-release-action@v1
         with:
-          pre_command: cp ./release/manyacg ./manyacg && chmod +x ./manyacg
+          pre_command: cp ./output/manyacg ./manyacg && chmod +x ./manyacg
           github_token: ${{ secrets.GITHUB_TOKEN }}
           goos: linux
           goarch: amd64
