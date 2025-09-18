@@ -65,6 +65,16 @@ jobs:
         run: |
           cat > build.sh <<'EOF'
           #!/bin/sh
+          if [ -z "$BUILD_ARTIFACTS_FOLDER" ]; then
+            while [ $# -gt 0 ]; do
+              if [ "$1" = "-o" ]; then
+                out="$2"
+                break
+              fi
+              shift
+            done
+            BUILD_ARTIFACTS_FOLDER=$(dirname "$out")
+          fi
           mkdir -p "$BUILD_ARTIFACTS_FOLDER"
           cp ./output/manyacg "$BUILD_ARTIFACTS_FOLDER/manyacg"
           chmod +x "$BUILD_ARTIFACTS_FOLDER/manyacg"
