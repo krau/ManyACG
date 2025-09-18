@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"log"
+	"strings"
 
 	"github.com/krau/ManyACG/common"
 
@@ -24,7 +25,7 @@ func init() {
 }
 
 func Update() {
-	v := semver.MustParse(common.Version)
+	v := semver.MustParse(strings.TrimPrefix(common.Version, "v"))
 	latest, err := selfupdate.UpdateSelf(v, "krau/ManyACG")
 	if err != nil {
 		log.Println("Binary update failed:", err)
