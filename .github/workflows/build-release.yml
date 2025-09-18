@@ -64,12 +64,14 @@ jobs:
       - name: Upload linux/amd64 asset via wangyoucao577/go-release-action
         uses: wangyoucao577/go-release-action@v1
         with:
-          pre_command: cp ./output/manyacg ./manyacg && chmod +x ./manyacg
           github_token: ${{ secrets.GITHUB_TOKEN }}
           goos: linux
           goarch: amd64
           binary_name: manyacg
-          build_command: "true"
+          build_command: |
+            mkdir -p ${BUILD_ARTIFACTS_FOLDER}
+            cp ./output/manyacg ${BUILD_ARTIFACTS_FOLDER}/manyacg
+            chmod +x ${BUILD_ARTIFACTS_FOLDER}/manyacg
 
   cross-compile:
     name: Build & Upload Cross Compiled Binaries
