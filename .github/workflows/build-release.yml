@@ -61,6 +61,16 @@ jobs:
             -f scripts/Dockerfile.vips \
             .
 
+      - name: Prepare build script for go-release-action
+        run: |
+          cat > build.sh <<'EOF'
+          #!/bin/sh
+          mkdir -p "$BUILD_ARTIFACTS_FOLDER"
+          cp ./output/manyacg "$BUILD_ARTIFACTS_FOLDER/manyacg"
+          chmod +x "$BUILD_ARTIFACTS_FOLDER/manyacg"
+          EOF
+          chmod +x build.sh
+
       - name: Upload linux/amd64 asset via wangyoucao577/go-release-action
         uses: wangyoucao577/go-release-action@v1
         with:
@@ -68,11 +78,7 @@ jobs:
           goos: linux
           goarch: amd64
           binary_name: manyacg
-          build_command: >
-            sh -c 'mkdir -p $BUILD_ARTIFACTS_FOLDER &&
-            cp ./output/manyacg $BUILD_ARTIFACTS_FOLDER/manyacg &&
-            chmod +x $BUILD_ARTIFACTS_FOLDER/manyacg &&
-            exit 0'
+          build_command: ./build.sh
 
   cross-compile:
     name: Build ${{ matrix.goos }}/${{ matrix.goarch }} Binaries
