@@ -1,0 +1,30 @@
+FROM acherkrau/libvips-static:latest AS builder
+
+RUN apk add --no-cache git go
+
+WORKDIR /ManyACG
+
+COPY go.mod go.sum ./
+RUN go mod download
+
+COPY . .
+
+ARG BUILT_AT
+ARG GIT_COMMIT
+ARG VERSION
+
+RUN builtAt=${BUILT_AT:-$(date +'%F %T %z')} && \
+    gitCommit=${GIT_COMMIT:-$(git log --pretty=format:"%h" -1)} && \
+    version=${VERSION:-$(git describe --abbrev=0 --tags)} && \
+    versionFlags="-X 'github.com/krau/ManyACG/common.BuildTime=$builtAt' \
+    -X 'github.com/krau/ManyACG/common.Commit=$gitCommit' \
+    -X 'github.com/krau/ManyACG/common.Version=$version'" && \
+    vipsFlags="$(pkg-config --static --libs vips)" && \
+    CGO_ENABLED=1 GOOS=linux GOARCH=amd64 \
+    go build -tags nodynamic,netgo \
+    -ldflags "-s -w $versionFlags -linkmode external -extldflags \"-static $vipsFlags\"" \
+    -o manyacg
+
+
+FROM scratch AS exporter
+COPY --from=builder /ManyACG/manyacg /manyacg

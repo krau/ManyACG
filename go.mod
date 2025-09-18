@@ -8,6 +8,7 @@ require (
 	github.com/blang/semver v3.5.1+incompatible
 	github.com/chenyahui/gin-cache v1.10.0
 	github.com/corona10/goimagehash v1.1.0
+	github.com/cshum/vipsgen v1.1.2
 	github.com/duke-git/lancet/v2 v2.3.6
 	github.com/gabriel-vasile/mimetype v1.4.9
 	github.com/gin-contrib/cors v1.7.5
@@ -27,16 +28,16 @@ require (
 	github.com/spf13/cobra v1.9.1
 	github.com/spf13/viper v1.20.1
 	github.com/studio-b12/gowebdav v0.10.0
-	github.com/u2takey/ffmpeg-go v0.5.0
 	go.mongodb.org/mongo-driver v1.17.4
 	golang.org/x/crypto v0.40.0
 	golang.org/x/image v0.30.0
 )
 
 require (
+	github.com/HugoSmits86/nativewebp v1.2.0 // indirect
 	github.com/andybalholm/brotli v1.2.0 // indirect
 	github.com/andybalholm/cascadia v1.3.3 // indirect
-	github.com/aws/aws-sdk-go v1.55.7 // indirect
+	github.com/aws/aws-sdk-go v1.38.20 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/bits-and-blooms/bitset v1.22.0 // indirect
 	github.com/bytedance/sonic v1.13.3 // indirect
@@ -45,6 +46,8 @@ require (
 	github.com/cloudflare/circl v1.6.1 // indirect
 	github.com/cloudwego/base64x v0.1.5 // indirect
 	github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f // indirect
+	github.com/ebitengine/purego v0.8.3 // indirect
+	github.com/gen2brain/avif v0.4.4 // indirect
 	github.com/gin-contrib/sse v1.1.0 // indirect
 	github.com/go-playground/locales v0.14.1 // indirect
 	github.com/go-playground/universal-translator v0.18.1 // indirect
@@ -89,6 +92,7 @@ require (
 	github.com/refraction-networking/utls v1.7.3 // indirect
 	github.com/rogpeppe/go-internal v1.13.1 // indirect
 	github.com/tcnksm/go-gitconfig v0.1.2 // indirect
+	github.com/tetratelabs/wazero v1.9.0 // indirect
 	github.com/twitchyliquid64/golang-asm v0.15.1 // indirect
 	github.com/u2takey/go-utils v0.3.1 // indirect
 	github.com/ugorji/go/codec v1.3.0 // indirect
@@ -125,6 +129,7 @@ require (
 	github.com/spf13/cast v1.9.2 // indirect
 	github.com/spf13/pflag v1.0.6 // indirect
 	github.com/subosito/gotenv v1.6.0 // indirect
+	github.com/u2takey/ffmpeg-go v0.5.0
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
 	github.com/xo/terminfo v0.0.0-20220910002029-abceb7e1c41e // indirect
 	go.uber.org/multierr v1.11.0 // indirect

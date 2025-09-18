@@ -3,12 +3,14 @@ package common
 import (
 	"os"
 
+	"github.com/krau/ManyACG/common/imgtool"
 	"github.com/krau/ManyACG/config"
 )
 
 func Init() {
 	initHttpClient()
 	initLogger()
+	imgtool.Init()
 	if config.Cfg.Auth.Resend.APIKey != "" {
 		initResendClient()
 	}

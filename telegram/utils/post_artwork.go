@@ -134,7 +134,7 @@ func GetArtworkInputMediaPhotos(ctx context.Context, artwork *types.Artwork, sta
 					}
 				}
 			}
-			fileBytes, err = imgtool.CompressImageForTelegramByFFmpegFromBytes(fileBytes)
+			fileBytes, err = imgtool.CompressImageForTelegram(fileBytes)
 			if err != nil {
 				common.Logger.Errorf("failed to compress image: %s", err)
 				return nil, err

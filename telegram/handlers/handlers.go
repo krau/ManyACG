@@ -48,9 +48,10 @@ func RegisterHandlers(hg *telegohandler.HandlerGroup) {
 	mg.HandleMessage(ReCaptionArtwork, telegohandler.CommandEqual("recaption"))
 	mg.HandleMessage(AutoTaggingArtwork, telegohandler.CommandEqual("autotag"))
 	mg.HandleMessage(ProcessPicturesHashAndSize, telegohandler.CommandEqual("process_pictures_hashsize"))
-	mg.HandleMessage(ProcessPicturesStorage, telegohandler.CommandEqual("process_pictures_storage"))
-	mg.HandleMessage(FixTwitterArtists, telegohandler.CommandEqual("fix_twitter_artists"))
-	mg.HandleMessage(AutoTagAllArtwork, telegohandler.CommandEqual("autotag_all"))
+	// for migration
+	// mg.HandleMessage(ProcessPicturesStorage, telegohandler.CommandEqual("process_pictures_storage"))
+	// mg.HandleMessage(FixTwitterArtists, telegohandler.CommandEqual("fix_twitter_artists"))
+	// mg.HandleMessage(AutoTagAllArtwork, telegohandler.CommandEqual("autotag_all"))
 
 	hg.HandleCallbackQuery(PostArtworkCallbackQuery, telegohandler.CallbackDataContains("post_artwork"))
 	hg.HandleCallbackQuery(SearchPictureCallbackQuery, telegohandler.CallbackDataPrefix("search_picture"))

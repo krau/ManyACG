@@ -555,7 +555,7 @@ func downloadAndCompressArtwork(ctx context.Context, artwork *types.Artwork, sta
 			common.Logger.Warnf("下载图片失败: %s", err)
 			continue
 		}
-		tempFile, err = imgtool.CompressImageForTelegramByFFmpegFromBytes(tempFile)
+		tempFile, err = imgtool.CompressImageForTelegram(tempFile)
 		if err != nil {
 			common.Logger.Warnf("压缩图片失败: %s", err)
 		}
