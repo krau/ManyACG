@@ -21,7 +21,7 @@ RUN builtAt=${BUILT_AT:-$(date +'%F %T %z')} && \
     -X 'github.com/krau/ManyACG/common.Commit=$gitCommit' \
     -X 'github.com/krau/ManyACG/common.Version=$version'\
     " && \
-    CGO_ENABLED=0 go build -ldflags "$ldflags" -o manyacg
+    CGO_ENABLED=0 go build -tags without_vips,nodynamic -ldflags "$ldflags" -o manyacg
 
 FROM alpine:latest
 WORKDIR /opt/manyacg/
