@@ -74,7 +74,7 @@ jobs:
             chmod +x ${BUILD_ARTIFACTS_FOLDER}/manyacg
 
   cross-compile:
-    name: Build & Upload Cross Compiled Binaries
+    name: Build ${{ matrix.goos }}/{{ matrix.goarch }} Binaries
     needs: create-release
     runs-on: ubuntu-latest
     strategy:
