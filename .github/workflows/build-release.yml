@@ -69,7 +69,10 @@ jobs:
           goarch: amd64
           binary_name: manyacg
           build_command: >
-            bash -c 'mkdir -p $BUILD_ARTIFACTS_FOLDER && cp ./output/manyacg $BUILD_ARTIFACTS_FOLDER/manyacg && chmod +x $BUILD_ARTIFACTS_FOLDER/manyacg && exit 0'
+            bash -eo pipefail -c "mkdir -p \"$BUILD_ARTIFACTS_FOLDER\" &&
+            cp ./output/manyacg \"$BUILD_ARTIFACTS_FOLDER/manyacg\" &&
+            chmod +x \"$BUILD_ARTIFACTS_FOLDER/manyacg\" &&
+            exit 0"
 
   cross-compile:
     name: Build ${{ matrix.goos }}/${{ matrix.goarch }} Binaries
