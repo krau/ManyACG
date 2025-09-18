@@ -72,7 +72,7 @@ jobs:
             mkdir -p ${BUILD_ARTIFACTS_FOLDER} && cp ./output/manyacg ${BUILD_ARTIFACTS_FOLDER}/manyacg && chmod +x ${BUILD_ARTIFACTS_FOLDER}/manyacg && true
 
   cross-compile:
-    name: Build ${{ matrix.goos }}/{{ matrix.goarch }} Binaries
+    name: Build ${{ matrix.goos }}/${{ matrix.goarch }} Binaries
     needs: create-release
     runs-on: ubuntu-latest
     strategy:
