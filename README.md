@@ -59,7 +59,7 @@ ManyACG 是为收集与整理二次元插画作品而生的项目, 目前主要�
 
 你可以参考这个 repo 使用 docker compose 快速启动一个 MongoDB 副本集: [mongodb-rs-compose](https://github.com/krau/mongodb-rs-compose)
 
-#### FFmpeg
+#### FFmpeg(可选)
 
 项目使用 [FFmpeg](https://ffmpeg.org/) 进行一些图像处理, 请在自己的系统上安装, 以下是一些系统的安装示例:
 
@@ -154,12 +154,4 @@ WantedBy=multi-user.target
 ```bash
 systemctl enable manyacg
 systemctl start manyacg
-```
-
-### 使用 Docker 部署 ManyACG
-
-下载 [docker-compose.yml](https://github.com/krau/ManyACG/blob/main/docker-compose.yml) 和 [.env](https://github.com/krau/ManyACG/blob/main/.env) 文件, 修改 `.env` 文件中的配置.
-
-```bash
-docker compose up -d
 ```
