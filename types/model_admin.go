@@ -1,5 +1,7 @@
 package types
 
+import "slices"
+
 type AdminModel struct {
 	UserID      int64        `bson:"user_id" json:"user_id"`
 	Permissions []Permission `bson:"permissions" json:"permissions"`
@@ -8,10 +10,5 @@ type AdminModel struct {
 }
 
 func (a *AdminModel) HasPermission(p Permission) bool {
-	for _, permission := range a.Permissions {
-		if permission == p {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(a.Permissions, p)
 }

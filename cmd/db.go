@@ -7,6 +7,7 @@ import (
 	"os/signal"
 	"time"
 
+	"github.com/krau/ManyACG/cmd/migrate"
 	"github.com/krau/ManyACG/common"
 	"github.com/krau/ManyACG/config"
 	"github.com/krau/ManyACG/dao"
@@ -108,33 +109,18 @@ var cleanTagCmd = &cobra.Command{
 	},
 }
 
-// Migrate database v0.80.2 to new
-//
-// Breaking change: use x.com domain for twitter source url
-//
-// This command will be removed in the future
 var migrateCmd = &cobra.Command{
 	Use:   "migrate",
-	Short: "Migrate database v0.80.2 to new",
-	Long:  "Migrate database v0.80.2 to new (breaking change: use x.com domain for twitter source url)",
-	Run: func(cmd *cobra.Command, args []string) {
-		config.InitConfig()
-		common.Init()
-		common.Logger.Info("Start migrating")
+	Short: "Migrate database from mongodb to sql(pgsql, mysql and sqlite supported)",
+	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
 		defer cancel()
-		dao.InitDB(ctx)
-		defer func() {
-			if err := dao.Client.Disconnect(ctx); err != nil {
-				common.Logger.Fatal(err)
-				os.Exit(1)
-			}
-		}()
-		if err := dao.MigrateTwitterDomainToX(ctx); err != nil {
-			common.Logger.Fatal(err)
+		config.InitConfig()
+		if config.Cfg.Mirate.DSN == "" || config.Cfg.Mirate.Target == "" {
+			fmt.Println("请在配置文件中设置 migrate.dsn 和 migrate.target")
 			os.Exit(1)
 		}
-		common.Logger.Info("Migration completed")
+		return migrate.Run(ctx, nil)
 	},
 }
 
