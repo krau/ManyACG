@@ -3,6 +3,7 @@ module github.com/krau/ManyACG
 go 1.24.6
 
 require (
+	github.com/HugoSmits86/nativewebp v1.2.0
 	github.com/PuerkitoBio/goquery v1.10.3
 	github.com/appleboy/gin-jwt/v2 v2.10.3
 	github.com/blang/semver v3.5.1+incompatible
@@ -11,6 +12,7 @@ require (
 	github.com/cshum/vipsgen v1.1.2
 	github.com/duke-git/lancet/v2 v2.3.6
 	github.com/gabriel-vasile/mimetype v1.4.9
+	github.com/gen2brain/avif v0.4.4
 	github.com/gin-contrib/cors v1.7.5
 	github.com/gin-gonic/gin v1.10.1
 	github.com/go-redis/redis/v8 v8.11.5
@@ -21,6 +23,7 @@ require (
 	github.com/krau/go-thumbhash v0.0.0-20250822034729-2df7c655859d
 	github.com/meilisearch/meilisearch-go v0.32.0
 	github.com/mmcdole/gofeed v1.3.0
+	github.com/ncruces/go-sqlite3 v0.24.0
 	github.com/oschwald/geoip2-golang v1.11.0
 	github.com/penglongli/gin-metrics v0.1.13
 	github.com/resend/resend-go/v2 v2.20.0
@@ -31,11 +34,11 @@ require (
 	go.mongodb.org/mongo-driver v1.17.4
 	golang.org/x/crypto v0.42.0
 	golang.org/x/image v0.30.0
+	gorm.io/driver/mysql v1.5.6
 )
 
 require (
 	filippo.io/edwards25519 v1.1.0 // indirect
-	github.com/HugoSmits86/nativewebp v1.2.0 // indirect
 	github.com/andybalholm/brotli v1.2.0 // indirect
 	github.com/andybalholm/cascadia v1.3.3 // indirect
 	github.com/aws/aws-sdk-go v1.38.20 // indirect
@@ -49,7 +52,6 @@ require (
 	github.com/cloudwego/base64x v0.1.6 // indirect
 	github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f // indirect
 	github.com/ebitengine/purego v0.8.3 // indirect
-	github.com/gen2brain/avif v0.4.4 // indirect
 	github.com/gin-contrib/sse v1.1.0 // indirect
 	github.com/go-playground/locales v0.14.1 // indirect
 	github.com/go-playground/universal-translator v0.18.1 // indirect
@@ -68,6 +70,10 @@ require (
 	github.com/icholy/digest v1.1.0 // indirect
 	github.com/inconshreveable/go-update v0.0.0-20160112193335-8152e7eb6ccf // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
+	github.com/jackc/pgpassfile v1.0.0 // indirect
+	github.com/jackc/pgservicefile v0.0.0-20240606120523-5a60cdf6a761 // indirect
+	github.com/jackc/pgx/v5 v5.6.0 // indirect
+	github.com/jackc/puddle/v2 v2.2.2 // indirect
 	github.com/jellydator/ttlcache/v2 v2.11.1 // indirect
 	github.com/jinzhu/inflection v1.0.0 // indirect
 	github.com/jinzhu/now v1.1.5 // indirect
@@ -84,6 +90,7 @@ require (
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/montanaflynn/stats v0.7.1 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
+	github.com/ncruces/julianday v1.0.0 // indirect
 	github.com/nfnt/resize v0.0.0-20180221191011-83c6a9932646 // indirect
 	github.com/onsi/ginkgo/v2 v2.23.4 // indirect
 	github.com/oschwald/maxminddb-golang v1.13.1 // indirect
@@ -118,7 +125,6 @@ require (
 	golang.org/x/term v0.35.0 // indirect
 	golang.org/x/tools v0.36.0 // indirect
 	google.golang.org/protobuf v1.36.6 // indirect
-	gorm.io/driver/mysql v1.5.6 // indirect
 )
 
 require (
@@ -128,6 +134,7 @@ require (
 	github.com/gookit/gsr v0.1.1 // indirect
 	github.com/imroc/req/v3 v3.52.2
 	github.com/mymmrac/telego v1.3.0
+	github.com/ncruces/go-sqlite3/gormlite v0.24.0
 	github.com/pelletier/go-toml/v2 v2.2.4 // indirect
 	github.com/sagikazarmark/locafero v0.9.0 // indirect
 	github.com/sourcegraph/conc v0.3.0 // indirect
@@ -145,5 +152,6 @@ require (
 	golang.org/x/text v0.29.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	gorm.io/datatypes v1.2.7
+	gorm.io/driver/postgres v1.6.0
 	gorm.io/gorm v1.31.0
 )
