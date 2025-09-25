@@ -34,6 +34,8 @@ func Run(ctx context.Context, opt *Option) error {
 		&Picture{},
 		&DeletedRecord{},
 		&CachedArtwork{},
+		&ApiKey{},
+		&User{},
 	)
 	if err != nil {
 		return err
@@ -45,6 +47,9 @@ func Run(ctx context.Context, opt *Option) error {
 	collectionPicture := mongoDB.Collection(collections.Pictures)
 	collectionDeleted := mongoDB.Collection(collections.Deleted)
 	collectionCachedArtwork := mongoDB.Collection(collections.CachedArtworks)
+	collectionApiKey := mongoDB.Collection(collections.ApiKeys)
+	collectionUser := mongoDB.Collection(collections.Users)
+	collectionFavorite := mongoDB.Collection(collections.Favorites)
 	if err := migrateArtists(ctx, collectionArtist, db); err != nil {
 		return fmt.Errorf("migrate artists failed: %w", err)
 	}
@@ -63,6 +68,16 @@ func Run(ctx context.Context, opt *Option) error {
 	if err := migrateCachedArtworks(ctx, collectionCachedArtwork, db); err != nil {
 		return fmt.Errorf("migrate cached artworks failed: %w", err)
 	}
+	if err := migrateApiKeys(ctx, collectionApiKey, db); err != nil {
+		return fmt.Errorf("migrate api keys failed: %w", err)
+	}
+	if err := migrateUsers(ctx, collectionUser, db); err != nil {
+		return fmt.Errorf("migrate users failed: %w", err)
+	}
+	if err := migrateFavorites(ctx, collectionFavorite, db); err != nil {
+		return fmt.Errorf("migrate favorites failed: %w", err)
+	}
+
 	return nil
 }
 
@@ -355,6 +370,117 @@ func migrateCachedArtworks(ctx context.Context, collection *mongo.Collection, db
 	}
 	if len(batch) > 0 {
 		return db.CreateInBatches(batch, 250).Error
+	}
+	return nil
+}
+
+func migrateApiKeys(ctx context.Context, collection *mongo.Collection, db *gorm.DB) error {
+	cursor, err := collection.Find(ctx, bson.M{})
+	if err != nil {
+		return err
+	}
+	defer cursor.Close(ctx)
+	for cursor.Next(ctx) {
+		var apiKeyModel mongotypes.ApiKeyModel
+		if err := cursor.Decode(&apiKeyModel); err != nil {
+			return err
+		}
+		apiKey := &ApiKey{
+			ID:          apiKeyModel.ID.Hex(),
+			Key:         apiKeyModel.Key,
+			Quota:       apiKeyModel.Quota,
+			Used:        apiKeyModel.Used,
+			Permissions: datatypes.JSONSlice[string](make([]string, len(apiKeyModel.Permissions))),
+			Description: apiKeyModel.Description,
+		}
+		for i, perm := range apiKeyModel.Permissions {
+			apiKey.Permissions[i] = string(perm)
+		}
+		if err := db.Create(apiKey).Error; err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func migrateUsers(ctx context.Context, collection *mongo.Collection, db *gorm.DB) error {
+	cursor, err := collection.Find(ctx, bson.M{})
+	if err != nil {
+		return err
+	}
+	defer cursor.Close(ctx)
+	for cursor.Next(ctx) {
+		var userModel mongotypes.UserModel
+		if err := cursor.Decode(&userModel); err != nil {
+			return err
+		}
+		user := &User{
+			ID:       userModel.ID.Hex(),
+			Username: userModel.Username,
+			Password: userModel.Password,
+			Email: func() *string {
+				if userModel.Email == "" {
+					return nil
+				}
+				return &userModel.Email
+			}(),
+			TelegramID: func() *int64 {
+				if userModel.TelegramID == 0 {
+					return nil
+				}
+				return &userModel.TelegramID
+			}(),
+			Blocked:   userModel.Blocked,
+			UpdatedAt: userModel.UpdatedAt.Time(),
+			DeletedAt: func() gorm.DeletedAt {
+				if userModel.DeletedAt.Time().IsZero() {
+					return gorm.DeletedAt{}
+				}
+				return gorm.DeletedAt{
+					Time:  userModel.DeletedAt.Time(),
+					Valid: true,
+				}
+			}(),
+			Settings: datatypes.NewJSONType(&UserSettings{
+				Language: userModel.Settings.Language,
+				Theme:    userModel.Settings.Theme,
+				R18:      userModel.Settings.R18,
+			}),
+		}
+		if err := db.Create(user).Error; err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func migrateFavorites(ctx context.Context, collection *mongo.Collection, db *gorm.DB) error {
+	cursor, err := collection.Find(ctx, bson.M{})
+	if err != nil {
+		return err
+	}
+	defer cursor.Close(ctx)
+	for cursor.Next(ctx) {
+		var favModel mongotypes.FavoriteModel
+		if err := cursor.Decode(&favModel); err != nil {
+			return err
+		}
+		if err := db.Transaction(func(tx *gorm.DB) error {
+			var user User
+			if err := tx.Where("id = ?", favModel.UserID.Hex()).First(&user).Error; err != nil {
+				return err
+			}
+			var artwork Artwork
+			if err := tx.Where("id = ?", favModel.ArtworkID.Hex()).First(&artwork).Error; err != nil {
+				return err
+			}
+			if err := tx.Model(&user).Association("Favorites").Append(&artwork); err != nil {
+				return err
+			}
+			return nil
+		}); err != nil {
+			return err
+		}
 	}
 	return nil
 }

@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"gorm.io/datatypes"
+	"gorm.io/gorm"
 )
 
 type SourceType string
@@ -90,7 +91,7 @@ type Picture struct {
 	Width     uint   `json:"width"`
 	Height    uint   `json:"height"`
 	Phash     string `gorm:"type:varchar(128);index" json:"phash"` // phash
-	ThumbHash string `gorm:"type:varchar(128)" json:"thumb_hash"` // thumbhash
+	ThumbHash string `gorm:"type:varchar(128)" json:"thumb_hash"`  // thumbhash
 
 	TelegramInfo datatypes.JSONType[TelegramInfo] `gorm:"type:json" json:"telegram_info"` // original TelegramInfo struct as JSON
 	StorageInfo  datatypes.JSONType[StorageInfo]  `gorm:"type:json" json:"storage_info"`  // StorageInfo as JSON
@@ -99,7 +100,6 @@ type Picture struct {
 	UpdatedAt time.Time `gorm:"autoUpdateTime" json:"updated_at"`
 }
 
-// ----- Deleted record (keeps original DeletedModel semantics) -----
 type DeletedRecord struct {
 	ID        string    `gorm:"primaryKey;type:char(24)" json:"id"`
 	ArtworkID string    `gorm:"type:char(24);uniqueIndex" json:"artwork_id"`
@@ -140,7 +140,7 @@ type CachedPicture struct {
 
 	Width     uint   `json:"width"`
 	Height    uint   `json:"height"`
-	Phash     string `json:"phash"`       // phash
+	Phash     string `json:"phash"`      // phash
 	ThumbHash string `json:"thumb_hash"` // thumbhash
 }
 
@@ -169,4 +169,34 @@ type CachedArtwork struct {
 	CreatedAt time.Time                              `gorm:"autoCreateTime" json:"created_at"`
 	Artwork   datatypes.JSONType[*CachedArtworkData] `gorm:"type:json" json:"artwork"`
 	Status    ArtworkStatus                          `gorm:"type:varchar(50);index" json:"status"`
+}
+
+type ApiKey struct {
+	ID          string                      `gorm:"primaryKey;type:char(24)" json:"id"`
+	Key         string                      `gorm:"type:varchar(128);uniqueIndex" json:"key"`
+	Quota       int                         `gorm:"not null;default:0" json:"quota"`
+	Used        int                         `gorm:"not null;default:0" json:"used"`
+	Permissions datatypes.JSONSlice[string] `gorm:"type:json" json:"permissions"`
+	Description string                      `gorm:"type:varchar(255)" json:"description"`
+}
+
+type User struct {
+	ID         string         `gorm:"primaryKey;type:char(24)" json:"id"`
+	Username   string         `gorm:"type:varchar(50);uniqueIndex" json:"username"`
+	Password   string         `gorm:"type:varchar(255);not null" json:"password"`
+	Email      *string        `gorm:"type:varchar(100);uniqueIndex" json:"email"`
+	TelegramID *int64          `gorm:"type:bigint;uniqueIndex" json:"telegram_id"`
+	Blocked    bool           `gorm:"not null;default:false;index" json:"blocked"`
+	UpdatedAt  time.Time      `gorm:"autoUpdateTime" json:"updated_at"`
+	DeletedAt  gorm.DeletedAt `gorm:"index" json:"deleted_at"`
+
+	Favorites []*Artwork `gorm:"many2many:user_favorites;constraint:OnDelete:CASCADE" json:"favorites"`
+
+	Settings datatypes.JSONType[*UserSettings] `gorm:"type:json" json:"settings"`
+}
+
+type UserSettings struct {
+	Language string `json:"language"`
+	Theme    string `json:"theme"`
+	R18      bool   `json:"r18"`
 }
