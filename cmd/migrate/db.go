@@ -43,7 +43,7 @@ type Artwork struct {
 	CreatedAt   time.Time  `gorm:"not null;autoCreateTime" json:"created_at"`
 	UpdatedAt   time.Time  `gorm:"not null;autoUpdateTime" json:"updated_at"`
 	SourceType  SourceType `gorm:"type:varchar(50);index" json:"source_type"`
-	SourceURL   string     `gorm:"type:text;index:idx_artwork_source_url" json:"source_url"`
+	SourceURL   string     `gorm:"type:text;uniqueIndex" json:"source_url"`
 	LikeCount   uint       `gorm:"not null;default:0" json:"like_count"`
 
 	ArtistID string  `gorm:"type:char(24);index" json:"artist_id"`
@@ -102,8 +102,8 @@ type Picture struct {
 // ----- Deleted record (keeps original DeletedModel semantics) -----
 type DeletedRecord struct {
 	ID        string    `gorm:"primaryKey;type:char(24)" json:"id"`
-	ArtworkID string    `gorm:"type:char(24);index" json:"artwork_id"`
-	SourceURL string    `gorm:"type:text" json:"source_url"`
+	ArtworkID string    `gorm:"type:char(24);uniqueIndex" json:"artwork_id"`
+	SourceURL string    `gorm:"type:text;uniqueIndex" json:"source_url"`
 	DeletedAt time.Time `gorm:"not null;autoCreateTime" json:"deleted_at"`
 }
 
