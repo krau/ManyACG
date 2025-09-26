@@ -37,18 +37,18 @@ const (
 // ----- Artwork -----
 type Artwork struct {
 	// keep ObjectID as 24-hex string
-	ID          string     `gorm:"primaryKey;type:char(24)" json:"id"`
-	Title       string     `gorm:"type:varchar(255);not null;index:idx_artwork_title,sort:asc" json:"title"`
+	ID          MongoUUID  `gorm:"primaryKey;type:uuid" json:"id"`
+	Title       string     `gorm:"type:text;not null;index:idx_artwork_title,sort:asc" json:"title"`
 	Description string     `gorm:"type:text" json:"description"`
 	R18         bool       `gorm:"not null;default:false" json:"r18"`
 	CreatedAt   time.Time  `gorm:"not null;autoCreateTime" json:"created_at"`
 	UpdatedAt   time.Time  `gorm:"not null;autoUpdateTime" json:"updated_at"`
-	SourceType  SourceType `gorm:"type:varchar(50);index" json:"source_type"`
+	SourceType  SourceType `gorm:"type:text;index" json:"source_type"`
 	SourceURL   string     `gorm:"type:text;uniqueIndex" json:"source_url"`
 	LikeCount   uint       `gorm:"not null;default:0" json:"like_count"`
 
-	ArtistID string  `gorm:"type:char(24);index" json:"artist_id"`
-	Artist   *Artist `gorm:"foreignKey:ArtistID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:SET NULL" json:"artist"`
+	ArtistID MongoUUID `gorm:"type:uuid;index" json:"artist_id"`
+	Artist   *Artist   `gorm:"foreignKey:ArtistID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:SET NULL" json:"artist"`
 
 	// many2many relationship with tags
 	Tags []*Tag `gorm:"many2many:artwork_tags;constraint:OnDelete:CASCADE" json:"tags"`
@@ -57,41 +57,62 @@ type Artwork struct {
 	Pictures []*Picture `gorm:"foreignKey:ArtworkID;constraint:OnDelete:CASCADE" json:"pictures"`
 }
 
+func (a *Artwork) BeforeCreate(tx *gorm.DB) (err error) {
+	if a.ID == (MongoUUID{}) {
+		a.ID = NewMongoUUID()
+	}
+	return nil
+}
+
 // ----- Artist -----
 type Artist struct {
-	ID       string     `gorm:"primaryKey;type:char(24)" json:"id"`
-	Name     string     `gorm:"type:varchar(200);not null;index" json:"name"`
-	Type     SourceType `gorm:"type:varchar(50);index" json:"type"`
-	UID      string     `gorm:"type:varchar(128);index" json:"uid"`
-	Username string     `gorm:"type:varchar(128);index" json:"username"`
+	ID       MongoUUID  `gorm:"primaryKey;type:uuid" json:"id"`
+	Name     string     `gorm:"type:text;not null;index" json:"name"`
+	Type     SourceType `gorm:"type:text;index" json:"type"`
+	UID      string     `gorm:"type:text;index" json:"uid"`
+	Username string     `gorm:"type:text;index" json:"username"`
 
 	// reverse relation
 	Artworks []*Artwork `gorm:"foreignKey:ArtistID" json:"artworks"`
 }
 
+func (a *Artist) BeforeCreate(tx *gorm.DB) (err error) {
+	if a.ID == (MongoUUID{}) {
+		a.ID = NewMongoUUID()
+	}
+	return nil
+}
+
 // ----- Tag -----
 type Tag struct {
-	ID    string                      `gorm:"primaryKey;type:char(24)" json:"id"`
-	Name  string                      `gorm:"type:varchar(200);not null;uniqueIndex" json:"name"`
+	ID    MongoUUID                   `gorm:"primaryKey;type:uuid" json:"id"`
+	Name  string                      `gorm:"type:text;not null;uniqueIndex" json:"name"`
 	Alias datatypes.JSONSlice[string] `gorm:"type:json" json:"alias"` // stores []string as JSON
 
 	// reverse relation via many2many
 	Artworks []*Artwork `gorm:"many2many:artwork_tags" json:"artworks"`
 }
 
+func (t *Tag) BeforeCreate(tx *gorm.DB) (err error) {
+	if t.ID == (MongoUUID{}) {
+		t.ID = NewMongoUUID()
+	}
+	return nil
+}
+
 // ----- Picture -----
 type Picture struct {
-	ID        string   `gorm:"primaryKey;type:char(24)" json:"id"`
-	ArtworkID string   `gorm:"type:char(24);index" json:"artwork_id"`
-	Artwork   *Artwork `gorm:"foreignKey:ArtworkID;references:ID;constraint:OnDelete:CASCADE" json:"-"`
+	ID        MongoUUID `gorm:"primaryKey;type:uuid" json:"id"`
+	ArtworkID MongoUUID `gorm:"type:uuid;index" json:"artwork_id"`
+	Artwork   *Artwork  `gorm:"foreignKey:ArtworkID;references:ID;constraint:OnDelete:CASCADE" json:"-"`
 
 	Index     uint   `gorm:"not null;default:0;index:idx_picture_artwork_index,priority:1" json:"index"` // order within artwork
 	Thumbnail string `gorm:"type:text" json:"thumbnail"`
 	Original  string `gorm:"type:text" json:"original"`
 	Width     uint   `json:"width"`
 	Height    uint   `json:"height"`
-	Phash     string `gorm:"type:varchar(128);index" json:"phash"` // phash
-	ThumbHash string `gorm:"type:varchar(128)" json:"thumb_hash"`  // thumbhash
+	Phash     string `gorm:"type:varchar(18);index" json:"phash"` // phash
+	ThumbHash string `gorm:"type:varchar(28)" json:"thumb_hash"`  // thumbhash
 
 	TelegramInfo datatypes.JSONType[TelegramInfo] `gorm:"type:json" json:"telegram_info"` // original TelegramInfo struct as JSON
 	StorageInfo  datatypes.JSONType[StorageInfo]  `gorm:"type:json" json:"storage_info"`  // StorageInfo as JSON
@@ -100,11 +121,25 @@ type Picture struct {
 	UpdatedAt time.Time `gorm:"autoUpdateTime" json:"updated_at"`
 }
 
+func (p *Picture) BeforeCreate(tx *gorm.DB) (err error) {
+	if p.ID == (MongoUUID{}) {
+		p.ID = NewMongoUUID()
+	}
+	return nil
+}
+
 type DeletedRecord struct {
-	ID        string    `gorm:"primaryKey;type:char(24)" json:"id"`
-	ArtworkID string    `gorm:"type:char(24);uniqueIndex" json:"artwork_id"`
-	SourceURL string    `gorm:"type:text;uniqueIndex" json:"source_url"`
+	ID        MongoUUID `gorm:"primaryKey;type:uuid" json:"id"`
+	ArtworkID MongoUUID `gorm:"type:uuid;uniqueIndex" json:"artwork_id"`
+	SourceURL string    `gorm:"type:text;not null;uniqueIndex" json:"source_url"`
 	DeletedAt time.Time `gorm:"not null;autoCreateTime" json:"deleted_at"`
+}
+
+func (d *DeletedRecord) BeforeCreate(tx *gorm.DB) (err error) {
+	if d.ID == (MongoUUID{}) {
+		d.ID = NewMongoUUID()
+	}
+	return nil
 }
 
 type CachedArtworkData struct {
@@ -164,28 +199,35 @@ type StorageDetail struct {
 
 // ----- Cached Artworks -----
 type CachedArtwork struct {
-	ID        string                                 `gorm:"primaryKey;type:char(24)" json:"id"`
+	ID        MongoUUID                              `gorm:"primaryKey;type:uuid" json:"id"`
 	SourceURL string                                 `gorm:"type:text;uniqueIndex" json:"source_url"`
 	CreatedAt time.Time                              `gorm:"autoCreateTime" json:"created_at"`
 	Artwork   datatypes.JSONType[*CachedArtworkData] `gorm:"type:json" json:"artwork"`
-	Status    ArtworkStatus                          `gorm:"type:varchar(50);index" json:"status"`
+	Status    ArtworkStatus                          `gorm:"type:text;index" json:"status"`
 }
 
 type ApiKey struct {
-	ID          string                      `gorm:"primaryKey;type:char(24)" json:"id"`
-	Key         string                      `gorm:"type:varchar(128);uniqueIndex" json:"key"`
+	ID          MongoUUID                   `gorm:"primaryKey;type:uuid" json:"id"`
+	Key         string                      `gorm:"type:text;uniqueIndex" json:"key"`
 	Quota       int                         `gorm:"not null;default:0" json:"quota"`
 	Used        int                         `gorm:"not null;default:0" json:"used"`
 	Permissions datatypes.JSONSlice[string] `gorm:"type:json" json:"permissions"`
-	Description string                      `gorm:"type:varchar(255)" json:"description"`
+	Description string                      `gorm:"type:text" json:"description"`
+}
+
+func (a *ApiKey) BeforeCreate(tx *gorm.DB) (err error) {
+	if a.ID == (MongoUUID{}) {
+		a.ID = NewMongoUUID()
+	}
+	return nil
 }
 
 type User struct {
-	ID         string         `gorm:"primaryKey;type:char(24)" json:"id"`
-	Username   string         `gorm:"type:varchar(50);uniqueIndex" json:"username"`
-	Password   string         `gorm:"type:varchar(255);not null" json:"password"`
-	Email      *string        `gorm:"type:varchar(100);uniqueIndex" json:"email"`
-	TelegramID *int64          `gorm:"type:bigint;uniqueIndex" json:"telegram_id"`
+	ID         MongoUUID      `gorm:"primaryKey;type:uuid" json:"id"`
+	Username   string         `gorm:"type:text;uniqueIndex" json:"username"`
+	Password   string         `gorm:"type:text;not null" json:"password"`
+	Email      *string        `gorm:"type:text;uniqueIndex" json:"email"`
+	TelegramID *int64         `gorm:"type:bigint;uniqueIndex" json:"telegram_id"`
 	Blocked    bool           `gorm:"not null;default:false;index" json:"blocked"`
 	UpdatedAt  time.Time      `gorm:"autoUpdateTime" json:"updated_at"`
 	DeletedAt  gorm.DeletedAt `gorm:"index" json:"deleted_at"`
@@ -193,6 +235,13 @@ type User struct {
 	Favorites []*Artwork `gorm:"many2many:user_favorites;constraint:OnDelete:CASCADE" json:"favorites"`
 
 	Settings datatypes.JSONType[*UserSettings] `gorm:"type:json" json:"settings"`
+}
+
+func (u *User) BeforeCreate(tx *gorm.DB) (err error) {
+	if u.ID == (MongoUUID{}) {
+		u.ID = NewMongoUUID()
+	}
+	return nil
 }
 
 type UserSettings struct {

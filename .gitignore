@@ -9,3 +9,5 @@ tmp/
 *session.db
 *.mmdb
 dist/
+*.db
+*.log

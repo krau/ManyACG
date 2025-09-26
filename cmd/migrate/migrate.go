@@ -94,7 +94,7 @@ func migrateArtists(ctx context.Context, collection *mongo.Collection, db *gorm.
 			return err
 		}
 		artist := &Artist{
-			ID:       artistModel.ID.Hex(),
+			ID:       FromObjectID(artistModel.ID),
 			Type:     SourceType(artistModel.Type),
 			Username: artistModel.Username,
 			Name:     artistModel.Name,
@@ -135,7 +135,7 @@ func migrateTags(ctx context.Context, collection *mongo.Collection, db *gorm.DB)
 		if _, ok := seen[tagModel.Name]; !ok {
 			seen[tagModel.Name] = struct{}{}
 			tag := &Tag{
-				ID:    tagModel.ID.Hex(),
+				ID:    FromObjectID(tagModel.ID),
 				Name:  tagModel.Name,
 				Alias: tagModel.Alias,
 			}
@@ -159,10 +159,10 @@ func migrateArtworks(ctx context.Context, collection *mongo.Collection, db *gorm
 		}
 		tags := make([]*Tag, 0, len(artworkModel.Tags))
 		for _, tagID := range artworkModel.Tags {
-			tags = append(tags, &Tag{ID: tagID.Hex()})
+			tags = append(tags, &Tag{ID: FromObjectID(tagID)})
 		}
 		artwork := &Artwork{
-			ID:          artworkModel.ID.Hex(),
+			ID:          FromObjectID(artworkModel.ID),
 			Title:       artworkModel.Title,
 			Description: artworkModel.Description,
 			R18:         artworkModel.R18,
@@ -170,7 +170,7 @@ func migrateArtworks(ctx context.Context, collection *mongo.Collection, db *gorm
 			CreatedAt:   artworkModel.CreatedAt.Time(),
 			SourceType:  SourceType(artworkModel.SourceType),
 			SourceURL:   artworkModel.SourceURL,
-			ArtistID:    artworkModel.ArtistID.Hex(),
+			ArtistID:    FromObjectID(artworkModel.ArtistID),
 			Tags:        tags,
 		}
 		batch = append(batch, artwork)
@@ -205,8 +205,8 @@ func migratePictures(ctx context.Context, collection *mongo.Collection, db *gorm
 			return err
 		}
 		picture := &Picture{
-			ID:        pictureModel.ID.Hex(),
-			ArtworkID: pictureModel.ArtworkID.Hex(),
+			ID:        FromObjectID(pictureModel.ID),
+			ArtworkID: FromObjectID(pictureModel.ArtworkID),
 			Index:     pictureModel.Index,
 			Thumbnail: pictureModel.Thumbnail,
 			Original:  pictureModel.Original,
@@ -282,8 +282,8 @@ func migrateDeletedRecords(ctx context.Context, collection *mongo.Collection, db
 			return err
 		}
 		deleted := &DeletedRecord{
-			ID:        deletedModel.ID.Hex(),
-			ArtworkID: deletedModel.ArtworkID.Hex(),
+			ID:        FromObjectID(deletedModel.ID),
+			ArtworkID: FromObjectID(deletedModel.ArtworkID),
 			SourceURL: deletedModel.SourceURL,
 			DeletedAt: deletedModel.DeletedAt.Time(),
 		}
@@ -349,7 +349,7 @@ func migrateCachedArtworks(ctx context.Context, collection *mongo.Collection, db
 			}(),
 		}
 		cached := &CachedArtwork{
-			ID:        cachedModel.ID.Hex(),
+			ID:        FromObjectID(cachedModel.ID),
 			SourceURL: cachedModel.SourceURL,
 			CreatedAt: cachedModel.CreatedAt.Time(),
 			Status:    ArtworkStatus(cachedModel.Status),
@@ -386,7 +386,7 @@ func migrateApiKeys(ctx context.Context, collection *mongo.Collection, db *gorm.
 			return err
 		}
 		apiKey := &ApiKey{
-			ID:          apiKeyModel.ID.Hex(),
+			ID:          FromObjectID(apiKeyModel.ID),
 			Key:         apiKeyModel.Key,
 			Quota:       apiKeyModel.Quota,
 			Used:        apiKeyModel.Used,
@@ -415,7 +415,7 @@ func migrateUsers(ctx context.Context, collection *mongo.Collection, db *gorm.DB
 			return err
 		}
 		user := &User{
-			ID:       userModel.ID.Hex(),
+			ID:       FromObjectID(userModel.ID),
 			Username: userModel.Username,
 			Password: userModel.Password,
 			Email: func() *string {
@@ -467,11 +467,11 @@ func migrateFavorites(ctx context.Context, collection *mongo.Collection, db *gor
 		}
 		if err := db.Transaction(func(tx *gorm.DB) error {
 			var user User
-			if err := tx.Where("id = ?", favModel.UserID.Hex()).First(&user).Error; err != nil {
+			if err := tx.Where("id = ?", FromObjectID(favModel.UserID).Hex()).First(&user).Error; err != nil {
 				return err
 			}
 			var artwork Artwork
-			if err := tx.Where("id = ?", favModel.ArtworkID.Hex()).First(&artwork).Error; err != nil {
+			if err := tx.Where("id = ?", FromObjectID(favModel.ArtworkID).Hex()).First(&artwork).Error; err != nil {
 				return err
 			}
 			if err := tx.Model(&user).Association("Favorites").Append(&artwork); err != nil {
