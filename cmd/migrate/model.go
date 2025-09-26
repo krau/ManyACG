@@ -43,8 +43,8 @@ type Artwork struct {
 	R18         bool       `gorm:"not null;default:false" json:"r18"`
 	CreatedAt   time.Time  `gorm:"not null;autoCreateTime" json:"created_at"`
 	UpdatedAt   time.Time  `gorm:"not null;autoUpdateTime" json:"updated_at"`
-	SourceType  SourceType `gorm:"type:text;index" json:"source_type"`
-	SourceURL   string     `gorm:"type:text;uniqueIndex" json:"source_url"`
+	SourceType  SourceType `gorm:"type:text;not null" json:"source_type"`
+	SourceURL   string     `gorm:"type:text;not null;uniqueIndex" json:"source_url"`
 	LikeCount   uint       `gorm:"not null;default:0" json:"like_count"`
 
 	ArtistID MongoUUID `gorm:"type:uuid;index" json:"artist_id"`
@@ -68,9 +68,9 @@ func (a *Artwork) BeforeCreate(tx *gorm.DB) (err error) {
 type Artist struct {
 	ID       MongoUUID  `gorm:"primaryKey;type:uuid" json:"id"`
 	Name     string     `gorm:"type:text;not null;index" json:"name"`
-	Type     SourceType `gorm:"type:text;index" json:"type"`
-	UID      string     `gorm:"type:text;index" json:"uid"`
-	Username string     `gorm:"type:text;index" json:"username"`
+	Type     SourceType `gorm:"type:text;not null;index" json:"type"`
+	UID      string     `gorm:"type:text;not null;index" json:"uid"`
+	Username string     `gorm:"type:text;not null;index" json:"username"`
 
 	// reverse relation
 	Artworks []*Artwork `gorm:"foreignKey:ArtistID" json:"artworks"`
@@ -108,7 +108,7 @@ type Picture struct {
 
 	Index     uint   `gorm:"not null;default:0;index:idx_picture_artwork_index,priority:1" json:"index"` // order within artwork
 	Thumbnail string `gorm:"type:text" json:"thumbnail"`
-	Original  string `gorm:"type:text" json:"original"`
+	Original  string `gorm:"type:text;index" json:"original"`
 	Width     uint   `json:"width"`
 	Height    uint   `json:"height"`
 	Phash     string `gorm:"type:varchar(18);index" json:"phash"` // phash
@@ -208,7 +208,7 @@ type CachedArtwork struct {
 
 type ApiKey struct {
 	ID          MongoUUID                   `gorm:"primaryKey;type:uuid" json:"id"`
-	Key         string                      `gorm:"type:text;uniqueIndex" json:"key"`
+	Key         string                      `gorm:"type:text;not null;uniqueIndex" json:"key"`
 	Quota       int                         `gorm:"not null;default:0" json:"quota"`
 	Used        int                         `gorm:"not null;default:0" json:"used"`
 	Permissions datatypes.JSONSlice[string] `gorm:"type:json" json:"permissions"`
