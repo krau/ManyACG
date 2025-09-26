@@ -3,13 +3,22 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"log"
 	"os"
 	"os/signal"
 	"time"
 
+	"gorm.io/driver/mysql"
+	"gorm.io/driver/postgres"
+	"gorm.io/gorm/logger"
+
+	"github.com/ncruces/go-sqlite3/gormlite"
+
+	"github.com/krau/ManyACG/cmd/migrate"
 	"github.com/krau/ManyACG/common"
 	"github.com/krau/ManyACG/config"
 	"github.com/krau/ManyACG/dao"
+	"gorm.io/gorm"
 
 	"github.com/spf13/cobra"
 )
@@ -108,21 +117,20 @@ var cleanTagCmd = &cobra.Command{
 	},
 }
 
-// Migrate database v0.80.2 to new
-//
-// Breaking change: use x.com domain for twitter source url
-//
-// This command will be removed in the future
 var migrateCmd = &cobra.Command{
 	Use:   "migrate",
-	Short: "Migrate database v0.80.2 to new",
-	Long:  "Migrate database v0.80.2 to new (breaking change: use x.com domain for twitter source url)",
-	Run: func(cmd *cobra.Command, args []string) {
-		config.InitConfig()
-		common.Init()
-		common.Logger.Info("Start migrating")
+	Short: "Migrate database from mongodb to sql(pgsql, mysql and sqlite supported)",
+	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
 		defer cancel()
+		config.InitConfig()
+		if config.Cfg.Mirate.DSN == "" || config.Cfg.Mirate.Target == "" {
+			fmt.Println("请在配置文件中设置 migrate.dsn 和 migrate.target")
+			os.Exit(1)
+		}
+		common.Init()
+		common.Logger.Info("Start migrating")
+		defer common.Logger.Info("Migrate completed, the log is in migrate_sql.log")
 		dao.InitDB(ctx)
 		defer func() {
 			if err := dao.Client.Disconnect(ctx); err != nil {
@@ -130,11 +138,55 @@ var migrateCmd = &cobra.Command{
 				os.Exit(1)
 			}
 		}()
-		if err := dao.MigrateTwitterDomainToX(ctx); err != nil {
-			common.Logger.Fatal(err)
-			os.Exit(1)
+
+		dbLogFile, err := os.Create("migrate_sql.log")
+		if err != nil {
+			return fmt.Errorf("failed to open migrate_sql.log: %w", err)
 		}
-		common.Logger.Info("Migration completed")
+		defer dbLogFile.Close()
+		newLogger := logger.New(log.New(dbLogFile, "\r\n", log.LstdFlags), logger.Config{
+			SlowThreshold: 10 * time.Second,
+			LogLevel:      logger.Warn,
+			Colorful:      false,
+		})
+		var db *gorm.DB
+		switch config.Cfg.Mirate.Target {
+		case "sqlite":
+			common.Logger.Info("Using sqlite")
+			gormDB, err := gorm.Open(gormlite.Open(config.Cfg.Mirate.DSN), &gorm.Config{
+				Logger: newLogger,
+			})
+			if err != nil {
+				return fmt.Errorf("failed to connect to sqlite: %w", err)
+			}
+			db = gormDB
+		case "mysql":
+			common.Logger.Info("Using mysql")
+			gormDB, err := gorm.Open(mysql.Open(config.Cfg.Mirate.DSN), &gorm.Config{
+				Logger: newLogger,
+			})
+			if err != nil {
+				return fmt.Errorf("failed to connect to mysql: %w", err)
+			}
+			db = gormDB
+		case "pgsql":
+			common.Logger.Info("Using pgsql")
+			gormDB, err := gorm.Open(postgres.Open(config.Cfg.Mirate.DSN), &gorm.Config{
+				Logger: newLogger,
+			})
+			if err != nil {
+				return fmt.Errorf("failed to connect to pgsql: %w", err)
+			}
+			db = gormDB
+		default:
+			return fmt.Errorf("不支持的目标数据库: %s", config.Cfg.Mirate.Target)
+		}
+		db = db.WithContext(ctx)
+		return migrate.Run(ctx, &migrate.Option{
+			MongoClient: dao.Client,
+			GormDB:      db,
+			Cfg:         config.Cfg,
+		})
 	},
 }
 

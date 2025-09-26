@@ -25,6 +25,13 @@ type Config struct {
 	Database databaseConfig `toml:"database" mapstructure:"database" json:"database" yaml:"database"`
 	Search   searchConfig   `toml:"search" mapstructure:"search" json:"search" yaml:"search"`
 	Tagger   taggerConfig   `toml:"tagger" mapstructure:"tagger" json:"tagger" yaml:"tagger"`
+
+	Mirate migrateConfig `toml:"migrate" mapstructure:"migrate" json:"migrate" yaml:"migrate"`
+}
+
+type migrateConfig struct {
+	Target string `toml:"target" mapstructure:"target" json:"target" yaml:"target"` // pgsql, mysql, sqlite
+	DSN    string `toml:"dsn" mapstructure:"dsn" json:"dsn" yaml:"dsn"`
 }
 
 type fetcherConfig struct {

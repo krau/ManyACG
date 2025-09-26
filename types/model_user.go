@@ -1,6 +1,8 @@
 package types
 
 import (
+	"slices"
+
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
@@ -57,12 +59,7 @@ type ApiKeyModel struct {
 }
 
 func (apiKey *ApiKeyModel) HasPermission(permission ApiKeyPermission) bool {
-	for _, p := range apiKey.Permissions {
-		if p == permission {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(apiKey.Permissions, permission)
 }
 
 type ApiKeyPermission string
