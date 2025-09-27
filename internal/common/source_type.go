@@ -1,4 +1,4 @@
-package shared
+package common
 
 type SourceType string
 

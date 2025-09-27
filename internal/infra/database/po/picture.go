@@ -1,10 +1,10 @@
-package persist
+package po
 
 import (
 	"time"
 
-	"github.com/krau/ManyACG/internal/artwork/domain"
-	"github.com/krau/ManyACG/internal/shared"
+	"github.com/krau/ManyACG/internal/common"
+	"github.com/krau/ManyACG/internal/domain/entity/artwork"
 	"github.com/krau/ManyACG/pkg/objectuuid"
 	"gorm.io/datatypes"
 	"gorm.io/gorm"
@@ -44,7 +44,7 @@ type StorageInfo struct {
 }
 
 type StorageDetail struct {
-	Type shared.StorageType `json:"type"`
+	Type common.StorageType `json:"type"`
 	Path string             `json:"path"`
 }
 
@@ -55,7 +55,7 @@ func (p *Picture) BeforeCreate(tx *gorm.DB) (err error) {
 	return
 }
 
-func fromDomainPictures(pics []domain.Picture) []*Picture {
+func PiucturesFromDomain(pics []artwork.Picture) []*Picture {
 	if pics == nil {
 		panic("nil pictures slice")
 	}

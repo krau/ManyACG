@@ -1,9 +1,9 @@
-package domain
+package artwork
 
 import (
 	"slices"
 
-	"github.com/krau/ManyACG/internal/shared"
+	"github.com/krau/ManyACG/internal/common"
 	"github.com/krau/ManyACG/pkg/objectuuid"
 )
 
@@ -74,7 +74,7 @@ type StorageInfo struct {
 }
 
 type StorageDetail struct {
-	Type shared.StorageType `json:"type"`
+	Type common.StorageType `json:"type"`
 	Path string             `json:"path"`
 }
 
@@ -83,7 +83,7 @@ type Artwork struct {
 	Title       string
 	Description string
 	R18         bool
-	SourceType  shared.SourceType
+	SourceType  common.SourceType
 	SourceURL   string
 	LikeCount   uint
 

@@ -1,9 +1,9 @@
-package domain
+package artwork
 
 import (
 	"errors"
 
-	"github.com/krau/ManyACG/internal/shared"
+	"github.com/krau/ManyACG/internal/common"
 )
 
 type Builder struct {
@@ -33,7 +33,7 @@ func (b *Builder) R18(r18 bool) *Builder {
 	return b
 }
 
-func (b *Builder) SourceType(sourceType shared.SourceType) *Builder {
+func (b *Builder) SourceType(sourceType common.SourceType) *Builder {
 	b.artwork.SourceType = sourceType
 	return b
 }
