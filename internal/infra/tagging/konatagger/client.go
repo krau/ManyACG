@@ -4,11 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"os"
 	"time"
 
 	"github.com/imroc/req/v3"
-	"github.com/krau/ManyACG/config"
 )
 
 type taggerClient struct {
@@ -51,29 +49,20 @@ func (c *taggerClient) Predict(ctx context.Context, file []byte) (*taggerPredict
 	}
 	return &predict, nil
 }
-
-var TaggerClient *taggerClient
-
-func initTaggerClient() {
-	if config.Cfg.Tagger.Host == "" || config.Cfg.Tagger.Token == "" {
-		Logger.Fatalf("Tagger configuration is incomplete")
-		os.Exit(1)
-	}
+func NewKonatagger(host, token string, timeout time.Duration) (*taggerClient, error) {
 	client := req.C().
-		SetCommonBearerAuthToken(config.Cfg.Tagger.Token).
-		SetBaseURL(config.Cfg.Tagger.Host).
-		SetTimeout(time.Duration(config.Cfg.Tagger.Timeout) * time.Second).
-		SetUserAgent("ManyACG/" + Version)
-	TaggerClient = &taggerClient{
+		SetCommonBearerAuthToken(token).
+		SetBaseURL(host).
+		SetTimeout(timeout * time.Second).
+		SetUserAgent("ManyACG")
+	tagerC := &taggerClient{
 		Client:  client,
-		host:    config.Cfg.Tagger.Host,
-		token:   config.Cfg.Tagger.Token,
-		timeout: time.Duration(config.Cfg.Tagger.Timeout) * time.Second,
+		host:    host,
+		token:   token,
+		timeout: timeout * time.Second,
 	}
-	if status, err := TaggerClient.Health(); err != nil {
-		Logger.Fatalf("Tagger health check failed: %s", err)
-		os.Exit(1)
-	} else {
-		Logger.Infof("Tagger health check: %s", status)
+	if _, err := tagerC.Health(); err != nil {
+		return nil, fmt.Errorf("tagger health check failed: %w", err)
 	}
+	return tagerC, nil
 }

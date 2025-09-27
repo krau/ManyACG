@@ -62,14 +62,10 @@ func RemoveEmptyDirectories(dirPath string) error {
 func PurgeFileAfter(path string, td time.Duration) {
 	_, err := os.Stat(path)
 	if err != nil {
-		Logger.Errorf("Failed to create timer for %s: %s", path, err)
 		return
 	}
-	Logger.Tracef("Purge file after %s: %s", td, path)
 	time.AfterFunc(td, func() {
-		if err := PurgeFile(path); err != nil {
-			Logger.Errorf("Failed to purge file: %s", err)
-		}
+		PurgeFile(path)
 	})
 }
 
@@ -84,21 +80,16 @@ func RmFileAfter(path string, td time.Duration) {
 
 	_, err := os.Stat(path)
 	if err != nil {
-		Logger.Errorf("Failed to create timer for %s: %s", path, err)
 		return
 	}
-	Logger.Tracef("Remove file after %s: %s", td, path)
 	time.AfterFunc(td, func() {
-		if err := os.Remove(path); err != nil {
-			Logger.Errorf("Failed to remove file: %s", err)
-		}
+		os.Remove(path)
 	})
 }
 
 func MkCache(path string, data []byte, td time.Duration) {
 	if err := MkFile(path, data); err != nil {
-		Logger.Errorf("failed to save cache file: %s", err)
-	} else {
-		go RmFileAfter(path, td)
+		return
 	}
+	go RmFileAfter(path, td)
 }

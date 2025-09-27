@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"sync"
 
 	"github.com/spf13/viper"
 )
@@ -39,7 +40,19 @@ type fetcherConfig struct {
 	Limit         int `toml:"limit" mapstructure:"limit" json:"limit" yaml:"limit"`
 }
 
-func LoadConfig() *Config {
+var (
+	cfg  Config
+	once sync.Once
+)
+
+func Get() Config {
+	once.Do(func() {
+		cfg = loadConfig()
+	})
+	return cfg
+}
+
+func loadConfig() Config {
 	viper.SetConfigName("config")
 	viper.AddConfigPath(".")
 	viper.AddConfigPath("/etc/manyacg/")
@@ -122,5 +135,6 @@ func LoadConfig() *Config {
 		fmt.Println("please set at least one admin in config file (telegram.admins)")
 		os.Exit(1)
 	}
-	return Cfg
+	cfg = *Cfg
+	return cfg
 }

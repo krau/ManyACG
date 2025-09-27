@@ -11,30 +11,38 @@ import (
 
 	"github.com/imroc/req/v3"
 	"github.com/krau/ManyACG/internal/infra/config"
+	"github.com/krau/ManyACG/pkg/osutil"
+	"github.com/krau/ManyACG/pkg/strutil"
 )
 
-var Client *req.Client
+var (
+	defaultClient *req.Client
+	once          sync.Once
+	cacheLocks    sync.Map
+)
 
-func initHttpClient() {
-	c := req.C().ImpersonateChrome().SetCommonRetryCount(2).SetTLSHandshakeTimeout(time.Second * 10).SetTimeout(time.Minute * 2)
-	Client = c
-	if config.Cfg.Source.Proxy != "" {
-		Client.SetProxyURL(config.Cfg.Source.Proxy)
+func initDefaultClient() {
+	c := req.C().ImpersonateChrome().
+		SetCommonRetryCount(2).
+		SetTLSHandshakeTimeout(time.Second * 10).
+		SetTimeout(time.Minute * 2)
+	defaultClient = c
+	if config.Get().Source.Proxy != "" {
+		defaultClient.SetProxyURL(config.Get().Source.Proxy)
 	}
 }
 
-var cacheLocks sync.Map
-
 func getCachePath(url string) string {
-	return filepath.Join(config.Cfg.Storage.CacheDir, "req", MD5Hash(url))
+	return filepath.Join(config.Get().Storage.CacheDir, "req", strutil.MD5Hash(url))
 }
 
 func DownloadWithCache(ctx context.Context, url string, client *req.Client) ([]byte, error) {
+	once.Do(initDefaultClient)
 	if client == nil {
-		client = Client
+		client = defaultClient
 	}
-	cachePath := getCachePath(url)
 
+	cachePath := getCachePath(url)
 	data, err := os.ReadFile(cachePath)
 	if err == nil {
 		return data, nil
@@ -47,7 +55,6 @@ func DownloadWithCache(ctx context.Context, url string, client *req.Client) ([]b
 		cacheLocks.Delete(url)
 	}()
 
-	Logger.Debugf("downloading: %s", url)
 	resp, err := client.R().SetContext(ctx).Get(url)
 	if err != nil {
 		return nil, err
@@ -56,13 +63,14 @@ func DownloadWithCache(ctx context.Context, url string, client *req.Client) ([]b
 		return nil, fmt.Errorf("http error: %d", resp.GetStatusCode())
 	}
 	data = resp.Bytes()
-	MkCache(cachePath, data, time.Duration(config.Cfg.Storage.CacheTTL)*time.Second)
+	osutil.MkCache(cachePath, data, time.Duration(config.Get().Storage.CacheTTL)*time.Second)
 	return data, nil
 }
 
 func GetBodyReader(ctx context.Context, url string, client *req.Client) (io.ReadCloser, error) {
+	once.Do(initDefaultClient)
 	if client == nil {
-		client = Client
+		client = defaultClient
 	}
 	cachePath := getCachePath(url)
 	if file, err := os.Open(cachePath); err == nil {
@@ -79,7 +87,6 @@ func GetBodyReader(ctx context.Context, url string, client *req.Client) (io.Read
 	if file, err := os.Open(cachePath); err == nil {
 		return file, nil
 	}
-	Logger.Debugf("getting: %s", url)
 	resp, err := client.R().SetContext(ctx).Get(url)
 	if err != nil {
 		return nil, err

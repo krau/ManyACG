@@ -8,7 +8,7 @@ import (
 	"runtime"
 
 	"github.com/gen2brain/avif"
-	"github.com/krau/ManyACG/config"
+	"github.com/krau/ManyACG/internal/infra/config"
 	"github.com/krau/ManyACG/types"
 )
 
@@ -66,14 +66,14 @@ func CompressImageForTelegram(input []byte) ([]byte, error) {
 	if _, ok := vipsFormat["jpeg"]; ok {
 		return compressImageForTelegramByVIPS(input)
 	}
-	tmpFile, err := os.CreateTemp(config.Cfg.Storage.CacheDir, "imgtool_*.png")
+	tmpFile, err := os.CreateTemp(config.Get().Storage.CacheDir, "imgtool_*.png")
 	if err != nil {
 		return nil, fmt.Errorf("failed to create temp file: %w", err)
 	}
 	defer os.Remove(tmpFile.Name())
 	defer tmpFile.Close()
 
-	distFile, err := os.CreateTemp(config.Cfg.Storage.CacheDir, "imgtool_*.jpg")
+	distFile, err := os.CreateTemp(config.Get().Storage.CacheDir, "imgtool_*.jpg")
 	if err != nil {
 		return nil, fmt.Errorf("failed to create temp file: %w", err)
 	}
