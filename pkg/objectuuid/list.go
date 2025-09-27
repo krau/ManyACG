@@ -12,7 +12,7 @@ type ObjectUUIDs struct {
 
 func NewObjectUUIDs(ids ...ObjectUUID) *ObjectUUIDs {
 	m := &ObjectUUIDs{
-		data: make([]ObjectUUID, 0, len(ids)),
+		data: make([]ObjectUUID, 0),
 	}
 	m.UnsafeAdd(ids...)
 	return m
@@ -20,7 +20,7 @@ func NewObjectUUIDs(ids ...ObjectUUID) *ObjectUUIDs {
 
 func (m *ObjectUUIDs) UnsafeAdd(ids ...ObjectUUID) {
 	if m.data == nil {
-		m.data = make([]ObjectUUID, 0, len(ids))
+		m.data = make([]ObjectUUID, 0)
 	}
 	for _, id := range ids {
 		if !slices.Contains(m.data, id) {
@@ -33,11 +33,11 @@ func (m *ObjectUUIDs) UnsafeRemove(ids ...ObjectUUID) {
 	if len(m.data) == 0 {
 		return
 	}
-	toRemove := make(map[ObjectUUID]struct{}, len(ids))
+	toRemove := make(map[ObjectUUID]struct{})
 	for _, id := range ids {
 		toRemove[id] = struct{}{}
 	}
-	newIDs := make([]ObjectUUID, 0, len(m.data))
+	newIDs := make([]ObjectUUID, 0)
 	for _, id := range m.data {
 		if _, found := toRemove[id]; !found {
 			newIDs = append(newIDs, id)
@@ -51,7 +51,7 @@ func (m *ObjectUUIDs) Add(ids ...ObjectUUID) {
 	defer m.mu.Unlock()
 
 	if m.data == nil {
-		m.data = make([]ObjectUUID, 0, len(ids))
+		m.data = make([]ObjectUUID, 0)
 	}
 	for _, id := range ids {
 		if !slices.Contains(m.data, id) {
@@ -71,7 +71,7 @@ func (m *ObjectUUIDs) Remove(ids ...ObjectUUID) {
 	for _, id := range ids {
 		toRemove[id] = struct{}{}
 	}
-	newIDs := make([]ObjectUUID, 0, len(m.data))
+	newIDs := make([]ObjectUUID, 0)
 	for _, id := range m.data {
 		if _, found := toRemove[id]; !found {
 			newIDs = append(newIDs, id)

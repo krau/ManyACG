@@ -35,14 +35,14 @@ func ArtworkFromDomain(a *artwork.Artwork) *Artwork {
 		panic("why you passing nil artwork")
 	}
 	return &Artwork{
-		ID:          a.ID.Value(),
+		ID:          a.ID,
 		Title:       a.Title,
 		Description: a.Description,
 		R18:         a.R18,
 		SourceType:  a.SourceType,
 		SourceURL:   a.SourceURL,
 		LikeCount:   a.LikeCount,
-		ArtistID:    a.ArtistID.Value(),
+		ArtistID:    a.ArtistID,
 		Pictures:    PiucturesFromDomain(a.Pictures),
 		Tags: func() []*Tag {
 			if a.TagIDs == nil {
@@ -60,14 +60,14 @@ func ArtworkFromDomain(a *artwork.Artwork) *Artwork {
 
 func (a *Artwork) ToDomain() *artwork.Artwork {
 	return &artwork.Artwork{
-		ID:          artwork.NewArtworkID(a.ID),
+		ID:          a.ID,
 		Title:       a.Title,
 		Description: a.Description,
 		R18:         a.R18,
 		SourceType:  a.SourceType,
 		SourceURL:   a.SourceURL,
 		LikeCount:   a.LikeCount,
-		ArtistID:    artwork.NewArtistID(a.ArtistID),
+		ArtistID:    a.ArtistID,
 		Pictures: func() []artwork.Picture {
 			if a.Pictures == nil {
 				return nil
@@ -76,7 +76,7 @@ func (a *Artwork) ToDomain() *artwork.Artwork {
 			for _, p := range a.Pictures {
 				pics = append(pics, artwork.Picture{
 					ID:        p.ID,
-					ArtworkID: artwork.NewArtworkID(p.ArtworkID),
+					ArtworkID: p.ArtworkID,
 					Index:     p.Index,
 					Thumbnail: p.Thumbnail,
 					Original:  p.Original,
@@ -84,44 +84,22 @@ func (a *Artwork) ToDomain() *artwork.Artwork {
 					Height:    p.Height,
 					Phash:     p.Phash,
 					ThumbHash: p.ThumbHash,
-					TelegramInfo: func() *artwork.TelegramInfo {
-						value := p.TelegramInfo.Data()
-						return (*artwork.TelegramInfo)(&value)
-					}(),
-					StorageInfo: func() *artwork.StorageInfo {
-						if p.StorageInfo.Data() == (StorageInfo{}) {
-							return nil
-						}
-						value := p.StorageInfo.Data()
-						return &artwork.StorageInfo{
-							Original: func() *artwork.StorageDetail {
-								if value.Original == nil {
-									return nil
-								}
-								v := artwork.StorageDetail(*value.Original)
-								return &v
-							}(),
-							Regular: func() *artwork.StorageDetail {
-								if value.Regular == nil {
-									return nil
-								}
-								v := artwork.StorageDetail(*value.Regular)
-								return &v
-							}(),
-							Thumb: func() *artwork.StorageDetail {
-								if value.Thumb == nil {
-									return nil
-								}
-								v := artwork.StorageDetail(*value.Thumb)
-								return &v
-							}(),
-						}
-					}(),
+					TelegramInfo: &common.TelegramInfo{
+						PhotoFileID:    p.TelegramInfo.Data().PhotoFileID,
+						DocumentFileID: p.TelegramInfo.Data().DocumentFileID,
+						MessageID:      p.TelegramInfo.Data().MessageID,
+						MediaGroupID:   p.TelegramInfo.Data().MediaGroupID,
+					},
+					StorageInfo: &common.StorageInfo{
+						Original: p.StorageInfo.Data().Original,
+						Regular:  p.StorageInfo.Data().Regular,
+						Thumb:    p.StorageInfo.Data().Thumb,
+					},
 				})
 			}
 			return pics
 		}(),
-		TagIDs: func() *artwork.TagIDs {
+		TagIDs: func() *objectuuid.ObjectUUIDs {
 			if a.Tags == nil {
 				return nil
 			}
@@ -129,7 +107,7 @@ func (a *Artwork) ToDomain() *artwork.Artwork {
 			for _, t := range a.Tags {
 				ids = append(ids, t.ID)
 			}
-			return artwork.NewTagIDs(ids...)
+			return objectuuid.NewObjectUUIDs(ids...)
 		}(),
 	}
 }

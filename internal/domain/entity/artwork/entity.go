@@ -7,47 +7,9 @@ import (
 	"github.com/krau/ManyACG/pkg/objectuuid"
 )
 
-type ArtworkID struct {
-	value objectuuid.ObjectUUID
-}
-
-func (a ArtworkID) Value() objectuuid.ObjectUUID {
-	return a.value
-}
-
-func (a ArtworkID) IsZero() bool {
-	return a.value == objectuuid.Nil
-}
-
-func NewArtworkID(id objectuuid.ObjectUUID) ArtworkID {
-	return ArtworkID{value: id}
-}
-
-type ArtistID struct {
-	value objectuuid.ObjectUUID
-}
-
-func (a ArtistID) Value() objectuuid.ObjectUUID {
-	return a.value
-}
-
-func (a ArtistID) IsZero() bool {
-	return a.value == objectuuid.Nil
-}
-
-func NewArtistID(id objectuuid.ObjectUUID) ArtistID {
-	return ArtistID{value: id}
-}
-
-type TagIDs = objectuuid.ObjectUUIDs
-
-func NewTagIDs(ids ...objectuuid.ObjectUUID) *TagIDs {
-	return objectuuid.NewObjectUUIDs(ids...)
-}
-
 type Picture struct {
 	ID        objectuuid.ObjectUUID
-	ArtworkID ArtworkID
+	ArtworkID objectuuid.ObjectUUID
 	Index     uint // order index in artwork
 	Thumbnail string
 	Original  string
@@ -56,30 +18,12 @@ type Picture struct {
 	Phash     string // phash
 	ThumbHash string // thumbhash
 
-	TelegramInfo *TelegramInfo
-	StorageInfo  *StorageInfo
-}
-
-type TelegramInfo struct {
-	PhotoFileID    string `json:"photo_file_id"`
-	DocumentFileID string `json:"document_file_id"`
-	MessageID      int    `json:"message_id"`
-	MediaGroupID   string `json:"media_group_id"`
-}
-
-type StorageInfo struct {
-	Original *StorageDetail `json:"original"`
-	Regular  *StorageDetail `json:"regular"`
-	Thumb    *StorageDetail `json:"thumb"`
-}
-
-type StorageDetail struct {
-	Type common.StorageType `json:"type"`
-	Path string             `json:"path"`
+	TelegramInfo *common.TelegramInfo
+	StorageInfo  *common.StorageInfo
 }
 
 type Artwork struct {
-	ID          ArtworkID
+	ID          objectuuid.ObjectUUID
 	Title       string
 	Description string
 	R18         bool
@@ -87,14 +31,14 @@ type Artwork struct {
 	SourceURL   string
 	LikeCount   uint
 
-	ArtistID ArtistID
-	TagIDs   *TagIDs
+	ArtistID objectuuid.ObjectUUID
+	TagIDs   *objectuuid.ObjectUUIDs
 	Pictures []Picture
 }
 
 func (a *Artwork) AddTags(tagIDs ...objectuuid.ObjectUUID) {
 	if a.TagIDs == nil {
-		a.TagIDs = NewTagIDs()
+		a.TagIDs = objectuuid.NewObjectUUIDs()
 	}
 	a.TagIDs.Add(tagIDs...)
 }

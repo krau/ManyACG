@@ -6,15 +6,13 @@ import (
 	"github.com/krau/ManyACG/pkg/objectuuid"
 )
 
-type TagID = objectuuid.ObjectUUID
-
 type Tag struct {
-	ID    TagID
+	ID    objectuuid.ObjectUUID
 	Name  string
 	Alias []string
 }
 
-func NewTag(id TagID, name string, alias []string) *Tag {
+func NewTag(id objectuuid.ObjectUUID, name string, alias []string) *Tag {
 	return &Tag{
 		ID:    id,
 		Name:  name,

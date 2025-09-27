@@ -30,6 +30,10 @@ func FromObjectID(oid ObjectID) ObjectUUID {
 	return cu
 }
 
+func (cu ObjectUUID) IsZero() bool {
+	return cu == Nil
+}
+
 // ToObjectID converts ObjectUUID back to MongoDB's ObjectID
 func (cu ObjectUUID) ToObjectID() ObjectID {
 	var oid ObjectID

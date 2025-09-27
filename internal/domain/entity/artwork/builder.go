@@ -4,13 +4,14 @@ import (
 	"errors"
 
 	"github.com/krau/ManyACG/internal/common"
+	"github.com/krau/ManyACG/pkg/objectuuid"
 )
 
 type Builder struct {
 	artwork Artwork
 }
 
-func NewBuilder(id ArtworkID) *Builder {
+func NewBuilder(id objectuuid.ObjectUUID) *Builder {
 	return &Builder{
 		artwork: Artwork{
 			ID: id,
@@ -48,12 +49,12 @@ func (b *Builder) LikeCount(likeCount uint) *Builder {
 	return b
 }
 
-func (b *Builder) ArtistID(artistID ArtistID) *Builder {
+func (b *Builder) ArtistID(artistID objectuuid.ObjectUUID) *Builder {
 	b.artwork.ArtistID = artistID
 	return b
 }
 
-func (b *Builder) TagIDs(tagIDs *TagIDs) *Builder {
+func (b *Builder) TagIDs(tagIDs *objectuuid.ObjectUUIDs) *Builder {
 	b.artwork.TagIDs = tagIDs
 	return b
 }
@@ -70,6 +71,14 @@ func (b *Builder) Build() (*Artwork, error) {
 	if len(b.artwork.Pictures) == 0 {
 		return nil, errors.New("at least one picture is required")
 	}
+	for _, pic := range b.artwork.Pictures {
+		if pic.ArtworkID != b.artwork.ID {
+			return nil, errors.New("picture's artwork ID does not match")
+		}
+		if pic.Original == "" {
+			return nil, errors.New("picture original URL is required")
+		}
+	}
 	if b.artwork.Title == "" {
 		return nil, errors.New("title is required")
 	}
@@ -80,4 +89,12 @@ func (b *Builder) Build() (*Artwork, error) {
 		return nil, errors.New("source type is required")
 	}
 	return &b.artwork, nil
+}
+
+func (b *Builder) MustBuild() *Artwork {
+	artwork, err := b.Build()
+	if err != nil {
+		panic(err)
+	}
+	return artwork
 }

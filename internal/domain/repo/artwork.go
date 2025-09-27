@@ -6,6 +6,8 @@ import (
 	"github.com/krau/ManyACG/internal/domain/entity/artist"
 	"github.com/krau/ManyACG/internal/domain/entity/artwork"
 	"github.com/krau/ManyACG/internal/domain/entity/tag"
+	"github.com/krau/ManyACG/pkg/objectuuid"
+	"gorm.io/gorm"
 )
 
 type ArtworkRepo interface {
@@ -20,6 +22,18 @@ type ArtistRepo interface {
 
 type TagRepo interface {
 	Save(ctx context.Context, tag *tag.Tag) error
-	Upsert(ctx context.Context, tag *tag.Tag) (*tag.TagID, error)
+	Upsert(ctx context.Context, tag *tag.Tag) (*objectuuid.ObjectUUID, error)
 	FindByNameWithAlias(ctx context.Context, find string) (*tag.Tag, error)
 }
+
+type TransactionRepo interface {
+	WithTransaction(ctx context.Context, fn func(repos *TransactionRepos) error) error
+}
+
+type TransactionRepos struct {
+	ArtworkRepo ArtworkRepo
+	ArtistRepo  ArtistRepo
+	TagRepo     TagRepo
+}
+
+var ErrNotFound = gorm.ErrRecordNotFound
