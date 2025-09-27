@@ -3,7 +3,7 @@ package artwork
 import (
 	"errors"
 
-	"github.com/krau/ManyACG/internal/common"
+	"github.com/krau/ManyACG/internal/shared"
 	"github.com/krau/ManyACG/pkg/objectuuid"
 )
 
@@ -34,7 +34,7 @@ func (b *Builder) R18(r18 bool) *Builder {
 	return b
 }
 
-func (b *Builder) SourceType(sourceType common.SourceType) *Builder {
+func (b *Builder) SourceType(sourceType shared.SourceType) *Builder {
 	b.artwork.SourceType = sourceType
 	return b
 }

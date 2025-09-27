@@ -3,8 +3,8 @@ package po
 import (
 	"time"
 
-	"github.com/krau/ManyACG/internal/common"
 	"github.com/krau/ManyACG/internal/domain/entity/artwork"
+	"github.com/krau/ManyACG/internal/shared"
 	"github.com/krau/ManyACG/pkg/objectuuid"
 	"gorm.io/datatypes"
 	"gorm.io/gorm"
@@ -23,8 +23,8 @@ type Picture struct {
 	Phash     string `gorm:"type:varchar(18);index" json:"phash"` // phash
 	ThumbHash string `gorm:"type:varchar(28)" json:"thumb_hash"`  // thumbhash
 
-	TelegramInfo datatypes.JSONType[common.TelegramInfo] `gorm:"type:json" json:"telegram_info"` // original TelegramInfo struct as JSON
-	StorageInfo  datatypes.JSONType[common.StorageInfo]  `gorm:"type:json" json:"storage_info"`  // StorageInfo as JSON
+	TelegramInfo datatypes.JSONType[shared.TelegramInfo] `gorm:"type:json" json:"telegram_info"` // original TelegramInfo struct as JSON
+	StorageInfo  datatypes.JSONType[shared.StorageInfo]  `gorm:"type:json" json:"storage_info"`  // StorageInfo as JSON
 
 	CreatedAt time.Time `gorm:"autoCreateTime" json:"created_at"`
 	UpdatedAt time.Time `gorm:"autoUpdateTime" json:"updated_at"`

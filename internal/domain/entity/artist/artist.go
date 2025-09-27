@@ -1,19 +1,19 @@
 package artist
 
 import (
-	"github.com/krau/ManyACG/internal/common"
+	"github.com/krau/ManyACG/internal/shared"
 	"github.com/krau/ManyACG/pkg/objectuuid"
 )
 
 type Artist struct {
 	ID       objectuuid.ObjectUUID
 	Name     string
-	Type     common.SourceType
+	Type     shared.SourceType
 	UID      string
 	Username string
 }
 
-func NewArtist(id objectuuid.ObjectUUID, name string, sourceType common.SourceType, uid, username string) *Artist {
+func NewArtist(id objectuuid.ObjectUUID, name string, sourceType shared.SourceType, uid, username string) *Artist {
 	return &Artist{
 		ID:       id,
 		Name:     name,

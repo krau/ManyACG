@@ -3,7 +3,7 @@ package artwork
 import (
 	"slices"
 
-	"github.com/krau/ManyACG/internal/common"
+	"github.com/krau/ManyACG/internal/shared"
 	"github.com/krau/ManyACG/pkg/objectuuid"
 )
 
@@ -18,8 +18,8 @@ type Picture struct {
 	Phash     string // phash
 	ThumbHash string // thumbhash
 
-	TelegramInfo *common.TelegramInfo
-	StorageInfo  *common.StorageInfo
+	TelegramInfo *shared.TelegramInfo
+	StorageInfo  *shared.StorageInfo
 }
 
 type Artwork struct {
@@ -27,7 +27,7 @@ type Artwork struct {
 	Title       string
 	Description string
 	R18         bool
-	SourceType  common.SourceType
+	SourceType  shared.SourceType
 	SourceURL   string
 	LikeCount   uint
 

@@ -1,6 +1,8 @@
 package query
 
-import "github.com/krau/ManyACG/internal/common"
+import (
+	"github.com/krau/ManyACG/internal/shared"
+)
 
 // query a single artwork
 type ArtworkQuery struct {
@@ -9,11 +11,8 @@ type ArtworkQuery struct {
 }
 
 type ArtistInfo struct {
-	Name     string            `json:"name"`
-	Type     common.SourceType `json:"type"`
-	UID      string            `json:"uid"`
-	Username string            `json:"username"`
-	ID       string            `json:"id"`
+	shared.ArtistInfo
+	ID string `json:"id"`
 }
 
 type PictureInfo struct {
@@ -34,7 +33,7 @@ type ArtworkQueryResult struct {
 	Title       string            `json:"title"`
 	Description string            `json:"description"`
 	R18         bool              `json:"r18"`
-	SourceType  common.SourceType `json:"source_type"`
+	SourceType  shared.SourceType `json:"source_type"`
 	SourceURL   string            `json:"source_url"`
 	Artist      *ArtistInfo       `json:"artist"`
 	Tags        []string          `json:"tags"`
@@ -43,7 +42,7 @@ type ArtworkQueryResult struct {
 }
 
 type ArtworkListQuery struct {
-	R18      common.R18Type
+	R18      shared.R18Type
 	ArtistID string
 	Tags     [][]string // AND of OR tags
 	Keywords [][]string // AND of OR keywords

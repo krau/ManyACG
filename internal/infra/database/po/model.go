@@ -1,7 +1,7 @@
 package po
 
 import (
-	"github.com/krau/ManyACG/internal/common"
+	"github.com/krau/ManyACG/internal/shared"
 	"github.com/krau/ManyACG/pkg/objectuuid"
 	"gorm.io/datatypes"
 )
@@ -9,7 +9,7 @@ import (
 type Artist struct {
 	ID       objectuuid.ObjectUUID `gorm:"primaryKey;type:uuid" json:"id"`
 	Name     string                `gorm:"type:text;not null;index" json:"name"`
-	Type     common.SourceType     `gorm:"type:text;not null;index" json:"type"`
+	Type     shared.SourceType     `gorm:"type:text;not null;index" json:"type"`
 	UID      string                `gorm:"type:text;not null;index" json:"uid"`
 	Username string                `gorm:"type:text;not null;index" json:"username"`
 

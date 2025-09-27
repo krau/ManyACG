@@ -3,8 +3,8 @@ package po
 import (
 	"time"
 
-	"github.com/krau/ManyACG/internal/common"
 	"github.com/krau/ManyACG/internal/domain/entity/artwork"
+	"github.com/krau/ManyACG/internal/shared"
 	"github.com/krau/ManyACG/pkg/objectuuid"
 )
 
@@ -16,7 +16,7 @@ type Artwork struct {
 	R18         bool                  `gorm:"not null;default:false" json:"r18"`
 	CreatedAt   time.Time             `gorm:"not null;autoCreateTime" json:"created_at"`
 	UpdatedAt   time.Time             `gorm:"not null;autoUpdateTime" json:"updated_at"`
-	SourceType  common.SourceType     `gorm:"type:text;not null" json:"source_type"`
+	SourceType  shared.SourceType     `gorm:"type:text;not null" json:"source_type"`
 	SourceURL   string                `gorm:"type:text;not null;uniqueIndex" json:"source_url"`
 	LikeCount   uint                  `gorm:"not null;default:0" json:"like_count"`
 
@@ -84,13 +84,13 @@ func (a *Artwork) ToDomain() *artwork.Artwork {
 					Height:    p.Height,
 					Phash:     p.Phash,
 					ThumbHash: p.ThumbHash,
-					TelegramInfo: &common.TelegramInfo{
+					TelegramInfo: &shared.TelegramInfo{
 						PhotoFileID:    p.TelegramInfo.Data().PhotoFileID,
 						DocumentFileID: p.TelegramInfo.Data().DocumentFileID,
 						MessageID:      p.TelegramInfo.Data().MessageID,
 						MediaGroupID:   p.TelegramInfo.Data().MediaGroupID,
 					},
-					StorageInfo: &common.StorageInfo{
+					StorageInfo: &shared.StorageInfo{
 						Original: p.StorageInfo.Data().Original,
 						Regular:  p.StorageInfo.Data().Regular,
 						Thumb:    p.StorageInfo.Data().Thumb,

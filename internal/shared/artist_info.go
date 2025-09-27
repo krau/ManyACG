@@ -1,4 +1,4 @@
-package common
+package shared
 
 type ArtistInfo struct {
 	Name     string

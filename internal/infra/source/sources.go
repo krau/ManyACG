@@ -1,82 +1,38 @@
 package source
 
 import (
-	"reflect"
+	"context"
+	"errors"
 	"strings"
 
-	"github.com/krau/ManyACG/common"
-	"github.com/krau/ManyACG/config"
-	"github.com/krau/ManyACG/errs"
-	sourceCommon "github.com/krau/ManyACG/internal/infra/source/common"
-
-	"github.com/krau/ManyACG/types"
-
-	_ "github.com/krau/ManyACG/internal/infra/source/bilibili"
-	_ "github.com/krau/ManyACG/internal/infra/source/danbooru"
-	_ "github.com/krau/ManyACG/internal/infra/source/kemono"
-	_ "github.com/krau/ManyACG/internal/infra/source/nhentai"
-	_ "github.com/krau/ManyACG/internal/infra/source/pixiv"
-	_ "github.com/krau/ManyACG/internal/infra/source/twitter"
-	_ "github.com/krau/ManyACG/internal/infra/source/yandere"
+	"github.com/krau/ManyACG/internal/shared"
 )
 
-func isSourceEnabled(sourceType types.SourceType) bool {
-	cfgValue := reflect.ValueOf(config.Cfg.Source)
-	field := cfgValue.FieldByName(strings.Title(string(sourceType)))
-	if !field.IsValid() {
-		return false
-	}
-	if field.Kind() != reflect.Struct {
-		return false
-	}
-	enableField := field.FieldByName("Enable")
-	if !enableField.IsValid() {
-		return false
-	}
-	if enableField.Kind() != reflect.Bool {
-		return false
-	}
-	return enableField.Bool()
+type FetchedArtwork struct {
+	shared.ArtworkInfo
 }
 
-func InitSources(service types.Service) {
-	common.Logger.Info("Initializing sources")
-	for sourceType, source := range sourceCommon.Sources {
-		if isSourceEnabled(sourceType) {
-			source.Init(service)
-		} else {
-			delete(sourceCommon.Sources, sourceType)
-			delete(sourceCommon.SourceURLRegexps, sourceType)
+type ArtworkSource interface {
+	Init(ctx context.Context, cfg Config) error
+	GetArtworkInfo(ctx context.Context, sourceUrl string) (*FetchedArtwork, error)
+	MatchesSourceURL(sourceUrl string) (string, bool)
+	FetchNewArtworks(ctx context.Context, limit int) ([]*FetchedArtwork, error)
+}
+
+func GetArtworkInfo(ctx context.Context, sourceURL string) (*FetchedArtwork, error) {
+	for _, sou := range sources {
+		if _, ok := sou.MatchesSourceURL(sourceURL); ok {
+			return sou.GetArtworkInfo(ctx, sourceURL)
 		}
 	}
-}
-
-func GetSources() map[types.SourceType]types.Source {
-	return sourceCommon.Sources
-}
-
-func GetArtworkInfo(sourceURL string) (*types.Artwork, error) {
-	common.Logger.Infof("Getting artwork info: %s", sourceURL)
-	for k, v := range sourceCommon.SourceURLRegexps {
-		if v.MatchString(sourceURL) {
-			if sourceCommon.Sources[k] != nil {
-				return sourceCommon.Sources[k].GetArtworkInfo(sourceURL)
-			}
-		}
-	}
-	common.Logger.Warnf("Source URL not supported: %s", sourceURL)
-	return nil, errs.ErrSourceNotSupported
-}
-
-func GetFileName(artwork *types.Artwork, picture *types.Picture) (string, error) {
-	return sourceCommon.GetFileName(artwork, picture)
+	return nil, errors.New("no supported source found")
 }
 
 func FindSourceURL(text string) string {
 	text = strings.ReplaceAll(text, "\n", " ")
-	for sourceType, reg := range sourceCommon.SourceURLRegexps {
-		if url := reg.FindString(text); url != "" {
-			return sourceCommon.Sources[sourceType].GetCommonSourceURL(url)
+	for _, sou := range sources {
+		if url, ok := sou.MatchesSourceURL(text); ok {
+			return url
 		}
 	}
 	return ""
@@ -85,10 +41,29 @@ func FindSourceURL(text string) string {
 // MatchesSourceURL returns whether the text contains a source URL.
 func MatchesSourceURL(text string) bool {
 	text = strings.ReplaceAll(text, "\n", " ")
-	for _, reg := range sourceCommon.SourceURLRegexps {
-		if reg.MatchString(text) {
+	for _, sou := range sources {
+		if _, ok := sou.MatchesSourceURL(text); ok {
 			return true
 		}
 	}
 	return false
 }
+
+// func isSourceEnabled(sourceType types.SourceType) bool {
+// 	cfgValue := reflect.ValueOf(config.Get().Source)
+// 	field := cfgValue.FieldByName(strings.Title(string(sourceType)))
+// 	if !field.IsValid() {
+// 		return false
+// 	}
+// 	if field.Kind() != reflect.Struct {
+// 		return false
+// 	}
+// 	enableField := field.FieldByName("Enable")
+// 	if !enableField.IsValid() {
+// 		return false
+// 	}
+// 	if enableField.Kind() != reflect.Bool {
+// 		return false
+// 	}
+// 	return enableField.Bool()
+// }

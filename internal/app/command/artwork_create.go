@@ -4,23 +4,17 @@ import (
 	"context"
 	"errors"
 
-	"github.com/krau/ManyACG/internal/common"
+	"github.com/krau/ManyACG/internal/common/decorator"
 	"github.com/krau/ManyACG/internal/domain/entity/artist"
 	"github.com/krau/ManyACG/internal/domain/entity/artwork"
 	"github.com/krau/ManyACG/internal/domain/entity/tag"
 	"github.com/krau/ManyACG/internal/domain/repo"
+	"github.com/krau/ManyACG/internal/shared"
 	"github.com/krau/ManyACG/pkg/objectuuid"
 )
 
 type ArtworkCreation struct {
-	Title       string
-	Description string
-	R18         bool
-	SourceType  common.SourceType
-	SourceURL   string
-	Artist      common.ArtistInfo
-	TagNames    []string
-	Pictures    []common.PictureInfo
+	shared.ArtworkInfo
 }
 
 type ArtworkCreationResult struct {
@@ -30,15 +24,13 @@ type ArtworkCreationResult struct {
 	TagIDs     *objectuuid.ObjectUUIDs
 }
 
-type CreateArtworkHandler interface {
-	Handle(ctx context.Context, cmd *ArtworkCreation) (*ArtworkCreationResult, error)
-}
+type CreateArtworkHandler decorator.CommandHandler[*ArtworkCreation, *ArtworkCreationResult]
 
 type createArtworkHandler struct {
 	txRepo repo.TransactionRepo
 }
 
-func (h *createArtworkHandler) findOrUpsertArtist(ctx context.Context, repos *repo.TransactionRepos, info common.ArtistInfo) (*artist.Artist, error) {
+func (h *createArtworkHandler) findOrUpsertArtist(ctx context.Context, repos *repo.TransactionRepos, info shared.ArtistInfo) (*artist.Artist, error) {
 	artistEnt, err := repos.ArtistRepo.FindBySourceAndUID(ctx, string(info.Type), info.UID)
 	if errors.Is(err, repo.ErrNotFound) {
 		artistEnt = artist.NewArtist(objectuuid.New(), info.Name, info.Type, info.UID, info.Username)
