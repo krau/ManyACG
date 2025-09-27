@@ -21,10 +21,8 @@ func NewTag(id objectuuid.ObjectUUID, name string, alias []string) *Tag {
 }
 
 func (t *Tag) AddAlias(alias string) {
-	for _, a := range t.Alias {
-		if a == alias {
-			return
-		}
+	if slices.Contains(t.Alias, alias) {
+		return
 	}
 	t.Alias = append(t.Alias, alias)
 }

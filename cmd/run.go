@@ -18,7 +18,6 @@ import (
 	"github.com/krau/ManyACG/dao"
 	"github.com/krau/ManyACG/fetcher"
 	"github.com/krau/ManyACG/service"
-	"github.com/krau/ManyACG/sources"
 	"github.com/krau/ManyACG/storage"
 	"github.com/krau/ManyACG/telegram"
 	"github.com/krau/ManyACG/webassets"
