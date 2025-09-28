@@ -11,12 +11,13 @@ import (
 
 	"github.com/duke-git/lancet/v2/slice"
 	"github.com/krau/ManyACG/adapter"
-	"github.com/krau/ManyACG/common"
-	"github.com/krau/ManyACG/common/imgtool"
-	"github.com/krau/ManyACG/config"
+	"github.com/krau/ManyACG/internal/common"
+	"github.com/krau/ManyACG/internal/infra/config"
+	"github.com/krau/ManyACG/internal/pkg/imgtool"
+	"github.com/krau/ManyACG/pkg/strutil"
 
+	"github.com/krau/ManyACG/internal/intf/telegram/utils"
 	"github.com/krau/ManyACG/service"
-	"github.com/krau/ManyACG/telegram/utils"
 	"github.com/krau/ManyACG/types"
 
 	"github.com/mymmrac/telego"
@@ -55,7 +56,7 @@ func RandomPicture(ctx *telegohandler.Context, message telego.Message) error {
 	if picture.TelegramInfo.PhotoFileID != "" {
 		file = telegoutil.FileFromID(picture.TelegramInfo.PhotoFileID)
 	} else {
-		photoURL := fmt.Sprintf("%s/?url=%s&w=2560&h=2560&we&output=jpg", config.Cfg.WSRVURL, picture.Original)
+		photoURL := fmt.Sprintf("%s/?url=%s&w=2560&h=2560&we&output=jpg", config.Get().WSRVURL, picture.Original)
 		file = telegoutil.FileFromURL(photoURL)
 	}
 	caption := fmt.Sprintf("[%s](%s)", common.EscapeMarkdown(artwork[0].Title), artwork[0].SourceURL)
@@ -96,7 +97,7 @@ func HybridSearchArtworks(ctx *telegohandler.Context, message telego.Message) er
 语义比例为0-1的浮点数, 应位于参数列表最后, 越大越趋向于基于语义搜索, 若不提供, 使用默认值0.8
 
 <i>Tips: 该命令将基于文本语义进行搜索, 而非关键词匹配</i>
-`, common.EscapeHTML("/hybrid <搜索内容> [语义比例]"))
+`, strutil.EscapeHTML("/hybrid <搜索内容> [语义比例]"))
 		utils.ReplyMessageWithHTML(ctx, ctx.Bot(), message, helpText)
 		return nil
 	}
@@ -226,10 +227,10 @@ func SearchSimilarArtworks(ctx *telegohandler.Context, message telego.Message) e
 		if picture.TelegramInfo != nil && picture.TelegramInfo.PhotoFileID != "" {
 			file = telegoutil.FileFromID(picture.TelegramInfo.PhotoFileID)
 		} else {
-			photoURL := fmt.Sprintf("%s/?url=%s&w=2560&h=2560&we&output=jpg", config.Cfg.WSRVURL, picture.Original)
+			photoURL := fmt.Sprintf("%s/?url=%s&w=2560&h=2560&we&output=jpg", config.Get().WSRVURL, picture.Original)
 			file = telegoutil.FileFromURL(photoURL)
 		}
-		caption := fmt.Sprintf("<a href=\"%s\">%s</a>", artwork.SourceURL, common.EscapeHTML(artwork.Title))
+		caption := fmt.Sprintf("<a href=\"%s\">%s</a>", artwork.SourceURL, strutil.EscapeHTML(artwork.Title))
 		inputMedias = append(inputMedias, telegoutil.MediaPhoto(file).WithCaption(caption).WithParseMode(telego.ModeHTML))
 	}
 	mediaGroup := telegoutil.MediaGroup(message.Chat.ChatID(), inputMedias...).WithReplyParameters(&telego.ReplyParameters{
@@ -279,10 +280,10 @@ func handleSendResultArtworks(ctx context.Context, artworks []*types.Artwork, me
 		if picture.TelegramInfo != nil && picture.TelegramInfo.PhotoFileID != "" {
 			file = telegoutil.FileFromID(picture.TelegramInfo.PhotoFileID)
 		} else {
-			photoURL := fmt.Sprintf("%s/?url=%s&w=2560&h=2560&we&output=jpg", config.Cfg.WSRVURL, picture.Original)
+			photoURL := fmt.Sprintf("%s/?url=%s&w=2560&h=2560&we&output=jpg", config.Get().WSRVURL, picture.Original)
 			file = telegoutil.FileFromURL(photoURL)
 		}
-		caption := fmt.Sprintf("<a href=\"%s\">%s</a>", artwork.SourceURL, common.EscapeHTML(artwork.Title))
+		caption := fmt.Sprintf("<a href=\"%s\">%s</a>", artwork.SourceURL, strutil.EscapeHTML(artwork.Title))
 		inputMedias = append(inputMedias, telegoutil.MediaPhoto(file).WithCaption(caption).WithParseMode(telego.ModeHTML))
 	}
 	mediaGroup := telegoutil.MediaGroup(message.Chat.ChatID(), inputMedias...).WithReplyParameters(&telego.ReplyParameters{

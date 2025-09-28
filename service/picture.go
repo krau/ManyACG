@@ -6,10 +6,10 @@ import (
 	"fmt"
 	"image"
 
-	"github.com/krau/ManyACG/common"
-	"github.com/krau/ManyACG/common/imgtool"
 	"github.com/krau/ManyACG/dao"
-	"github.com/krau/ManyACG/storage"
+	"github.com/krau/ManyACG/internal/common"
+	"github.com/krau/ManyACG/internal/infra/storage"
+	"github.com/krau/ManyACG/internal/pkg/imgtool"
 	"github.com/krau/ManyACG/types"
 
 	"github.com/duke-git/lancet/v2/slice"

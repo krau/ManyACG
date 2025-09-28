@@ -4,7 +4,7 @@ package cmd
 // 	"fmt"
 // 	"runtime"
 
-// 	"github.com/krau/ManyACG/common"
+// 	"github.com/krau/ManyACG/internal/common"
 
 // 	"github.com/spf13/cobra"
 // )

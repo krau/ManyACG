@@ -5,11 +5,12 @@ import (
 	"math/rand"
 
 	"github.com/krau/ManyACG/adapter"
-	"github.com/krau/ManyACG/common"
-	"github.com/krau/ManyACG/config"
+	"github.com/krau/ManyACG/internal/common"
+	"github.com/krau/ManyACG/internal/infra/config"
+	sources "github.com/krau/ManyACG/internal/infra/source"
+	"github.com/krau/ManyACG/internal/intf/telegram/utils"
+	"github.com/krau/ManyACG/pkg/strutil"
 	"github.com/krau/ManyACG/service"
-	"github.com/krau/ManyACG/sources"
-	"github.com/krau/ManyACG/telegram/utils"
 	"github.com/krau/ManyACG/types"
 
 	"github.com/google/uuid"
@@ -35,7 +36,7 @@ func InlineQuery(ctx *telegohandler.Context, query telego.InlineQuery) error {
 				continue
 			}
 			result := telegoutil.ResultPhoto(uuid.NewString(),
-				fmt.Sprintf("%s/?url=%s&w=2560&h=2560&we&output=jpg", config.Cfg.WSRVURL,
+				fmt.Sprintf("%s/?url=%s&w=2560&h=2560&we&output=jpg", config.Get().WSRVURL,
 					picture.Original), picture.Thumbnail).WithCaption(caption).WithParseMode(telego.ModeHTML)
 			results = append(results, result)
 		}
@@ -55,7 +56,7 @@ func InlineQuery(ctx *telegohandler.Context, query telego.InlineQuery) error {
 		ctx.Bot().AnswerInlineQuery(ctx, telegoutil.InlineQuery(query.ID, telegoutil.ResultArticle(uuid.NewString(), "未找到相关图片", telegoutil.TextMessage(fmt.Sprintf(`
 未找到相关图片 (搜索: %s)
 
-<b>在任意聊天框中输入 @%s [关键词参数] 来查找相关图片</b>`, common.EscapeHTML(queryText), common.EscapeHTML(BotUsername))).WithParseMode(telego.ModeHTML))))
+<b>在任意聊天框中输入 @%s [关键词参数] 来查找相关图片</b>`, strutil.EscapeHTML(queryText), strutil.EscapeHTML(BotUsername))).WithParseMode(telego.ModeHTML))))
 		return nil
 	}
 	results := make([]telego.InlineQueryResult, 0, len(artworks))
@@ -65,7 +66,7 @@ func InlineQuery(ctx *telegohandler.Context, query telego.InlineQuery) error {
 		if picture.TelegramInfo == nil || picture.TelegramInfo.PhotoFileID == "" {
 			continue
 		}
-		result := telegoutil.ResultCachedPhoto(uuid.NewString(), picture.TelegramInfo.PhotoFileID).WithCaption(fmt.Sprintf("<a href=\"%s\">%s</a>", artwork.SourceURL, common.EscapeHTML(artwork.Title))).WithParseMode(telego.ModeHTML)
+		result := telegoutil.ResultCachedPhoto(uuid.NewString(), picture.TelegramInfo.PhotoFileID).WithCaption(fmt.Sprintf("<a href=\"%s\">%s</a>", artwork.SourceURL, strutil.EscapeHTML(artwork.Title))).WithParseMode(telego.ModeHTML)
 		result.WithReplyMarkup(telegoutil.InlineKeyboard(utils.GetPostedPictureInlineKeyboardButton(artwork, uint(pictureIndex), ChannelChatID, BotUsername)))
 		results = append(results, result)
 	}

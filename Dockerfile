@@ -17,9 +17,9 @@ RUN builtAt=${BUILT_AT:-$(date +'%F %T %z')} && \
     version=${VERSION:-$(git describe --abbrev=0 --tags)} && \
     ldflags="\
     -w -s \
-    -X 'github.com/krau/ManyACG/common.BuildTime=$builtAt' \
-    -X 'github.com/krau/ManyACG/common.Commit=$gitCommit' \
-    -X 'github.com/krau/ManyACG/common.Version=$version'\
+    -X 'github.com/krau/ManyACG/internal/common.BuildTime=$builtAt' \
+    -X 'github.com/krau/ManyACG/internal/common.Commit=$gitCommit' \
+    -X 'github.com/krau/ManyACG/internal/common.Version=$version'\
     " && \
     CGO_ENABLED=0 go build -tags without_vips,nodynamic -ldflags "$ldflags" -o manyacg
 

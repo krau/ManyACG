@@ -5,7 +5,7 @@ import (
 	"errors"
 
 	"github.com/krau/ManyACG/dao"
-	"github.com/krau/ManyACG/errs"
+	"github.com/krau/ManyACG/internal/common/errs"
 	"github.com/krau/ManyACG/types"
 
 	"go.mongodb.org/mongo-driver/bson/primitive"

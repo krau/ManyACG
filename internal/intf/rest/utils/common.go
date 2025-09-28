@@ -7,8 +7,8 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
-	"github.com/krau/ManyACG/common"
-	"github.com/krau/ManyACG/config"
+	"github.com/krau/ManyACG/internal/common"
+	"github.com/krau/ManyACG/internal/infra/config"
 	"github.com/krau/ManyACG/types"
 )
 
@@ -50,7 +50,7 @@ func GinBindError(ctx *gin.Context, err error) {
 //
 // 否则返回原图片路径
 func ApplyApiStoragePathRule(detail *types.StorageDetail) string {
-	for _, rule := range config.Cfg.API.PathRules {
+	for _, rule := range config.Get().API.PathRules {
 		if strings.HasPrefix(detail.Path, rule.Path) && (rule.StorageType == "" || rule.StorageType == string(detail.Type)) {
 			parsedUrl, err := url.JoinPath(rule.JoinPrefix, strings.TrimPrefix(detail.Path, rule.TrimPrefix))
 			if err != nil {

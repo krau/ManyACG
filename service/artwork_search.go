@@ -7,10 +7,10 @@ import (
 
 	"github.com/goccy/go-json"
 	"github.com/krau/ManyACG/adapter"
-	"github.com/krau/ManyACG/common"
-	"github.com/krau/ManyACG/config"
 	"github.com/krau/ManyACG/dao"
-	"github.com/krau/ManyACG/errs"
+	"github.com/krau/ManyACG/internal/common"
+	"github.com/krau/ManyACG/internal/common/errs"
+	"github.com/krau/ManyACG/internal/infra/config"
 	"github.com/krau/ManyACG/types"
 	"github.com/meilisearch/meilisearch-go"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -31,14 +31,14 @@ func HybridSearchArtworks(ctx context.Context, queryText string, hybridSemanticR
 		filter = "r18 = true"
 	}
 
-	index := common.MeilisearchClient.Index(config.Cfg.Search.MeiliSearch.Index)
+	index := common.MeilisearchClient.Index(config.Get().Search.MeiliSearch.Index)
 	resp, err := index.SearchWithContext(ctx, queryText, &meilisearch.SearchRequest{
 		Offset:               offset,
 		Limit:                limit,
 		AttributesToRetrieve: []string{"id"},
 		Filter:               filter,
 		Hybrid: &meilisearch.SearchRequestHybrid{
-			Embedder:      config.Cfg.Search.MeiliSearch.Embedder,
+			Embedder:      config.Get().Search.MeiliSearch.Embedder,
 			SemanticRatio: hybridSemanticRatio,
 		},
 	})
@@ -85,12 +85,12 @@ func SearchSimilarArtworks(ctx context.Context, artworkIdStr string, offset, lim
 		filter = "r18 = true"
 	}
 
-	index := common.MeilisearchClient.Index(config.Cfg.Search.MeiliSearch.Index)
+	index := common.MeilisearchClient.Index(config.Get().Search.MeiliSearch.Index)
 	var resp meilisearch.SimilarDocumentResult
 	if err := index.SearchSimilarDocumentsWithContext(ctx, &meilisearch.SimilarDocumentQuery{
 		AttributesToRetrieve: []string{"id"},
 		Id:                   artworkIdStr,
-		Embedder:             config.Cfg.Search.MeiliSearch.Embedder,
+		Embedder:             config.Get().Search.MeiliSearch.Embedder,
 		Offset:               offset,
 		Limit:                limit,
 		Filter:               filter,

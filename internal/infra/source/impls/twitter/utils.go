@@ -65,8 +65,8 @@ func getTweetPath(sourceURL string) string {
 // 			continue
 // 		}
 // 		artworks = append(artworks, artwork)
-// 		if config.Cfg.Source.Twitter.Sleep > 0 {
-// 			time.Sleep(time.Duration(config.Cfg.Source.Twitter.Sleep) * time.Second)
+// 		if config.Get().Source.Twitter.Sleep > 0 {
+// 			time.Sleep(time.Duration(config.Get().Source.Twitter.Sleep) * time.Second)
 // 		}
 // 	}
 // 	return artworks, nil
@@ -95,8 +95,8 @@ func getTweetPath(sourceURL string) string {
 // 			continue
 // 		}
 // 		artworkCh <- artwork
-// 		if config.Cfg.Source.Twitter.Sleep > 0 {
-// 			time.Sleep(time.Duration(config.Cfg.Source.Twitter.Sleep) * time.Second)
+// 		if config.Get().Source.Twitter.Sleep > 0 {
+// 			time.Sleep(time.Duration(config.Get().Source.Twitter.Sleep) * time.Second)
 // 		}
 // 	}
 // 	return nil

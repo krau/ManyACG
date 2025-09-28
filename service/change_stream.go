@@ -6,9 +6,9 @@ import (
 
 	"github.com/goccy/go-json"
 	"github.com/krau/ManyACG/adapter"
-	"github.com/krau/ManyACG/common"
-	"github.com/krau/ManyACG/config"
 	"github.com/krau/ManyACG/dao"
+	"github.com/krau/ManyACG/internal/common"
+	"github.com/krau/ManyACG/internal/infra/config"
 	"github.com/krau/ManyACG/types"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -133,7 +133,7 @@ func (m *artworkSyncManager) ProcessArtworkUpdateEvent(event bson.M) {
 		common.Logger.Errorf("marshal search doc error: %s", err)
 		return
 	}
-	task, err := common.MeilisearchClient.Index(config.Cfg.Search.MeiliSearch.Index).UpdateDocumentsWithContext(ctx, artworkJSON)
+	task, err := common.MeilisearchClient.Index(config.Get().Search.MeiliSearch.Index).UpdateDocumentsWithContext(ctx, artworkJSON)
 	if err != nil {
 		common.Logger.Errorf("update artwork to meilisearch error: %s", err)
 		return
@@ -145,7 +145,7 @@ func (m *artworkSyncManager) ProcessArtworkDeleteEvent(event bson.M) {
 	docID := event["documentKey"].(bson.M)["_id"].(primitive.ObjectID).Hex()
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
-	task, err := common.MeilisearchClient.Index(config.Cfg.Search.MeiliSearch.Index).DeleteDocumentWithContext(ctx, docID)
+	task, err := common.MeilisearchClient.Index(config.Get().Search.MeiliSearch.Index).DeleteDocumentWithContext(ctx, docID)
 	if err != nil {
 		common.Logger.Errorf("delete artwork from meilisearch error: %s", err)
 		return
@@ -172,7 +172,7 @@ func (m *artworkSyncManager) ProcessArtworkReplaceEvent(event bson.M) {
 		common.Logger.Errorf("marshal search doc error: %s", err)
 		return
 	}
-	task, err := common.MeilisearchClient.Index(config.Cfg.Search.MeiliSearch.Index).UpdateDocumentsWithContext(ctx, artworkJSON)
+	task, err := common.MeilisearchClient.Index(config.Get().Search.MeiliSearch.Index).UpdateDocumentsWithContext(ctx, artworkJSON)
 	if err != nil {
 		common.Logger.Errorf("update artwork to meilisearch error: %s", err)
 		return

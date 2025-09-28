@@ -99,7 +99,7 @@ func (y *Yandere) MatchesSourceURL(text string) (string, bool) {
 
 // func (y *Yandere) Config() *config.SourceCommonConfig {
 // 	return &config.SourceCommonConfig{
-// 		Enable:   config.Cfg.Source.Yandere.Enable,
+// 		Enable:   config.Get().Source.Yandere.Enable,
 // 		Intervel: -1,
 // 	}
 // }

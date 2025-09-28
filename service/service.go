@@ -3,16 +3,16 @@ package service
 import (
 	"context"
 
-	"github.com/krau/ManyACG/config"
+	"github.com/krau/ManyACG/internal/infra/config"
 	"github.com/krau/ManyACG/types"
 )
 
 func InitService(ctx context.Context) {
 	go listenProcessPictureTask()
-	if config.Cfg.Search.Enable {
+	if config.Get().Search.Enable {
 		go syncArtworkToSearchEngine(ctx)
 	}
-	if config.Cfg.Tagger.Enable {
+	if config.Get().Tagger.Enable {
 		go listenPredictArtworkTagsTask()
 	}
 }

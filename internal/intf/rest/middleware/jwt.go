@@ -3,8 +3,8 @@ package middleware
 import (
 	"time"
 
-	"github.com/krau/ManyACG/common"
-	"github.com/krau/ManyACG/config"
+	"github.com/krau/ManyACG/internal/common"
+	"github.com/krau/ManyACG/internal/infra/config"
 	"github.com/krau/ManyACG/types"
 
 	"github.com/krau/ManyACG/service"
@@ -34,15 +34,15 @@ var JWTAuthMiddleware *jwt.GinJWTMiddleware
 func JWTInitParamas() *jwt.GinJWTMiddleware {
 	return &jwt.GinJWTMiddleware{
 		Realm: func() string {
-			if config.Cfg.API.Realm != "" {
-				return config.Cfg.API.Realm
+			if config.Get().API.Realm != "" {
+				return config.Get().API.Realm
 			} else {
 				return "manyacg"
 			}
 		}(),
-		Key:        []byte(config.Cfg.API.Secret),
-		Timeout:    time.Minute * time.Duration(config.Cfg.API.TokenExpire),
-		MaxRefresh: time.Hour * time.Duration(config.Cfg.API.RefreshTokenExpire),
+		Key:        []byte(config.Get().API.Secret),
+		Timeout:    time.Minute * time.Duration(config.Get().API.TokenExpire),
+		MaxRefresh: time.Hour * time.Duration(config.Get().API.RefreshTokenExpire),
 		Unauthorized: func(c *gin.Context, code int, message string) {
 			c.JSON(code, gin.H{
 				"status":  code,

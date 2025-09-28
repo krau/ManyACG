@@ -7,9 +7,9 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/krau/ManyACG/common"
+	"github.com/krau/ManyACG/internal/common"
+	"github.com/krau/ManyACG/internal/intf/telegram/utils"
 	"github.com/krau/ManyACG/service"
-	"github.com/krau/ManyACG/telegram/utils"
 	"github.com/krau/ManyACG/types"
 
 	"github.com/mymmrac/telego"

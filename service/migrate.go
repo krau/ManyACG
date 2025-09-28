@@ -6,9 +6,9 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/krau/ManyACG/common"
-	"github.com/krau/ManyACG/config"
 	"github.com/krau/ManyACG/dao"
+	"github.com/krau/ManyACG/internal/common"
+	"github.com/krau/ManyACG/internal/infra/config"
 
 	"github.com/krau/ManyACG/types"
 
@@ -72,7 +72,7 @@ func ProcessPicturesHashAndSizeAndUpdate(ctx context.Context, bot *telego.Bot, m
 // 		return err
 // 	}
 // 	defer session.EndSession(ctx)
-// 	migrateDir := config.Cfg.Storage.CacheDir + "/migrate/"
+// 	migrateDir := config.Get().Storage.CacheDir + "/migrate/"
 // 	_, err = session.WithTransaction(ctx, func(ctx mongo.SessionContext) (interface{}, error) {
 // 		fileBytes, err := storage.GetFile(ctx, picture.StorageInfo.Original)
 // 		if err != nil {
@@ -95,7 +95,7 @@ func ProcessPicturesHashAndSizeAndUpdate(ctx context.Context, bot *telego.Bot, m
 // 		}()
 // 		basePath := fmt.Sprintf("%s/%s", artwork.SourceType, artwork.Artist.UID)
 // 		regularStoragePath := fmt.Sprintf("/regular/%s/%s", basePath, picture.ID.Hex()+"_regular.webp")
-// 		regularDetail, err := storage.Save(ctx, regularPath, regularStoragePath, types.StorageType(config.Cfg.Storage.RegularType))
+// 		regularDetail, err := storage.Save(ctx, regularPath, regularStoragePath, types.StorageType(config.Get().Storage.RegularType))
 // 		if err != nil {
 // 			return nil, err
 // 		}
@@ -112,7 +112,7 @@ func ProcessPicturesHashAndSizeAndUpdate(ctx context.Context, bot *telego.Bot, m
 // 			common.PurgeFile(thumbPath)
 // 		}()
 // 		thumbStoragePath := fmt.Sprintf("/thumb/%s/%s", basePath, picture.ID.Hex()+"_thumb.webp")
-// 		thumbDetail, err := storage.Save(ctx, thumbPath, thumbStoragePath, types.StorageType(config.Cfg.Storage.ThumbType))
+// 		thumbDetail, err := storage.Save(ctx, thumbPath, thumbStoragePath, types.StorageType(config.Get().Storage.ThumbType))
 // 		if err != nil {
 // 			return nil, err
 // 		}
@@ -173,8 +173,8 @@ func FixTwitterArtists(ctx context.Context, bot *telego.Bot, message *telego.Mes
 		SetCommonRetryBackoffInterval(1*time.Second, 5*time.Second).
 		SetCommonRetryFixedInterval(2 * time.Second).
 		EnableDebugLog()
-	if config.Cfg.Source.Proxy != "" {
-		client.SetProxyURL(config.Cfg.Source.Proxy)
+	if config.Get().Source.Proxy != "" {
+		client.SetProxyURL(config.Get().Source.Proxy)
 	}
 	sendMessage := bot != nil && message != nil
 
@@ -222,7 +222,7 @@ func FixTwitterArtists(ctx context.Context, bot *telego.Bot, message *telego.Mes
 		return
 	}
 	defer cursor.Close(ctx)
-	apiBase := fmt.Sprintf("https://api.%s/", config.Cfg.Source.Twitter.FxTwitterDomain)
+	apiBase := fmt.Sprintf("https://api.%s/", config.Get().Source.Twitter.FxTwitterDomain)
 	type ArtistResp struct {
 		Code    int    `json:"code"`
 		Message string `json:"message"`

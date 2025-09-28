@@ -17,7 +17,7 @@ package alist
 
 // func refreshJwtToken(client *req.Client) {
 // 	for {
-// 		time.Sleep(time.Duration(config.Cfg.Storage.Alist.TokenExpire) * time.Second)
+// 		time.Sleep(time.Duration(config.Get().Storage.Alist.TokenExpire) * time.Second)
 // 		token, err := getJwtToken(context.Background())
 // 		if err != nil {
 // 			common.Logger.Errorf("Failed to refresh jwt token: %v", err)

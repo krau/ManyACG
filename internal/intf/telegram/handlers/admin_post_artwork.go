@@ -1,25 +1,23 @@
 package handlers
 
 import (
-	"bufio"
-	"bytes"
 	"context"
 	"errors"
 	"fmt"
-	"io"
 	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
 
-	"github.com/krau/ManyACG/common"
-	"github.com/krau/ManyACG/common/imgtool"
-	"github.com/krau/ManyACG/config"
-	"github.com/krau/ManyACG/errs"
+	"github.com/krau/ManyACG/internal/common"
+	"github.com/krau/ManyACG/internal/common/errs"
+	"github.com/krau/ManyACG/internal/infra/config"
+	"github.com/krau/ManyACG/internal/infra/source"
+	"github.com/krau/ManyACG/internal/pkg/imgtool"
 
+	"github.com/krau/ManyACG/internal/infra/storage"
+	"github.com/krau/ManyACG/internal/intf/telegram/utils"
 	"github.com/krau/ManyACG/service"
-	"github.com/krau/ManyACG/storage"
-	"github.com/krau/ManyACG/telegram/utils"
 	"github.com/krau/ManyACG/types"
 
 	"github.com/mymmrac/telego"
@@ -219,7 +217,7 @@ func PostArtworkCommand(ctx *telegohandler.Context, message telego.Message) erro
 		}
 	}
 	if len(args) > 0 {
-		sourceURL = sources.FindSourceURL(args[0])
+		sourceURL = source.FindSourceURL(args[0])
 	}
 	if sourceURL == "" {
 		utils.ReplyMessage(ctx, ctx.Bot(), message, "不支持的链接")
@@ -558,148 +556,149 @@ func downloadAndCompressArtwork(ctx context.Context, artwork *types.Artwork, sta
 		if err != nil {
 			common.Logger.Warnf("压缩图片失败: %s", err)
 		}
-		cachePath := filepath.Join(config.Cfg.Storage.CacheDir, "image", common.MD5Hash(picture.Original))
-		go common.MkCache(cachePath, tempFile, time.Duration(config.Cfg.Storage.CacheTTL)*time.Second)
+		cachePath := filepath.Join(config.Get().Storage.CacheDir, "image", common.MD5Hash(picture.Original))
+		go common.MkCache(cachePath, tempFile, time.Duration(config.Get().Storage.CacheTTL)*time.Second)
 	}
 }
 
 func BatchPostArtwork(ctx *telegohandler.Context, message telego.Message) error {
-	if !CheckPermissionInGroup(ctx, message, types.PermissionPostArtwork) {
-		utils.ReplyMessage(ctx, ctx.Bot(), message, "你没有发布作品的权限")
-		return nil
-	}
-	if message.ReplyToMessage == nil || message.ReplyToMessage.Document == nil {
-		utils.ReplyMessage(ctx, ctx.Bot(), message, "请回复一个批量作品链接的文件")
-		return nil
-	}
+	// if !CheckPermissionInGroup(ctx, message, types.PermissionPostArtwork) {
+	// 	utils.ReplyMessage(ctx, ctx.Bot(), message, "你没有发布作品的权限")
+	// 	return nil
+	// }
+	// if message.ReplyToMessage == nil || message.ReplyToMessage.Document == nil {
+	// 	utils.ReplyMessage(ctx, ctx.Bot(), message, "请回复一个批量作品链接的文件")
+	// 	return nil
+	// }
 
-	count, startIndex, sleepTime := 10, 0, 1
-	_, _, args := telegoutil.ParseCommand(message.Text)
-	if len(args) >= 1 {
-		var err error
-		count, err = strconv.Atoi(args[0])
-		if err != nil {
-			utils.ReplyMessage(ctx, ctx.Bot(), message, "参数错误"+err.Error())
-			return nil
-		}
-	}
-	if len(args) >= 2 {
-		var err error
-		startIndex, err = strconv.Atoi(args[1])
-		if err != nil {
-			utils.ReplyMessage(ctx, ctx.Bot(), message, "参数错误"+err.Error())
-			return nil
-		}
-	}
+	// count, startIndex, sleepTime := 10, 0, 1
+	// _, _, args := telegoutil.ParseCommand(message.Text)
+	// if len(args) >= 1 {
+	// 	var err error
+	// 	count, err = strconv.Atoi(args[0])
+	// 	if err != nil {
+	// 		utils.ReplyMessage(ctx, ctx.Bot(), message, "参数错误"+err.Error())
+	// 		return nil
+	// 	}
+	// }
+	// if len(args) >= 2 {
+	// 	var err error
+	// 	startIndex, err = strconv.Atoi(args[1])
+	// 	if err != nil {
+	// 		utils.ReplyMessage(ctx, ctx.Bot(), message, "参数错误"+err.Error())
+	// 		return nil
+	// 	}
+	// }
 
-	if len(args) >= 3 {
-		var err error
-		sleepTime, err = strconv.Atoi(args[2])
-		if err != nil {
-			utils.ReplyMessage(ctx, ctx.Bot(), message, "参数错误"+err.Error())
-			return nil
-		}
-	}
+	// if len(args) >= 3 {
+	// 	var err error
+	// 	sleepTime, err = strconv.Atoi(args[2])
+	// 	if err != nil {
+	// 		utils.ReplyMessage(ctx, ctx.Bot(), message, "参数错误"+err.Error())
+	// 		return nil
+	// 	}
+	// }
 
-	tgFile, err := ctx.Bot().GetFile(ctx, &telego.GetFileParams{
-		FileID: message.ReplyToMessage.Document.FileID,
-	})
-	if err != nil {
-		utils.ReplyMessage(ctx, ctx.Bot(), message, "获取文件失败: "+err.Error())
-		return nil
-	}
-	file, err := telegoutil.DownloadFile(ctx.Bot().FileDownloadURL(tgFile.FilePath))
-	if err != nil {
-		utils.ReplyMessage(ctx, ctx.Bot(), message, "下载文件失败: "+err.Error())
-		return nil
-	}
+	// tgFile, err := ctx.Bot().GetFile(ctx, &telego.GetFileParams{
+	// 	FileID: message.ReplyToMessage.Document.FileID,
+	// })
+	// if err != nil {
+	// 	utils.ReplyMessage(ctx, ctx.Bot(), message, "获取文件失败: "+err.Error())
+	// 	return nil
+	// }
+	// file, err := telegoutil.DownloadFile(ctx.Bot().FileDownloadURL(tgFile.FilePath))
+	// if err != nil {
+	// 	utils.ReplyMessage(ctx, ctx.Bot(), message, "下载文件失败: "+err.Error())
+	// 	return nil
+	// }
 
-	callbackMessage, err := utils.ReplyMessage(ctx, ctx.Bot(), message, fmt.Sprintf("开始发布作品...\n总数: %d\n起始索引: %d\n间隔时间: %d秒", count, startIndex, sleepTime))
-	if err != nil {
-		common.Logger.Warnf("回复消息失败: %s", err)
-		callbackMessage = nil
-	}
+	// callbackMessage, err := utils.ReplyMessage(ctx, ctx.Bot(), message, fmt.Sprintf("开始发布作品...\n总数: %d\n起始索引: %d\n间隔时间: %d秒", count, startIndex, sleepTime))
+	// if err != nil {
+	// 	common.Logger.Warnf("回复消息失败: %s", err)
+	// 	callbackMessage = nil
+	// }
 
-	reader := bufio.NewReader(bytes.NewReader(file))
-	sourceURLs := make([]string, 0)
+	// reader := bufio.NewReader(bytes.NewReader(file))
+	// sourceURLs := make([]string, 0)
 
-	for i := 0; i < startIndex; i++ {
-		_, err := reader.ReadString('\n')
-		if err == io.EOF {
-			utils.ReplyMessage(ctx, ctx.Bot(), message, "起始索引超出文件行数")
-			return nil
-		}
-		if err != nil {
-			utils.ReplyMessage(ctx, ctx.Bot(), message, "读取文件失败: "+err.Error())
-			return nil
-		}
-	}
+	// for i := 0; i < startIndex; i++ {
+	// 	_, err := reader.ReadString('\n')
+	// 	if err == io.EOF {
+	// 		utils.ReplyMessage(ctx, ctx.Bot(), message, "起始索引超出文件行数")
+	// 		return nil
+	// 	}
+	// 	if err != nil {
+	// 		utils.ReplyMessage(ctx, ctx.Bot(), message, "读取文件失败: "+err.Error())
+	// 		return nil
+	// 	}
+	// }
 
-	for i := startIndex; i < count+startIndex; i++ {
-		text, err := reader.ReadString('\n')
-		if err == io.EOF {
-			utils.ReplyMessage(ctx, ctx.Bot(), message, "文件已读取完毕")
-			break
-		}
-		if err != nil {
-			utils.ReplyMessage(ctx, ctx.Bot(), message, "读取文件失败: "+err.Error())
-			return nil
-		}
-		sourceURL := sources.FindSourceURL(text)
-		if sourceURL == "" {
-			common.Logger.Warnf("不支持的链接: %s", text)
-			continue
-		}
-		sourceURLs = append(sourceURLs, sourceURL)
-	}
+	// for i := startIndex; i < count+startIndex; i++ {
+	// 	text, err := reader.ReadString('\n')
+	// 	if err == io.EOF {
+	// 		utils.ReplyMessage(ctx, ctx.Bot(), message, "文件已读取完毕")
+	// 		break
+	// 	}
+	// 	if err != nil {
+	// 		utils.ReplyMessage(ctx, ctx.Bot(), message, "读取文件失败: "+err.Error())
+	// 		return nil
+	// 	}
+	// 	sourceURL := source.FindSourceURL(text)
+	// 	if sourceURL == "" {
+	// 		common.Logger.Warnf("不支持的链接: %s", text)
+	// 		continue
+	// 	}
+	// 	sourceURLs = append(sourceURLs, sourceURL)
+	// }
 
-	failed := 0
-	for i, sourceURL := range sourceURLs {
-		if callbackMessage != nil {
-			if i == 0 || i%10 == 0 {
-				ctx.Bot().EditMessageText(ctx, &telego.EditMessageTextParams{
-					ChatID:    message.Chat.ChatID(),
-					MessageID: callbackMessage.MessageID,
-					Text:      fmt.Sprintf("总数: %d\n起始索引: %d\n间隔时间: %d秒\n已处理: %d\n失败: %d", count, startIndex, sleepTime, i, failed),
-				})
-			}
-		}
-		common.Logger.Infof("posting artwork: %s", sourceURL)
+	// failed := 0
+	// for i, sourceURL := range sourceURLs {
+	// 	if callbackMessage != nil {
+	// 		if i == 0 || i%10 == 0 {
+	// 			ctx.Bot().EditMessageText(ctx, &telego.EditMessageTextParams{
+	// 				ChatID:    message.Chat.ChatID(),
+	// 				MessageID: callbackMessage.MessageID,
+	// 				Text:      fmt.Sprintf("总数: %d\n起始索引: %d\n间隔时间: %d秒\n已处理: %d\n失败: %d", count, startIndex, sleepTime, i, failed),
+	// 			})
+	// 		}
+	// 	}
+	// 	common.Logger.Infof("posting artwork: %s", sourceURL)
 
-		artwork, _ := service.GetArtworkByURL(ctx, sourceURL)
-		if artwork != nil {
-			common.Logger.Debugf("作品已存在: %s", sourceURL)
-			failed++
-			continue
-		}
-		cachedArtwork, _ := service.GetCachedArtworkByURL(ctx, sourceURL)
-		if cachedArtwork != nil {
-			artwork = cachedArtwork.Artwork
-		} else {
-			artwork, err = sources.GetArtworkInfo(sourceURL)
-			if err != nil {
-				common.Logger.Errorf("获取作品信息失败: %s", err)
-				failed++
-				utils.ReplyMessage(ctx, ctx.Bot(), message, fmt.Sprintf("获取 %s 信息失败: %s", sourceURL, err))
-				continue
-			}
-		}
-		if err := utils.PostAndCreateArtwork(ctx, artwork, ctx.Bot(), message.Chat.ID, message.MessageID); err != nil {
-			common.Logger.Errorf("发布失败: %s", err)
-			failed++
-			utils.ReplyMessage(ctx, ctx.Bot(), message, fmt.Sprintf("发布 %s 失败: %s", sourceURL, err))
-			continue
-		}
-		time.Sleep(time.Duration(sleepTime) * time.Second)
-	}
-	if callbackMessage != nil {
-		text := fmt.Sprintf("发布完成\n\n总数: %d\n起始索引: %d\n已处理: %d\n失败: %d", count, startIndex, count, failed)
-		ctx.Bot().EditMessageText(ctx, &telego.EditMessageTextParams{
-			ChatID:    message.Chat.ChatID(),
-			MessageID: callbackMessage.MessageID,
-			Text:      text,
-		})
-	}
-	utils.ReplyMessage(ctx, ctx.Bot(), message, "批量发布作品完成")
-	return nil
+	// 	artwork, _ := service.GetArtworkByURL(ctx, sourceURL)
+	// 	if artwork != nil {
+	// 		common.Logger.Debugf("作品已存在: %s", sourceURL)
+	// 		failed++
+	// 		continue
+	// 	}
+	// 	cachedArtwork, _ := service.GetCachedArtworkByURL(ctx, sourceURL)
+	// 	if cachedArtwork != nil {
+	// 		artwork = cachedArtwork.Artwork
+	// 	} else {
+	// 		artwork, err = source.GetArtworkInfo(sourceURL)
+	// 		if err != nil {
+	// 			common.Logger.Errorf("获取作品信息失败: %s", err)
+	// 			failed++
+	// 			utils.ReplyMessage(ctx, ctx.Bot(), message, fmt.Sprintf("获取 %s 信息失败: %s", sourceURL, err))
+	// 			continue
+	// 		}
+	// 	}
+	// 	if err := utils.PostAndCreateArtwork(ctx, artwork, ctx.Bot(), message.Chat.ID, message.MessageID); err != nil {
+	// 		common.Logger.Errorf("发布失败: %s", err)
+	// 		failed++
+	// 		utils.ReplyMessage(ctx, ctx.Bot(), message, fmt.Sprintf("发布 %s 失败: %s", sourceURL, err))
+	// 		continue
+	// 	}
+	// 	time.Sleep(time.Duration(sleepTime) * time.Second)
+	// }
+	// if callbackMessage != nil {
+	// 	text := fmt.Sprintf("发布完成\n\n总数: %d\n起始索引: %d\n已处理: %d\n失败: %d", count, startIndex, count, failed)
+	// 	ctx.Bot().EditMessageText(ctx, &telego.EditMessageTextParams{
+	// 		ChatID:    message.Chat.ChatID(),
+	// 		MessageID: callbackMessage.MessageID,
+	// 		Text:      text,
+	// 	})
+	// }
+	// utils.ReplyMessage(ctx, ctx.Bot(), message, "批量发布作品完成")
+	// return nil
+	panic("not implemented")
 }

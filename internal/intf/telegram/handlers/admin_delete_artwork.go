@@ -5,11 +5,12 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/krau/ManyACG/common"
+	"github.com/krau/ManyACG/internal/common"
+	sources "github.com/krau/ManyACG/internal/infra/source"
+	"github.com/krau/ManyACG/internal/infra/storage"
+	"github.com/krau/ManyACG/internal/intf/telegram/utils"
+	"github.com/krau/ManyACG/pkg/strutil"
 	"github.com/krau/ManyACG/service"
-	"github.com/krau/ManyACG/sources"
-	"github.com/krau/ManyACG/storage"
-	"github.com/krau/ManyACG/telegram/utils"
 	"github.com/krau/ManyACG/types"
 
 	"github.com/mymmrac/telego"
@@ -34,7 +35,7 @@ func DeleteArtwork(ctx *telegohandler.Context, message telego.Message) error {
 [管理员] <b>使用 /delete 命令回复一条包含作品链接的消息, 或在参数中提供作品链接, 将删除该作品</b>
 
 命令语法: %s
-`, common.EscapeHTML("/delete [作品链接]"))
+`, strutil.EscapeHTML("/delete [作品链接]"))
 	if sourceURL == "" {
 		utils.ReplyMessageWithHTML(ctx, ctx.Bot(), message, helpText)
 		return nil

@@ -10,13 +10,14 @@ import (
 	"strings"
 	"time"
 
-	"github.com/krau/ManyACG/common"
-	"github.com/krau/ManyACG/common/imgtool"
-	"github.com/krau/ManyACG/config"
+	"github.com/krau/ManyACG/internal/common"
+	"github.com/krau/ManyACG/internal/infra/config"
+	sources "github.com/krau/ManyACG/internal/infra/source"
+	"github.com/krau/ManyACG/internal/infra/storage"
+	"github.com/krau/ManyACG/internal/intf/telegram/utils"
+	"github.com/krau/ManyACG/internal/pkg/imgtool"
+	"github.com/krau/ManyACG/pkg/strutil"
 	"github.com/krau/ManyACG/service"
-	"github.com/krau/ManyACG/sources"
-	"github.com/krau/ManyACG/storage"
-	"github.com/krau/ManyACG/telegram/utils"
 	"github.com/krau/ManyACG/types"
 
 	"github.com/mymmrac/telego"
@@ -61,7 +62,7 @@ func GetPictureFile(ctx *telegohandler.Context, message telego.Message) error {
 <b>使用 /files 命令回复一条含有图片或支持的链接的消息, 或在参数中提供作品链接, 将发送作品全部原图文件</b>
 
 命令语法: %s
-`, common.EscapeHTML("/files [作品链接]"))
+`, strutil.EscapeHTML("/files [作品链接]"))
 			utils.ReplyMessageWithHTML(ctx, ctx.Bot(), message, helpText)
 			return nil
 		}
@@ -179,7 +180,7 @@ func getArtworkFiles(ctx context.Context, bot *telego.Bot, message telego.Messag
 			}
 			return document, nil
 		}
-		maxRetry := config.Cfg.Telegram.Retry.MaxAttempts
+		maxRetry := config.Get().Telegram.Retry.MaxAttempts
 		for retryCount := range maxRetry {
 			document, err := buildDocument()
 			if err != nil {
@@ -189,7 +190,7 @@ func getArtworkFiles(ctx context.Context, bot *telego.Bot, message telego.Messag
 			if err != nil {
 				var apiErr *telegoapi.Error
 				if errors.As(err, &apiErr) && apiErr.ErrorCode == 429 && apiErr.Parameters != nil {
-					retryAfter := apiErr.Parameters.RetryAfter + (retryCount * int(config.Cfg.Telegram.Sleep))
+					retryAfter := apiErr.Parameters.RetryAfter + (retryCount * int(config.Get().Telegram.Sleep))
 					common.Logger.Warnf("Rate limited, retry after %d seconds", retryAfter)
 					time.Sleep(time.Duration(retryAfter) * time.Second)
 					continue

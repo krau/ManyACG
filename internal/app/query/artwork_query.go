@@ -1,6 +1,9 @@
 package query
 
 import (
+	"context"
+
+	"github.com/krau/ManyACG/internal/common/decorator"
 	"github.com/krau/ManyACG/internal/shared"
 )
 
@@ -41,7 +44,7 @@ type ArtworkQueryResult struct {
 	Pictures    []*PictureInfo    `json:"pictures"`
 }
 
-type ArtworkListQuery struct {
+type ArtworkSearchQuery struct {
 	R18      shared.R18Type
 	ArtistID string
 	Tags     [][]string // AND of OR tags
@@ -52,4 +55,28 @@ type ArtworkListQuery struct {
 	Offset   int
 }
 
-type ArtworkListQueryResult = []*ArtworkQueryResult
+type ArtworkSearchQueryResult = []*ArtworkQueryResult
+
+type ArtworkQueryHandler decorator.QueryHandler[ArtworkQuery, *ArtworkQueryResult]
+
+type ArtworkQueryRepo interface {
+	FindByID(ctx context.Context, id string) (*ArtworkQueryResult, error)
+	FindByURL(ctx context.Context, url string) (*ArtworkQueryResult, error)
+	List(ctx context.Context, query ArtworkSearchQuery) (ArtworkSearchQueryResult, error)
+	Count(ctx context.Context, query ArtworkSearchQuery) (int, error)
+}
+
+type artworkQueryHandler struct {
+	queryRepo ArtworkQueryRepo
+}
+
+// Handle implements ArtworkQueryHandler.
+func (a *artworkQueryHandler) Handle(ctx context.Context, query ArtworkQuery) (*ArtworkQueryResult, error) {
+	panic("unimplemented")
+}
+
+func NewArtworkQueryHandler(queryRepo ArtworkQueryRepo) ArtworkQueryHandler {
+	return &artworkQueryHandler{
+		queryRepo: queryRepo,
+	}
+}

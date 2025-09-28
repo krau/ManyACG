@@ -4,10 +4,10 @@ import (
 	"slices"
 
 	"github.com/krau/ManyACG/adapter"
-	"github.com/krau/ManyACG/common"
 	"github.com/krau/ManyACG/dao"
-	"github.com/krau/ManyACG/errs"
-	"github.com/krau/ManyACG/sources"
+	"github.com/krau/ManyACG/internal/common"
+	"github.com/krau/ManyACG/internal/common/errs"
+	sources "github.com/krau/ManyACG/internal/infra/source"
 
 	"context"
 	"errors"

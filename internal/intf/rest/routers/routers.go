@@ -11,7 +11,7 @@ import (
 	"github.com/krau/ManyACG/api/restful/routers/picture"
 	"github.com/krau/ManyACG/api/restful/routers/tag"
 	"github.com/krau/ManyACG/api/restful/routers/user"
-	"github.com/krau/ManyACG/config"
+	"github.com/krau/ManyACG/internal/infra/config"
 
 	jwt "github.com/appleboy/gin-jwt/v2"
 	"github.com/gin-gonic/gin"
@@ -20,7 +20,7 @@ import (
 func RegisterAllRouters(r *gin.RouterGroup, authMiddleware *jwt.GinJWTMiddleware) {
 	r.Use(middleware.CheckAdminKey)
 
-	if config.Cfg.API.MustKey {
+	if config.Get().API.MustKey {
 		r.Use(middleware.AdminKeyRequired)
 	}
 

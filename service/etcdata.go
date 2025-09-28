@@ -4,8 +4,8 @@ import (
 	"context"
 	"errors"
 
-	"github.com/krau/ManyACG/common"
 	"github.com/krau/ManyACG/dao"
+	"github.com/krau/ManyACG/internal/common"
 
 	"go.mongodb.org/mongo-driver/mongo"
 )

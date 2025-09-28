@@ -64,7 +64,7 @@ func (d *Danbooru) MatchesSourceURL(text string) (string, bool) {
 
 // func (d *Danbooru) Config() *config.SourceCommonConfig {
 // 	return &config.SourceCommonConfig{
-// 		Enable:   config.Cfg.Source.Danbooru.Enable,
+// 		Enable:   config.Get().Source.Danbooru.Enable,
 // 		Intervel: -1,
 // 	}
 // }

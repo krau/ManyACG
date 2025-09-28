@@ -81,7 +81,7 @@ func (w *Webdav) GetFile(ctx context.Context, detail *shared.StorageDetail) ([]b
 }
 
 // func (w *Webdav) GetFileStream(ctx context.Context, detail *shared.StorageDetail) (io.ReadCloser, error) {
-// 	cachePath := filepath.Join(config.Cfg.Storage.CacheDir, path.Base(detail.Path))
+// 	cachePath := filepath.Join(config.Get().Storage.CacheDir, path.Base(detail.Path))
 // 	file, err := os.Open(cachePath)
 // 	if err == nil {
 // 		return file, nil

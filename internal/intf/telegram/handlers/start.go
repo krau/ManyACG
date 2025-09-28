@@ -3,9 +3,10 @@ package handlers
 import (
 	"strings"
 
-	"github.com/krau/ManyACG/common"
+	"github.com/krau/ManyACG/internal/common"
+	"github.com/krau/ManyACG/internal/intf/telegram/utils"
+	"github.com/krau/ManyACG/pkg/strutil"
 	"github.com/krau/ManyACG/service"
-	"github.com/krau/ManyACG/telegram/utils"
 
 	"github.com/mymmrac/telego"
 	"github.com/mymmrac/telego/telegohandler"
@@ -59,8 +60,8 @@ func Start(ctx *telegohandler.Context, message telego.Message) error {
 			_, err = ctx.Bot().SendMessage(ctx, telegoutil.Messagef(message.Chat.ChatID(),
 				"您的此 Telegram 账号 ( %d ) 将与 ManyACG 账号 %s 绑定\n验证码: <code>%s</code>",
 				userID,
-				common.EscapeHTML(unauthUser.Username),
-				common.EscapeHTML(unauthUser.Code)).
+				strutil.EscapeHTML(unauthUser.Username),
+				strutil.EscapeHTML(unauthUser.Code)).
 				WithParseMode(telego.ModeHTML),
 			)
 			if err != nil {

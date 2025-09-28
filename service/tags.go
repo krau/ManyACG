@@ -6,10 +6,10 @@ import (
 	"fmt"
 
 	"github.com/duke-git/lancet/v2/slice"
-	"github.com/krau/ManyACG/common"
 	"github.com/krau/ManyACG/dao"
-	"github.com/krau/ManyACG/errs"
-	"github.com/krau/ManyACG/storage"
+	"github.com/krau/ManyACG/internal/common"
+	"github.com/krau/ManyACG/internal/common/errs"
+	"github.com/krau/ManyACG/internal/infra/storage"
 	"github.com/krau/ManyACG/types"
 	"github.com/mymmrac/telego"
 	"go.mongodb.org/mongo-driver/bson"

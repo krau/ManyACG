@@ -87,7 +87,7 @@ func (k *Kemono) MatchesSourceURL(text string) (string, bool) {
 
 // func (k *Kemono) Config() *config.SourceCommonConfig {
 // 	return &config.SourceCommonConfig{
-// 		Enable:   config.Cfg.Source.Kemono.Enable,
+// 		Enable:   config.Get().Source.Kemono.Enable,
 // 		Intervel: -1,
 // 	}
 // }

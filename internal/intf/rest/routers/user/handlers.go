@@ -5,7 +5,7 @@ import (
 	"net/http"
 
 	"github.com/krau/ManyACG/api/restful/utils"
-	"github.com/krau/ManyACG/common"
+	"github.com/krau/ManyACG/internal/common"
 	"github.com/krau/ManyACG/types"
 
 	"github.com/krau/ManyACG/service"

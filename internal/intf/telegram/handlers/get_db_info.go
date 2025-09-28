@@ -3,9 +3,9 @@ package handlers
 import (
 	"fmt"
 
-	"github.com/krau/ManyACG/common"
+	"github.com/krau/ManyACG/internal/common"
+	"github.com/krau/ManyACG/internal/intf/telegram/utils"
 	"github.com/krau/ManyACG/service"
-	"github.com/krau/ManyACG/telegram/utils"
 
 	"github.com/mymmrac/telego"
 	"github.com/mymmrac/telego/telegohandler"

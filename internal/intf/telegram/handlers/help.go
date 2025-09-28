@@ -1,11 +1,8 @@
 package handlers
 
 import (
-	"fmt"
-
-	"github.com/krau/ManyACG/common"
+	"github.com/krau/ManyACG/internal/intf/telegram/utils"
 	"github.com/krau/ManyACG/service"
-	"github.com/krau/ManyACG/telegram/utils"
 
 	"github.com/mymmrac/telego"
 	"github.com/mymmrac/telego/telegohandler"
@@ -49,7 +46,7 @@ Inline 查询(在任意聊天框中@本bot)支持同样的参数格式.
 /recaption - 重新生成作品描述
 `
 	}
-	helpText += fmt.Sprintf("\n版本: %s, 构建日期 %s, 提交 %s\nhttps://github.com/krau/ManyACG", common.Version, common.BuildTime, common.Commit[:7])
+	// helpText += fmt.Sprintf("\n版本: %s, 构建日期 %s, 提交 %s\nhttps://github.com/krau/ManyACG", common.Version, common.BuildTime, common.Commit[:7])
 	utils.ReplyMessage(ctx, ctx.Bot(), message, helpText)
 	return nil
 }

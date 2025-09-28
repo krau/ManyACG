@@ -6,8 +6,8 @@ import (
 	"regexp"
 
 	"github.com/krau/ManyACG/api/restful/utils"
-	"github.com/krau/ManyACG/common"
-	"github.com/krau/ManyACG/config"
+	"github.com/krau/ManyACG/internal/common"
+	"github.com/krau/ManyACG/internal/infra/config"
 
 	"github.com/krau/ManyACG/service"
 	"github.com/krau/ManyACG/types"
@@ -109,9 +109,9 @@ func handleSendCode(c *gin.Context) {
 		})
 	case types.AuthMethodEmail:
 		_, err = common.ResendClient.Emails.Send(&resend.SendEmailRequest{
-			From:    config.Cfg.Auth.Resend.From,
+			From:    config.Get().Auth.Resend.From,
 			To:      []string{request.Email},
-			Subject: config.Cfg.Auth.Resend.Subject,
+			Subject: config.Get().Auth.Resend.Subject,
 			Text:    "你的验证码是: " + code + ".\n\n请在 10 分钟内使用, 请勿泄露给他人",
 		})
 		if err != nil {

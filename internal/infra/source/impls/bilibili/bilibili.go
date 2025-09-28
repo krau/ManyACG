@@ -74,7 +74,7 @@ func (b *Bilibili) MatchesSourceURL(text string) (string, bool) {
 
 // func (b *Bilibili) Config() *config.SourceCommonConfig {
 // 	return &config.SourceCommonConfig{
-// 		Enable:   config.Cfg.Source.Bilibili.Enable,
+// 		Enable:   config.Get().Source.Bilibili.Enable,
 // 		Intervel: -1,
 // 	}
 // }

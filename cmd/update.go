@@ -5,7 +5,7 @@ package cmd
 
 // 	"strings"
 
-// 	"github.com/krau/ManyACG/common"
+// 	"github.com/krau/ManyACG/internal/common"
 
 // 	"github.com/blang/semver"
 // 	"github.com/rhysd/go-github-selfupdate/selfupdate"

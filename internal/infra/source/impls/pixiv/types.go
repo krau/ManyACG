@@ -102,8 +102,8 @@ var (
 // 	for i, page := range illustPages.Body {
 // 		pictures = append(pictures, &types.Picture{
 // 			Index:     uint(i),
-// 			Thumbnail: strings.Replace(page.Urls.Small, "i.pximg.net", config.Cfg.Source.Pixiv.Proxy, 1),
-// 			Original:  strings.Replace(page.Urls.Original, "i.pximg.net", config.Cfg.Source.Pixiv.Proxy, 1),
+// 			Thumbnail: strings.Replace(page.Urls.Small, "i.pximg.net", config.Get().Source.Pixiv.Proxy, 1),
+// 			Original:  strings.Replace(page.Urls.Original, "i.pximg.net", config.Get().Source.Pixiv.Proxy, 1),
 // 			Width:     uint(page.Width),
 // 			Height:    uint(page.Height),
 // 		})

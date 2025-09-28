@@ -6,7 +6,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/krau/ManyACG/api/restful/utils"
-	"github.com/krau/ManyACG/common"
+	"github.com/krau/ManyACG/internal/common"
 
 	"github.com/krau/ManyACG/service"
 	"github.com/krau/ManyACG/types"

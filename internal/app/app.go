@@ -12,3 +12,10 @@ type Commands struct {
 }
 
 type Queries struct{}
+
+func NewApplication(commands Commands, queries Queries) *Application {
+	return &Application{
+		Commands: commands,
+		Queries:  queries,
+	}
+}

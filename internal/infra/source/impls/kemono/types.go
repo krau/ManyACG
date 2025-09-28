@@ -137,7 +137,7 @@ func (resp *KemonoPostResp) ToArtwork() (*types.Artwork, error) {
 // 		UID:      creatorResp.ID,
 // 	}
 
-// 	workerCount := config.Cfg.Source.Kemono.Worker
+// 	workerCount := config.Get().Source.Kemono.Worker
 // 	jobs := make(chan struct {
 // 		path  string
 // 		index int

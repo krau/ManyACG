@@ -24,7 +24,7 @@ type ArtworkCreationResult struct {
 	TagIDs     *objectuuid.ObjectUUIDs
 }
 
-type CreateArtworkHandler decorator.CommandHandler[*ArtworkCreation, *ArtworkCreationResult]
+type CreateArtworkHandler decorator.CommandHandler[ArtworkCreation]
 
 type createArtworkHandler struct {
 	txRepo repo.TransactionRepo
@@ -62,8 +62,7 @@ func (h *createArtworkHandler) findOrCreateTag(ctx context.Context, repos *repo.
 	return tagEnt, nil
 }
 
-func (h *createArtworkHandler) Handle(ctx context.Context, cmd *ArtworkCreation) (*ArtworkCreationResult, error) {
-	var result *ArtworkCreationResult
+func (h *createArtworkHandler) Handle(ctx context.Context, cmd ArtworkCreation) error {
 	err := h.txRepo.WithTransaction(ctx, func(repos *repo.TransactionRepos) error {
 		artistEnt, err := h.findOrUpsertArtist(ctx, repos, cmd.Artist)
 		if err != nil {
@@ -86,7 +85,6 @@ func (h *createArtworkHandler) Handle(ctx context.Context, cmd *ArtworkCreation)
 		}
 		artworkID := objectuuid.New()
 		pics := make([]artwork.Picture, 0, len(cmd.Pictures))
-		picIDs := make([]objectuuid.ObjectUUID, 0, len(cmd.Pictures))
 		for i, picInfo := range cmd.Pictures {
 			picID := objectuuid.New()
 			pics = append(pics, artwork.Picture{
@@ -102,7 +100,6 @@ func (h *createArtworkHandler) Handle(ctx context.Context, cmd *ArtworkCreation)
 				TelegramInfo: picInfo.TelegramInfo,
 				StorageInfo:  picInfo.StorageInfo,
 			})
-			picIDs = append(picIDs, picID)
 		}
 		artworkEnt, err := artwork.NewBuilder(artworkID).
 			Title(cmd.Title).
@@ -118,21 +115,15 @@ func (h *createArtworkHandler) Handle(ctx context.Context, cmd *ArtworkCreation)
 		if err != nil {
 			return err
 		}
-		if err := repos.ArtworkRepo.Save(ctx, artworkEnt); err != nil {
-			return err
-		}
-		result = &ArtworkCreationResult{
-			ArtworkID:  artworkEnt.ID,
-			ArtistID:   artistEnt.ID,
-			PictureIDs: objectuuid.NewObjectUUIDs(picIDs...),
-			TagIDs:     tagIDs,
-		}
-		return nil
+		// result = &ArtworkCreationResult{
+		// 	ArtworkID:  artworkEnt.ID,
+		// 	ArtistID:   artistEnt.ID,
+		// 	PictureIDs: objectuuid.NewObjectUUIDs(picIDs...),
+		// 	TagIDs:     tagIDs,
+		// }
+		return repos.ArtworkRepo.Save(ctx, artworkEnt)
 	})
-	if err != nil {
-		return nil, err
-	}
-	return result, nil
+	return err
 }
 
 func NewCreateArtworkHandler(txRepo repo.TransactionRepo) CreateArtworkHandler {

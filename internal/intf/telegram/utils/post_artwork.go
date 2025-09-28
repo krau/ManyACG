@@ -9,13 +9,13 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/krau/ManyACG/common"
-	"github.com/krau/ManyACG/common/imgtool"
-	"github.com/krau/ManyACG/config"
-	"github.com/krau/ManyACG/errs"
+	"github.com/krau/ManyACG/internal/common"
+	"github.com/krau/ManyACG/internal/common/errs"
+	"github.com/krau/ManyACG/internal/infra/config"
+	"github.com/krau/ManyACG/internal/pkg/imgtool"
 
+	"github.com/krau/ManyACG/internal/infra/storage"
 	"github.com/krau/ManyACG/service"
-	"github.com/krau/ManyACG/storage"
 	"github.com/krau/ManyACG/types"
 
 	"github.com/mymmrac/telego"
@@ -47,7 +47,7 @@ func SendArtworkMediaGroup(ctx context.Context, bot *telego.Bot, chatID telego.C
 	}
 	allMessages := make([]telego.Message, len(artwork.Pictures))
 	retryCount := 0
-	maxRetry := config.Cfg.Telegram.Retry.MaxAttempts
+	maxRetry := config.Get().Telegram.Retry.MaxAttempts
 	for i := 0; i < len(artwork.Pictures); i += 10 {
 		end := i + 10
 		if end > len(artwork.Pictures) {
@@ -76,7 +76,7 @@ func SendArtworkMediaGroup(ctx context.Context, bot *telego.Bot, chatID telego.C
 					if retryCount > maxRetry {
 						return nil, fmt.Errorf("rate limited: %w", err)
 					}
-					retryAfter := apiError.Parameters.RetryAfter + (retryCount * int(config.Cfg.Telegram.Sleep))
+					retryAfter := apiError.Parameters.RetryAfter + (retryCount * int(config.Get().Telegram.Sleep))
 					common.Logger.Warnf("Rate limited, retry after %d seconds", retryAfter)
 					time.Sleep(time.Duration(retryAfter) * time.Second)
 					i -= 10
@@ -90,7 +90,7 @@ func SendArtworkMediaGroup(ctx context.Context, bot *telego.Bot, chatID telego.C
 				if retryCount > maxRetry {
 					return nil, fmt.Errorf("rate limited: %w", err)
 				}
-				retryAfter := len(inputMediaPhotos) * int(config.Cfg.Telegram.Sleep)
+				retryAfter := len(inputMediaPhotos) * int(config.Get().Telegram.Sleep)
 				common.Logger.Warnf("Rate limited, retry after %d seconds", retryAfter)
 				time.Sleep(time.Duration(retryAfter) * time.Second)
 				i -= 10
@@ -259,7 +259,7 @@ func afterCreate(ctx context.Context, artwork *types.Artwork, bot *telego.Bot, f
 		service.AddProcessPictureTask(ctx, picture)
 	}
 	checkDuplicate(ctx, artwork, bot, fromID)
-	if common.TaggerClient != nil && config.Cfg.Tagger.TagNew {
+	if common.TaggerClient != nil && config.Get().Tagger.TagNew {
 		go service.AddPredictArtworkTagTask(ctx, objectID, TgService)
 	} else {
 		go recaptionArtwork(ctx, artwork, bot)

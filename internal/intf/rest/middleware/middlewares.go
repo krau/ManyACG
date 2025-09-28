@@ -6,8 +6,8 @@ import (
 
 	jwt "github.com/appleboy/gin-jwt/v2"
 	"github.com/krau/ManyACG/api/restful/utils"
-	"github.com/krau/ManyACG/common"
-	"github.com/krau/ManyACG/config"
+	"github.com/krau/ManyACG/internal/common"
+	"github.com/krau/ManyACG/internal/infra/config"
 
 	"github.com/krau/ManyACG/service"
 
@@ -35,7 +35,7 @@ func Init() {
 	}
 
 	// Init Cache
-	cacheConfig := config.Cfg.API.Cache
+	cacheConfig := config.Get().API.Cache
 	if cacheConfig.Enable {
 		if cacheConfig.Redis {
 			opt, err := redis.ParseURL(cacheConfig.URL)
@@ -53,7 +53,7 @@ func GetCacheDuration(route string) time.Duration {
 	if CacheStore == nil {
 		return time.Second
 	}
-	ttl, ok := config.Cfg.API.Cache.TTL[route]
+	ttl, ok := config.Get().API.Cache.TTL[route]
 	if !ok {
 		return time.Second
 	}
@@ -61,13 +61,13 @@ func GetCacheDuration(route string) time.Duration {
 }
 
 func CheckAdminKey(ctx *gin.Context) {
-	if config.Cfg.Debug {
+	if config.Get().Debug {
 		ctx.Set("auth", true)
 		ctx.Next()
 		return
 	}
 	keyHeader := ctx.GetHeader("X-ADMIN-API-KEY")
-	if keyHeader == config.Cfg.API.Key {
+	if keyHeader == config.Get().API.Key {
 		ctx.Set("auth", true)
 		ctx.Next()
 		return

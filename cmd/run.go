@@ -13,12 +13,12 @@ package cmd
 // 	_ "net/http/pprof"
 
 // 	"github.com/krau/ManyACG/api/restful"
-// 	"github.com/krau/ManyACG/common"
-// 	"github.com/krau/ManyACG/config"
+// 	"github.com/krau/ManyACG/internal/common"
+// 	"github.com/krau/ManyACG/internal/infra/config"
 // 	"github.com/krau/ManyACG/dao"
 // 	"github.com/krau/ManyACG/fetcher"
 // 	"github.com/krau/ManyACG/service"
-// 	"github.com/krau/ManyACG/storage"
+// 	"github.com/krau/ManyACG/internal/infra/storage"
 // 	"github.com/krau/ManyACG/telegram"
 // 	"github.com/krau/ManyACG/webassets"
 // )
@@ -42,7 +42,7 @@ package cmd
 // 	common.Init()
 // 	fmt.Printf(banner, common.BuildTime, common.Version, common.Commit[:7])
 
-// 	if config.Cfg.Debug {
+// 	if config.Get().Debug {
 // 		go func() {
 // 			common.Logger.Info("Start pprof server")
 // 			if err := http.ListenAndServe("localhost:39060", nil); err != nil {
@@ -63,20 +63,20 @@ package cmd
 // 	service.InitService(ctx)
 // 	sources.InitSources(service.NewService())
 // 	storage.InitStorage(ctx)
-// 	if config.Cfg.Telegram.Token != "" {
+// 	if config.Get().Telegram.Token != "" {
 // 		telegram.RunPolling(ctx)
 // 	}
 
 // 	go fetcher.StartScheduler(ctx)
-// 	if config.Cfg.API.Enable {
+// 	if config.Get().API.Enable {
 // 		restful.Run(ctx)
 // 	}
-// 	if config.Cfg.Web.Enable {
+// 	if config.Get().Web.Enable {
 // 		go func() {
 // 			common.Logger.Info("Starting serve web...")
 // 			sm := http.NewServeMux()
 // 			sm.Handle("/", http.FileServer(http.FS(webassets.WebAppFS)))
-// 			if err := http.ListenAndServe(config.Cfg.Web.Address, sm); err != nil {
+// 			if err := http.ListenAndServe(config.Get().Web.Address, sm); err != nil {
 // 				common.Logger.Fatal(err)
 // 			}
 // 		}()
@@ -95,10 +95,10 @@ package cmd
 // }
 
 // func cleanCacheDir() {
-// 	if config.Cfg.Storage.CacheDir != "" && !config.Cfg.Debug {
+// 	if config.Get().Storage.CacheDir != "" && !config.Get().Debug {
 // 		for _, path := range []string{"/", ".", "\\", ".."} {
-// 			if filepath.Clean(config.Cfg.Storage.CacheDir) == path {
-// 				common.Logger.Error("Invalid cache dir: ", config.Cfg.Storage.CacheDir)
+// 			if filepath.Clean(config.Get().Storage.CacheDir) == path {
+// 				common.Logger.Error("Invalid cache dir: ", config.Get().Storage.CacheDir)
 // 				return
 // 			}
 // 		}
@@ -107,7 +107,7 @@ package cmd
 // 			common.Logger.Error(err)
 // 			return
 // 		}
-// 		cachePath := filepath.Join(currentDir, config.Cfg.Storage.CacheDir)
+// 		cachePath := filepath.Join(currentDir, config.Get().Storage.CacheDir)
 // 		cachePath, err = filepath.Abs(cachePath)
 // 		if err != nil {
 // 			common.Logger.Error(err)

@@ -9,12 +9,12 @@ import (
 	"strings"
 
 	"github.com/PuerkitoBio/goquery"
-	"github.com/krau/ManyACG/common"
-	"github.com/krau/ManyACG/common/imgtool"
-	"github.com/krau/ManyACG/config"
+	"github.com/krau/ManyACG/internal/common"
+	"github.com/krau/ManyACG/internal/infra/config"
+	"github.com/krau/ManyACG/internal/pkg/imgtool"
 
+	"github.com/krau/ManyACG/internal/intf/telegram/utils"
 	"github.com/krau/ManyACG/service"
-	"github.com/krau/ManyACG/telegram/utils"
 
 	"github.com/mymmrac/telego"
 	"github.com/mymmrac/telego/telegohandler"
@@ -145,7 +145,7 @@ func getDBSearchResultText(ctx context.Context, file []byte) (string, bool, erro
 		return "", false, fmt.Errorf("搜索图片失败: %w", err)
 	}
 	channelMessageAvailable := ChannelChatID.ID != 0 || ChannelChatID.Username != ""
-	enableSite := config.Cfg.API.SiteURL != ""
+	enableSite := config.Get().API.SiteURL != ""
 	if len(pictures) == 0 {
 		return "未在数据库中找到相似图片", false, nil
 	}
@@ -170,7 +170,7 @@ func getDBSearchResultText(ctx context.Context, file []byte) (string, bool, erro
 			text += fmt.Sprintf("[频道消息](%s)\n", utils.GetArtworkPostMessageURL(picture.TelegramInfo.MessageID, ChannelChatID))
 		}
 		if enableSite {
-			text += fmt.Sprintf("[ManyACG](%s)\n\n", config.Cfg.API.SiteURL+"/artwork/"+artwork.ID)
+			text += fmt.Sprintf("[ManyACG](%s)\n\n", config.Get().API.SiteURL+"/artwork/"+artwork.ID)
 		}
 	}
 	return text, true, nil

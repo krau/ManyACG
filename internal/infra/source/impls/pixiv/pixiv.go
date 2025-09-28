@@ -40,7 +40,7 @@ func init() {
 func (p *Pixiv) FetchNewArtworks(ctx context.Context, limit int) ([]*source.FetchedArtwork, error) {
 	// artworks := make([]*types.Artwork, 0)
 	// errs := make([]error, 0)
-	// for _, url := range config.Cfg.Source.Pixiv.URLs {
+	// for _, url := range config.Get().Source.Pixiv.URLs {
 	// 	artworksForURL, err := fetchNewArtworksForRSSURL(url, limit)
 	// 	if err != nil {
 	// 		errs = append(errs, err)
@@ -80,7 +80,7 @@ func (p *Pixiv) MatchesSourceURL(text string) (string, bool) {
 
 // func (p *Pixiv) Config() *config.SourceCommonConfig {
 // 	return &config.SourceCommonConfig{
-// 		Enable:   config.Cfg.Source.Pixiv.Enable,
-// 		Intervel: config.Cfg.Source.Pixiv.Intervel,
+// 		Enable:   config.Get().Source.Pixiv.Enable,
+// 		Intervel: config.Get().Source.Pixiv.Intervel,
 // 	}
 // }

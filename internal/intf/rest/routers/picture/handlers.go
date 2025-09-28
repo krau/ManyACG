@@ -5,10 +5,10 @@ import (
 	"net/http"
 
 	"github.com/krau/ManyACG/api/restful/utils"
-	"github.com/krau/ManyACG/common"
+	"github.com/krau/ManyACG/internal/common"
 
+	"github.com/krau/ManyACG/internal/infra/storage"
 	"github.com/krau/ManyACG/service"
-	"github.com/krau/ManyACG/storage"
 	"github.com/krau/ManyACG/types"
 
 	"github.com/gabriel-vasile/mimetype"

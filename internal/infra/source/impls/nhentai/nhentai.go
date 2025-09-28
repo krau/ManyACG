@@ -58,7 +58,7 @@ func (n *Nhentai) MatchesSourceURL(text string) (string, bool) {
 
 // func (n *Nhentai) Config() *config.SourceCommonConfig {
 // 	return &config.SourceCommonConfig{
-// 		Enable:   config.Cfg.Source.Nhentai.Enable,
+// 		Enable:   config.Get().Source.Nhentai.Enable,
 // 		Intervel: -1,
 // 	}
 // }

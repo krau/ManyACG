@@ -6,13 +6,14 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/krau/ManyACG/common"
-	"github.com/krau/ManyACG/common/imgtool"
-	"github.com/krau/ManyACG/config"
-	"github.com/krau/ManyACG/errs"
+	"github.com/krau/ManyACG/internal/common"
+	"github.com/krau/ManyACG/internal/common/errs"
+	"github.com/krau/ManyACG/internal/infra/config"
+	sources "github.com/krau/ManyACG/internal/infra/source"
+	"github.com/krau/ManyACG/internal/infra/storage"
+	"github.com/krau/ManyACG/internal/pkg/imgtool"
+	"github.com/krau/ManyACG/pkg/strutil"
 	"github.com/krau/ManyACG/service"
-	"github.com/krau/ManyACG/sources"
-	"github.com/krau/ManyACG/storage"
 	"github.com/krau/ManyACG/types"
 
 	"github.com/mymmrac/telego"
@@ -74,7 +75,7 @@ var tagCharsReplacer = strings.NewReplacer(
 
 // 获取作品的 HTML 格式描述, 已转义
 func GetArtworkHTMLCaption(artwork *types.Artwork) string {
-	caption := fmt.Sprintf("<a href=\"%s\"><b>%s</b></a> / <b>%s</b>", artwork.SourceURL, common.EscapeHTML(artwork.Title), common.EscapeHTML(artwork.Artist.Name))
+	caption := fmt.Sprintf("<a href=\"%s\"><b>%s</b></a> / <b>%s</b>", artwork.SourceURL, strutil.EscapeHTML(artwork.Title), strutil.EscapeHTML(artwork.Artist.Name))
 	if artwork.Description != "" {
 		desc := artwork.Description
 		if len(artwork.Description) > 500 {
@@ -87,7 +88,7 @@ func GetArtworkHTMLCaption(artwork *types.Artwork) string {
 			}
 			desc = desc[:i] + "..."
 		}
-		caption += fmt.Sprintf("\n<blockquote expandable=true>%s</blockquote>", common.EscapeHTML(desc))
+		caption += fmt.Sprintf("\n<blockquote expandable=true>%s</blockquote>", strutil.EscapeHTML(desc))
 	}
 	tags := ""
 	for _, tag := range artwork.Tags {
@@ -95,18 +96,18 @@ func GetArtworkHTMLCaption(artwork *types.Artwork) string {
 			break
 		}
 		tag = tagCharsReplacer.Replace(tag)
-		tags += "#" + strings.TrimSpace(common.EscapeHTML(tag)) + " "
+		tags += "#" + strings.TrimSpace(strutil.EscapeHTML(tag)) + " "
 	}
 	caption += fmt.Sprintf("\n<blockquote expandable=true>%s</blockquote>\n", tags)
 	posted := ChannelChatID.Username != "" && artwork.ID != ""
 	if posted {
-		caption += common.EscapeHTML(ChannelChatID.Username)
+		caption += strutil.EscapeHTML(ChannelChatID.Username)
 	}
-	if artwork.ID != "" && config.Cfg.API.SiteURL != "" {
+	if artwork.ID != "" && config.Get().API.SiteURL != "" {
 		if posted {
 			caption += " | "
 		}
-		caption += fmt.Sprintf("<a href=\"%s/artwork/%s\">在网站查看</a>", config.Cfg.API.SiteURL, artwork.ID)
+		caption += fmt.Sprintf("<a href=\"%s/artwork/%s\">在网站查看</a>", config.Get().API.SiteURL, artwork.ID)
 	}
 	return caption
 }
@@ -156,7 +157,7 @@ func GetPostedPictureInlineKeyboardButton(artwork *types.Artwork, index uint, ch
 	}
 	if (channelChatID.ID == 0 && channelChatID.Username == "") || (artwork.Pictures[index].TelegramInfo == nil || artwork.Pictures[index].TelegramInfo.MessageID == 0) {
 		return []telego.InlineKeyboardButton{
-			telegoutil.InlineKeyboardButton("详情").WithURL(config.Cfg.API.SiteURL + "/artwork/" + artwork.ID),
+			telegoutil.InlineKeyboardButton("详情").WithURL(config.Get().API.SiteURL + "/artwork/" + artwork.ID),
 			telegoutil.InlineKeyboardButton("原图").WithURL(GetDeepLink(botUsername, "file", artwork.Pictures[index].ID)),
 		}
 	}
@@ -167,7 +168,7 @@ func GetPostedPictureInlineKeyboardButton(artwork *types.Artwork, index uint, ch
 }
 
 func GetPostedArtworkInlineKeyboardButton(artwork *types.Artwork, channelChatID telego.ChatID, botUsername string) []telego.InlineKeyboardButton {
-	detailsURL := config.Cfg.API.SiteURL + "/artwork/" + artwork.ID
+	detailsURL := config.Get().API.SiteURL + "/artwork/" + artwork.ID
 	hasValidTelegramInfo := channelChatID.ID != 0 || channelChatID.Username != ""
 	if hasValidTelegramInfo && artwork.Pictures[0].TelegramInfo != nil && artwork.Pictures[0].TelegramInfo.MessageID != 0 {
 		detailsURL = GetArtworkPostMessageURL(artwork.Pictures[0].TelegramInfo.MessageID, channelChatID)

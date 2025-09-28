@@ -7,11 +7,11 @@ import (
 	"strings"
 
 	"github.com/duke-git/lancet/v2/slice"
-	"github.com/krau/ManyACG/common"
+	"github.com/krau/ManyACG/internal/common"
+	sources "github.com/krau/ManyACG/internal/infra/source"
+	"github.com/krau/ManyACG/internal/infra/storage"
+	"github.com/krau/ManyACG/internal/intf/telegram/utils"
 	"github.com/krau/ManyACG/service"
-	"github.com/krau/ManyACG/sources"
-	"github.com/krau/ManyACG/storage"
-	"github.com/krau/ManyACG/telegram/utils"
 	"github.com/krau/ManyACG/types"
 
 	"github.com/mymmrac/telego"

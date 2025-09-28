@@ -4,10 +4,10 @@ import (
 	"net/http"
 
 	"github.com/krau/ManyACG/api/restful/utils"
-	"github.com/krau/ManyACG/common"
-	"github.com/krau/ManyACG/config"
+	"github.com/krau/ManyACG/internal/common"
+	"github.com/krau/ManyACG/internal/infra/config"
+	tgUtils "github.com/krau/ManyACG/internal/intf/telegram/utils"
 	"github.com/krau/ManyACG/telegram"
-	tgUtils "github.com/krau/ManyACG/telegram/utils"
 
 	"github.com/gin-gonic/gin"
 	"github.com/mymmrac/telego"
@@ -15,7 +15,7 @@ import (
 )
 
 func SendArtworkInfo(ctx *gin.Context) {
-	if config.Cfg.Telegram.Token == "" {
+	if config.Get().Telegram.Token == "" {
 		ctx.JSON(http.StatusServiceUnavailable, utils.RestfulCommonResponse[any]{Status: http.StatusServiceUnavailable, Message: "Telegram bot is not available"})
 		return
 	}

@@ -30,7 +30,7 @@ func init() {
 func (t *Twitter) FetchNewArtworks(ctx context.Context, limit int) ([]*source.FetchedArtwork, error) {
 	// artworks := make([]*types.Artwork, 0)
 	// errs := make([]error, 0)
-	// for _, url := range config.Cfg.Source.Twitter.URLs {
+	// for _, url := range config.Get().Source.Twitter.URLs {
 	// 	artworksForURL, err := t.fetchRssURL(url, limit)
 	// 	if err != nil {
 	// 		errs = append(errs, err)
@@ -49,7 +49,7 @@ func (t *Twitter) GetArtworkInfo(ctx context.Context, sourceURL string) (*source
 	// if tweetID == "" {
 	// 	return nil, ErrInvalidURL
 	// }
-	// fxTwitterApiURL := fmt.Sprintf("https://api.%s/_/status/%s", config.Cfg.Source.Twitter.FxTwitterDomain, tweetID)
+	// fxTwitterApiURL := fmt.Sprintf("https://api.%s/_/status/%s", config.Get().Source.Twitter.FxTwitterDomain, tweetID)
 	// resp, err := reqApiResp(fxTwitterApiURL)
 	// if err != nil {
 	// 	return nil, err
@@ -86,8 +86,8 @@ func (t *Twitter) MatchesSourceURL(text string) (string, bool) {
 
 // func (t *Twitter) Config() *config.SourceCommonConfig {
 // 	return &config.SourceCommonConfig{
-// 		Enable:   config.Cfg.Source.Twitter.Enable,
-// 		Intervel: config.Cfg.Source.Twitter.Intervel,
+// 		Enable:   config.Get().Source.Twitter.Enable,
+// 		Intervel: config.Get().Source.Twitter.Intervel,
 // 	}
 
 // }

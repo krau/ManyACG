@@ -5,7 +5,7 @@ package resend
 // var ResendClient *resend.Client
 
 // func initResendClient() {
-// 	if config.Cfg.Auth.Resend.APIKey != "" {
-// 		ResendClient = resend.NewClient(config.Cfg.Auth.Resend.APIKey)
+// 	if config.Get().Auth.Resend.APIKey != "" {
+// 		ResendClient = resend.NewClient(config.Get().Auth.Resend.APIKey)
 // 	}
 // }

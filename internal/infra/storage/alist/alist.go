@@ -88,8 +88,8 @@ func (a *Alist) Save(ctx context.Context, filePath string, storagePath string) (
 	// 	common.Logger.Errorf("failed to save file: %s", fsFormResp.Message)
 	// 	return nil, fmt.Errorf("failed to save file: %s", fsFormResp.Message)
 	// }
-	// cachePath := strings.TrimSuffix(config.Cfg.Storage.CacheDir, "/") + "/" + filepath.Base(storagePath)
-	// go common.MkCache(cachePath, fileBytes, time.Duration(config.Cfg.Storage.CacheTTL)*time.Second)
+	// cachePath := strings.TrimSuffix(config.Get().Storage.CacheDir, "/") + "/" + filepath.Base(storagePath)
+	// go common.MkCache(cachePath, fileBytes, time.Duration(config.Get().Storage.CacheTTL)*time.Second)
 	// return &types.StorageDetail{
 	// 	Type: types.StorageTypeAlist,
 	// 	Path: storagePath,
@@ -99,14 +99,14 @@ func (a *Alist) Save(ctx context.Context, filePath string, storagePath string) (
 
 func (a *Alist) GetFile(ctx context.Context, detail *shared.StorageDetail) ([]byte, error) {
 	// common.Logger.Debugf("Getting file %s", detail.Path)
-	// cachePath := path.Join(config.Cfg.Storage.CacheDir, filepath.Base(detail.Path))
+	// cachePath := path.Join(config.Get().Storage.CacheDir, filepath.Base(detail.Path))
 	// data, err := os.ReadFile(cachePath)
 	// if err == nil {
 	// 	return data, nil
 	// }
 	// resp, err := reqClient.R().SetContext(ctx).SetBodyJsonMarshal(map[string]string{
 	// 	"path":     detail.Path,
-	// 	"password": config.Cfg.Storage.Alist.PathPassword,
+	// 	"password": config.Get().Storage.Alist.PathPassword,
 	// }).Post("/api/fs/get")
 	// if err != nil {
 	// 	common.Logger.Errorf("failed to get file: %s", err)
@@ -127,7 +127,7 @@ func (a *Alist) GetFile(ctx context.Context, detail *shared.StorageDetail) ([]by
 	// 	return nil, err
 	// }
 	// defer func() {
-	// 	go common.RmFileAfter(cachePath, time.Duration(config.Cfg.Storage.CacheTTL)*time.Second)
+	// 	go common.RmFileAfter(cachePath, time.Duration(config.Get().Storage.CacheTTL)*time.Second)
 	// }()
 	// return os.ReadFile(cachePath)
 	panic("not implemented")
@@ -135,14 +135,14 @@ func (a *Alist) GetFile(ctx context.Context, detail *shared.StorageDetail) ([]by
 
 // func (a *Alist) GetFileStream(ctx context.Context, detail *types.StorageDetail) (io.ReadCloser, error) {
 // 	common.Logger.Debugf("Getting file %s", detail.Path)
-// 	cachePath := path.Join(config.Cfg.Storage.CacheDir, filepath.Base(detail.Path))
+// 	cachePath := path.Join(config.Get().Storage.CacheDir, filepath.Base(detail.Path))
 // 	file, err := os.Open(cachePath)
 // 	if err == nil {
 // 		return file, nil
 // 	}
 // 	resp, err := reqClient.R().SetContext(ctx).SetBodyJsonMarshal(map[string]string{
 // 		"path":     detail.Path,
-// 		"password": config.Cfg.Storage.Alist.PathPassword,
+// 		"password": config.Get().Storage.Alist.PathPassword,
 // 	}).Post("/api/fs/get")
 // 	if err != nil {
 // 		common.Logger.Errorf("failed to get file: %s", err)

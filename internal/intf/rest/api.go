@@ -8,8 +8,8 @@ import (
 
 	"github.com/krau/ManyACG/api/restful/middleware"
 	"github.com/krau/ManyACG/api/restful/routers"
-	"github.com/krau/ManyACG/common"
-	"github.com/krau/ManyACG/config"
+	"github.com/krau/ManyACG/internal/common"
+	"github.com/krau/ManyACG/internal/infra/config"
 
 	"github.com/penglongli/gin-metrics/ginmetrics"
 
@@ -18,7 +18,7 @@ import (
 )
 
 func Run(ctx context.Context) {
-	if config.Cfg.Debug {
+	if config.Get().Debug {
 		gin.SetMode(gin.DebugMode)
 	} else {
 		gin.SetMode(gin.ReleaseMode)
@@ -26,7 +26,7 @@ func Run(ctx context.Context) {
 
 	r := gin.Default()
 
-	if config.Cfg.API.Metrics {
+	if config.Get().API.Metrics {
 		metrics := ginmetrics.GetMonitor()
 		metrics.SetMetricPath("/metrics")
 		metrics.Use(r)
@@ -35,11 +35,11 @@ func Run(ctx context.Context) {
 	corsConfig := cors.DefaultConfig()
 	corsConfig.AllowCredentials = true
 	corsConfig.AllowHeaders = append(corsConfig.AllowHeaders, "Authorization")
-	if config.Cfg.Debug {
+	if config.Get().Debug {
 		fmt.Println("Allowing all origins in debug mode")
 		corsConfig.AllowAllOrigins = true
 	} else {
-		corsConfig.AllowOrigins = config.Cfg.API.AllowedOrigins
+		corsConfig.AllowOrigins = config.Get().API.AllowedOrigins
 	}
 
 	r.Use(cors.New(corsConfig))
@@ -50,7 +50,7 @@ func Run(ctx context.Context) {
 	routers.RegisterAllRouters(v1, middleware.JWTAuthMiddleware)
 
 	server := &http.Server{
-		Addr:    config.Cfg.API.Address,
+		Addr:    config.Get().API.Address,
 		Handler: r,
 	}
 

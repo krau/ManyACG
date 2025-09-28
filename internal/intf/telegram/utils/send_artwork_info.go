@@ -8,10 +8,11 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/krau/ManyACG/common"
-	"github.com/krau/ManyACG/common/imgtool"
-	"github.com/krau/ManyACG/errs"
-	"github.com/krau/ManyACG/sources"
+	"github.com/krau/ManyACG/internal/common"
+	"github.com/krau/ManyACG/internal/common/errs"
+	"github.com/krau/ManyACG/internal/infra/source"
+	"github.com/krau/ManyACG/internal/pkg/imgtool"
+	"github.com/krau/ManyACG/pkg/strutil"
 
 	"github.com/krau/ManyACG/service"
 	"github.com/krau/ManyACG/types"
@@ -37,7 +38,7 @@ func SendArtworkInfo(ctx context.Context, bot *telego.Bot, params *SendArtworkIn
 	}
 	if params.Verify {
 		originSourceURL := params.SourceURL
-		params.SourceURL = sources.FindSourceURL(originSourceURL)
+		params.SourceURL = source.FindSourceURL(originSourceURL)
 		if params.SourceURL == "" {
 			return fmt.Errorf("无效的链接: %s", originSourceURL)
 		}
@@ -74,7 +75,7 @@ func SendArtworkInfo(ctx context.Context, bot *telego.Bot, params *SendArtworkIn
 
 	caption := GetArtworkHTMLCaption(artwork) + fmt.Sprintf("\n<i>该作品共有%d张图片</i>", len(artwork.Pictures))
 	if deleteModel != nil {
-		caption += fmt.Sprintf("\n<i>这是一个在 %s 删除的作品\n如果发布则会取消删除</i>", common.EscapeHTML(deleteModel.DeletedAt.Time().Format("2006-01-02 15:04:05")))
+		caption += fmt.Sprintf("\n<i>这是一个在 %s 删除的作品\n如果发布则会取消删除</i>", strutil.EscapeHTML(deleteModel.DeletedAt.Time().Format("2006-01-02 15:04:05")))
 	}
 
 	replyMarkup, err := getArtworkInfoReplyMarkup(ctx, artwork, isCreated, params.HasPermission)

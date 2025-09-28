@@ -69,8 +69,8 @@ func reqIllustPages(sourceURL string) (*PixivIllustPages, error) {
 // 			continue
 // 		}
 // 		artworkCh <- artwork
-// 		if config.Cfg.Source.Pixiv.Sleep > 0 {
-// 			time.Sleep(time.Duration(config.Cfg.Source.Pixiv.Sleep) * time.Second)
+// 		if config.Get().Source.Pixiv.Sleep > 0 {
+// 			time.Sleep(time.Duration(config.Get().Source.Pixiv.Sleep) * time.Second)
 // 		}
 // 	}
 // 	return nil
@@ -106,8 +106,8 @@ func reqIllustPages(sourceURL string) (*PixivIllustPages, error) {
 // 			continue
 // 		}
 // 		artworks = append(artworks, artwork)
-// 		if config.Cfg.Source.Pixiv.Sleep > 0 {
-// 			time.Sleep(time.Duration(config.Cfg.Source.Pixiv.Sleep) * time.Second)
+// 		if config.Get().Source.Pixiv.Sleep > 0 {
+// 			time.Sleep(time.Duration(config.Get().Source.Pixiv.Sleep) * time.Second)
 // 		}
 // 	}
 // 	return artworks, nil

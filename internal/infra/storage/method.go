@@ -1,5 +1,23 @@
 package storage
 
+import (
+	"context"
+
+	"github.com/krau/ManyACG/types"
+)
+
+func DeleteAll(ctx context.Context, info *types.StorageInfo) error {
+	panic("unimplemented")
+}
+
+func GetFile(ctx context.Context, detail *types.StorageDetail) ([]byte, error) {
+	panic("unimplemented")
+}
+
+func SaveAll(ctx context.Context, artwork *types.Artwork, picture *types.Picture) (*types.StorageInfo, error) {
+	panic("unimplemented")
+}
+
 // // 保存图片的所有尺寸
 // func SaveAll(ctx context.Context, artwork *types.Artwork, picture *types.Picture) (*types.StorageInfo, error) {
 // 	if len(Storages) == 0 {
@@ -16,22 +34,22 @@ package storage
 // 	}
 // 	mimeType := mimetype.Detect(originalBytes)
 
-// 	filePath := filepath.Join(config.Cfg.Storage.CacheDir, common.MD5Hash(picture.Original)) + mimeType.Extension()
+// 	filePath := filepath.Join(config.Get().Storage.CacheDir, common.MD5Hash(picture.Original)) + mimeType.Extension()
 // 	if err := common.MkFile(filePath, originalBytes); err != nil {
 // 		return nil, err
 // 	}
 // 	defer func() {
-// 		go common.RmFileAfter(filePath, time.Duration(config.Cfg.Storage.CacheTTL)*time.Second)
+// 		go common.RmFileAfter(filePath, time.Duration(config.Get().Storage.CacheTTL)*time.Second)
 // 	}()
 // 	originalStorageFileName, err := source.GetFileName(artwork, picture)
 // 	if err != nil {
 // 		return nil, err
 // 	}
 // 	originalStoragePath := fmt.Sprintf("/%s/%s/%s", artwork.SourceType, artwork.Artist.UID, originalStorageFileName)
-// 	originalStorage, ok := Storages[types.StorageType(config.Cfg.Storage.OriginalType)]
+// 	originalStorage, ok := Storages[types.StorageType(config.Get().Storage.OriginalType)]
 // 	if !ok {
-// 		common.Logger.Fatalf("Unknown storage type: %s", config.Cfg.Storage.OriginalType)
-// 		return nil, fmt.Errorf("%w: %s", errs.ErrStorageUnkown, config.Cfg.Storage.OriginalType)
+// 		common.Logger.Fatalf("Unknown storage type: %s", config.Get().Storage.OriginalType)
+// 		return nil, fmt.Errorf("%w: %s", errs.ErrStorageUnkown, config.Get().Storage.OriginalType)
 // 	}
 
 // 	originalDetail, err := originalStorage.Save(ctx, filePath, originalStoragePath)
@@ -40,24 +58,24 @@ package storage
 // 	}
 
 // 	var regularDetail *types.StorageDetail
-// 	if config.Cfg.Storage.RegularType != "" {
-// 		regularStorage, ok := Storages[types.StorageType(config.Cfg.Storage.RegularType)]
+// 	if config.Get().Storage.RegularType != "" {
+// 		regularStorage, ok := Storages[types.StorageType(config.Get().Storage.RegularType)]
 // 		if !ok {
-// 			common.Logger.Fatalf("Unknown storage type: %s", config.Cfg.Storage.RegularType)
-// 			return nil, fmt.Errorf("%w: %s", errs.ErrStorageUnkown, config.Cfg.Storage.RegularType)
+// 			common.Logger.Fatalf("Unknown storage type: %s", config.Get().Storage.RegularType)
+// 			return nil, fmt.Errorf("%w: %s", errs.ErrStorageUnkown, config.Get().Storage.RegularType)
 // 		}
-// 		regularOutputPath := fmt.Sprintf("%s_regular.%s", filePath[:len(filePath)-len(filepath.Ext(filePath))], config.Cfg.Storage.RegularFormat)
-// 		if err := imgtool.CompressImage(filePath, regularOutputPath, config.Cfg.Storage.RegularFormat, types.RegularPhotoSideLength); err != nil {
+// 		regularOutputPath := fmt.Sprintf("%s_regular.%s", filePath[:len(filePath)-len(filepath.Ext(filePath))], config.Get().Storage.RegularFormat)
+// 		if err := imgtool.CompressImage(filePath, regularOutputPath, config.Get().Storage.RegularFormat, types.RegularPhotoSideLength); err != nil {
 // 			return nil, err
 // 		}
 // 		defer func() {
-// 			go common.RmFileAfter(regularOutputPath, time.Duration(config.Cfg.Storage.CacheTTL)*time.Second)
+// 			go common.RmFileAfter(regularOutputPath, time.Duration(config.Get().Storage.CacheTTL)*time.Second)
 // 		}()
 
 // 		if picture.ID == "" {
 // 			picture.ID = primitive.NewObjectID().Hex()
 // 		}
-// 		regularStorageFileName := picture.ID + "_regular." + config.Cfg.Storage.RegularFormat
+// 		regularStorageFileName := picture.ID + "_regular." + config.Get().Storage.RegularFormat
 // 		regularStoragePath := fmt.Sprintf("/regular/%s/%s/%s", artwork.SourceType, artwork.Artist.UID, regularStorageFileName)
 
 // 		regularDetail, err = regularStorage.Save(ctx, regularOutputPath, regularStoragePath)
@@ -66,25 +84,25 @@ package storage
 // 		}
 // 	}
 // 	var thumbDetail *types.StorageDetail
-// 	if config.Cfg.Storage.ThumbType != "" {
-// 		thumbStorage, ok := Storages[types.StorageType(config.Cfg.Storage.ThumbType)]
+// 	if config.Get().Storage.ThumbType != "" {
+// 		thumbStorage, ok := Storages[types.StorageType(config.Get().Storage.ThumbType)]
 // 		if !ok {
-// 			common.Logger.Fatalf("Unknown storage type: %s", config.Cfg.Storage.ThumbType)
-// 			return nil, fmt.Errorf("%w: %s", errs.ErrStorageUnkown, config.Cfg.Storage.ThumbType)
+// 			common.Logger.Fatalf("Unknown storage type: %s", config.Get().Storage.ThumbType)
+// 			return nil, fmt.Errorf("%w: %s", errs.ErrStorageUnkown, config.Get().Storage.ThumbType)
 // 		}
-// 		thumbOutputPath := fmt.Sprintf("%s_thumb.%s", filePath[:len(filePath)-len(filepath.Ext(filePath))], config.Cfg.Storage.ThumbFormat)
-// 		if err := imgtool.CompressImage(filePath, thumbOutputPath, config.Cfg.Storage.ThumbFormat, types.ThumbPhotoSideLength); err != nil {
+// 		thumbOutputPath := fmt.Sprintf("%s_thumb.%s", filePath[:len(filePath)-len(filepath.Ext(filePath))], config.Get().Storage.ThumbFormat)
+// 		if err := imgtool.CompressImage(filePath, thumbOutputPath, config.Get().Storage.ThumbFormat, types.ThumbPhotoSideLength); err != nil {
 // 			return nil, err
 // 		}
 
 // 		defer func() {
-// 			go common.RmFileAfter(thumbOutputPath, time.Duration(config.Cfg.Storage.CacheTTL)*time.Second)
+// 			go common.RmFileAfter(thumbOutputPath, time.Duration(config.Get().Storage.CacheTTL)*time.Second)
 // 		}()
 
 // 		if picture.ID == "" {
 // 			picture.ID = primitive.NewObjectID().Hex()
 // 		}
-// 		thumbStorageFileName := picture.ID + "_thumb." + config.Cfg.Storage.ThumbFormat
+// 		thumbStorageFileName := picture.ID + "_thumb." + config.Get().Storage.ThumbFormat
 // 		thumbStoragePath := fmt.Sprintf("/thumb/%s/%s/%s", artwork.SourceType, artwork.Artist.UID, thumbStorageFileName)
 
 // 		thumbDetail, err = thumbStorage.Save(ctx, thumbOutputPath, thumbStoragePath)

@@ -12,8 +12,8 @@ import (
 	"github.com/gorilla/feeds"
 	"github.com/krau/ManyACG/adapter"
 	"github.com/krau/ManyACG/api/restful/utils"
-	"github.com/krau/ManyACG/common"
-	"github.com/krau/ManyACG/config"
+	"github.com/krau/ManyACG/internal/common"
+	"github.com/krau/ManyACG/internal/infra/config"
 	"github.com/oschwald/geoip2-golang"
 
 	"github.com/krau/ManyACG/service"
@@ -26,16 +26,16 @@ var (
 
 func Init() {
 	var err error
-	if config.Cfg.API.GeoIPDB == "" {
+	if config.Get().API.GeoIPDB == "" {
 		common.Logger.Warn("GeoIP database path is not set, skipping GeoIP initialization")
 		return
 	}
-	if !fileutil.IsExist(config.Cfg.API.GeoIPDB) {
-		common.Logger.Errorf("GeoIP database file does not exist: %s", config.Cfg.API.GeoIPDB)
+	if !fileutil.IsExist(config.Get().API.GeoIPDB) {
+		common.Logger.Errorf("GeoIP database file does not exist: %s", config.Get().API.GeoIPDB)
 		return
 	}
 
-	dbData, err := os.ReadFile(config.Cfg.API.GeoIPDB)
+	dbData, err := os.ReadFile(config.Get().API.GeoIPDB)
 	if err != nil {
 		common.Logger.Errorf("Failed to read GeoIP database file: %v", err)
 		return
@@ -54,10 +54,10 @@ func GenerateAtom(ctx *gin.Context) {
 		return
 	}
 	feed := &feeds.Feed{
-		Title:       config.Cfg.API.SiteTitle,
-		Link:        &feeds.Link{Href: config.Cfg.API.SiteURL},
-		Description: config.Cfg.API.SiteDescription,
-		Author:      &feeds.Author{Name: config.Cfg.API.SiteName, Email: config.Cfg.API.SiteEmail},
+		Title:       config.Get().API.SiteTitle,
+		Link:        &feeds.Link{Href: config.Get().API.SiteURL},
+		Description: config.Get().API.SiteDescription,
+		Author:      &feeds.Author{Name: config.Get().API.SiteName, Email: config.Get().API.SiteEmail},
 		Created:     time.Now(),
 		Items:       adapter.ConvertToFeedItems(ctx, artworks),
 	}

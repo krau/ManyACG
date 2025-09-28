@@ -7,8 +7,8 @@ import (
 	"sync"
 
 	"github.com/krau/ManyACG/api/restful/utils"
-	"github.com/krau/ManyACG/config"
 	"github.com/krau/ManyACG/dao"
+	"github.com/krau/ManyACG/internal/infra/config"
 	"github.com/krau/ManyACG/types"
 
 	"github.com/gorilla/feeds"
@@ -158,12 +158,12 @@ func ConvertToFeedItems(ctx context.Context, artworks []*types.Artwork) []*feeds
 			defer wg.Done()
 			item := &feeds.Item{
 				Title:       artwork.Title,
-				Link:        &feeds.Link{Href: config.Cfg.API.SiteURL + "/artwork/" + artwork.ID},
+				Link:        &feeds.Link{Href: config.Get().API.SiteURL + "/artwork/" + artwork.ID},
 				Description: artwork.Description,
 				Author:      &feeds.Author{Name: artwork.Artist.Name},
 				Created:     artwork.CreatedAt,
 				Updated:     artwork.CreatedAt,
-				Id:          fmt.Sprintf("%s/artwork/%s", config.Cfg.API.SiteURL, artwork.ID),
+				Id:          fmt.Sprintf("%s/artwork/%s", config.Get().API.SiteURL, artwork.ID),
 				Content: fmt.Sprintf(`
         <article>
             <h2>%s</h2>
