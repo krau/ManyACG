@@ -19,16 +19,6 @@ type Alist struct {
 	baseUrl  string
 }
 
-var (
-	basePath string
-	baseUrl  string
-)
-
-var (
-	reqClient *req.Client
-	loginReq  *loginRequset
-)
-
 func init() {
 	storage.Register(shared.StorageTypeAlist, func() storage.Storage {
 		alistConfig := config.Get().Storage.Alist
@@ -39,7 +29,7 @@ func init() {
 			client: req.C().
 				SetCommonRetryCount(2).
 				SetTLSHandshakeTimeout(time.Second * 10).
-				SetBaseURL(baseUrl),
+				SetBaseURL(alistConfig.URL),
 		}
 	})
 }
