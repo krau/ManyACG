@@ -1,7 +1,6 @@
 package source
 
 import (
-	"context"
 	"sync"
 
 	"github.com/krau/ManyACG/internal/shared"
@@ -24,7 +23,7 @@ func Register(sourceType shared.SourceType, f Factory) {
 	factories[sourceType] = f
 }
 
-func InitAll(ctx context.Context) {
+func InitAll() {
 	factoryMu.Lock()
 	defer factoryMu.Unlock()
 	for sourceType, factory := range factories {

@@ -10,115 +10,118 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/krau/ManyACG/common"
-	"github.com/krau/ManyACG/config"
-	"github.com/krau/ManyACG/types"
+	"github.com/krau/ManyACG/internal/infra/config"
+	"github.com/krau/ManyACG/internal/infra/storage"
+	"github.com/krau/ManyACG/internal/shared"
+	"github.com/krau/ManyACG/pkg/osutil"
+	"github.com/krau/ManyACG/pkg/strutil"
 	"github.com/mymmrac/telego"
 	"github.com/mymmrac/telego/telegoapi"
 	"github.com/mymmrac/telego/telegoutil"
 )
 
-type TelegramStorage struct{}
+type TelegramStorage struct {
+	cfg    config.StorageTelegramConfig
+	bot    *telego.Bot
+	chatID telego.ChatID
+}
 
-var (
-	Bot    *telego.Bot
-	ChatID telego.ChatID
-)
+func init() {
+	storageCfg := config.Get().Storage.Telegram
+	storageType := shared.StorageTypeTelegram
+	storage.Register(storageType, func() storage.Storage {
+		return &TelegramStorage{
+			cfg: storageCfg,
+		}
+	})
+}
 
-func (t *TelegramStorage) Init(ctx context.Context) {
-	common.Logger.Infof("Initializing telegram storage")
-	ChatID = telegoutil.ID(config.Cfg.Storage.Telegram.ChatID)
+func (t *TelegramStorage) Init(ctx context.Context) error {
+	t.chatID = telegoutil.ID(t.cfg.ChatID)
 	var err error
-	Bot, err = telego.NewBot(config.Cfg.Storage.Telegram.Token, telego.WithAPIServer(config.Cfg.Storage.Telegram.ApiUrl),
+	t.bot, err = telego.NewBot(t.cfg.Token, telego.WithAPIServer(t.cfg.ApiUrl),
 		telego.WithAPICaller(&telegoapi.RetryCaller{
 			Caller:       telegoapi.DefaultFastHTTPCaller,
-			MaxAttempts:  config.Cfg.Storage.Telegram.Retry.MaxAttempts,
-			ExponentBase: config.Cfg.Storage.Telegram.Retry.ExponentBase,
-			StartDelay:   time.Duration(config.Cfg.Storage.Telegram.Retry.StartDelay) * time.Second,
-			MaxDelay:     time.Duration(config.Cfg.Storage.Telegram.Retry.MaxDelay) * time.Second,
+			MaxAttempts:  t.cfg.Retry.MaxAttempts,
+			ExponentBase: t.cfg.Retry.ExponentBase,
+			StartDelay:   time.Duration(t.cfg.Retry.StartDelay) * time.Second,
+			MaxDelay:     time.Duration(t.cfg.Retry.MaxDelay) * time.Second,
 			RateLimit:    telegoapi.RetryRateLimitWaitOrAbort,
 		}))
 	if err != nil {
-		common.Logger.Panicf("failed to create telegram bot: %s", err)
+		return fmt.Errorf("failed to create telegram bot: %w", err)
 	}
-	botInfo, err := Bot.GetMe(ctx)
+	_, err = t.bot.GetMe(ctx)
 	if err != nil {
-		common.Logger.Panicf("failed to get bot info: %s", err)
+		return fmt.Errorf("failed to get bot info: %w", err)
 	}
-	common.Logger.Infof("telegram storage bot %s is ready", botInfo.Username)
+	return nil
 }
 
-func (t *TelegramStorage) Save(ctx context.Context, filePath string, _ string) (*types.StorageDetail, error) {
-	common.Logger.Debugf("saving file %s", filePath)
+func (t *TelegramStorage) Save(ctx context.Context, filePath string, _ string) (*shared.StorageDetail, error) {
 	var msg *telego.Message
 	var err error
 	fileBytes, err := os.ReadFile(filePath)
 	if err != nil {
-		common.Logger.Errorf("failed to read file: %s", err)
 		return nil, ErrReadFile
 	}
-	for i := range config.Cfg.Storage.Telegram.Retry.MaxAttempts {
-		msg, err = Bot.SendDocument(ctx, telegoutil.Document(ChatID, telegoutil.File(telegoutil.NameReader(bytes.NewReader(fileBytes), filepath.Base(filePath)))))
+	for i := range t.cfg.Retry.MaxAttempts {
+		msg, err = t.bot.SendDocument(ctx, telegoutil.Document(t.chatID, telegoutil.File(telegoutil.NameReader(bytes.NewReader(fileBytes), filepath.Base(filePath)))))
 		if err != nil {
 			var apiErr *telegoapi.Error
 			if errors.As(err, &apiErr) && apiErr.ErrorCode == 429 && apiErr.Parameters != nil {
-				retryAfter := apiErr.Parameters.RetryAfter + (i * int(config.Cfg.Storage.Telegram.Retry.StartDelay))
-				common.Logger.Warnf("Rate limited, retry after %d seconds", retryAfter)
+				retryAfter := apiErr.Parameters.RetryAfter + (i * int(t.cfg.Retry.StartDelay))
 				time.Sleep(time.Duration(retryAfter) * time.Second)
 				continue
 			}
-			common.Logger.Errorf("failed to send document: %s", err)
 			return nil, fmt.Errorf("failed to send document: %w", err)
 		}
 		break
 	}
 	if err != nil {
-		common.Logger.Errorf("failed to send document: %s", err)
 		return nil, fmt.Errorf("failed to send document: %w", err)
 	}
 	fileMessage := &fileMessage{
-		ChatID:     ChatID.ID,
+		ChatID:     t.chatID.ID,
 		FileID:     msg.Document.FileID,
 		MessaageID: msg.MessageID,
 	}
 	data, err := json.Marshal(fileMessage)
 	if err != nil {
-		common.Logger.Errorf("failed to marshal file message: %s", err)
 		return nil, ErrFailedMarshalFileMessage
 	}
-	cachePath := filepath.Join(config.Cfg.Storage.CacheDir, common.MD5Hash(fileMessage.FileID))
-	go common.MkCache(cachePath, fileBytes, time.Duration(config.Cfg.Storage.CacheTTL)*time.Second)
-	return &types.StorageDetail{
-		Type: types.StorageTypeTelegram,
+	cachePath := filepath.Join(config.Get().Storage.CacheDir, strutil.MD5Hash(fileMessage.FileID))
+	go osutil.MkCache(cachePath, fileBytes, time.Duration(config.Get().Storage.CacheTTL)*time.Second)
+	return &shared.StorageDetail{
+		Type: shared.StorageTypeTelegram,
 		Path: string(data),
 	}, nil
 }
 
-func (t *TelegramStorage) GetFile(ctx context.Context, detail *types.StorageDetail) ([]byte, error) {
+func (t *TelegramStorage) GetFile(ctx context.Context, detail *shared.StorageDetail) ([]byte, error) {
 	var file fileMessage
 	if err := json.Unmarshal([]byte(detail.Path), &file); err != nil {
 		return nil, err
 	}
-	common.Logger.Debugf("getting file %s", file.String())
-	cachePath := filepath.Join(config.Cfg.Storage.CacheDir, common.MD5Hash(file.FileID))
+	cachePath := filepath.Join(config.Get().Storage.CacheDir, strutil.MD5Hash(file.FileID))
 	if data, err := os.ReadFile(cachePath); err == nil {
 		return data, nil
 	}
-	tgFile, err := Bot.GetFile(ctx, &telego.GetFileParams{
+	tgFile, err := t.bot.GetFile(ctx, &telego.GetFileParams{
 		FileID: file.FileID,
 	})
 	if err != nil {
 		return nil, err
 	}
-	data, err := telegoutil.DownloadFile(Bot.FileDownloadURL(tgFile.FilePath))
+	data, err := telegoutil.DownloadFile(t.bot.FileDownloadURL(tgFile.FilePath))
 	if err != nil {
 		return nil, err
 	}
-	go common.MkCache(cachePath, data, time.Duration(config.Cfg.Storage.CacheTTL)*time.Second)
+	go osutil.MkCache(cachePath, data, time.Duration(config.Get().Storage.CacheTTL)*time.Second)
 	return data, nil
 }
 
-func (t *TelegramStorage) Delete(ctx context.Context, detail *types.StorageDetail) error {
+func (t *TelegramStorage) Delete(ctx context.Context, detail *shared.StorageDetail) error {
 	// do nothing
 	return nil
 }

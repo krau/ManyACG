@@ -2,61 +2,55 @@ package local
 
 import (
 	"context"
-	"io"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
 
-	"github.com/krau/ManyACG/common"
-	"github.com/krau/ManyACG/config"
-
-	"github.com/krau/ManyACG/types"
+	"github.com/krau/ManyACG/internal/infra/config"
+	"github.com/krau/ManyACG/internal/infra/storage"
+	"github.com/krau/ManyACG/internal/shared"
+	"github.com/krau/ManyACG/pkg/osutil"
 )
 
-type Local struct{}
-
-var (
+type Local struct {
 	basePath string
-)
-
-func (l *Local) Init(ctx context.Context) {
-	basePath = strings.TrimSuffix(config.Cfg.Storage.Local.Path, "/")
-	if basePath == "" {
-		common.Logger.Panic("Local storage path not set,for example: manyacg/storage")
-	}
-	if err := os.MkdirAll(basePath, os.ModePerm); err != nil {
-		common.Logger.Panicf("Failed to create directory: %v", err)
-	}
 }
 
-func (l *Local) Save(ctx context.Context, filePath string, storagePath string) (*types.StorageDetail, error) {
-	common.Logger.Debugf("saving file %s", filePath)
-	storagePath = filepath.Join(basePath, storagePath)
+func init() {
+	storage.Register(shared.StorageTypeLocal, func() storage.Storage {
+		return &Local{
+			basePath: strings.TrimSuffix(config.Get().Storage.Local.Path, "/"),
+		}
+	})
+}
+
+func (l *Local) Init(ctx context.Context) error {
+	if err := os.MkdirAll(l.basePath, os.ModePerm); err != nil {
+		return fmt.Errorf("failed to create directory: %w", err)
+	}
+	return nil
+}
+
+func (l *Local) Save(ctx context.Context, filePath string, storagePath string) (*shared.StorageDetail, error) {
+	storagePath = filepath.Join(l.basePath, storagePath)
 	fileBytes, err := os.ReadFile(filePath)
 	if err != nil {
-		common.Logger.Errorf("failed to read file: %s", err)
-		return nil, err
+		return nil, fmt.Errorf("failed to read file: %w", err)
 	}
-	if err := common.MkFile(storagePath, fileBytes); err != nil {
-		common.Logger.Errorf("failed to write file: %s", err)
-		return nil, err
+	if err := osutil.MkFile(storagePath, fileBytes); err != nil {
+		return nil, fmt.Errorf("failed to write file: %w", err)
 	}
-	return &types.StorageDetail{
-		Type: types.StorageTypeLocal,
+	return &shared.StorageDetail{
+		Type: shared.StorageTypeLocal,
 		Path: storagePath,
 	}, nil
 }
 
-func (l *Local) GetFile(ctx context.Context, detail *types.StorageDetail) ([]byte, error) {
-	common.Logger.Debugf("getting file %s", detail.Path)
+func (l *Local) GetFile(ctx context.Context, detail *shared.StorageDetail) ([]byte, error) {
 	return os.ReadFile(detail.Path)
 }
 
-func (l *Local) GetFileStream(ctx context.Context, detail *types.StorageDetail) (io.ReadCloser, error) {
-	return os.Open(detail.Path)
-}
-
-func (l *Local) Delete(ctx context.Context, detail *types.StorageDetail) error {
-	common.Logger.Debugf("deleting file %s", detail.Path)
-	return common.PurgeFile(detail.Path)
+func (l *Local) Delete(ctx context.Context, detail *shared.StorageDetail) error {
+	return osutil.PurgeFile(detail.Path)
 }

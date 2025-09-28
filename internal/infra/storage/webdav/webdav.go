@@ -2,99 +2,98 @@ package webdav
 
 import (
 	"context"
-	"io"
+	"fmt"
 	"os"
 	"path"
 	"path/filepath"
 	"strings"
 	"time"
 
-	"github.com/krau/ManyACG/common"
-	"github.com/krau/ManyACG/config"
-
-	"github.com/krau/ManyACG/types"
+	"github.com/krau/ManyACG/internal/infra/config"
+	"github.com/krau/ManyACG/internal/infra/storage"
+	"github.com/krau/ManyACG/internal/shared"
+	"github.com/krau/ManyACG/pkg/osutil"
 
 	"github.com/studio-b12/gowebdav"
 )
 
-type Webdav struct{}
-
-var Client *gowebdav.Client
-
-var (
+type Webdav struct {
+	cfg      config.StorageWebdavConfig
 	basePath string
-)
-
-func (w *Webdav) Init(ctx context.Context) {
-	webdavConfig := config.Cfg.Storage.Webdav
-	basePath = strings.TrimSuffix(webdavConfig.Path, "/")
-	Client = gowebdav.NewClient(webdavConfig.URL, webdavConfig.Username, webdavConfig.Password)
-	if err := Client.Connect(); err != nil {
-		common.Logger.Panicf("Failed to connect to webdav server: %v", err)
-	}
+	client   *gowebdav.Client
 }
 
-func (w *Webdav) Save(ctx context.Context, filePath string, storagePath string) (*types.StorageDetail, error) {
-	common.Logger.Debugf("saving file %s", filePath)
-	storagePath = path.Join(basePath, storagePath)
+func init() {
+	storage.Register(shared.StorageTypeWebdav, func() storage.Storage {
+		return &Webdav{
+			cfg:      config.Get().Storage.Webdav,
+			basePath: strings.TrimSuffix(config.Get().Storage.Webdav.Path, "/"),
+		}
+	})
+}
+
+func (w *Webdav) Init(ctx context.Context) error {
+	client := gowebdav.NewClient(w.cfg.URL, w.cfg.Username, w.cfg.Password)
+	if err := client.Connect(); err != nil {
+		return fmt.Errorf("failed to connect to webdav server: %w", err)
+	}
+	w.client = client
+	return nil
+}
+
+func (w *Webdav) Save(ctx context.Context, filePath string, storagePath string) (*shared.StorageDetail, error) {
+	storagePath = path.Join(w.basePath, storagePath)
 	storageDir := path.Dir(storagePath)
-	if err := Client.MkdirAll(storageDir, os.ModePerm); err != nil {
-		common.Logger.Errorf("failed to create directory: %s", err)
+	if err := w.client.MkdirAll(storageDir, os.ModePerm); err != nil {
 		return nil, ErrFailedMkdirAll
 	}
 
 	fileBytes, err := os.ReadFile(filePath)
 	if err != nil {
-		common.Logger.Errorf("failed to read file: %s", err)
 		return nil, ErrReadFile
 	}
 
-	if err := Client.Write(storagePath, fileBytes, os.ModePerm); err != nil {
-		common.Logger.Errorf("failed to write file: %s", err)
+	if err := w.client.Write(storagePath, fileBytes, os.ModePerm); err != nil {
 		return nil, ErrFailedWrite
 	}
 
-	cachePath := filepath.Join(config.Cfg.Storage.CacheDir, filepath.Base(storagePath))
-	go common.MkCache(cachePath, fileBytes, time.Duration(config.Cfg.Storage.CacheTTL)*time.Second)
+	cachePath := filepath.Join(config.Get().Storage.CacheDir, filepath.Base(storagePath))
+	go osutil.MkCache(cachePath, fileBytes, time.Duration(config.Get().Storage.CacheTTL)*time.Second)
 
-	return &types.StorageDetail{
-		Type: types.StorageTypeWebdav,
+	return &shared.StorageDetail{
+		Type: shared.StorageTypeWebdav,
 		Path: storagePath,
 	}, nil
 }
 
-func (w *Webdav) GetFile(ctx context.Context, detail *types.StorageDetail) ([]byte, error) {
-	common.Logger.Debugf("Getting file %s", detail.Path)
-	cachePath := filepath.Join(config.Cfg.Storage.CacheDir, path.Base(detail.Path))
+func (w *Webdav) GetFile(ctx context.Context, detail *shared.StorageDetail) ([]byte, error) {
+	cachePath := filepath.Join(config.Get().Storage.CacheDir, path.Base(detail.Path))
 	data, err := os.ReadFile(cachePath)
 	if err == nil {
 		return data, nil
 	}
-	data, err = Client.Read(detail.Path)
+	data, err = w.client.Read(detail.Path)
 	if err != nil {
-		common.Logger.Errorf("failed to read file: %s", err)
 		return nil, ErrReadFile
 	}
-	go common.MkCache(cachePath, data, time.Duration(config.Cfg.Storage.CacheTTL)*time.Second)
+	go osutil.MkCache(cachePath, data, time.Duration(config.Get().Storage.CacheTTL)*time.Second)
 	return data, nil
 }
 
-func (w *Webdav) GetFileStream(ctx context.Context, detail *types.StorageDetail) (io.ReadCloser, error) {
-	common.Logger.Debugf("Getting file %s", detail.Path)
-	cachePath := filepath.Join(config.Cfg.Storage.CacheDir, path.Base(detail.Path))
-	file, err := os.Open(cachePath)
-	if err == nil {
-		return file, nil
-	}
-	steam, err := Client.ReadStream(detail.Path)
-	if err != nil {
-		common.Logger.Errorf("failed to read file: %s", err)
-		return nil, ErrReadFile
-	}
-	return steam, nil
-}
+// func (w *Webdav) GetFileStream(ctx context.Context, detail *shared.StorageDetail) (io.ReadCloser, error) {
+// 	cachePath := filepath.Join(config.Cfg.Storage.CacheDir, path.Base(detail.Path))
+// 	file, err := os.Open(cachePath)
+// 	if err == nil {
+// 		return file, nil
+// 	}
+// 	steam, err := Client.ReadStream(detail.Path)
+// 	if err != nil {
+// 		common.Logger.Errorf("failed to read file: %s", err)
+// 		return nil, ErrReadFile
+// 	}
+// 	return steam, nil
+// }
 
-func (w *Webdav) Delete(ctx context.Context, detail *types.StorageDetail) error {
-	common.Logger.Debugf("Deleting file %s", detail.Path)
-	return Client.Remove(detail.Path)
+func (w *Webdav) Delete(ctx context.Context, detail *shared.StorageDetail) error {
+	return w.client.Remove(detail.Path)
 }
