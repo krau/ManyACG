@@ -3,7 +3,8 @@ package types
 import (
 	"regexp"
 
-	"github.com/krau/ManyACG/config"
+	"github.com/krau/ManyACG/internal/infra/config"
+	// "github.com/krau/ManyACG/config"
 )
 
 type SourceType string

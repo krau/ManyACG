@@ -5,9 +5,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/krau/ManyACG/common"
-	"github.com/krau/ManyACG/config"
 	"github.com/krau/ManyACG/dao/collections"
+	"github.com/krau/ManyACG/internal/infra/config"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -19,34 +18,39 @@ var Client *mongo.Client
 var DB *mongo.Database
 
 func InitDB(ctx context.Context) {
-	common.Logger.Info("Initializing database...")
-	uri := config.Cfg.Database.URI
+	// common.Logger.Info("Initializing database...")
+	fmt.Println("Initializing database...")
+	uri := config.Get().Database.URI
 	if uri == "" {
 		uri = fmt.Sprintf(
 			"mongodb://%s:%s@%s:%d",
-			config.Cfg.Database.User,
-			config.Cfg.Database.Password,
-			config.Cfg.Database.Host,
-			config.Cfg.Database.Port,
+			config.Get().Database.User,
+			config.Get().Database.Password,
+			config.Get().Database.Host,
+			config.Get().Database.Port,
 		)
 	}
 	client, err := mongo.Connect(ctx, options.Client().ApplyURI(uri),
-		options.Client().SetReadPreference(readpref.Nearest(readpref.WithMaxStaleness(time.Duration(config.Cfg.Database.MaxStaleness)*time.Second))))
+		options.Client().SetReadPreference(readpref.Nearest(readpref.WithMaxStaleness(time.Duration(config.Get().Database.MaxStaleness)*time.Second))))
 	if err != nil {
-		common.Logger.Panic(err)
+		// common.Logger.Panic(err)
+		panic(err)
 	}
 	if err = client.Ping(ctx, nil); err != nil {
-		common.Logger.Panic(err)
+		// common.Logger.Panic(err)
+		panic(err)
 	}
 	Client = client
-	DB = Client.Database(config.Cfg.Database.Database)
+	DB = Client.Database(config.Get().Database.Database)
 	if DB == nil {
-		common.Logger.Panic("Failed to get database")
+		panic("Database is nil")
+		// common.Logger.Panic("Failed to get database")
 	}
 	createCollection(ctx)
 	createIndex(ctx)
 
-	common.Logger.Info("Database initialized")
+	fmt.Println("Database initialized")
+	// common.Logger.Info("Database initialized")
 }
 
 func createCollection(ctx context.Context) {
@@ -153,10 +157,10 @@ func createIndex(ctx context.Context) {
 		},
 	})
 
-	for _, admin := range config.Cfg.Telegram.Admins {
+	for _, admin := range config.Get().Telegram.Admins {
 		_, err := CreateSuperAdminByUserID(ctx, admin, 0)
 		if err != nil {
-			common.Logger.Error(err)
+			fmt.Printf("failed to create super admin: %s\n", err)
 		}
 	}
 

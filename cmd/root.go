@@ -11,7 +11,7 @@ var rootCmd = &cobra.Command{
 	Use:   "manyacg",
 	Short: "manyacg",
 	Run: func(cmd *cobra.Command, args []string) {
-		Run()
+		cmd.Help()
 	},
 }
 

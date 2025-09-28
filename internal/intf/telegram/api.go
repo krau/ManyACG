@@ -3,7 +3,7 @@ package telegram
 import (
 	"context"
 
-	"github.com/krau/ManyACG/telegram/utils"
+	"github.com/krau/ManyACG/internal/intf/telegram/utils"
 	"github.com/krau/ManyACG/types"
 
 	"github.com/mymmrac/telego"

@@ -2,13 +2,13 @@ package telegram
 
 import (
 	"context"
+	"fmt"
 	"time"
 
-	"github.com/krau/ManyACG/common"
-	"github.com/krau/ManyACG/config"
+	"github.com/krau/ManyACG/internal/infra/config"
+	"github.com/krau/ManyACG/internal/intf/telegram/handlers"
+	"github.com/krau/ManyACG/internal/intf/telegram/utils"
 	"github.com/krau/ManyACG/service"
-	"github.com/krau/ManyACG/telegram/handlers"
-	"github.com/krau/ManyACG/telegram/utils"
 
 	"github.com/mymmrac/telego"
 	"github.com/mymmrac/telego/telegoapi"
@@ -17,48 +17,47 @@ import (
 )
 
 func InitBot(ctx context.Context) {
-	common.Logger.Info("Initializing bot")
 	var err error
-	apiUrl := config.Cfg.Telegram.APIURL
+	apiUrl := config.Get().Telegram.APIURL
 	if apiUrl == "" {
 		apiUrl = "https://api.telegram.org"
 	}
 	Bot, err = telego.NewBot(
-		config.Cfg.Telegram.Token,
+		config.Get().Telegram.Token,
 		telego.WithDefaultLogger(false, true),
 		telego.WithAPIServer(apiUrl),
 		telego.WithAPICaller(&telegoapi.RetryCaller{
 			Caller:       telegoapi.DefaultFastHTTPCaller,
-			MaxAttempts:  config.Cfg.Telegram.Retry.MaxAttempts,
-			ExponentBase: config.Cfg.Telegram.Retry.ExponentBase,
-			StartDelay:   time.Duration(config.Cfg.Telegram.Retry.StartDelay) * time.Second,
-			MaxDelay:     time.Duration(config.Cfg.Telegram.Retry.MaxDelay) * time.Second,
+			MaxAttempts:  config.Get().Telegram.Retry.MaxAttempts,
+			ExponentBase: config.Get().Telegram.Retry.ExponentBase,
+			StartDelay:   time.Duration(config.Get().Telegram.Retry.StartDelay) * time.Second,
+			MaxDelay:     time.Duration(config.Get().Telegram.Retry.MaxDelay) * time.Second,
 			RateLimit:    telegoapi.RetryRateLimitWaitOrAbort,
 		}),
 	)
 	if err != nil {
-		common.Logger.Panicf("Error when creating bot: %s", err)
+		panic(err)
 	}
 
-	if config.Cfg.Telegram.Username != "" {
-		ChannelChatID = telegoutil.Username(config.Cfg.Telegram.Username)
+	if config.Get().Telegram.Username != "" {
+		ChannelChatID = telegoutil.Username(config.Get().Telegram.Username)
 	} else {
-		ChannelChatID = telegoutil.ID(config.Cfg.Telegram.ChatID)
+		ChannelChatID = telegoutil.ID(config.Get().Telegram.ChatID)
 	}
 	if ChannelChatID.ID == 0 && ChannelChatID.Username == "" {
-		if config.Cfg.Telegram.Channel {
-			common.Logger.Panicf("Enabled channel mode but no channel ID or username is provided")
+		if config.Get().Telegram.Channel {
+			panic("telegram channel is enabled, but no channel username or chat ID is set")
 		}
 	} else {
-		IsChannelAvailable = config.Cfg.Telegram.Channel
+		IsChannelAvailable = config.Get().Telegram.Channel
 	}
 
-	if config.Cfg.Telegram.GroupID != 0 {
-		GroupChatID = telegoutil.ID(config.Cfg.Telegram.GroupID)
+	if config.Get().Telegram.GroupID != 0 {
+		GroupChatID = telegoutil.ID(config.Get().Telegram.GroupID)
 	}
 	me, err := Bot.GetMe(ctx)
 	if err != nil {
-		common.Logger.Panicf("Error when getting bot info: %s", err)
+		panic(err)
 	}
 	BotUsername = me.Username
 
@@ -74,7 +73,6 @@ func InitBot(ctx context.Context) {
 
 	adminUserIDs, err := service.GetAdminUserIDs(ctx)
 	if err != nil {
-		common.Logger.Warnf("Error when getting admin user IDs: %s", err)
 		return
 	}
 
@@ -86,7 +84,7 @@ func InitBot(ctx context.Context) {
 				ChatID: telegoutil.ID(adminID),
 			},
 		})
-		if config.Cfg.Telegram.GroupID == 0 {
+		if config.Get().Telegram.GroupID == 0 {
 			continue
 		}
 		Bot.SetMyCommands(ctx, &telego.SetMyCommandsParams{
@@ -101,7 +99,6 @@ func InitBot(ctx context.Context) {
 
 	adminGroupIDs, err := service.GetAdminGroupIDs(ctx)
 	if err != nil {
-		common.Logger.Warnf("Error when getting admin group IDs: %s", err)
 		return
 	}
 
@@ -120,7 +117,6 @@ func RunPolling(ctx context.Context) {
 	if Bot == nil {
 		InitBot(ctx)
 	}
-	common.Logger.Info("Start polling")
 	updates, err := Bot.UpdatesViaLongPolling(ctx, &telego.GetUpdatesParams{
 		Offset: -1,
 		AllowedUpdates: []string{
@@ -131,33 +127,31 @@ func RunPolling(ctx context.Context) {
 		},
 	})
 	if err != nil {
-		common.Logger.Panicf("Error when getting updates: %s", err)
+		panic(err)
 	}
 
 	botHandler, err := telegohandler.NewBotHandler(Bot, updates)
 	if err != nil {
-		common.Logger.Panicf("Error when creating bot handler: %s", err)
+		panic(err)
 	}
 	go func() {
 		<-ctx.Done()
 		stopCtx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
 		defer cancel()
 		if err := botHandler.StopWithContext(stopCtx); err != nil {
-			common.Logger.Warnf("Error when stopping bot handler: %s", err)
+			fmt.Printf("Error when stopping bot handler: %s\n", err)
 		}
-		common.Logger.Info("Stopped bot handler")
 	}()
 
-	if !config.Cfg.Debug {
+	if !config.Get().Debug {
 		botHandler.Use(telegohandler.PanicRecovery())
 	}
-	botHandler.Use(messageLogger)
 
 	baseGroup := botHandler.BaseGroup()
 	handlers.RegisterHandlers(baseGroup)
 	go func() {
 		if err := botHandler.Start(); err != nil {
-			common.Logger.Panicf("Error when starting bot handler: %s", err)
+			fmt.Printf("Error when starting bot handler: %s\n", err)
 		}
 	}()
 	go startService()
@@ -167,9 +161,10 @@ func startService() {
 	go func() {
 		for params := range sendArtworkInfoCh {
 			if err := utils.SendArtworkInfo(params.Ctx, params.Bot, params.Params); err != nil {
-				common.Logger.Errorf("Error when sending artwork info: %s", err)
+				// common.Logger.Errorf("Error when sending artwork info: %s", err)
+				fmt.Printf("Error when sending artwork info: %s\n", err)
 			}
-			time.Sleep(time.Duration(config.Cfg.Telegram.Sleep) * time.Second)
+			time.Sleep(time.Duration(config.Get().Telegram.Sleep) * time.Second)
 		}
 	}()
 }

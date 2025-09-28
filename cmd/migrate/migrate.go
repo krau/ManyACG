@@ -5,8 +5,8 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/krau/ManyACG/config"
 	"github.com/krau/ManyACG/dao/collections"
+	"github.com/krau/ManyACG/internal/infra/config"
 	mongotypes "github.com/krau/ManyACG/types"
 	_ "github.com/ncruces/go-sqlite3/embed"
 	"go.mongodb.org/mongo-driver/bson"
@@ -19,7 +19,7 @@ import (
 type Option struct {
 	MongoClient *mongo.Client
 	GormDB      *gorm.DB
-	Cfg         *config.Config
+	Cfg         config.Config
 }
 
 func Run(ctx context.Context, opt *Option) error {
@@ -30,6 +30,7 @@ func Run(ctx context.Context, opt *Option) error {
 	err := db.AutoMigrate(
 		&Artist{},
 		&Tag{},
+		&TagAlias{},
 		&Artwork{},
 		&Picture{},
 		&DeletedRecord{},
@@ -134,10 +135,21 @@ func migrateTags(ctx context.Context, collection *mongo.Collection, db *gorm.DB)
 		}
 		if _, ok := seen[tagModel.Name]; !ok {
 			seen[tagModel.Name] = struct{}{}
+			aliases := make([]*TagAlias, 0, len(tagModel.Alias))
+			aliasSeen := make(map[string]struct{})
+			for _, aliasName := range tagModel.Alias {
+				if _, ok := aliasSeen[aliasName]; !ok && aliasName != tagModel.Name {
+					aliasSeen[aliasName] = struct{}{}
+					aliases = append(aliases, &TagAlias{
+						ID:    NewMongoUUID(),
+						Alias: aliasName,
+					})
+				}
+			}
 			tag := &Tag{
 				ID:    FromObjectID(tagModel.ID),
 				Name:  tagModel.Name,
-				Alias: tagModel.Alias,
+				Alias: aliases,
 			}
 			uniqueTags = append(uniqueTags, tag)
 		}
