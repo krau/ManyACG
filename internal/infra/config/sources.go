@@ -1,5 +1,7 @@
 package config
 
+import "github.com/krau/ManyACG/internal/shared"
+
 type sourceConfigs struct {
 	Proxy    string               `toml:"proxy" mapstructure:"proxy" json:"proxy" yaml:"proxy"`
 	Pixiv    SourcePixivConfig    `toml:"pixiv" mapstructure:"pixiv" json:"pixiv" yaml:"pixiv"`
@@ -30,6 +32,14 @@ type SourceTwitterConfig struct {
 
 type SourceBilibiliConfig struct {
 	Enable bool `toml:"enable" mapstructure:"enable" json:"enable" yaml:"enable"`
+}
+
+func (c *SourceBilibiliConfig) Enabled() bool {
+	return c.Enable
+}
+
+func (c *SourceBilibiliConfig) Type() shared.SourceType {
+	return shared.SourceTypeBilibili
 }
 
 type SourceDanbooruConfig struct {

@@ -2,15 +2,7 @@ package pixiv
 
 import (
 	"encoding/xml"
-	"errors"
 	"regexp"
-	"strings"
-
-	"github.com/duke-git/lancet/v2/slice"
-	"github.com/duke-git/lancet/v2/strutil"
-	"github.com/duke-git/lancet/v2/validator"
-	"github.com/krau/ManyACG/config"
-	"github.com/krau/ManyACG/types"
 )
 
 type PixivRss struct {
@@ -94,62 +86,62 @@ var (
 	htmlRe              = regexp.MustCompile("<[^>]+>")
 )
 
-func (resp *PixivAjaxResp) ToArtwork() (*types.Artwork, error) {
-	if resp.Err {
-		return nil, errors.New(resp.Message)
-	}
-	illustPages, err := reqIllustPages("https://www.pixiv.net/artworks/" + resp.Body.IllustId)
-	if err != nil {
-		return nil, err
-	}
-	if illustPages.Err {
-		return nil, errors.New(illustPages.Message)
-	}
+// func (resp *PixivAjaxResp) ToArtwork() (*types.Artwork, error) {
+// 	if resp.Err {
+// 		return nil, errors.New(resp.Message)
+// 	}
+// 	illustPages, err := reqIllustPages("https://www.pixiv.net/artworks/" + resp.Body.IllustId)
+// 	if err != nil {
+// 		return nil, err
+// 	}
+// 	if illustPages.Err {
+// 		return nil, errors.New(illustPages.Message)
+// 	}
 
-	pictures := make([]*types.Picture, 0)
-	for i, page := range illustPages.Body {
-		pictures = append(pictures, &types.Picture{
-			Index:     uint(i),
-			Thumbnail: strings.Replace(page.Urls.Small, "i.pximg.net", config.Cfg.Source.Pixiv.Proxy, 1),
-			Original:  strings.Replace(page.Urls.Original, "i.pximg.net", config.Cfg.Source.Pixiv.Proxy, 1),
-			Width:     uint(page.Width),
-			Height:    uint(page.Height),
-		})
-	}
+// 	pictures := make([]*types.Picture, 0)
+// 	for i, page := range illustPages.Body {
+// 		pictures = append(pictures, &types.Picture{
+// 			Index:     uint(i),
+// 			Thumbnail: strings.Replace(page.Urls.Small, "i.pximg.net", config.Cfg.Source.Pixiv.Proxy, 1),
+// 			Original:  strings.Replace(page.Urls.Original, "i.pximg.net", config.Cfg.Source.Pixiv.Proxy, 1),
+// 			Width:     uint(page.Width),
+// 			Height:    uint(page.Height),
+// 		})
+// 	}
 
-	tags := make([]string, 0)
-	for _, tag := range resp.Body.Tags.Tags {
-		if tag.Translation != nil && tag.Translation.En != "" && validator.ContainChinese(tag.Translation.En) {
-			tags = append(tags, tag.Translation.En)
-		} else {
-			tags = append(tags, tag.Tag)
-		}
-	}
-	r18 := false
-	for _, tag := range tags {
-		if tagsSet[tag] {
-			r18 = true
-			break
-		}
-	}
+// 	tags := make([]string, 0)
+// 	for _, tag := range resp.Body.Tags.Tags {
+// 		if tag.Translation != nil && tag.Translation.En != "" && validator.ContainChinese(tag.Translation.En) {
+// 			tags = append(tags, tag.Translation.En)
+// 		} else {
+// 			tags = append(tags, tag.Tag)
+// 		}
+// 	}
+// 	r18 := false
+// 	for _, tag := range tags {
+// 		if tagsSet[tag] {
+// 			r18 = true
+// 			break
+// 		}
+// 	}
 
-	tags = slice.Compact(slice.Filter(tags, func(index int, item string) bool {
-		return !strutil.HasSuffixAny(item, bookmarksTagsSuffix)
-	}))
+// 	tags = slice.Compact(slice.Filter(tags, func(index int, item string) bool {
+// 		return !strutil.HasSuffixAny(item, bookmarksTagsSuffix)
+// 	}))
 
-	return &types.Artwork{
-		Title:       resp.Body.IlustTitle,
-		Description: htmlRe.ReplaceAllString(strings.ReplaceAll(resp.Body.Description, "<br />", "\n"), ""),
-		R18:         r18,
-		SourceType:  types.SourceTypePixiv,
-		SourceURL:   "https://www.pixiv.net/artworks/" + resp.Body.IllustId,
-		Artist: &types.Artist{
-			Name:     resp.Body.Username,
-			Type:     types.SourceTypePixiv,
-			UID:      resp.Body.UserId,
-			Username: resp.Body.UserAccount,
-		},
-		Tags:     tags,
-		Pictures: pictures,
-	}, nil
-}
+// 	return &types.Artwork{
+// 		Title:       resp.Body.IlustTitle,
+// 		Description: htmlRe.ReplaceAllString(strings.ReplaceAll(resp.Body.Description, "<br />", "\n"), ""),
+// 		R18:         r18,
+// 		SourceType:  types.SourceTypePixiv,
+// 		SourceURL:   "https://www.pixiv.net/artworks/" + resp.Body.IllustId,
+// 		Artist: &types.Artist{
+// 			Name:     resp.Body.Username,
+// 			Type:     types.SourceTypePixiv,
+// 			UID:      resp.Body.UserId,
+// 			Username: resp.Body.UserAccount,
+// 		},
+// 		Tags:     tags,
+// 		Pictures: pictures,
+// 	}, nil
+// }

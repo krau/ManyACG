@@ -1,15 +1,9 @@
 package nhentai
 
 import (
-	"encoding/json"
 	"errors"
-	"fmt"
-	"math/rand"
 	"regexp"
 	"strings"
-
-	"github.com/PuerkitoBio/goquery"
-	"github.com/krau/ManyACG/types"
 )
 
 var (
@@ -57,103 +51,103 @@ var nhentaiExtsMap = map[string]string{
 	"w": "webp",
 }
 
-func (n *Nhentai) crawlGallery(galleryID string) (*types.Artwork, error) {
-	url := sourceURLPrefix + galleryID
-	docResp, err := reqClient.R().Get(url)
-	if err != nil {
-		return nil, err
-	}
-	if docResp.IsErrorState() {
-		return nil, fmt.Errorf("%w: %s", ErrNhentaiResponseError, docResp.Status)
-	}
+// func (n *Nhentai) crawlGallery(galleryID string) (*types.Artwork, error) {
+// 	url := sourceURLPrefix + galleryID
+// 	docResp, err := reqClient.R().Get(url)
+// 	if err != nil {
+// 		return nil, err
+// 	}
+// 	if docResp.IsErrorState() {
+// 		return nil, fmt.Errorf("%w: %s", ErrNhentaiResponseError, docResp.Status)
+// 	}
 
-	doc, err := goquery.NewDocumentFromReader(docResp.Body)
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse html: %w", err)
-	}
+// 	doc, err := goquery.NewDocumentFromReader(docResp.Body)
+// 	if err != nil {
+// 		return nil, fmt.Errorf("failed to parse html: %w", err)
+// 	}
 
-	pictures := make([]*types.Picture, 0)
+// 	pictures := make([]*types.Picture, 0)
 
-	pictureThumbUrls := make([]string, 0)
-	doc.Find("#thumbnail-container > div > div > a > img").Each(func(i int, s *goquery.Selection) {
-		thumbUrl, _ := s.Attr("data-src")
-		if thumbUrl != "" {
-			pictureThumbUrls = append(pictureThumbUrls, thumbUrl)
-		}
-	})
-	if len(pictureThumbUrls) == 0 {
-		return nil, fmt.Errorf("%w: %s", ErrNhentaiResponseError, "failed to parse gallery pictures")
-	}
+// 	pictureThumbUrls := make([]string, 0)
+// 	doc.Find("#thumbnail-container > div > div > a > img").Each(func(i int, s *goquery.Selection) {
+// 		thumbUrl, _ := s.Attr("data-src")
+// 		if thumbUrl != "" {
+// 			pictureThumbUrls = append(pictureThumbUrls, thumbUrl)
+// 		}
+// 	})
+// 	if len(pictureThumbUrls) == 0 {
+// 		return nil, fmt.Errorf("%w: %s", ErrNhentaiResponseError, "failed to parse gallery pictures")
+// 	}
 
-	apiResp, err := reqClient.R().Get(apiURLPrefix + galleryID)
-	if err != nil {
-		return nil, err
-	}
-	if apiResp.IsErrorState() {
-		return nil, fmt.Errorf("%w: %s", ErrNhentaiResponseError, apiResp.Status)
-	}
+// 	apiResp, err := reqClient.R().Get(apiURLPrefix + galleryID)
+// 	if err != nil {
+// 		return nil, err
+// 	}
+// 	if apiResp.IsErrorState() {
+// 		return nil, fmt.Errorf("%w: %s", ErrNhentaiResponseError, apiResp.Status)
+// 	}
 
-	var apiData nhentaiApiResp
-	if err := json.Unmarshal(apiResp.Bytes(), &apiData); err != nil {
-		return nil, fmt.Errorf("failed to parse api response: %w", err)
-	}
+// 	var apiData nhentaiApiResp
+// 	if err := json.Unmarshal(apiResp.Bytes(), &apiData); err != nil {
+// 		return nil, fmt.Errorf("failed to parse api response: %w", err)
+// 	}
 
-	title := apiData.Title.Pretty
-	description := apiData.Title.English + " " + apiData.Title.Japanese
-	if title == "" {
-		title = description
-	}
-	tags := make([]string, 0)
-	var artistName, artistUid string
-	for _, tag := range apiData.Tags {
-		if artistName == "" && tag.Type == "artist" {
-			artistName = tag.Name
-			artistUid = tag.Name
-			continue
-		}
-		if tag.Type == "tag" {
-			tags = append(tags, tag.Name)
-		}
-	}
-	if artistName == "" {
-		artistName = "Nhentai"
-		artistUid = "1"
-	}
-	originalUrls := make([]string, 0)
-	for i, page := range apiData.Images.Pages {
-		ext, ok := nhentaiExtsMap[page.T]
-		if !ok {
-			return nil, fmt.Errorf("%w: %s %s", ErrNhentaiResponseError, "unknown image type", page.T)
-		}
-		originalUrls = append(originalUrls, fmt.Sprintf(originalUrlFormat, rand.Intn(4)+1, apiData.MediaID, i+1, ext))
-	}
-	if len(originalUrls) != len(pictureThumbUrls) {
-		return nil, fmt.Errorf("%w: %s", ErrNhentaiResponseError, "thumbnail count not equal to original count")
-	}
-	for i, thumbUrl := range pictureThumbUrls {
-		pictures = append(pictures, &types.Picture{
-			Index:     uint(i),
-			Thumbnail: thumbUrl,
-			Original:  originalUrls[i],
-		})
-	}
+// 	title := apiData.Title.Pretty
+// 	description := apiData.Title.English + " " + apiData.Title.Japanese
+// 	if title == "" {
+// 		title = description
+// 	}
+// 	tags := make([]string, 0)
+// 	var artistName, artistUid string
+// 	for _, tag := range apiData.Tags {
+// 		if artistName == "" && tag.Type == "artist" {
+// 			artistName = tag.Name
+// 			artistUid = tag.Name
+// 			continue
+// 		}
+// 		if tag.Type == "tag" {
+// 			tags = append(tags, tag.Name)
+// 		}
+// 	}
+// 	if artistName == "" {
+// 		artistName = "Nhentai"
+// 		artistUid = "1"
+// 	}
+// 	originalUrls := make([]string, 0)
+// 	for i, page := range apiData.Images.Pages {
+// 		ext, ok := nhentaiExtsMap[page.T]
+// 		if !ok {
+// 			return nil, fmt.Errorf("%w: %s %s", ErrNhentaiResponseError, "unknown image type", page.T)
+// 		}
+// 		originalUrls = append(originalUrls, fmt.Sprintf(originalUrlFormat, rand.Intn(4)+1, apiData.MediaID, i+1, ext))
+// 	}
+// 	if len(originalUrls) != len(pictureThumbUrls) {
+// 		return nil, fmt.Errorf("%w: %s", ErrNhentaiResponseError, "thumbnail count not equal to original count")
+// 	}
+// 	for i, thumbUrl := range pictureThumbUrls {
+// 		pictures = append(pictures, &types.Picture{
+// 			Index:     uint(i),
+// 			Thumbnail: thumbUrl,
+// 			Original:  originalUrls[i],
+// 		})
+// 	}
 
-	return &types.Artwork{
-		Title:       title,
-		Description: description,
-		Artist: &types.Artist{
-			Name:     artistName,
-			UID:      artistUid,
-			Username: artistName,
-			Type:     types.SourceTypeNhentai,
-		},
-		Tags:       tags,
-		SourceURL:  url,
-		Pictures:   pictures,
-		R18:        true,
-		SourceType: types.SourceTypeNhentai,
-	}, nil
-}
+// 	return &types.Artwork{
+// 		Title:       title,
+// 		Description: description,
+// 		Artist: &types.Artist{
+// 			Name:     artistName,
+// 			UID:      artistUid,
+// 			Username: artistName,
+// 			Type:     types.SourceTypeNhentai,
+// 		},
+// 		Tags:       tags,
+// 		SourceURL:  url,
+// 		Pictures:   pictures,
+// 		R18:        true,
+// 		SourceType: types.SourceTypeNhentai,
+// 	}, nil
+// }
 
 // func getOriginalUrl(thumbUrl string) (string, error) {
 // 	if thumbUrl == "" {

@@ -2,11 +2,6 @@ package twitter
 
 import (
 	"errors"
-	"fmt"
-	"strings"
-
-	"github.com/krau/ManyACG/common"
-	"github.com/krau/ManyACG/types"
 )
 
 type FxTwitterApiResp struct {
@@ -47,59 +42,59 @@ var (
 	ErrRequestFailed = errors.New("request twitter url failed")
 )
 
-func (resp *FxTwitterApiResp) ToArtwork() (*types.Artwork, error) {
-	if resp.Code != 200 {
-		return nil, errors.New(resp.Message + " (code: " + fmt.Sprint(resp.Code) + ")")
-	}
-	if resp.Tweet == nil {
-		return nil, ErrInvalidURL
-	}
-	tweet := resp.Tweet
-	if tweet.Media == nil {
-		return nil, ErrInvalidURL
-	}
-	media := tweet.Media
-	if len(media.Photos) == 0 {
-		return nil, ErrInvalidURL
-	}
+// func (resp *FxTwitterApiResp) ToArtwork() (*types.Artwork, error) {
+// 	if resp.Code != 200 {
+// 		return nil, errors.New(resp.Message + " (code: " + fmt.Sprint(resp.Code) + ")")
+// 	}
+// 	if resp.Tweet == nil {
+// 		return nil, ErrInvalidURL
+// 	}
+// 	tweet := resp.Tweet
+// 	if tweet.Media == nil {
+// 		return nil, ErrInvalidURL
+// 	}
+// 	media := tweet.Media
+// 	if len(media.Photos) == 0 {
+// 		return nil, ErrInvalidURL
+// 	}
 
-	pictures := make([]*types.Picture, 0)
-	for i, photo := range media.Photos {
-		picUrl := strings.Split(photo.URL, "?")[0]
-		pictures = append(pictures, &types.Picture{
-			Index:     uint(i),
-			Thumbnail: picUrl + "?name=medium",
-			Original:  picUrl + "?name=orig",
-			Width:     uint(photo.Width),
-			Height:    uint(photo.Height),
-		})
-	}
+// 	pictures := make([]*types.Picture, 0)
+// 	for i, photo := range media.Photos {
+// 		picUrl := strings.Split(photo.URL, "?")[0]
+// 		pictures = append(pictures, &types.Picture{
+// 			Index:     uint(i),
+// 			Thumbnail: picUrl + "?name=medium",
+// 			Original:  picUrl + "?name=orig",
+// 			Width:     uint(photo.Width),
+// 			Height:    uint(photo.Height),
+// 		})
+// 	}
 
-	title := fmt.Sprintf("%s/%s", tweet.Author.Username, tweet.ID)
-	tags := common.ExtractTagsFromText(tweet.Text)
-	desc := tweet.Text
+// 	title := fmt.Sprintf("%s/%s", tweet.Author.Username, tweet.ID)
+// 	tags := common.ExtractTagsFromText(tweet.Text)
+// 	desc := tweet.Text
 
-	if tweet.Text != "" {
-		textLines := strings.Split(tweet.Text, "\n")
-		firstLine := textLines[0]
-		if len(firstLine) <= 114 {
-			title = firstLine
-		}
-	}
+// 	if tweet.Text != "" {
+// 		textLines := strings.Split(tweet.Text, "\n")
+// 		firstLine := textLines[0]
+// 		if len(firstLine) <= 114 {
+// 			title = firstLine
+// 		}
+// 	}
 
-	return &types.Artwork{
-		Title:       title,
-		Description: desc,
-		SourceType:  types.SourceTypeTwitter,
-		SourceURL:   fmt.Sprintf("https://x.com/%s/status/%s", tweet.Author.Username, tweet.ID),
-		R18:         tweet.PossiblySensitive,
-		Artist: &types.Artist{
-			Name:     tweet.Author.Name,
-			Username: tweet.Author.Username,
-			Type:     types.SourceTypeTwitter,
-			UID:      tweet.Author.ID,
-		},
-		Pictures: pictures,
-		Tags:     tags,
-	}, nil
-}
+// 	return &types.Artwork{
+// 		Title:       title,
+// 		Description: desc,
+// 		SourceType:  types.SourceTypeTwitter,
+// 		SourceURL:   fmt.Sprintf("https://x.com/%s/status/%s", tweet.Author.Username, tweet.ID),
+// 		R18:         tweet.PossiblySensitive,
+// 		Artist: &types.Artist{
+// 			Name:     tweet.Author.Name,
+// 			Username: tweet.Author.Username,
+// 			Type:     types.SourceTypeTwitter,
+// 			UID:      tweet.Author.ID,
+// 		},
+// 		Pictures: pictures,
+// 		Tags:     tags,
+// 	}, nil
+// }

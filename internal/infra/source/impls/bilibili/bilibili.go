@@ -1,103 +1,80 @@
 package bilibili
 
 import (
-	"errors"
-	"fmt"
-	"path"
-	"regexp"
+	"context"
 
-	"github.com/krau/ManyACG/common"
-	"github.com/krau/ManyACG/config"
-	sourceCommon "github.com/krau/ManyACG/internal/infra/source/common"
-	"github.com/krau/ManyACG/types"
+	"github.com/krau/ManyACG/internal/infra/config"
+	"github.com/krau/ManyACG/internal/infra/source"
+	"github.com/krau/ManyACG/internal/shared"
 
 	"github.com/imroc/req/v3"
 )
 
-type Bilibili struct{}
+type Bilibili struct {
+	cfg       config.SourceBilibiliConfig
+	reqClient *req.Client
+}
 
 func init() {
-	sourceCommon.RegisterSource(types.SourceTypeBilibili, new(Bilibili))
+	source.Register(shared.SourceTypeBilibili, func() source.ArtworkSource {
+		return &Bilibili{
+			cfg:       config.Get().Source.Bilibili,
+			reqClient: req.C().SetCommonRetryCount(3).ImpersonateChrome(),
+		}
+	})
 }
 
-func (b *Bilibili) Init(_ types.Service) {
-	reqClient = req.C().ImpersonateChrome()
-	if config.Cfg.Source.Proxy != "" {
-		reqClient.SetProxyURL(config.Cfg.Source.Proxy)
-	}
-	reqClient.SetCommonRetryCount(3)
-}
-
-func (b *Bilibili) FetchNewArtworksWithCh(artworkCh chan *types.Artwork, limit int) error {
-	return nil
-}
-
-func (b *Bilibili) FetchNewArtworks(limit int) ([]*types.Artwork, error) {
+func (b *Bilibili) FetchNewArtworks(ctx context.Context, limit int) ([]*source.FetchedArtwork, error) {
 	return nil, nil
 }
 
-func (b *Bilibili) GetArtworkInfo(sourceURL string) (*types.Artwork, error) {
-	dynamicID := getDynamicID(sourceURL)
+func (b *Bilibili) GetArtworkInfo(ctx context.Context, sourceURL string) (*source.FetchedArtwork, error) {
+	// dynamicID := getDynamicID(sourceURL)
+	// if dynamicID == "" {
+	// 	return nil, ErrInvalidURL
+	// }
+	// var err error
+	// var desktopResp *BilibiliDesktopDynamicApiResp
+	// desktopResp, err = reqDesktopDynamicApiResp(dynamicID)
+	// if err == nil {
+	// 	var artwork *types.Artwork
+	// 	artwork, err = desktopResp.ToArtwork()
+	// 	if errors.Is(err, ErrInvalidURL) {
+	// 		return nil, err
+	// 	}
+	// 	if err == nil {
+	// 		return artwork, nil
+	// 	}
+	// }
+	// var webResp *BilibiliWebDynamicApiResp
+	// webResp, err = reqWebDynamicApiResp(dynamicID)
+	// if err == nil {
+	// 	var artwork *types.Artwork
+	// 	artwork, err = webResp.ToArtwork()
+	// 	if err == nil {
+	// 		return artwork, nil
+	// 	}
+	// }
+	// return nil, err
+	panic("not implemented")
+}
+
+func (b *Bilibili) MatchesSourceURL(text string) (string, bool) {
+	dynamicID := getDynamicID(text)
 	if dynamicID == "" {
-		return nil, ErrInvalidURL
+		return "", false
 	}
-	common.Logger.Tracef("request artwork info: https://t.bilibili.com/%s", dynamicID)
-	var err error
-	var desktopResp *BilibiliDesktopDynamicApiResp
-	desktopResp, err = reqDesktopDynamicApiResp(dynamicID)
-	if err == nil {
-		var artwork *types.Artwork
-		artwork, err = desktopResp.ToArtwork()
-		if errors.Is(err, ErrInvalidURL) {
-			return nil, err
-		}
-		if err == nil {
-			return artwork, nil
-		}
-	}
-	var webResp *BilibiliWebDynamicApiResp
-	webResp, err = reqWebDynamicApiResp(dynamicID)
-	if err == nil {
-		var artwork *types.Artwork
-		artwork, err = webResp.ToArtwork()
-		if err == nil {
-			return artwork, nil
-		}
-	}
-	return nil, err
+	return "https://t.bilibili.com/" + dynamicID, true
 }
 
-func (b *Bilibili) GetPictureInfo(sourceURL string, index uint) (*types.Picture, error) {
-	artwork, err := b.GetArtworkInfo(sourceURL)
-	if err != nil {
-		return nil, err
-	}
-	if index >= uint(len(artwork.Pictures)) {
-		return nil, ErrIndexOOB
-	}
-	return artwork.Pictures[index], nil
-}
+// func (b *Bilibili) GetFileName(artwork *types.Artwork, picture *types.Picture) string {
+// 	dynamicID := getDynamicID(artwork.SourceURL)
+// 	return fmt.Sprintf("%s_%d%s", dynamicID, picture.Index, path.Ext(picture.Original))
+// }
 
-func (b *Bilibili) GetSourceURLRegexp() *regexp.Regexp {
-	return dynamicURLRegexp
-}
-
-func (b *Bilibili) GetCommonSourceURL(url string) string {
-	dynamicID := getDynamicID(url)
-	if dynamicID == "" {
-		return ""
-	}
-	return "https://t.bilibili.com/" + dynamicID
-}
-
-func (b *Bilibili) GetFileName(artwork *types.Artwork, picture *types.Picture) string {
-	dynamicID := getDynamicID(artwork.SourceURL)
-	return fmt.Sprintf("%s_%d%s", dynamicID, picture.Index, path.Ext(picture.Original))
-}
-
-func (b *Bilibili) Config() *config.SourceCommonConfig {
-	return &config.SourceCommonConfig{
-		Enable:   config.Cfg.Source.Bilibili.Enable,
-		Intervel: -1,
-	}
-}
+// func (b *Bilibili) Config() *config.SourceCommonConfig {
+// 	return &config.SourceCommonConfig{
+// 		Enable:   config.Cfg.Source.Bilibili.Enable,
+// 		Intervel: -1,
+// 	}
+// }

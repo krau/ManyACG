@@ -3,8 +3,6 @@ package bilibili
 import (
 	"encoding/json"
 	"fmt"
-
-	"github.com/krau/ManyACG/common"
 )
 
 func getDynamicID(url string) string {
@@ -15,7 +13,6 @@ func reqWebDynamicApiResp(dynamicID string) (*BilibiliWebDynamicApiResp, error) 
 	apiUrl := fmt.Sprintf(webDynamicAPIURLFormat, dynamicID)
 	resp, err := reqClient.R().Get(apiUrl)
 	if err != nil {
-		common.Logger.Errorf("request failed: %v", err)
 		return nil, ErrRequestFailed
 	}
 	var bilibiliWebDynamicApiResp BilibiliWebDynamicApiResp
@@ -30,7 +27,6 @@ func reqDesktopDynamicApiResp(dynamicID string) (*BilibiliDesktopDynamicApiResp,
 	apiUrl := fmt.Sprintf(desktopDynamicAPIURLFormat, dynamicID)
 	resp, err := reqClient.R().Get(apiUrl)
 	if err != nil {
-		common.Logger.Errorf("request failed: %v", err)
 		return nil, ErrRequestFailed
 	}
 	var bilibiliDesktopDynamicApiResp BilibiliDesktopDynamicApiResp

@@ -13,7 +13,6 @@ type FetchedArtwork struct {
 }
 
 type ArtworkSource interface {
-	Init(ctx context.Context, cfg Config) error
 	GetArtworkInfo(ctx context.Context, sourceUrl string) (*FetchedArtwork, error)
 	MatchesSourceURL(sourceUrl string) (string, bool)
 	FetchNewArtworks(ctx context.Context, limit int) ([]*FetchedArtwork, error)

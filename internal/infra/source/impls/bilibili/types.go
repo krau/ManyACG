@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/krau/ManyACG/common"
+	"github.com/krau/ManyACG/pkg/strutil"
 	"github.com/krau/ManyACG/types"
 )
 
@@ -110,10 +110,9 @@ func (resp *BilibiliWebDynamicApiResp) ToArtwork() (*types.Artwork, error) {
 			UID:      strconv.Itoa(author.Mid),
 		},
 		Pictures: pictures,
-		Tags:     common.ExtractTagsFromText(summary.Text),
+		Tags:     strutil.ExtractTagsFromText(summary.Text),
 	}
 	if err := checkArtworkField(artwork); err != nil {
-		common.Logger.Errorf("check artwork field failed: %v", err)
 		return nil, ErrInvalidURL
 	}
 	return artwork, nil
@@ -231,7 +230,7 @@ func (resp *BilibiliDesktopDynamicApiResp) ToArtwork() (*types.Artwork, error) {
 				return nil, ErrInvalidURL
 			}
 			artwork.Description = module.ModuleDesc.Text
-			artwork.Tags = common.ExtractTagsFromText(module.ModuleDesc.Text)
+			artwork.Tags = strutil.ExtractTagsFromText(module.ModuleDesc.Text)
 		case "MODULE_TYPE_DYNAMIC":
 			if module.ModuleDynamic == nil {
 				return nil, ErrInvalidURL
@@ -259,7 +258,6 @@ func (resp *BilibiliDesktopDynamicApiResp) ToArtwork() (*types.Artwork, error) {
 		}
 	}
 	if err := checkArtworkField(artwork); err != nil {
-		common.Logger.Errorf("check artwork field failed: %v", err)
 		return nil, ErrInvalidURL
 	}
 	return artwork, nil
