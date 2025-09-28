@@ -9,7 +9,6 @@ import (
 
 	"github.com/gen2brain/avif"
 	"github.com/krau/ManyACG/internal/infra/config"
-	"github.com/krau/ManyACG/types"
 )
 
 var (
@@ -85,7 +84,7 @@ func CompressImageForTelegram(input []byte) ([]byte, error) {
 		return nil, fmt.Errorf("failed to write temp file: %w", err)
 	}
 	if ffmpegAvailable {
-		err = compressImageByFFmpeg(tmpFile.Name(), distFile.Name(), types.RegularPhotoSideLength)
+		err = compressImageByFFmpeg(tmpFile.Name(), distFile.Name(), RegularPhotoSideLength)
 		if err != nil {
 			return nil, fmt.Errorf("failed to compress image by ffmpeg: %w", err)
 		}
@@ -95,7 +94,7 @@ func CompressImageForTelegram(input []byte) ([]byte, error) {
 		}
 		return result, nil
 	}
-	err = compressImageNative(tmpFile.Name(), distFile.Name(), "jpeg", types.RegularPhotoSideLength)
+	err = compressImageNative(tmpFile.Name(), distFile.Name(), "jpeg", RegularPhotoSideLength)
 	if err != nil {
 		return nil, fmt.Errorf("failed to compress image natively: %w", err)
 	}

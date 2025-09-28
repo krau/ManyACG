@@ -6,7 +6,6 @@ import (
 	"fmt"
 
 	"github.com/cshum/vipsgen/vips"
-	"github.com/krau/ManyACG/types"
 )
 
 func init() {
@@ -80,13 +79,13 @@ func compressImageForTelegramByVIPS(input []byte) ([]byte, error) {
 	height := img.Height()
 	inputLen := len(input)
 	currentTotalSideLength := width + height
-	if currentTotalSideLength <= types.TelegramMaxPhotoTotalSideLength &&
-		inputLen <= types.TelegramMaxPhotoFileSize {
+	if currentTotalSideLength <= TelegramMaxPhotoTotalSideLength &&
+		inputLen <= TelegramMaxPhotoFileSize {
 		return input, nil
 	}
 	var scale float64 = 1.0
-	if currentTotalSideLength > types.TelegramMaxPhotoTotalSideLength {
-		scale = float64(types.TelegramMaxPhotoTotalSideLength) / float64(currentTotalSideLength)
+	if currentTotalSideLength > TelegramMaxPhotoTotalSideLength {
+		scale = float64(TelegramMaxPhotoTotalSideLength) / float64(currentTotalSideLength)
 	}
 	if scale < 1.0 {
 		err = img.Resize(scale, vips.DefaultResizeOptions())

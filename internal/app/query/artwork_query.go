@@ -62,12 +62,32 @@ type ArtworkQueryHandler decorator.QueryHandler[ArtworkQuery, *ArtworkQueryResul
 type ArtworkQueryRepo interface {
 	FindByID(ctx context.Context, id string) (*ArtworkQueryResult, error)
 	FindByURL(ctx context.Context, url string) (*ArtworkQueryResult, error)
+}
+
+type ArtworkSearchQueryHandler decorator.QueryHandler[ArtworkSearchQuery, ArtworkSearchQueryResult]
+
+type ArtworkSearchQueryRepo interface {
 	List(ctx context.Context, query ArtworkSearchQuery) (ArtworkSearchQueryResult, error)
 	Count(ctx context.Context, query ArtworkSearchQuery) (int, error)
 }
 
 type artworkQueryHandler struct {
 	queryRepo ArtworkQueryRepo
+}
+
+type artworkSearchQueryHandler struct {
+	queryRepo ArtworkSearchQueryRepo
+}
+
+// Handle implements ArtworkSearchQueryHandler.
+func (a *artworkSearchQueryHandler) Handle(ctx context.Context, query ArtworkSearchQuery) (ArtworkSearchQueryResult, error) {
+	panic("unimplemented")
+}
+
+func NewArtworkSearchQueryHandler(queryRepo ArtworkSearchQueryRepo) ArtworkSearchQueryHandler {
+	return &artworkSearchQueryHandler{
+		queryRepo: queryRepo,
+	}
 }
 
 // Handle implements ArtworkQueryHandler.
