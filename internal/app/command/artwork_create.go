@@ -77,7 +77,6 @@ func (h *createArtworkHandler) Handle(ctx context.Context, cmd *ArtworkCreation)
 			}
 			tagIDs.UnsafeAdd(tagEnt.ID)
 		}
-
 		_, err = repos.ArtworkRepo.FindByURL(ctx, cmd.SourceURL)
 		if err == nil {
 			return errors.New("artwork with the same source URL already exists")

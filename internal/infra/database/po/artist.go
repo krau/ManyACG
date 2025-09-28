@@ -1,9 +1,9 @@
 package po
 
 import (
+	"github.com/krau/ManyACG/internal/domain/entity/artist"
 	"github.com/krau/ManyACG/internal/shared"
 	"github.com/krau/ManyACG/pkg/objectuuid"
-	"gorm.io/datatypes"
 )
 
 type Artist struct {
@@ -17,11 +17,28 @@ type Artist struct {
 	Artworks []*Artwork `gorm:"foreignKey:ArtistID" json:"artworks"`
 }
 
-type Tag struct {
-	ID    objectuuid.ObjectUUID       `gorm:"primaryKey;type:uuid" json:"id"`
-	Name  string                      `gorm:"type:text;not null;uniqueIndex" json:"name"`
-	Alias datatypes.JSONSlice[string] `gorm:"type:json" json:"alias"` // stores []string as JSON
+func (a *Artist) ToDomain() *artist.Artist {
+	if a == nil {
+		return nil
+	}
+	return &artist.Artist{
+		ID:       a.ID,
+		Name:     a.Name,
+		Type:     a.Type,
+		UID:      a.UID,
+		Username: a.Username,
+	}
+}
 
-	// reverse relation via many2many
-	Artworks []*Artwork `gorm:"many2many:artwork_tags" json:"artworks"`
+func ArtistFromDomain(a *artist.Artist) *Artist {
+	if a == nil {
+		panic("why you passing nil artist")
+	}
+	return &Artist{
+		ID:       a.ID,
+		Name:     a.Name,
+		Type:     a.Type,
+		UID:      a.UID,
+		Username: a.Username,
+	}
 }
