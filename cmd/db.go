@@ -185,7 +185,7 @@ var migrateCmd = &cobra.Command{
 		return migrate.Run(ctx, &migrate.Option{
 			MongoClient: dao.Client,
 			GormDB:      db,
-			Cfg:         config.Cfg,
+			Cfg:         *config.Cfg,
 		})
 	},
 }

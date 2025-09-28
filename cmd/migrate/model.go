@@ -85,12 +85,20 @@ func (a *Artist) BeforeCreate(tx *gorm.DB) (err error) {
 
 // ----- Tag -----
 type Tag struct {
-	ID    MongoUUID                   `gorm:"primaryKey;type:uuid" json:"id"`
-	Name  string                      `gorm:"type:text;not null;uniqueIndex" json:"name"`
-	Alias datatypes.JSONSlice[string] `gorm:"type:json" json:"alias"` // stores []string as JSON
+	ID    MongoUUID   `gorm:"primaryKey;type:uuid" json:"id"`
+	Name  string      `gorm:"type:text;not null;uniqueIndex" json:"name"`
+	Alias []*TagAlias `gorm:"foreignKey:TagID;constraint:OnDelete:CASCADE" json:"alias"`
 
 	// reverse relation via many2many
 	Artworks []*Artwork `gorm:"many2many:artwork_tags" json:"artworks"`
+}
+
+type TagAlias struct {
+	ID    MongoUUID `gorm:"primaryKey;type:uuid" json:"id"`
+	TagID MongoUUID `gorm:"type:uuid;index" json:"tag_id"`
+	Tag   *Tag      `gorm:"foreignKey:TagID;references:ID;constraint:OnDelete:CASCADE" json:"tag"`
+
+	Alias string `gorm:"type:text;not null;index" json:"alias"`
 }
 
 func (t *Tag) BeforeCreate(tx *gorm.DB) (err error) {
