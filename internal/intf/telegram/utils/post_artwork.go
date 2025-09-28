@@ -15,14 +15,11 @@ import (
 	"github.com/krau/ManyACG/internal/pkg/imgtool"
 
 	"github.com/krau/ManyACG/internal/infra/storage"
-	"github.com/krau/ManyACG/service"
 	"github.com/krau/ManyACG/types"
 
 	"github.com/mymmrac/telego"
 	"github.com/mymmrac/telego/telegoapi"
 	"github.com/mymmrac/telego/telegoutil"
-	"go.mongodb.org/mongo-driver/bson/primitive"
-	"go.mongodb.org/mongo-driver/mongo"
 )
 
 func SendArtworkMediaGroup(ctx context.Context, bot *telego.Bot, chatID telego.ChatID, artwork *types.Artwork) ([]telego.Message, error) {
@@ -152,232 +149,232 @@ func GetArtworkInputMediaPhotos(ctx context.Context, artwork *types.Artwork, sta
 	return inputMediaPhotos, nil
 }
 
-func PostAndCreateArtwork(ctx context.Context, artwork *types.Artwork, bot *telego.Bot, fromID int64, messageID int) error {
-	artworkInDB, err := service.GetArtworkByURL(ctx, artwork.SourceURL)
-	if err == nil && artworkInDB != nil {
-		common.Logger.Debugf("Artwork %s already exists", artwork.Title)
-		return fmt.Errorf("post artwork %s error: %w", artwork.Title, errs.ErrArtworkAlreadyExist)
-	}
-	if err != nil && !errors.Is(err, mongo.ErrNoDocuments) {
-		return err
-	}
-	if service.CheckDeletedByURL(ctx, artwork.SourceURL) {
-		common.Logger.Debugf("Artwork %s is deleted", artwork.Title)
-		return fmt.Errorf("post artwork %s error: %w", artwork.Title, errs.ErrArtworkDeleted)
-	}
-	showProgress := fromID != 0 && messageID != 0 && bot != nil
-	if showProgress {
-		defer bot.EditMessageReplyMarkup(ctx, &telego.EditMessageReplyMarkupParams{
-			ChatID:      telegoutil.ID(fromID),
-			MessageID:   messageID,
-			ReplyMarkup: nil,
-		})
-	}
-	for i, picture := range artwork.Pictures {
-		if showProgress {
-			go bot.EditMessageReplyMarkup(ctx, &telego.EditMessageReplyMarkupParams{
-				ChatID:    telegoutil.ID(fromID),
-				MessageID: messageID,
-				ReplyMarkup: telegoutil.InlineKeyboard(
-					[]telego.InlineKeyboardButton{
-						telegoutil.InlineKeyboardButton("正在处理存储...").WithCallbackData("noop")},
-				),
-			})
-		}
-		info, err := storage.SaveAll(ctx, artwork, picture)
-		if err != nil {
-			common.Logger.Errorf("saving picture %d of artwork %s: %s", i, artwork.Title, err)
-			return fmt.Errorf("saving picture %d of artwork %s: %w", i, artwork.Title, err)
-		}
-		artwork.Pictures[i].StorageInfo = info
-	}
-	if showProgress {
-		go bot.EditMessageReplyMarkup(ctx, &telego.EditMessageReplyMarkupParams{
-			ChatID:    telegoutil.ID(fromID),
-			MessageID: messageID,
-			ReplyMarkup: telegoutil.InlineKeyboard(
-				[]telego.InlineKeyboardButton{
-					telegoutil.InlineKeyboardButton("正在发布到频道...").WithCallbackData("noop"),
-				},
-			),
-		})
-	}
-	messages, err := SendArtworkMediaGroup(ctx, bot, ChannelChatID, artwork)
-	if err != nil {
-		return fmt.Errorf("posting artwork [%s](%s): %w", artwork.Title, artwork.SourceURL, err)
-	}
-	common.Logger.Infof("Posted artwork %s", artwork.Title)
-	if showProgress {
-		go bot.EditMessageReplyMarkup(ctx, &telego.EditMessageReplyMarkupParams{
-			ChatID:    telegoutil.ID(fromID),
-			MessageID: messageID,
-			ReplyMarkup: telegoutil.InlineKeyboard(
-				[]telego.InlineKeyboardButton{
-					telegoutil.InlineKeyboardButton("发布完成").WithCallbackData("noop"),
-				},
-			),
-		})
-	}
-	for i, picture := range artwork.Pictures {
-		if picture.TelegramInfo == nil {
-			picture.TelegramInfo = &types.TelegramInfo{}
-		}
-		picture.TelegramInfo.MessageID = messages[i].MessageID
-		picture.TelegramInfo.MediaGroupID = messages[i].MediaGroupID
-		if messages[i].Photo != nil {
-			picture.TelegramInfo.PhotoFileID = messages[i].Photo[len(messages[i].Photo)-1].FileID
-		}
-		if messages[i].Document != nil {
-			picture.TelegramInfo.DocumentFileID = messages[i].Document.FileID
-		}
-	}
+// func PostAndCreateArtwork(ctx context.Context, artwork *types.Artwork, bot *telego.Bot, fromID int64, messageID int) error {
+// 	artworkInDB, err := service.GetArtworkByURL(ctx, artwork.SourceURL)
+// 	if err == nil && artworkInDB != nil {
+// 		common.Logger.Debugf("Artwork %s already exists", artwork.Title)
+// 		return fmt.Errorf("post artwork %s error: %w", artwork.Title, errs.ErrArtworkAlreadyExist)
+// 	}
+// 	if err != nil && !errors.Is(err, mongo.ErrNoDocuments) {
+// 		return err
+// 	}
+// 	if service.CheckDeletedByURL(ctx, artwork.SourceURL) {
+// 		common.Logger.Debugf("Artwork %s is deleted", artwork.Title)
+// 		return fmt.Errorf("post artwork %s error: %w", artwork.Title, errs.ErrArtworkDeleted)
+// 	}
+// 	showProgress := fromID != 0 && messageID != 0 && bot != nil
+// 	if showProgress {
+// 		defer bot.EditMessageReplyMarkup(ctx, &telego.EditMessageReplyMarkupParams{
+// 			ChatID:      telegoutil.ID(fromID),
+// 			MessageID:   messageID,
+// 			ReplyMarkup: nil,
+// 		})
+// 	}
+// 	for i, picture := range artwork.Pictures {
+// 		if showProgress {
+// 			go bot.EditMessageReplyMarkup(ctx, &telego.EditMessageReplyMarkupParams{
+// 				ChatID:    telegoutil.ID(fromID),
+// 				MessageID: messageID,
+// 				ReplyMarkup: telegoutil.InlineKeyboard(
+// 					[]telego.InlineKeyboardButton{
+// 						telegoutil.InlineKeyboardButton("正在处理存储...").WithCallbackData("noop")},
+// 				),
+// 			})
+// 		}
+// 		info, err := storage.SaveAll(ctx, artwork, picture)
+// 		if err != nil {
+// 			common.Logger.Errorf("saving picture %d of artwork %s: %s", i, artwork.Title, err)
+// 			return fmt.Errorf("saving picture %d of artwork %s: %w", i, artwork.Title, err)
+// 		}
+// 		artwork.Pictures[i].StorageInfo = info
+// 	}
+// 	if showProgress {
+// 		go bot.EditMessageReplyMarkup(ctx, &telego.EditMessageReplyMarkupParams{
+// 			ChatID:    telegoutil.ID(fromID),
+// 			MessageID: messageID,
+// 			ReplyMarkup: telegoutil.InlineKeyboard(
+// 				[]telego.InlineKeyboardButton{
+// 					telegoutil.InlineKeyboardButton("正在发布到频道...").WithCallbackData("noop"),
+// 				},
+// 			),
+// 		})
+// 	}
+// 	messages, err := SendArtworkMediaGroup(ctx, bot, ChannelChatID, artwork)
+// 	if err != nil {
+// 		return fmt.Errorf("posting artwork [%s](%s): %w", artwork.Title, artwork.SourceURL, err)
+// 	}
+// 	common.Logger.Infof("Posted artwork %s", artwork.Title)
+// 	if showProgress {
+// 		go bot.EditMessageReplyMarkup(ctx, &telego.EditMessageReplyMarkupParams{
+// 			ChatID:    telegoutil.ID(fromID),
+// 			MessageID: messageID,
+// 			ReplyMarkup: telegoutil.InlineKeyboard(
+// 				[]telego.InlineKeyboardButton{
+// 					telegoutil.InlineKeyboardButton("发布完成").WithCallbackData("noop"),
+// 				},
+// 			),
+// 		})
+// 	}
+// 	for i, picture := range artwork.Pictures {
+// 		if picture.TelegramInfo == nil {
+// 			picture.TelegramInfo = &types.TelegramInfo{}
+// 		}
+// 		picture.TelegramInfo.MessageID = messages[i].MessageID
+// 		picture.TelegramInfo.MediaGroupID = messages[i].MediaGroupID
+// 		if messages[i].Photo != nil {
+// 			picture.TelegramInfo.PhotoFileID = messages[i].Photo[len(messages[i].Photo)-1].FileID
+// 		}
+// 		if messages[i].Document != nil {
+// 			picture.TelegramInfo.DocumentFileID = messages[i].Document.FileID
+// 		}
+// 	}
 
-	artwork, err = service.CreateArtwork(ctx, artwork)
-	if err != nil {
-		go func() {
-			if bot.DeleteMessages(ctx, &telego.DeleteMessagesParams{
-				ChatID:     ChannelChatID,
-				MessageIDs: GetMessageIDs(messages),
-			}) != nil {
-				common.Logger.Errorf("deleting messages: %s", err)
-			}
-		}()
-		return fmt.Errorf("error when creating artwork: %w", err)
-	}
-	go afterCreate(context.TODO(), artwork, bot, fromID)
-	return nil
-}
+// 	artwork, err = service.CreateArtwork(ctx, artwork)
+// 	if err != nil {
+// 		go func() {
+// 			if bot.DeleteMessages(ctx, &telego.DeleteMessagesParams{
+// 				ChatID:     ChannelChatID,
+// 				MessageIDs: GetMessageIDs(messages),
+// 			}) != nil {
+// 				common.Logger.Errorf("deleting messages: %s", err)
+// 			}
+// 		}()
+// 		return fmt.Errorf("error when creating artwork: %w", err)
+// 	}
+// 	go afterCreate(context.TODO(), artwork, bot, fromID)
+// 	return nil
+// }
 
-func afterCreate(ctx context.Context, artwork *types.Artwork, bot *telego.Bot, fromID int64) {
-	time.Sleep(3 * time.Second) // 等待 Telegram 完全处理完消息
-	objectID, err := primitive.ObjectIDFromHex(artwork.ID)
-	if err != nil {
-		common.Logger.Fatalf("invalid ObjectID: %s", artwork.ID)
-		return
-	}
-	for _, picture := range artwork.Pictures {
-		service.AddProcessPictureTask(ctx, picture)
-	}
-	checkDuplicate(ctx, artwork, bot, fromID)
-	if common.TaggerClient != nil && config.Get().Tagger.TagNew {
-		go service.AddPredictArtworkTagTask(ctx, objectID, TgService)
-	} else {
-		go recaptionArtwork(ctx, artwork, bot)
-	}
-}
+// func afterCreate(ctx context.Context, artwork *types.Artwork, bot *telego.Bot, fromID int64) {
+// 	time.Sleep(3 * time.Second) // 等待 Telegram 完全处理完消息
+// 	objectID, err := primitive.ObjectIDFromHex(artwork.ID)
+// 	if err != nil {
+// 		common.Logger.Fatalf("invalid ObjectID: %s", artwork.ID)
+// 		return
+// 	}
+// 	for _, picture := range artwork.Pictures {
+// 		service.AddProcessPictureTask(ctx, picture)
+// 	}
+// 	checkDuplicate(ctx, artwork, bot, fromID)
+// 	if common.TaggerClient != nil && config.Get().Tagger.TagNew {
+// 		go service.AddPredictArtworkTagTask(ctx, objectID, TgService)
+// 	} else {
+// 		go recaptionArtwork(ctx, artwork, bot)
+// 	}
+// }
 
-func checkDuplicate(ctx context.Context, artwork *types.Artwork, bot *telego.Bot, fromID int64) {
-	sendNotify := fromID != 0 && bot != nil
-	artworkID, err := primitive.ObjectIDFromHex(artwork.ID)
-	artworkTitleMarkdown := common.EscapeMarkdown(artwork.Title)
-	if err != nil {
-		common.Logger.Errorf("invalid ObjectID: %s", artwork.ID)
-		if sendNotify {
-			bot.SendMessage(ctx, telegoutil.Messagef(telegoutil.ID(fromID),
-				"刚刚发布的作品 [%s](%s) 后续处理失败\\: \n无效的ObjectID\\: %s", artworkTitleMarkdown, func() string {
-					if artwork.Pictures[0].TelegramInfo.MessageID != 0 {
-						return GetArtworkPostMessageURL(artwork.Pictures[0].TelegramInfo.MessageID, ChannelChatID)
-					}
-					return artwork.SourceURL
-				}(), err).
-				WithParseMode(telego.ModeMarkdownV2))
-		}
-		return
-	}
+// func checkDuplicate(ctx context.Context, artwork *types.Artwork, bot *telego.Bot, fromID int64) {
+// 	sendNotify := fromID != 0 && bot != nil
+// 	artworkID, err := primitive.ObjectIDFromHex(artwork.ID)
+// 	artworkTitleMarkdown := common.EscapeMarkdown(artwork.Title)
+// 	if err != nil {
+// 		common.Logger.Errorf("invalid ObjectID: %s", artwork.ID)
+// 		if sendNotify {
+// 			bot.SendMessage(ctx, telegoutil.Messagef(telegoutil.ID(fromID),
+// 				"刚刚发布的作品 [%s](%s) 后续处理失败\\: \n无效的ObjectID\\: %s", artworkTitleMarkdown, func() string {
+// 					if artwork.Pictures[0].TelegramInfo.MessageID != 0 {
+// 						return GetArtworkPostMessageURL(artwork.Pictures[0].TelegramInfo.MessageID, ChannelChatID)
+// 					}
+// 					return artwork.SourceURL
+// 				}(), err).
+// 				WithParseMode(telego.ModeMarkdownV2))
+// 		}
+// 		return
+// 	}
 
-	for _, picture := range artwork.Pictures {
-		pictureID, err := primitive.ObjectIDFromHex(picture.ID)
-		if err != nil {
-			common.Logger.Errorf("invalid ObjectID: %s", picture.ID)
-			continue
-		}
-		picture, err = service.GetPictureByID(ctx, pictureID)
-		if err != nil {
-			common.Logger.Warnf("error when getting picture by message ID: %s", err)
-			continue
-		}
-		resPictures, err := service.GetPicturesByHashHammingDistance(ctx, picture.Hash, 10)
-		if err != nil {
-			common.Logger.Warnf("error when getting pictures by hash: %s", err)
-			continue
-		}
-		similarPictures := make([]*types.Picture, 0)
-		for _, resPicture := range resPictures {
-			resArtworkID, err := primitive.ObjectIDFromHex(resPicture.ArtworkID)
-			if err != nil {
-				common.Logger.Warnf("invalid ObjectID: %s", resPicture.ArtworkID)
-				continue
-			}
-			if resArtworkID == artworkID {
-				continue
-			}
-			similarPictures = append(similarPictures, resPicture)
-		}
-		if len(similarPictures) == 0 {
-			continue
-		}
-		common.Logger.Noticef("Found %d similar pictures for %s", len(similarPictures), picture.Original)
-		if !sendNotify {
-			continue
-		}
+// 	for _, picture := range artwork.Pictures {
+// 		pictureID, err := primitive.ObjectIDFromHex(picture.ID)
+// 		if err != nil {
+// 			common.Logger.Errorf("invalid ObjectID: %s", picture.ID)
+// 			continue
+// 		}
+// 		picture, err = service.GetPictureByID(ctx, pictureID)
+// 		if err != nil {
+// 			common.Logger.Warnf("error when getting picture by message ID: %s", err)
+// 			continue
+// 		}
+// 		resPictures, err := service.GetPicturesByHashHammingDistance(ctx, picture.Hash, 10)
+// 		if err != nil {
+// 			common.Logger.Warnf("error when getting pictures by hash: %s", err)
+// 			continue
+// 		}
+// 		similarPictures := make([]*types.Picture, 0)
+// 		for _, resPicture := range resPictures {
+// 			resArtworkID, err := primitive.ObjectIDFromHex(resPicture.ArtworkID)
+// 			if err != nil {
+// 				common.Logger.Warnf("invalid ObjectID: %s", resPicture.ArtworkID)
+// 				continue
+// 			}
+// 			if resArtworkID == artworkID {
+// 				continue
+// 			}
+// 			similarPictures = append(similarPictures, resPicture)
+// 		}
+// 		if len(similarPictures) == 0 {
+// 			continue
+// 		}
+// 		common.Logger.Noticef("Found %d similar pictures for %s", len(similarPictures), picture.Original)
+// 		if !sendNotify {
+// 			continue
+// 		}
 
-		text := fmt.Sprintf("*刚刚发布的作品 [%s](%s) 中第 %d 张图片搜索到有%d个相似图片*\n",
-			artworkTitleMarkdown,
-			common.EscapeMarkdown(func() string {
-				if picture.TelegramInfo.MessageID != 0 {
-					return GetArtworkPostMessageURL(picture.TelegramInfo.MessageID, ChannelChatID)
-				}
-				return artwork.SourceURL
-			}()),
-			picture.Index+1,
-			len(similarPictures))
-		text += common.EscapeMarkdown("搜索到的相似图片列表:\n\n")
-		for _, similarPicture := range similarPictures {
-			objectID, err := primitive.ObjectIDFromHex(similarPicture.ArtworkID)
-			if err != nil {
-				common.Logger.Errorf("invalid ObjectID: %s", similarPicture.ArtworkID)
-				continue
-			}
+// 		text := fmt.Sprintf("*刚刚发布的作品 [%s](%s) 中第 %d 张图片搜索到有%d个相似图片*\n",
+// 			artworkTitleMarkdown,
+// 			common.EscapeMarkdown(func() string {
+// 				if picture.TelegramInfo.MessageID != 0 {
+// 					return GetArtworkPostMessageURL(picture.TelegramInfo.MessageID, ChannelChatID)
+// 				}
+// 				return artwork.SourceURL
+// 			}()),
+// 			picture.Index+1,
+// 			len(similarPictures))
+// 		text += common.EscapeMarkdown("搜索到的相似图片列表:\n\n")
+// 		for _, similarPicture := range similarPictures {
+// 			objectID, err := primitive.ObjectIDFromHex(similarPicture.ArtworkID)
+// 			if err != nil {
+// 				common.Logger.Errorf("invalid ObjectID: %s", similarPicture.ArtworkID)
+// 				continue
+// 			}
 
-			artworkOfSimilarPicture, err := service.GetArtworkByID(ctx, objectID)
-			if err != nil {
-				common.Logger.Warnf("error when getting artwork by ID: %s", err)
-				continue
-			}
-			text += fmt.Sprintf("[%s\\_%d](%s)  ",
-				common.EscapeMarkdown(artworkOfSimilarPicture.Title),
-				similarPicture.Index+1,
-				common.EscapeMarkdown(func() string {
-					if similarPicture.TelegramInfo.MessageID != 0 {
-						return GetArtworkPostMessageURL(similarPicture.TelegramInfo.MessageID, ChannelChatID)
-					}
-					return artworkOfSimilarPicture.SourceURL
-				}()))
-		}
-		_, err = bot.SendMessage(ctx, telegoutil.Message(telegoutil.ID(fromID), text).WithParseMode(telego.ModeMarkdownV2))
-		if err != nil {
-			common.Logger.Errorf("error when sending similar pictures: %s", err)
-		}
-	}
-}
+// 			artworkOfSimilarPicture, err := service.GetArtworkByID(ctx, objectID)
+// 			if err != nil {
+// 				common.Logger.Warnf("error when getting artwork by ID: %s", err)
+// 				continue
+// 			}
+// 			text += fmt.Sprintf("[%s\\_%d](%s)  ",
+// 				common.EscapeMarkdown(artworkOfSimilarPicture.Title),
+// 				similarPicture.Index+1,
+// 				common.EscapeMarkdown(func() string {
+// 					if similarPicture.TelegramInfo.MessageID != 0 {
+// 						return GetArtworkPostMessageURL(similarPicture.TelegramInfo.MessageID, ChannelChatID)
+// 					}
+// 					return artworkOfSimilarPicture.SourceURL
+// 				}()))
+// 		}
+// 		_, err = bot.SendMessage(ctx, telegoutil.Message(telegoutil.ID(fromID), text).WithParseMode(telego.ModeMarkdownV2))
+// 		if err != nil {
+// 			common.Logger.Errorf("error when sending similar pictures: %s", err)
+// 		}
+// 	}
+// }
 
-func recaptionArtwork(ctx context.Context, artwork *types.Artwork, bot *telego.Bot) {
-	newArtwork, err := service.GetArtworkByURL(ctx, artwork.SourceURL)
-	if err != nil {
-		common.Logger.Errorf("error when getting artwork by URL: %s", err)
-		return
-	}
-	if newArtwork.Pictures[0].TelegramInfo == nil || newArtwork.Pictures[0].TelegramInfo.MessageID == 0 {
-		return
-	}
-	newCaption := GetArtworkHTMLCaption(newArtwork)
-	_, err = bot.EditMessageCaption(ctx, &telego.EditMessageCaptionParams{
-		ChatID:    ChannelChatID,
-		MessageID: newArtwork.Pictures[0].TelegramInfo.MessageID,
-		Caption:   newCaption,
-		ParseMode: telego.ModeHTML,
-	})
-	if err != nil {
-		common.Logger.Warnf("error when recaption artwork: %s", err)
-	}
-}
+// func recaptionArtwork(ctx context.Context, artwork *types.Artwork, bot *telego.Bot) {
+// 	newArtwork, err := service.GetArtworkByURL(ctx, artwork.SourceURL)
+// 	if err != nil {
+// 		common.Logger.Errorf("error when getting artwork by URL: %s", err)
+// 		return
+// 	}
+// 	if newArtwork.Pictures[0].TelegramInfo == nil || newArtwork.Pictures[0].TelegramInfo.MessageID == 0 {
+// 		return
+// 	}
+// 	newCaption := GetArtworkHTMLCaption(newArtwork)
+// 	_, err = bot.EditMessageCaption(ctx, &telego.EditMessageCaptionParams{
+// 		ChatID:    ChannelChatID,
+// 		MessageID: newArtwork.Pictures[0].TelegramInfo.MessageID,
+// 		Caption:   newCaption,
+// 		ParseMode: telego.ModeHTML,
+// 	})
+// 	if err != nil {
+// 		common.Logger.Warnf("error when recaption artwork: %s", err)
+// 	}
+// }

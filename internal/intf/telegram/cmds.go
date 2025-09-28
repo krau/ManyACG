@@ -2,13 +2,7 @@ package telegram
 
 import "github.com/mymmrac/telego"
 
-var (
-	Bot                *telego.Bot
-	BotUsername        string // 没有 @
-	ChannelChatID      telego.ChatID
-	GroupChatID        telego.ChatID // 附属群组
-	IsChannelAvailable bool          // 是否可以发布到频道
-)
+
 
 var (
 	CommonCommands = []telego.BotCommand{

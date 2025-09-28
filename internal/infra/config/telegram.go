@@ -1,6 +1,6 @@
 package config
 
-type telegramConfig struct {
+type TelegramConfig struct {
 	Token    string         `toml:"token" mapstructure:"token" json:"token" yaml:"token"`
 	APIURL   string         `toml:"api_url" mapstructure:"api_url" json:"api_url" yaml:"api_url"`
 	Admins   []int64        `toml:"admins" mapstructure:"admins" json:"admins" yaml:"admins"`
@@ -9,10 +9,10 @@ type telegramConfig struct {
 	Username string         `toml:"username" mapstructure:"username" json:"username" yaml:"username"`
 	Sleep    uint           `toml:"sleep" mapstructure:"sleep" json:"sleep" yaml:"sleep"`
 	GroupID  int64          `toml:"group_id" mapstructure:"group_id" json:"group_id" yaml:"group_id"`
-	Retry    botRetryConfig `toml:"retry" mapstructure:"retry" json:"retry" yaml:"retry"`
+	Retry    BotRetryConfig `toml:"retry" mapstructure:"retry" json:"retry" yaml:"retry"`
 }
 
-type botRetryConfig struct {
+type BotRetryConfig struct {
 	MaxAttempts  int     `toml:"max_attempts" mapstructure:"max_attempts" json:"max_attempts" yaml:"max_attempts"`
 	ExponentBase float64 `toml:"exponent_base" mapstructure:"exponent_base" json:"exponent_base" yaml:"exponent_base"`
 	StartDelay   int64   `toml:"start_delay" mapstructure:"start_delay" json:"start_delay" yaml:"start_delay"`

@@ -10,15 +10,12 @@ import (
 	"github.com/krau/ManyACG/internal/common/errs"
 	"github.com/krau/ManyACG/internal/infra/config"
 	sources "github.com/krau/ManyACG/internal/infra/source"
-	"github.com/krau/ManyACG/internal/infra/storage"
 	"github.com/krau/ManyACG/internal/pkg/imgtool"
 	"github.com/krau/ManyACG/pkg/strutil"
-	"github.com/krau/ManyACG/service"
 	"github.com/krau/ManyACG/types"
 
 	"github.com/mymmrac/telego"
 	"github.com/mymmrac/telego/telegoutil"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 func GetMessageIDs(messages []telego.Message) []int {
@@ -222,69 +219,69 @@ func FindSourceURLForMessage(message *telego.Message) string {
 	return sources.FindSourceURL(text)
 }
 
-func SendPictureFileByID(ctx context.Context, bot *telego.Bot, message telego.Message, channelChatID telego.ChatID, pictureID string) (*telego.Message, error) {
-	objectID, err := primitive.ObjectIDFromHex(pictureID)
-	if err != nil {
-		return nil, err
-	}
-	picture, err := service.GetPictureByID(ctx, objectID)
-	if err != nil {
-		return nil, err
-	}
-	var file telego.InputFile
-	if picture.TelegramInfo != nil && picture.TelegramInfo.DocumentFileID != "" {
-		file = telegoutil.FileFromID(picture.TelegramInfo.DocumentFileID)
-	} else {
-		go ReplyMessage(ctx, bot, message, "正在下载原图，请稍等~")
-		data, err := storage.GetFile(ctx, picture.StorageInfo.Original)
-		if err != nil {
-			data, err = common.DownloadWithCache(ctx, picture.Original, nil)
-			if err != nil {
-				return nil, err
-			}
-		}
-		file = telegoutil.File(telegoutil.NameReader(bytes.NewReader(data), picture.GetFileName()))
-	}
-	document := telegoutil.Document(message.Chat.ChatID(), file).
-		WithReplyParameters(&telego.ReplyParameters{
-			MessageID: message.MessageID,
-		}).WithDisableContentTypeDetection()
-	if IsChannelAvailable && picture.TelegramInfo != nil && picture.TelegramInfo.MessageID != 0 {
-		document.WithReplyMarkup(telegoutil.InlineKeyboard([]telego.InlineKeyboardButton{
-			telegoutil.InlineKeyboardButton("详情").WithURL(GetArtworkPostMessageURL(picture.TelegramInfo.MessageID, channelChatID)),
-		}))
-	} else {
-		artworkID, err := primitive.ObjectIDFromHex(picture.ArtworkID)
-		if err == nil {
-			artwork, err := service.GetArtworkByID(ctx, artworkID)
-			if err == nil {
-				document.WithReplyMarkup(telegoutil.InlineKeyboard([]telego.InlineKeyboardButton{
-					telegoutil.InlineKeyboardButton("详情").WithURL(artwork.SourceURL),
-				}))
-			} else {
-				common.Logger.Warnf("获取作品信息失败: %s", err)
-			}
-		} else {
-			common.Logger.Warnf("创建 ObjectID 失败: %s", err)
-		}
-	}
-	documentMessage, err := bot.SendDocument(ctx, document)
-	if err != nil {
-		return nil, err
-	}
-	if documentMessage != nil {
-		if documentMessage.Document != nil {
-			if picture.TelegramInfo == nil {
-				picture.TelegramInfo = &types.TelegramInfo{}
-			}
-			picture.TelegramInfo.DocumentFileID = documentMessage.Document.FileID
-			if service.UpdatePictureTelegramInfo(ctx, picture, picture.TelegramInfo) != nil {
-				common.Logger.Warnf("更新图片信息失败: %s", err)
-			}
-		}
-	}
-	return documentMessage, nil
-}
+// func SendPictureFileByID(ctx context.Context, bot *telego.Bot, message telego.Message, channelChatID telego.ChatID, pictureID string) (*telego.Message, error) {
+// 	objectID, err := primitive.ObjectIDFromHex(pictureID)
+// 	if err != nil {
+// 		return nil, err
+// 	}
+// 	picture, err := service.GetPictureByID(ctx, objectID)
+// 	if err != nil {
+// 		return nil, err
+// 	}
+// 	var file telego.InputFile
+// 	if picture.TelegramInfo != nil && picture.TelegramInfo.DocumentFileID != "" {
+// 		file = telegoutil.FileFromID(picture.TelegramInfo.DocumentFileID)
+// 	} else {
+// 		go ReplyMessage(ctx, bot, message, "正在下载原图，请稍等~")
+// 		data, err := storage.GetFile(ctx, picture.StorageInfo.Original)
+// 		if err != nil {
+// 			data, err = common.DownloadWithCache(ctx, picture.Original, nil)
+// 			if err != nil {
+// 				return nil, err
+// 			}
+// 		}
+// 		file = telegoutil.File(telegoutil.NameReader(bytes.NewReader(data), picture.GetFileName()))
+// 	}
+// 	document := telegoutil.Document(message.Chat.ChatID(), file).
+// 		WithReplyParameters(&telego.ReplyParameters{
+// 			MessageID: message.MessageID,
+// 		}).WithDisableContentTypeDetection()
+// 	if IsChannelAvailable && picture.TelegramInfo != nil && picture.TelegramInfo.MessageID != 0 {
+// 		document.WithReplyMarkup(telegoutil.InlineKeyboard([]telego.InlineKeyboardButton{
+// 			telegoutil.InlineKeyboardButton("详情").WithURL(GetArtworkPostMessageURL(picture.TelegramInfo.MessageID, channelChatID)),
+// 		}))
+// 	} else {
+// 		artworkID, err := primitive.ObjectIDFromHex(picture.ArtworkID)
+// 		if err == nil {
+// 			artwork, err := service.GetArtworkByID(ctx, artworkID)
+// 			if err == nil {
+// 				document.WithReplyMarkup(telegoutil.InlineKeyboard([]telego.InlineKeyboardButton{
+// 					telegoutil.InlineKeyboardButton("详情").WithURL(artwork.SourceURL),
+// 				}))
+// 			} else {
+// 				common.Logger.Warnf("获取作品信息失败: %s", err)
+// 			}
+// 		} else {
+// 			common.Logger.Warnf("创建 ObjectID 失败: %s", err)
+// 		}
+// 	}
+// 	documentMessage, err := bot.SendDocument(ctx, document)
+// 	if err != nil {
+// 		return nil, err
+// 	}
+// 	if documentMessage != nil {
+// 		if documentMessage.Document != nil {
+// 			if picture.TelegramInfo == nil {
+// 				picture.TelegramInfo = &types.TelegramInfo{}
+// 			}
+// 			picture.TelegramInfo.DocumentFileID = documentMessage.Document.FileID
+// 			if service.UpdatePictureTelegramInfo(ctx, picture, picture.TelegramInfo) != nil {
+// 				common.Logger.Warnf("更新图片信息失败: %s", err)
+// 			}
+// 		}
+// 	}
+// 	return documentMessage, nil
+// }
 
 // GetPicturePreviewInputFile 获取图片预览的 InputFile
 func GetPicturePreviewInputFile(ctx context.Context, picture *types.Picture) (*telego.InputFile, error) {

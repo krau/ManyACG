@@ -2,6 +2,7 @@ package artwork
 
 import (
 	"slices"
+	"sync"
 
 	"github.com/krau/ManyACG/internal/shared"
 	"github.com/krau/ManyACG/pkg/objectuuid"
@@ -31,9 +32,10 @@ type Artwork struct {
 	SourceURL   string
 	LikeCount   uint
 
-	ArtistID objectuuid.ObjectUUID
-	TagIDs   *objectuuid.ObjectUUIDs
-	Pictures []Picture
+	ArtistID  objectuuid.ObjectUUID
+	TagIDs    *objectuuid.ObjectUUIDs
+	Pictures  []Picture
+	pictureMu sync.RWMutex
 }
 
 func (a *Artwork) AddTags(tagIDs ...objectuuid.ObjectUUID) {
@@ -51,6 +53,8 @@ func (a *Artwork) RemoveTags(tagIDs ...objectuuid.ObjectUUID) {
 }
 
 func (a *Artwork) RemovePicture(pictureID objectuuid.ObjectUUID) {
+	a.pictureMu.Lock()
+	defer a.pictureMu.Unlock()
 	if a.Pictures == nil {
 		return
 	}
@@ -61,10 +65,7 @@ func (a *Artwork) RemovePicture(pictureID objectuuid.ObjectUUID) {
 		return
 	}
 	a.Pictures = append(a.Pictures[:index], a.Pictures[index+1:]...)
-	a.reorderPictures()
-}
-
-func (a *Artwork) reorderPictures() {
+	// Reorder indexes
 	slices.SortFunc(a.Pictures, func(i, j Picture) int {
 		return int(i.Index) - int(j.Index)
 	})
@@ -114,6 +115,8 @@ func (a *Artwork) UpdatePictureThumbHash(pictureID objectuuid.ObjectUUID, thumbH
 }
 
 func (a *Artwork) UpdatePicture(pictureID objectuuid.ObjectUUID, f func(p *Picture)) {
+	a.pictureMu.Lock()
+	defer a.pictureMu.Unlock()
 	for i := range a.Pictures {
 		if a.Pictures[i].ID == pictureID {
 			f(&a.Pictures[i])

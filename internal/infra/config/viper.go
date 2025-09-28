@@ -22,7 +22,7 @@ type Config struct {
 	Log      logConfig      `toml:"log" mapstructure:"log" json:"log" yaml:"log"`
 	Source   sourceConfigs  `toml:"source" mapstructure:"source" json:"source" yaml:"source"`
 	Storage  storageConfigs `toml:"storage" mapstructure:"storage" json:"storage" yaml:"storage"`
-	Telegram telegramConfig `toml:"telegram" mapstructure:"telegram" json:"telegram" yaml:"telegram"`
+	Telegram TelegramConfig `toml:"telegram" mapstructure:"telegram" json:"telegram" yaml:"telegram"`
 	Database databaseConfig `toml:"database" mapstructure:"database" json:"database" yaml:"database"`
 	Search   searchConfig   `toml:"search" mapstructure:"search" json:"search" yaml:"search"`
 	Tagger   taggerConfig   `toml:"tagger" mapstructure:"tagger" json:"tagger" yaml:"tagger"`

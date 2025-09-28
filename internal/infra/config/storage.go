@@ -63,5 +63,5 @@ type StorageTelegramConfig struct {
 	Token  string         `toml:"token" mapstructure:"token" json:"token" yaml:"token"`
 	ChatID int64          `toml:"chat_id" mapstructure:"chat_id" json:"chat_id" yaml:"chat_id"`
 	ApiUrl string         `toml:"api_url" mapstructure:"api_url" json:"api_url" yaml:"api_url"`
-	Retry  botRetryConfig `toml:"retry" mapstructure:"retry" json:"retry" yaml:"retry"`
+	Retry  BotRetryConfig `toml:"retry" mapstructure:"retry" json:"retry" yaml:"retry"`
 }

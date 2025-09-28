@@ -18,30 +18,17 @@ type ArtistInfo struct {
 	ID string `json:"id"`
 }
 
-type PictureInfo struct {
-	ID        string `json:"id"`
-	Width     uint   `json:"width"`
-	Height    uint   `json:"height"`
-	Index     uint   `json:"index"`
-	Phash     string `json:"phash"`
-	ThumbHash string `json:"thumb_hash"`
-	FileName  string `json:"file_name"`
-	Thumbnail string `json:"thumbnail"`
-	Regular   string `json:"regular"`
-	MessageID int    `json:"message_id"`
-}
-
 type ArtworkQueryResult struct {
-	ID          string            `json:"id"`
-	Title       string            `json:"title"`
-	Description string            `json:"description"`
-	R18         bool              `json:"r18"`
-	SourceType  shared.SourceType `json:"source_type"`
-	SourceURL   string            `json:"source_url"`
-	Artist      *ArtistInfo       `json:"artist"`
-	Tags        []string          `json:"tags"`
-	CreatedAt   string            `json:"created_at"`
-	Pictures    []*PictureInfo    `json:"pictures"`
+	ID          string                `json:"id"`
+	Title       string                `json:"title"`
+	Description string                `json:"description"`
+	R18         bool                  `json:"r18"`
+	SourceType  shared.SourceType     `json:"source_type"`
+	SourceURL   string                `json:"source_url"`
+	Artist      *ArtistInfo           `json:"artist"`
+	Tags        []string              `json:"tags"`
+	CreatedAt   string                `json:"created_at"`
+	Pictures    []*shared.PictureInfo `json:"pictures"`
 }
 
 type ArtworkSearchQuery struct {

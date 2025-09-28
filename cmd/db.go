@@ -24,16 +24,6 @@ var dbCmd = &cobra.Command{
 	Short: "Database batch operations",
 }
 
-var artistCmd = &cobra.Command{
-	Use:   "artist",
-	Short: "Operations on artists",
-}
-
-var tagCmd = &cobra.Command{
-	Use:   "tag",
-	Short: "Operations on tags",
-}
-
 var migrateCmd = &cobra.Command{
 	Use:   "migrate",
 	Short: "Migrate database from mongodb to sql(pgsql, mysql and sqlite supported)",
