@@ -36,7 +36,7 @@ func UpdateCachedArtwork(ctx context.Context, artwork *types.CachedArtworksModel
 func GetCachedArtworkByURLWithCache(ctx context.Context, sourceURL string) (*types.CachedArtworksModel, error) {
 	cachedArtwork, err := dao.GetCachedArtworkByURL(ctx, sourceURL)
 	if err != nil {
-		artwork, err := sources.GetArtworkInfo(sourceURL)
+		artwork, err := sources.GetArtworkInfo(ctx, sourceURL)
 		if err != nil {
 			return nil, err
 		}
