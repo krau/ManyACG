@@ -2,7 +2,6 @@ package log
 
 import (
 	"sync"
-	"sync/atomic"
 )
 
 type Logger interface {
@@ -12,11 +11,6 @@ type Logger interface {
 	Error(msg any, args ...any)
 	Fatal(msg any, args ...any)
 }
-
-var (
-	defaultLogger     atomic.Pointer[Logger]
-	defaultLoggerOnce sync.Once
-)
 
 type Config struct {
 	LogFile    string
@@ -41,20 +35,24 @@ func (c *Config) ApplyDefaults() {
 	}
 }
 
+var (
+	defaultLogger     Logger
+	defaultLoggerOnce sync.Once
+)
+
 func Default() Logger {
-	dl := defaultLogger.Load()
-	if dl == nil {
+	if defaultLogger == nil {
 		defaultLoggerOnce.Do(func() {
-			var logger Logger = CharmLog(Config{})
-			defaultLogger.CompareAndSwap(nil, &logger)
+			defaultLogger = CharmLog(Config{})
 		})
-		dl = defaultLogger.Load()
 	}
-	return *dl
+	return defaultLogger
 }
 
 func SetDefault(logger Logger) {
-	defaultLogger.Store(&logger)
+	defaultLoggerOnce.Do(func() {
+		defaultLogger = logger
+	})
 }
 
 func Debug(msg any, args ...any) {

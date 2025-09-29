@@ -4,54 +4,135 @@ import (
 	"context"
 	"errors"
 
-	"github.com/krau/ManyACG/dao"
+	"github.com/krau/ManyACG/internal/infra/database"
+	"github.com/krau/ManyACG/internal/infra/database/model"
+	"github.com/krau/ManyACG/internal/shared"
 	"github.com/krau/ManyACG/types"
-
-	"go.mongodb.org/mongo-driver/mongo"
 )
 
 func IsAdmin(ctx context.Context, userID int64) (bool, error) {
-	admin, err := dao.GetAdminByUserID(ctx, userID)
+	// admin, err := dao.GetAdminByUserID(ctx, userID)
+	// if err != nil {
+	// 	return false, err
+	// }
+	// return admin != nil, nil
+	admin, err := database.Default().GetAdminByTelegramID(ctx, userID)
 	if err != nil {
+		if errors.Is(err, database.ErrRecordNotFound) {
+			return false, nil
+		}
 		return false, err
 	}
 	return admin != nil, nil
 }
 
 func CreateAdmin(ctx context.Context, userID int64, permissions []types.Permission, grant int64, super bool) error {
-	_, err := dao.CreateAdmin(
-		ctx, &types.AdminModel{
-			UserID:      userID,
-			Permissions: permissions,
-			GrantBy:     grant,
-			SuperAdmin:  super,
-		},
-	)
+	// _, err := dao.CreateAdmin(
+	// 	ctx, &types.AdminModel{
+	// 		UserID:      userID,
+	// 		Permissions: permissions,
+	// 		GrantBy:     grant,
+	// 		SuperAdmin:  super,
+	// 	},
+	// )
+	// return err
+	exist, err := database.Default().GetAdminByTelegramID(ctx, userID)
+	if err != nil && !errors.Is(err, database.ErrRecordNotFound) {
+		return err
+	}
+	if exist != nil {
+		return nil
+	}
+	_, err = database.Default().CreateAdmin(ctx, &model.Admin{
+		TelegramID: userID,
+		Permissions: func() []shared.Permission {
+			var perms []shared.Permission
+			for _, p := range permissions {
+				perm, err := shared.ParsePermission(string(p))
+				if err == nil {
+					perms = append(perms, perm)
+				}
+			}
+			if super {
+				perms = append(perms, shared.PermissionSudo)
+			}
+			return perms
+		}(),
+	})
 	return err
 }
 
 func DeleteAdmin(ctx context.Context, userID int64) error {
-	_, err := dao.DeleteAdminByUserID(ctx, userID)
-	return err
+	// _, err := dao.DeleteAdminByUserID(ctx, userID)
+	// return err
+	return database.Default().DeleteAdminByTelegramID(ctx, userID)
 }
 
 func GetAdminByUserID(ctx context.Context, userID int64) (*types.AdminModel, error) {
-	return dao.GetAdminByUserID(ctx, userID)
+	// return dao.GetAdminByUserID(ctx, userID)
+	admin, err := database.Default().GetAdminByTelegramID(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+	return &types.AdminModel{
+		UserID: admin.TelegramID,
+		Permissions: func() []types.Permission {
+			var perms []types.Permission
+			for _, p := range admin.Permissions {
+				perms = append(perms, types.Permission(p))
+			}
+			return perms
+		}(),
+	}, nil
 }
 
 func CheckAdminPermission(ctx context.Context, userID int64, permissions ...types.Permission) bool {
-	admin, err := dao.GetAdminByUserID(ctx, userID)
+	// admin, err := dao.GetAdminByUserID(ctx, userID)
+	// if err != nil {
+	// 	return false
+	// }
+	// if admin == nil {
+	// 	return false
+	// }
+	// if admin.SuperAdmin {
+	// 	return true
+	// }
+	// for _, p := range permissions {
+	// 	if !admin.HasPermission(p) {
+	// 		return false
+	// 	}
+	// }
+	// return true
+	admin, err := database.Default().GetAdminByTelegramID(ctx, userID)
 	if err != nil {
 		return false
 	}
 	if admin == nil {
 		return false
 	}
-	if admin.SuperAdmin {
+	isSudo := false
+	for _, p := range admin.Permissions {
+		if p == shared.PermissionSudo {
+			isSudo = true
+			break
+		}
+	}
+	if isSudo {
 		return true
 	}
 	for _, p := range permissions {
-		if !admin.HasPermission(p) {
+		perm, err := shared.ParsePermission(string(p))
+		if err != nil {
+			return false
+		}
+		has := false
+		for _, ap := range admin.Permissions {
+			if ap == perm {
+				has = true
+				break
+			}
+		}
+		if !has {
 			return false
 		}
 	}
@@ -59,45 +140,104 @@ func CheckAdminPermission(ctx context.Context, userID int64, permissions ...type
 }
 
 func CreateOrUpdateAdmin(ctx context.Context, userID int64, permissions []types.Permission, grant int64, super bool) error {
-	admin, err := dao.GetAdminByUserID(ctx, userID)
-	if err != nil {
-		if errors.Is(err, mongo.ErrNoDocuments) {
-			return CreateAdmin(ctx, userID, permissions, grant, super)
+	// admin, err := dao.GetAdminByUserID(ctx, userID)
+	// if err != nil {
+	// 	if errors.Is(err, mongo.ErrNoDocuments) {
+	// 		return CreateAdmin(ctx, userID, permissions, grant, super)
+	// 	}
+	// }
+	// if admin == nil {
+	// 	return CreateAdmin(ctx, userID, permissions, grant, super)
+	// }
+	// admin.Permissions = permissions
+	// admin.GrantBy = grant
+	// admin.SuperAdmin = super
+	// _, err = dao.UpdateAdmin(ctx, admin)
+	// return err
+	exist, err := database.Default().GetAdminByTelegramID(ctx, userID)
+	if err != nil && !errors.Is(err, database.ErrRecordNotFound) {
+		return err
+	}
+	if exist == nil {
+		_, err = database.Default().CreateAdmin(ctx, &model.Admin{
+			TelegramID: userID,
+			Permissions: func() []shared.Permission {
+				var perms []shared.Permission
+				for _, p := range permissions {
+					perm, err := shared.ParsePermission(string(p))
+					if err == nil {
+						perms = append(perms, perm)
+					}
+				}
+				if super {
+					perms = append(perms, shared.PermissionSudo)
+				}
+				return perms
+			}(),
+		})
+		return err
+	}
+	err = database.Default().UpdateAdminPermissions(ctx, exist.ID, func() []shared.Permission {
+		var perms []shared.Permission
+		for _, p := range permissions {
+			perm, err := shared.ParsePermission(string(p))
+			if err == nil {
+				perms = append(perms, perm)
+			}
 		}
-	}
-	if admin == nil {
-		return CreateAdmin(ctx, userID, permissions, grant, super)
-	}
-	admin.Permissions = permissions
-	admin.GrantBy = grant
-	admin.SuperAdmin = super
-	_, err = dao.UpdateAdmin(ctx, admin)
+		if super {
+			perms = append(perms, shared.PermissionSudo)
+		}
+		return perms
+	}())
 	return err
 }
 
 func GetAdminUserIDs(ctx context.Context) ([]int64, error) {
-	admins, err := dao.GetAdmins(ctx)
+	// admins, err := dao.GetAdmins(ctx)
+	// if err != nil {
+	// 	return nil, err
+	// }
+	// var userIDs []int64
+	// for _, admin := range admins {
+	// 	if admin.UserID > 0 {
+	// 		userIDs = append(userIDs, admin.UserID)
+	// 	}
+	// }
+	// return userIDs, nil
+	admins, err := database.Default().ListAdmins(ctx)
 	if err != nil {
 		return nil, err
 	}
 	var userIDs []int64
 	for _, admin := range admins {
-		if admin.UserID > 0 {
-			userIDs = append(userIDs, admin.UserID)
+		if admin.TelegramID > 0 {
+			userIDs = append(userIDs, admin.TelegramID)
 		}
 	}
 	return userIDs, nil
 }
 
 func GetAdminGroupIDs(ctx context.Context) ([]int64, error) {
-	admins, err := dao.GetAdmins(ctx)
+	// admins, err := dao.GetAdmins(ctx)
+	// if err != nil {
+	// 	return nil, err
+	// }
+	// var groupIDs []int64
+	// for _, admin := range admins {
+	// 	if admin.UserID < 0 {
+	// 		groupIDs = append(groupIDs, admin.UserID)
+	// 	}
+	// }
+	// return groupIDs, nil
+	admins, err := database.Default().ListAdmins(ctx)
 	if err != nil {
 		return nil, err
 	}
 	var groupIDs []int64
 	for _, admin := range admins {
-		if admin.UserID < 0 {
-			groupIDs = append(groupIDs, admin.UserID)
+		if admin.TelegramID < 0 {
+			groupIDs = append(groupIDs, admin.TelegramID)
 		}
 	}
 	return groupIDs, nil

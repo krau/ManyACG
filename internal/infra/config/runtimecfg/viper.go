@@ -127,7 +127,7 @@ func loadConfig() Config {
 		os.Exit(1)
 	}
 	c := Config{}
-	if err := viper.Unmarshal(c); err != nil {
+	if err := viper.Unmarshal(&c); err != nil {
 		fmt.Printf("error when unmarshal config: %s\n", err)
 		os.Exit(1)
 	}

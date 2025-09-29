@@ -1,17 +1,17 @@
 package shared
 
-type PictureInfo struct {
-	Index     uint
-	Thumbnail string
-	Original  string
-	Width     uint
-	Height    uint
-	Phash     string // phash
-	ThumbHash string // thumbhash
+// type PictureInfo struct {
+// 	Index     uint
+// 	Thumbnail string
+// 	Original  string
+// 	Width     uint
+// 	Height    uint
+// 	Phash     string // phash
+// 	ThumbHash string // thumbhash
 
-	TelegramInfo *TelegramInfo
-	StorageInfo  *StorageInfo
-}
+// 	TelegramInfo *TelegramInfo
+// 	StorageInfo  *StorageInfo
+// }
 
 type TelegramInfo struct {
 	PhotoFileID    string `json:"photo_file_id"`

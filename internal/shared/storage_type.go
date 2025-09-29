@@ -2,12 +2,13 @@ package shared
 
 //go:generate go-enum --values --names --nocase
 
-// ArtworkStatus
+// StorageType
 /*
 ENUM(
-cached
-posting
-posted
+webdav
+local
+alist
+telegram
 )
 */
-type ArtworkStatus string
+type StorageType string

@@ -2,12 +2,12 @@ package shared
 
 //go:generate go-enum --values --names --nocase
 
-// ArtworkStatus
+// R18Type
 /*
 ENUM(
-cached
-posting
-posted
+none
+r18
+all
 )
 */
-type ArtworkStatus string
+type R18Type uint

@@ -2,9 +2,10 @@ package database
 
 import (
 	"context"
-	"sync/atomic"
+	"sync"
 
 	"github.com/krau/ManyACG/internal/infra/config/runtimecfg"
+	"github.com/krau/ManyACG/internal/infra/database/model"
 	"github.com/krau/ManyACG/pkg/log"
 	"github.com/ncruces/go-sqlite3/gormlite"
 	"gorm.io/driver/mysql"
@@ -13,10 +14,29 @@ import (
 )
 
 var (
-	globalDB atomic.Pointer[gorm.DB]
+	defaultDB *DB
+	initOnce  sync.Once
+	ErrRecordNotFound = gorm.ErrRecordNotFound
 )
 
+type DB struct {
+	db *gorm.DB
+}
+
+func Default() *DB {
+	if defaultDB == nil {
+		log.Fatal("database not initialized, call InitDB first")
+	}
+	return defaultDB
+}
+
 func InitDB(ctx context.Context) {
+	initOnce.Do(func() {
+		initDB(ctx)
+	})
+}
+
+func initDB(ctx context.Context) {
 	log.Info("Initializing database...")
 	dbType := runtimecfg.Get().Database.Type
 	dsn := runtimecfg.Get().Database.DSN
@@ -24,7 +44,7 @@ func InitDB(ctx context.Context) {
 	var db *gorm.DB
 	var err error
 	switch dbType {
-	case "sqlite":
+	case "sqlite", "sqlite3":
 		db, err = gorm.Open(gormlite.Open(dsn))
 	case "pgsql", "postgres", "postgresql":
 		db, err = gorm.Open(postgres.Open(dsn))
@@ -38,6 +58,21 @@ func InitDB(ctx context.Context) {
 		log.Fatal("failed to connect database", "err", err)
 		return
 	}
+	err = db.AutoMigrate(
+		&model.Artist{},
+		&model.Tag{},
+		&model.TagAlias{},
+		&model.Artwork{},
+		&model.Picture{},
+		&model.CachedArtwork{},
+		&model.DeletedRecord{},
+		&model.ApiKey{},
+		&model.User{},
+	)
+	if err != nil {
+		log.Fatal("failed to migrate database", "err", err)
+		return
+	}
 	sqlDB, err := db.DB()
 	if err != nil {
 		log.Fatal("failed to get database instance", "err", err)
@@ -47,6 +82,6 @@ func InitDB(ctx context.Context) {
 		log.Fatal("failed to ping database", "err", err)
 		return
 	}
-	globalDB.Store(db)
+	defaultDB = &DB{db: db}
 	log.Info("Database initialized")
 }

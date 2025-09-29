@@ -55,6 +55,7 @@ func Run() {
 	ctx, stop := signal.NotifyContext(context.TODO(), syscall.SIGINT, syscall.SIGTERM, os.Interrupt)
 	defer stop()
 	common.Logger.Info("Starting...")
+	// database.InitDB(ctx)
 	dao.InitDB(ctx)
 	defer func() {
 		if err := dao.Client.Disconnect(ctx); err != nil {
