@@ -5,13 +5,59 @@ import (
 
 	"github.com/krau/ManyACG/dao"
 	"github.com/krau/ManyACG/errs"
+	"github.com/krau/ManyACG/internal/infra/database"
+	"github.com/krau/ManyACG/internal/infra/database/model"
+	"github.com/krau/ManyACG/internal/shared"
 	"github.com/krau/ManyACG/sources"
 	"github.com/krau/ManyACG/types"
+	"gorm.io/datatypes"
 )
 
 func CreateCachedArtwork(ctx context.Context, artwork *types.Artwork, status types.ArtworkStatus) error {
-	_, err := dao.CreateCachedArtwork(ctx, artwork, status)
-	return err
+	// _, err := dao.CreateCachedArtwork(ctx, artwork, status)
+	// return err
+	data := &model.CachedArtworkData{
+		ID:          artwork.ID,
+		Title:       artwork.Title,
+		Description: artwork.Description,
+		SourceType:  shared.SourceType(artwork.SourceType),
+		SourceURL:   artwork.SourceURL,
+		R18:         artwork.R18,
+		Artist: &model.CachedArtist{
+			Name:     artwork.Artist.Name,
+			UID:      artwork.Artist.UID,
+			Type:     shared.SourceType(artwork.Artist.Type),
+			Username: artwork.Artist.Username,
+			ID:       artwork.Artist.ID,
+		},
+		Tags: artwork.Tags,
+		Pictures: func() []*model.CachedPicture {
+			pictures := make([]*model.CachedPicture, len(artwork.Pictures))
+			for i, pic := range artwork.Pictures {
+				pictures[i] = &model.CachedPicture{
+					ID:        pic.ID,
+					ArtworkID: pic.ArtworkID,
+					Index:     pic.Index,
+					Thumbnail: pic.Thumbnail,
+					Original:  pic.Original,
+					Width:     pic.Width,
+					Height:    pic.Height,
+					Phash:     pic.Hash,
+					ThumbHash: pic.ThumbHash,
+				}
+			}
+			return pictures
+		}(),
+	}
+	cacheModel := &model.CachedArtwork{
+		SourceURL: artwork.SourceURL,
+		Artwork:   datatypes.NewJSONType(data),
+		Status:    shared.ArtworkStatus(status),
+	}
+	if _, err := database.Default().CreateCachedArtwork(ctx, cacheModel); err != nil {
+		return err
+	}
+	return nil
 }
 
 func GetCachedArtworkByURL(ctx context.Context, sourceURL string) (*types.CachedArtworksModel, error) {
@@ -20,6 +66,11 @@ func GetCachedArtworkByURL(ctx context.Context, sourceURL string) (*types.Cached
 		return nil, err
 	}
 	return cachedArtwork, nil
+	// cachedArtwork, err := database.Default().GetCachedArtworkByURL(ctx, sourceURL)
+	// if err != nil {
+	// 	return nil, err
+	// }
+	// return cachedArtwork, nil
 }
 
 func UpdateCachedArtworkStatusByURL(ctx context.Context, sourceURL string, status types.ArtworkStatus) error {
