@@ -31,7 +31,7 @@ func NewSearcher(ctx context.Context, cfg runtimecfg.MeiliSearchConfig) (*Search
 	return &SearcherMeilisearch{client: manager.Index(cfg.Index), cfg: cfg}, nil
 }
 
-func (m *SearcherMeilisearch) SearchArtworks(ctx context.Context, que query.ArtworkSearch) (*dto.ArtworkSearchResult, error) {
+func (m *SearcherMeilisearch) SearchArtworks(ctx context.Context, que *query.ArtworkSearch) (*dto.ArtworkSearchResult, error) {
 	filter := map[shared.R18Type]string{
 		shared.R18TypeAll:  "",
 		shared.R18TypeNone: "r18 = false",
@@ -77,7 +77,43 @@ func (m *SearcherMeilisearch) SearchArtworks(ctx context.Context, que query.Artw
 	}, nil
 }
 
-func (m *SearcherMeilisearch) FindSimilarArtworks(ctx context.Context, que query.ArtworkSimilar) (*dto.ArtworkSearchResult, error) {
-	// [TODO] implement
-	return nil, fmt.Errorf("not implemented")
+func (m *SearcherMeilisearch) FindSimilarArtworks(ctx context.Context, que *query.ArtworkSimilar) (*dto.ArtworkSearchResult, error) {
+	filter := map[shared.R18Type]string{
+		shared.R18TypeAll:  "",
+		shared.R18TypeNone: "r18 = false",
+		shared.R18TypeR18:  "r18 = true",
+	}[que.R18]
+	req := &meilisearch.SimilarDocumentQuery{
+		AttributesToRetrieve: []string{"id"},
+		Id:                   que.ArtworkID.Hex(),
+		Filter:               filter,
+		Offset:               int64(que.Offset),
+		Limit:                int64(que.Limit),
+	}
+	var resp meilisearch.SimilarDocumentResult
+	err := m.client.SearchSimilarDocumentsWithContext(ctx, req, &resp)
+	if err != nil {
+		return nil, fmt.Errorf("meilisearch similar search failed: %w", err)
+	}
+	hits := resp.Hits
+	docs := make([]*dto.ArtworkSearchDocument, 0, len(hits))
+	hitsBytes, err := json.Marshal(hits)
+	if err != nil {
+		return nil, fmt.Errorf("meilisearch marshal hits failed: %w", err)
+	}
+	err = json.Unmarshal(hitsBytes, &docs)
+	if err != nil {
+		return nil, fmt.Errorf("meilisearch unmarshal hits failed: %w", err)
+	}
+	oids := make([]objectuuid.ObjectUUID, 0, len(docs))
+	for i, doc := range docs {
+		oid, err := objectuuid.FromObjectIDHex(doc.ID)
+		if err != nil {
+			return nil, fmt.Errorf("meilisearch parse objectid failed: %w", err)
+		}
+		oids[i] = oid
+	}
+	return &dto.ArtworkSearchResult{
+		IDs: oids,
+	}, nil
 }

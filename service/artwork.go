@@ -7,7 +7,12 @@ import (
 	"github.com/krau/ManyACG/common"
 	"github.com/krau/ManyACG/dao"
 	"github.com/krau/ManyACG/errs"
+	"github.com/krau/ManyACG/internal/infra/database"
+	"github.com/krau/ManyACG/internal/model/command"
+	"github.com/krau/ManyACG/internal/model/entity"
+	"github.com/krau/ManyACG/pkg/objectuuid"
 	"github.com/krau/ManyACG/sources"
+	"gorm.io/datatypes"
 
 	"context"
 	"errors"
@@ -22,151 +27,252 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/readpref"
 )
 
-func CreateArtwork(ctx context.Context, artwork *types.Artwork) (*types.Artwork, error) {
-	artworkModel, err := dao.GetArtworkByURL(ctx, artwork.SourceURL)
-	if err != nil && !errors.Is(err, mongo.ErrNoDocuments) {
+// func CreateArtwork(ctx context.Context, artwork *types.Artwork) (*types.Artwork, error) {
+// 	artworkModel, err := dao.GetArtworkByURL(ctx, artwork.SourceURL)
+// 	if err != nil && !errors.Is(err, mongo.ErrNoDocuments) {
+// 		return nil, err
+// 	}
+// 	if artworkModel != nil {
+// 		return nil, errs.ErrArtworkAlreadyExist
+// 	}
+// 	if dao.CheckDeletedByURL(ctx, artwork.SourceURL) {
+// 		return nil, errs.ErrArtworkDeleted
+// 	}
+
+// 	session, err := dao.Client.StartSession()
+// 	if err != nil {
+// 		return nil, err
+// 	}
+// 	defer session.EndSession(ctx)
+
+// 	result, err := session.WithTransaction(ctx, func(ctx mongo.SessionContext) (interface{}, error) {
+// 		// 创建 Tag
+// 		tagIDs := make([]primitive.ObjectID, len(artwork.Tags))
+// 		for i, tag := range artwork.Tags {
+// 			tagModel, err := dao.GetTagByNameWithAlias(ctx, tag)
+// 			if err != nil && !errors.Is(err, mongo.ErrNoDocuments) {
+// 				return nil, err
+// 			}
+// 			if tagModel != nil {
+// 				tagIDs[i] = tagModel.ID
+// 				continue
+// 			}
+// 			tagModel = &types.TagModel{
+// 				Name: tag,
+// 			}
+// 			tagRes, err := dao.CreateTag(ctx, tagModel)
+// 			if err != nil {
+// 				return nil, err
+// 			}
+// 			tagIDs[i] = tagRes.InsertedID.(primitive.ObjectID)
+// 		}
+
+// 		seen := make(map[string]struct{})
+// 		resultTags := []primitive.ObjectID{}
+// 		for _, tagID := range tagIDs {
+// 			if _, ok := seen[tagID.Hex()]; !ok {
+// 				resultTags = append(resultTags, tagID)
+// 				seen[tagID.Hex()] = struct{}{}
+// 			}
+// 		}
+// 		tagIDs = resultTags
+
+// 		// 创建 Artist
+// 		artistModel, err := dao.GetArtistByUID(ctx, artwork.Artist.UID, artwork.Artist.Type)
+// 		if err != nil && !errors.Is(err, mongo.ErrNoDocuments) {
+// 			return nil, err
+// 		}
+// 		var artistId primitive.ObjectID
+// 		if artistModel != nil {
+// 			artistModel.Name = artwork.Artist.Name
+// 			artistModel.Username = artwork.Artist.Username
+// 			_, err = dao.UpdateArtist(ctx, artistModel)
+// 			if err != nil {
+// 				return nil, err
+// 			}
+// 			artistId = artistModel.ID
+// 		} else {
+// 			artistModel = &types.ArtistModel{
+// 				Type:     artwork.Artist.Type,
+// 				UID:      artwork.Artist.UID,
+// 				Username: artwork.Artist.Username,
+// 				Name:     artwork.Artist.Name,
+// 			}
+// 			res, err := dao.CreateArtist(ctx, artistModel)
+// 			if err != nil {
+// 				return nil, err
+// 			}
+// 			artistId = res.InsertedID.(primitive.ObjectID)
+// 		}
+
+// 		// 创建 Artwork
+// 		artworkModel = &types.ArtworkModel{
+// 			Title:       artwork.Title,
+// 			Description: artwork.Description,
+// 			R18:         artwork.R18,
+// 			SourceType:  artwork.SourceType,
+// 			SourceURL:   artwork.SourceURL,
+// 			ArtistID:    artistId,
+// 			Tags:        tagIDs,
+// 		}
+// 		res, err := dao.CreateArtwork(ctx, artworkModel)
+// 		if err != nil {
+// 			return nil, err
+// 		}
+
+// 		// 创建 Picture
+// 		pictureModels := make([]*types.PictureModel, len(artwork.Pictures))
+// 		for i, picture := range artwork.Pictures {
+// 			var pictureID primitive.ObjectID
+// 			if picture.ID != "" {
+// 				pictureID, err = primitive.ObjectIDFromHex(picture.ID)
+// 				if err != nil {
+// 					return nil, err
+// 				}
+// 			} else {
+// 				pictureID = primitive.NewObjectID()
+// 			}
+// 			pictureModel := &types.PictureModel{
+// 				ID:        pictureID,
+// 				Index:     picture.Index,
+// 				ArtworkID: res.InsertedID.(primitive.ObjectID),
+// 				Thumbnail: picture.Thumbnail,
+// 				Original:  picture.Original,
+// 				Width:     picture.Width,
+// 				Height:    picture.Height,
+// 				Hash:      picture.Hash,
+// 				// BlurScore:    picture.BlurScore,
+// 				TelegramInfo: picture.TelegramInfo,
+// 				StorageInfo:  picture.StorageInfo,
+// 			}
+// 			pictureModels[i] = pictureModel
+// 		}
+// 		pictureRes, err := dao.CreatePictures(ctx, pictureModels)
+// 		if err != nil {
+// 			return nil, err
+// 		}
+// 		pictureIDs := make([]primitive.ObjectID, len(pictureRes.InsertedIDs))
+// 		for i, id := range pictureRes.InsertedIDs {
+// 			pictureIDs[i] = id.(primitive.ObjectID)
+// 		}
+
+// 		// 更新 Artwork 的 Pictures
+// 		_, err = dao.UpdateArtworkPicturesByID(ctx, res.InsertedID.(primitive.ObjectID), pictureIDs)
+// 		if err != nil {
+// 			return nil, err
+// 		}
+// 		artworkModel, err = dao.GetArtworkByID(ctx, res.InsertedID.(primitive.ObjectID))
+// 		if err != nil {
+// 			return nil, err
+// 		}
+// 		return artworkModel, nil
+// 	}, options.Transaction().SetReadPreference(readpref.Primary()))
+// 	if err != nil {
+// 		return nil, err
+// 	}
+// 	artworkModel = result.(*types.ArtworkModel)
+// 	return adapter.ConvertToArtwork(ctx, artworkModel)
+// }
+
+func CreateArtwork(ctx context.Context, cmd *command.ArtworkCreation) (*entity.Artwork, error) {
+	awExist, err := database.Default().GetArtworkByURL(ctx, cmd.SourceURL)
+	if err != nil && !errors.Is(err, database.ErrRecordNotFound) {
 		return nil, err
 	}
-	if artworkModel != nil {
+	if awExist != nil {
 		return nil, errs.ErrArtworkAlreadyExist
 	}
-	if dao.CheckDeletedByURL(ctx, artwork.SourceURL) {
+	if database.Default().CheckDeletedByURL(ctx, cmd.SourceURL) {
 		return nil, errs.ErrArtworkDeleted
 	}
-
-	session, err := dao.Client.StartSession()
-	if err != nil {
-		return nil, err
-	}
-	defer session.EndSession(ctx)
-
-	result, err := session.WithTransaction(ctx, func(ctx mongo.SessionContext) (interface{}, error) {
-		// 创建 Tag
-		tagIDs := make([]primitive.ObjectID, len(artwork.Tags))
-		for i, tag := range artwork.Tags {
-			tagModel, err := dao.GetTagByNameWithAlias(ctx, tag)
-			if err != nil && !errors.Is(err, mongo.ErrNoDocuments) {
-				return nil, err
+	// 创建 artist
+	err = database.Default().Transaction(ctx, func(tx *database.DB) error {
+		atsEnt, err := database.Default().GetArtistByUID(ctx, cmd.Artist.UID, cmd.SourceType)
+		if err != nil && !errors.Is(err, database.ErrRecordNotFound) {
+			return err
+		}
+		var artistID objectuuid.ObjectUUID
+		if atsEnt != nil {
+			atsEnt.Name = cmd.Artist.Name
+			atsEnt.Username = cmd.Artist.Username
+			err := database.Default().UpdateArtist(ctx, atsEnt)
+			if err != nil {
+				return err
 			}
-			if tagModel != nil {
-				tagIDs[i] = tagModel.ID
+			artistID = atsEnt.ID
+		} else {
+			atsEnt = &entity.Artist{
+				Type:     cmd.SourceType,
+				UID:      cmd.Artist.UID,
+				Username: cmd.Artist.Username,
+				Name:     cmd.Artist.Name,
+			}
+			res, err := database.Default().CreateArtist(ctx, atsEnt)
+			if err != nil {
+				return err
+			}
+			artistID = *res
+		}
+		// 创建 tags
+		tagEnts := make([]*entity.Tag, len(cmd.Tags))
+		tagsStr := slice.Unique(cmd.Tags)
+		for _, tag := range tagsStr {
+			tagEnt, err := database.Default().GetTagByNameWithAlias(ctx, tag)
+			if err != nil && !errors.Is(err, database.ErrRecordNotFound) {
+				return err
+			}
+			if tagEnt != nil {
+				tagEnts = append(tagEnts, tagEnt)
 				continue
 			}
-			tagModel = &types.TagModel{
+			tagEnt = &entity.Tag{
 				Name: tag,
 			}
-			tagRes, err := dao.CreateTag(ctx, tagModel)
+			res, err := database.Default().CreateTag(ctx, tagEnt)
 			if err != nil {
-				return nil, err
+				return err
 			}
-			tagIDs[i] = tagRes.InsertedID.(primitive.ObjectID)
+			tagEnts = append(tagEnts, res)
 		}
-
-		seen := make(map[string]struct{})
-		resultTags := []primitive.ObjectID{}
-		for _, tagID := range tagIDs {
-			if _, ok := seen[tagID.Hex()]; !ok {
-				resultTags = append(resultTags, tagID)
-				seen[tagID.Hex()] = struct{}{}
+		// 创建 artwork
+		awEnt := &entity.Artwork{
+			Title:       cmd.Title,
+			Description: cmd.Description,
+			R18:         cmd.R18,
+			SourceType:  cmd.SourceType,
+			SourceURL:   cmd.SourceURL,
+			ArtistID:    artistID,
+			Tags:        tagEnts,
+		}
+		pics := make([]*entity.Picture, len(cmd.Pictures))
+		for i, pic := range cmd.Pictures {
+			pics[i] = &entity.Picture{
+				Index:        pic.Index,
+				ArtworkID:    awEnt.ID,
+				Thumbnail:    pic.Thumbnail,
+				Original:     pic.Original,
+				Width:        pic.Width,
+				Height:       pic.Height,
+				Phash:        pic.Phash,
+				ThumbHash:    pic.ThumbHash,
+				TelegramInfo: datatypes.NewJSONType(*pic.TelegramInfo),
+				StorageInfo:  datatypes.NewJSONType(*pic.StorageInfo),
 			}
 		}
-		tagIDs = resultTags
-
-		// 创建 Artist
-		artistModel, err := dao.GetArtistByUID(ctx, artwork.Artist.UID, artwork.Artist.Type)
-		if err != nil && !errors.Is(err, mongo.ErrNoDocuments) {
-			return nil, err
-		}
-		var artistId primitive.ObjectID
-		if artistModel != nil {
-			artistModel.Name = artwork.Artist.Name
-			artistModel.Username = artwork.Artist.Username
-			_, err = dao.UpdateArtist(ctx, artistModel)
-			if err != nil {
-				return nil, err
-			}
-			artistId = artistModel.ID
-		} else {
-			artistModel = &types.ArtistModel{
-				Type:     artwork.Artist.Type,
-				UID:      artwork.Artist.UID,
-				Username: artwork.Artist.Username,
-				Name:     artwork.Artist.Name,
-			}
-			res, err := dao.CreateArtist(ctx, artistModel)
-			if err != nil {
-				return nil, err
-			}
-			artistId = res.InsertedID.(primitive.ObjectID)
-		}
-
-		// 创建 Artwork
-		artworkModel = &types.ArtworkModel{
-			Title:       artwork.Title,
-			Description: artwork.Description,
-			R18:         artwork.R18,
-			SourceType:  artwork.SourceType,
-			SourceURL:   artwork.SourceURL,
-			ArtistID:    artistId,
-			Tags:        tagIDs,
-		}
-		res, err := dao.CreateArtwork(ctx, artworkModel)
-		if err != nil {
-			return nil, err
-		}
-
-		// 创建 Picture
-		pictureModels := make([]*types.PictureModel, len(artwork.Pictures))
-		for i, picture := range artwork.Pictures {
-			var pictureID primitive.ObjectID
-			if picture.ID != "" {
-				pictureID, err = primitive.ObjectIDFromHex(picture.ID)
-				if err != nil {
-					return nil, err
-				}
-			} else {
-				pictureID = primitive.NewObjectID()
-			}
-			pictureModel := &types.PictureModel{
-				ID:        pictureID,
-				Index:     picture.Index,
-				ArtworkID: res.InsertedID.(primitive.ObjectID),
-				Thumbnail: picture.Thumbnail,
-				Original:  picture.Original,
-				Width:     picture.Width,
-				Height:    picture.Height,
-				Hash:      picture.Hash,
-				// BlurScore:    picture.BlurScore,
-				TelegramInfo: picture.TelegramInfo,
-				StorageInfo:  picture.StorageInfo,
-			}
-			pictureModels[i] = pictureModel
-		}
-		pictureRes, err := dao.CreatePictures(ctx, pictureModels)
-		if err != nil {
-			return nil, err
-		}
-		pictureIDs := make([]primitive.ObjectID, len(pictureRes.InsertedIDs))
-		for i, id := range pictureRes.InsertedIDs {
-			pictureIDs[i] = id.(primitive.ObjectID)
-		}
-
-		// 更新 Artwork 的 Pictures
-		_, err = dao.UpdateArtworkPicturesByID(ctx, res.InsertedID.(primitive.ObjectID), pictureIDs)
-		if err != nil {
-			return nil, err
-		}
-		artworkModel, err = dao.GetArtworkByID(ctx, res.InsertedID.(primitive.ObjectID))
-		if err != nil {
-			return nil, err
-		}
-		return artworkModel, nil
-	}, options.Transaction().SetReadPreference(readpref.Primary()))
+		awEnt.Pictures = pics
+		_, err = database.Default().CreateArtwork(ctx, awEnt)
+		return err
+	})
 	if err != nil {
 		return nil, err
 	}
-	artworkModel = result.(*types.ArtworkModel)
-	return adapter.ConvertToArtwork(ctx, artworkModel)
+
+	created, err := database.Default().GetArtworkByURL(ctx, cmd.SourceURL)
+	if err != nil {
+		return nil, err
+	}
+
+	return created, nil
 }
 
 func GetArtworkByURL(ctx context.Context, sourceURL string, opts ...*types.AdapterOption) (*types.Artwork, error) {

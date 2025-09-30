@@ -14,8 +14,8 @@ import (
 )
 
 type Searcher interface {
-	SearchArtworks(ctx context.Context, que query.ArtworkSearch) (*dto.ArtworkSearchResult, error)
-	FindSimilarArtworks(ctx context.Context, que query.ArtworkSimilar) (*dto.ArtworkSearchResult, error)
+	SearchArtworks(ctx context.Context, que *query.ArtworkSearch) (*dto.ArtworkSearchResult, error)
+	FindSimilarArtworks(ctx context.Context, que *query.ArtworkSimilar) (*dto.ArtworkSearchResult, error)
 }
 
 var (
@@ -55,14 +55,14 @@ func getDefault(ctx context.Context) Searcher {
 	return defaultSearcher
 }
 
-func SearchArtworks(ctx context.Context, que query.ArtworkSearch) (*dto.ArtworkSearchResult, error) {
+func SearchArtworks(ctx context.Context, que *query.ArtworkSearch) (*dto.ArtworkSearchResult, error) {
 	if !enabled {
 		return nil, errs.ErrSearchEngineUnavailable
 	}
 	return getDefault(ctx).SearchArtworks(ctx, que)
 }
 
-func FindSimilarArtworks(ctx context.Context, que query.ArtworkSimilar) (*dto.ArtworkSearchResult, error) {
+func FindSimilarArtworks(ctx context.Context, que *query.ArtworkSimilar) (*dto.ArtworkSearchResult, error) {
 	if !enabled {
 		return nil, errs.ErrSearchEngineUnavailable
 	}

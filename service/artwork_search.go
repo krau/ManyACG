@@ -65,7 +65,7 @@ import (
 // 	return adapter.ConvertToArtworks(ctx, artworkModels, options...)
 // }
 
-func SearchArtworks(ctx context.Context, que query.ArtworkSearch) ([]*entity.Artwork, error) {
+func SearchArtworks(ctx context.Context, que *query.ArtworkSearch) ([]*entity.Artwork, error) {
 	if !search.Enabled() {
 		return nil, errs.ErrSearchEngineUnavailable
 	}
@@ -169,7 +169,7 @@ func SearchArtworks(ctx context.Context, que query.ArtworkSearch) ([]*entity.Art
 // 	return adapter.ConvertToArtworks(ctx, artworkModels, options...)
 // }
 
-func FindSimilarArtworks(ctx context.Context, que query.ArtworkSimilar) ([]*entity.Artwork, error) {
+func FindSimilarArtworks(ctx context.Context, que *query.ArtworkSimilar) ([]*entity.Artwork, error) {
 	if !search.Enabled() {
 		return nil, errs.ErrSearchEngineUnavailable
 	}

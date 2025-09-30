@@ -3,7 +3,6 @@ package database
 import (
 	"context"
 
-	"github.com/krau/ManyACG/internal/model/command"
 	"github.com/krau/ManyACG/internal/model/entity"
 	"github.com/krau/ManyACG/internal/model/query"
 	"github.com/krau/ManyACG/internal/shared"
@@ -105,13 +104,24 @@ func (d *DB) DeleteArtworkByID(ctx context.Context, id objectuuid.ObjectUUID) er
 	return nil
 }
 
-func (d *DB) UpdateArtwork(ctx context.Context, patch command.ArtworkBasicPatch) error {
+// UpdateArtwork updates non-zero fields in the patch.
+func (d *DB) UpdateArtwork(ctx context.Context, patch *entity.Artwork) error {
 	if patch.ID == objectuuid.Nil {
 		return gorm.ErrInvalidData
 	}
-	return d.db.WithContext(ctx).Model(&entity.Artwork{}).
-		Where("id = ?", patch.ID).
-		Updates(patch).Error
+	_, err := gorm.G[entity.Artwork](d.db).Where("id = ?", patch.ID).Updates(ctx, *patch)
+	return err
+}
+
+// UpdateArtworkByMap updates all given fields in the patch map.
+func (d *DB) UpdateArtworkByMap(ctx context.Context, id objectuuid.ObjectUUID, patch map[string]any) error {
+	if id == objectuuid.Nil {
+		return gorm.ErrInvalidData
+	}
+	if len(patch) == 0 {
+		return nil
+	}
+	return d.db.WithContext(ctx).Model(&entity.Artwork{}).Where("id = ?", id).Updates(patch).Error
 }
 
 func (d *DB) UpdateArtworkPictures(ctx context.Context, id objectuuid.ObjectUUID, pics []*entity.Picture) error {

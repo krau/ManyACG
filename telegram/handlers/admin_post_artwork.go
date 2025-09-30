@@ -16,6 +16,7 @@ import (
 	"github.com/krau/ManyACG/common/imgtool"
 	"github.com/krau/ManyACG/config"
 	"github.com/krau/ManyACG/errs"
+	"github.com/krau/ManyACG/internal/model/command"
 	"github.com/krau/ManyACG/internal/shared"
 
 	"github.com/krau/ManyACG/service"
@@ -54,7 +55,7 @@ func PostArtworkCallbackQuery(ctx *telegohandler.Context, query telego.CallbackQ
 	}
 	common.Logger.Infof("posting artwork: %s", sourceURL)
 
-	var artwork *types.Artwork
+	var creation *command.ArtworkCreation
 	cachedArtwork, err := service.GetCachedArtworkByURLWithCache(ctx, sourceURL)
 	if err != nil {
 		ctx.Bot().AnswerCallbackQuery(ctx, &telego.AnswerCallbackQueryParams{

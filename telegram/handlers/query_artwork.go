@@ -117,7 +117,7 @@ func HybridSearchArtworks(ctx *telegohandler.Context, message telego.Message) er
 		}
 		queryText = strings.Join(args[:len(args)-1], " ")
 	}
-	artworks, err := service.SearchArtworks(ctx, query.ArtworkSearch{
+	artworks, err := service.SearchArtworks(ctx, &query.ArtworkSearch{
 		//  queryText, hybridSemanticRatio, 0, 50, types.R18TypeAll
 		Query:               queryText,
 		Hybrid:              true,
@@ -184,7 +184,7 @@ func SearchSimilarArtworks(ctx *telegohandler.Context, message telego.Message) e
 				return nil
 			}
 			queryText := strings.Join(result.PredictedTags, ",")
-			artworks, err := service.SearchArtworks(ctx, query.ArtworkSearch{
+			artworks, err := service.SearchArtworks(ctx, &query.ArtworkSearch{
 				// queryText, 0.8, 0, 10, types.R18TypeAll
 				Query:  queryText,
 				Hybrid: true,
@@ -235,7 +235,7 @@ func SearchSimilarArtworks(ctx *telegohandler.Context, message telego.Message) e
 		utils.ReplyMessage(ctx, ctx.Bot(), message, "内部错误")
 		return nil
 	}
-	artworks, err := service.FindSimilarArtworks(ctx, query.ArtworkSimilar{
+	artworks, err := service.FindSimilarArtworks(ctx, &query.ArtworkSimilar{
 		ArtworkID: awId,
 		R18:       shared.R18TypeAll,
 		Paginate: query.Paginate{

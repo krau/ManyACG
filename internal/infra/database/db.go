@@ -2,6 +2,7 @@ package database
 
 import (
 	"context"
+	"database/sql"
 	"sync"
 
 	"github.com/krau/ManyACG/internal/infra/config/runtimecfg"
@@ -14,8 +15,8 @@ import (
 )
 
 var (
-	defaultDB *DB
-	initOnce  sync.Once
+	defaultDB         *DB
+	initOnce          sync.Once
 	ErrRecordNotFound = gorm.ErrRecordNotFound
 )
 
@@ -23,9 +24,17 @@ type DB struct {
 	db *gorm.DB
 }
 
+func (d *DB) Transaction(ctx context.Context, fn func(tx *DB) error, opts ...*sql.TxOptions) error {
+	return d.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		return fn(&DB{db: tx})
+	}, opts...)
+}
+
 func Default() *DB {
 	if defaultDB == nil {
-		log.Fatal("database not initialized, call Init first")
+		initOnce.Do(func() {
+			initDB(context.Background())
+		})
 	}
 	return defaultDB
 }
