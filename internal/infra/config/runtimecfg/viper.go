@@ -24,7 +24,7 @@ type Config struct {
 	Storage  storageConfigs `toml:"storage" mapstructure:"storage" json:"storage" yaml:"storage"`
 	Telegram telegramConfig `toml:"telegram" mapstructure:"telegram" json:"telegram" yaml:"telegram"`
 	Database databaseConfig `toml:"database" mapstructure:"database" json:"database" yaml:"database"`
-	Search   searchConfig   `toml:"search" mapstructure:"search" json:"search" yaml:"search"`
+	Search   SearchConfig   `toml:"search" mapstructure:"search" json:"search" yaml:"search"`
 	Tagger   taggerConfig   `toml:"tagger" mapstructure:"tagger" json:"tagger" yaml:"tagger"`
 
 	Mirate migrateConfig `toml:"migrate" mapstructure:"migrate" json:"migrate" yaml:"migrate"`

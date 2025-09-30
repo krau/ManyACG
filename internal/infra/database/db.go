@@ -25,12 +25,12 @@ type DB struct {
 
 func Default() *DB {
 	if defaultDB == nil {
-		log.Fatal("database not initialized, call InitDB first")
+		log.Fatal("database not initialized, call Init first")
 	}
 	return defaultDB
 }
 
-func InitDB(ctx context.Context) {
+func Init(ctx context.Context) {
 	initOnce.Do(func() {
 		initDB(ctx)
 	})

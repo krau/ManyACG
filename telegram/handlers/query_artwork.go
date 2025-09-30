@@ -14,6 +14,10 @@ import (
 	"github.com/krau/ManyACG/common"
 	"github.com/krau/ManyACG/common/imgtool"
 	"github.com/krau/ManyACG/config"
+	"github.com/krau/ManyACG/internal/model/entity"
+	"github.com/krau/ManyACG/internal/model/query"
+	"github.com/krau/ManyACG/internal/shared"
+	"github.com/krau/ManyACG/pkg/objectuuid"
 
 	"github.com/krau/ManyACG/service"
 	"github.com/krau/ManyACG/telegram/utils"
@@ -113,7 +117,17 @@ func HybridSearchArtworks(ctx *telegohandler.Context, message telego.Message) er
 		}
 		queryText = strings.Join(args[:len(args)-1], " ")
 	}
-	artworks, err := service.HybridSearchArtworks(ctx, queryText, hybridSemanticRatio, 0, 50, types.R18TypeAll)
+	artworks, err := service.SearchArtworks(ctx, query.ArtworkSearch{
+		//  queryText, hybridSemanticRatio, 0, 50, types.R18TypeAll
+		Query:               queryText,
+		Hybrid:              true,
+		HybridSemanticRatio: hybridSemanticRatio,
+		Paginate: query.Paginate{
+			Offset: 0,
+			Limit:  50,
+		},
+		R18: shared.R18TypeAll,
+	})
 	if err != nil {
 		common.Logger.Errorf("搜索失败: %s", err)
 		utils.ReplyMessage(ctx, ctx.Bot(), message, "搜索失败, 请联系管理员检查搜索引擎设置与状态")
@@ -170,7 +184,16 @@ func SearchSimilarArtworks(ctx *telegohandler.Context, message telego.Message) e
 				return nil
 			}
 			queryText := strings.Join(result.PredictedTags, ",")
-			artworks, err := service.HybridSearchArtworks(ctx, queryText, 0.8, 0, 10, types.R18TypeAll)
+			artworks, err := service.SearchArtworks(ctx, query.ArtworkSearch{
+				// queryText, 0.8, 0, 10, types.R18TypeAll
+				Query:  queryText,
+				Hybrid: true,
+				Paginate: query.Paginate{
+					Offset: 0,
+					Limit:  10,
+				},
+				R18: shared.R18TypeAll,
+			})
 			if err != nil || len(artworks) == 0 {
 				common.Logger.Errorf("搜索失败: %s", err)
 				utils.ReplyMessage(ctx, ctx.Bot(), message, "搜索失败")
@@ -206,7 +229,20 @@ func SearchSimilarArtworks(ctx *telegohandler.Context, message telego.Message) e
 			return nil
 		}
 	}
-	artworks, err := service.SearchSimilarArtworks(ctx, artwork.ID, int64(offset), int64(limit), types.R18TypeAll)
+	awId, err := objectuuid.FromObjectIDHex(artwork.ID)
+	if err != nil {
+		common.Logger.Errorf("转换ArtworkID失败: %s", err)
+		utils.ReplyMessage(ctx, ctx.Bot(), message, "内部错误")
+		return nil
+	}
+	artworks, err := service.FindSimilarArtworks(ctx, query.ArtworkSimilar{
+		ArtworkID: awId,
+		R18:       shared.R18TypeAll,
+		Paginate: query.Paginate{
+			Offset: offset,
+			Limit:  limit,
+		},
+	})
 	if err != nil {
 		common.Logger.Errorf("搜索失败: %s", err)
 		utils.ReplyMessage(ctx, ctx.Bot(), message, "搜索失败")
@@ -223,8 +259,8 @@ func SearchSimilarArtworks(ctx *telegohandler.Context, message telego.Message) e
 	for _, artwork := range artworks {
 		picture := artwork.Pictures[0]
 		var file telego.InputFile
-		if picture.TelegramInfo != nil && picture.TelegramInfo.PhotoFileID != "" {
-			file = telegoutil.FileFromID(picture.TelegramInfo.PhotoFileID)
+		if picture.TelegramInfo.Data().PhotoFileID != "" {
+			file = telegoutil.FileFromID(picture.TelegramInfo.Data().PhotoFileID)
 		} else {
 			photoURL := fmt.Sprintf("%s/?url=%s&w=2560&h=2560&we&output=jpg", config.Cfg.WSRVURL, picture.Original)
 			file = telegoutil.FileFromURL(photoURL)
@@ -271,13 +307,13 @@ func handleGetSourceURLFromPicture(ctx *telegohandler.Context, message telego.Me
 	return artwork.SourceURL, file, nil
 }
 
-func handleSendResultArtworks(ctx context.Context, artworks []*types.Artwork, message telego.Message, bot *telego.Bot) {
+func handleSendResultArtworks(ctx context.Context, artworks []*entity.Artwork, message telego.Message, bot *telego.Bot) {
 	inputMedias := make([]telego.InputMedia, 0, len(artworks))
 	for _, artwork := range artworks {
 		picture := artwork.Pictures[0]
 		var file telego.InputFile
-		if picture.TelegramInfo != nil && picture.TelegramInfo.PhotoFileID != "" {
-			file = telegoutil.FileFromID(picture.TelegramInfo.PhotoFileID)
+		if picture.TelegramInfo.Data().PhotoFileID != "" {
+			file = telegoutil.FileFromID(picture.TelegramInfo.Data().PhotoFileID)
 		} else {
 			photoURL := fmt.Sprintf("%s/?url=%s&w=2560&h=2560&we&output=jpg", config.Cfg.WSRVURL, picture.Original)
 			file = telegoutil.FileFromURL(photoURL)

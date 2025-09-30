@@ -5,10 +5,35 @@ import (
 	"github.com/krau/ManyACG/pkg/objectuuid"
 )
 
-type ArtworksQuery struct {
+type Paginate struct {
+	Limit  int
+	Offset int
+}
+
+type ArtworksFilter struct {
 	R18      shared.R18Type
 	Tags     [][]objectuuid.ObjectUUID
 	ArtistID objectuuid.ObjectUUID
-	Limit    int
-	Offset   int
+}
+
+// 只需要查数据库
+type ArtworksDB struct {
+	ArtworksFilter
+	Paginate
+}
+
+// 需要其他设施
+type ArtworkSearch struct {
+	Query               string
+	Hybrid              bool
+	HybridSemanticRatio float64
+	R18                 shared.R18Type
+	// [TODO] more filters, need to migrate data
+	Paginate
+}
+
+type ArtworkSimilar struct {
+	ArtworkID objectuuid.ObjectUUID
+	R18       shared.R18Type
+	Paginate
 }
