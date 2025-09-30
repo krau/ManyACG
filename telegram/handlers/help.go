@@ -32,7 +32,7 @@ func Help(ctx *telegohandler.Context, message telego.Message) error {
 表示搜索包含"萝莉"或"白丝", 且包含"猫耳"或"原创"的图片.
 Inline 查询(在任意聊天框中@本bot)支持同样的参数格式.
 `
-	isAdmin, _ := service.IsAdmin(ctx, message.From.ID)
+	isAdmin, _ := service.IsAdminByTgID(ctx, message.From.ID)
 	if isAdmin {
 		helpText += `
 管理员命令:

@@ -8,11 +8,11 @@ import (
 	"github.com/krau/ManyACG/api/restful/utils"
 	"github.com/krau/ManyACG/common"
 	"github.com/krau/ManyACG/config"
+	"github.com/krau/ManyACG/pkg/objectuuid"
 
 	"github.com/krau/ManyACG/service"
 
 	"github.com/gin-gonic/gin"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 
 	"time"
@@ -90,7 +90,7 @@ func AdminKeyRequired(ctx *gin.Context) {
 
 func ValidatePictureID(ctx *gin.Context) {
 	pictureID := ctx.Param("id")
-	objectID, err := primitive.ObjectIDFromHex(pictureID)
+	objectID, err := objectuuid.FromObjectIDHex(pictureID)
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{
 			"status":  http.StatusBadRequest,
@@ -123,7 +123,7 @@ func ValidatePictureID(ctx *gin.Context) {
 
 func ValidateParamObjectID(ctx *gin.Context) {
 	id := ctx.Param("id")
-	objectID, err := primitive.ObjectIDFromHex(id)
+	objectID, err := objectuuid.FromObjectIDHex(id)
 	if err != nil {
 		utils.GinErrorResponse(ctx, err, http.StatusBadRequest, "Invalid ID")
 		return

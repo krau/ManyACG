@@ -6,7 +6,7 @@ import (
 	"github.com/krau/ManyACG/dao"
 	"github.com/krau/ManyACG/errs"
 	"github.com/krau/ManyACG/internal/infra/database"
-	"github.com/krau/ManyACG/internal/infra/database/model"
+	"github.com/krau/ManyACG/internal/model/entity"
 	"github.com/krau/ManyACG/internal/shared"
 	"github.com/krau/ManyACG/sources"
 	"github.com/krau/ManyACG/types"
@@ -16,14 +16,14 @@ import (
 func CreateCachedArtwork(ctx context.Context, artwork *types.Artwork, status types.ArtworkStatus) error {
 	// _, err := dao.CreateCachedArtwork(ctx, artwork, status)
 	// return err
-	data := &model.CachedArtworkData{
+	data := &entity.CachedArtworkData{
 		ID:          artwork.ID,
 		Title:       artwork.Title,
 		Description: artwork.Description,
 		SourceType:  shared.SourceType(artwork.SourceType),
 		SourceURL:   artwork.SourceURL,
 		R18:         artwork.R18,
-		Artist: &model.CachedArtist{
+		Artist: &entity.CachedArtist{
 			Name:     artwork.Artist.Name,
 			UID:      artwork.Artist.UID,
 			Type:     shared.SourceType(artwork.Artist.Type),
@@ -31,10 +31,10 @@ func CreateCachedArtwork(ctx context.Context, artwork *types.Artwork, status typ
 			ID:       artwork.Artist.ID,
 		},
 		Tags: artwork.Tags,
-		Pictures: func() []*model.CachedPicture {
-			pictures := make([]*model.CachedPicture, len(artwork.Pictures))
+		Pictures: func() []*entity.CachedPicture {
+			pictures := make([]*entity.CachedPicture, len(artwork.Pictures))
 			for i, pic := range artwork.Pictures {
-				pictures[i] = &model.CachedPicture{
+				pictures[i] = &entity.CachedPicture{
 					ID:        pic.ID,
 					ArtworkID: pic.ArtworkID,
 					Index:     pic.Index,
@@ -49,7 +49,7 @@ func CreateCachedArtwork(ctx context.Context, artwork *types.Artwork, status typ
 			return pictures
 		}(),
 	}
-	cacheModel := &model.CachedArtwork{
+	cacheModel := &entity.CachedArtwork{
 		SourceURL: artwork.SourceURL,
 		Artwork:   datatypes.NewJSONType(data),
 		Status:    shared.ArtworkStatus(status),

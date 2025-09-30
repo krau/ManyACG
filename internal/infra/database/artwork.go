@@ -3,43 +3,43 @@ package database
 import (
 	"context"
 
-	"github.com/krau/ManyACG/internal/infra/database/command"
-	"github.com/krau/ManyACG/internal/infra/database/model"
-	"github.com/krau/ManyACG/internal/infra/database/query"
+	"github.com/krau/ManyACG/internal/model/command"
+	"github.com/krau/ManyACG/internal/model/entity"
+	"github.com/krau/ManyACG/internal/model/query"
 	"github.com/krau/ManyACG/internal/shared"
 	"github.com/krau/ManyACG/pkg/objectuuid"
 	"gorm.io/gorm"
 )
 
-func (d *DB) CreateArtwork(ctx context.Context, artwork *model.Artwork) (*objectuuid.ObjectUUID, error) {
+func (d *DB) CreateArtwork(ctx context.Context, artwork *entity.Artwork) (*objectuuid.ObjectUUID, error) {
 	result := gorm.WithResult()
-	err := gorm.G[model.Artwork](d.db, result).Create(ctx, artwork)
+	err := gorm.G[entity.Artwork](d.db, result).Create(ctx, artwork)
 	if err != nil {
 		return nil, err
 	}
 	return &artwork.ID, nil
 }
 
-func (d *DB) GetArtworkByID(ctx context.Context, id objectuuid.ObjectUUID) (*model.Artwork, error) {
-	aw, err := gorm.G[model.Artwork](d.db).Where("id = ?", id).First(ctx)
+func (d *DB) GetArtworkByID(ctx context.Context, id objectuuid.ObjectUUID) (*entity.Artwork, error) {
+	aw, err := gorm.G[entity.Artwork](d.db).Where("id = ?", id).First(ctx)
 	if err != nil {
 		return nil, err
 	}
 	return &aw, nil
 }
 
-func (d *DB) GetArtworkByURL(ctx context.Context, url string) (*model.Artwork, error) {
-	aw, err := gorm.G[model.Artwork](d.db).Where("source_url = ?", url).First(ctx)
+func (d *DB) GetArtworkByURL(ctx context.Context, url string) (*entity.Artwork, error) {
+	aw, err := gorm.G[entity.Artwork](d.db).Where("source_url = ?", url).First(ctx)
 	if err != nil {
 		return nil, err
 	}
 	return &aw, nil
 }
 
-func (d *DB) QueryArtworks(ctx context.Context, que query.ArtworksQuery) ([]*model.Artwork, error) {
-	var artworks []*model.Artwork
+func (d *DB) QueryArtworks(ctx context.Context, que query.ArtworksQuery) ([]*entity.Artwork, error) {
+	var artworks []*entity.Artwork
 
-	query := d.db.WithContext(ctx).Model(&model.Artwork{}).
+	query := d.db.WithContext(ctx).Model(&entity.Artwork{}).
 		Preload("Artist").
 		Preload("Tags").
 		Preload("Tags.Alias").
@@ -77,7 +77,7 @@ func (d *DB) QueryArtworks(ctx context.Context, que query.ArtworksQuery) ([]*mod
 }
 
 func (d *DB) DeleteArtworkByID(ctx context.Context, id objectuuid.ObjectUUID) error {
-	n, err := gorm.G[model.Artwork](d.db).
+	n, err := gorm.G[entity.Artwork](d.db).
 		Where("id = ?", id).
 		Delete(ctx)
 	if err != nil {
@@ -93,12 +93,12 @@ func (d *DB) UpdateArtwork(ctx context.Context, patch command.ArtworkBasicPatch)
 	if patch.ID == objectuuid.Nil {
 		return gorm.ErrInvalidData
 	}
-	return d.db.WithContext(ctx).Model(&model.Artwork{}).
+	return d.db.WithContext(ctx).Model(&entity.Artwork{}).
 		Where("id = ?", patch.ID).
 		Updates(patch).Error
 }
 
-func (d *DB) UpdateArtworkPictures(ctx context.Context, id objectuuid.ObjectUUID, pics []*model.Picture) error {
+func (d *DB) UpdateArtworkPictures(ctx context.Context, id objectuuid.ObjectUUID, pics []*entity.Picture) error {
 	if id == objectuuid.Nil {
 		return gorm.ErrInvalidData
 	}
@@ -108,18 +108,18 @@ func (d *DB) UpdateArtworkPictures(ctx context.Context, id objectuuid.ObjectUUID
 	for _, pic := range pics {
 		pic.ArtworkID = id
 	}
-	var existing model.Artwork
+	var existing entity.Artwork
 	if err := d.db.WithContext(ctx).First(&existing, id).Error; err != nil {
 		return err
 	}
 	return d.db.WithContext(ctx).Model(&existing).Association("Pictures").Replace(pics)
 }
 
-func (d *DB) UpdateArtworkTags(ctx context.Context, id objectuuid.ObjectUUID, tags []*model.Tag) error {
+func (d *DB) UpdateArtworkTags(ctx context.Context, id objectuuid.ObjectUUID, tags []*entity.Tag) error {
 	if id == objectuuid.Nil {
 		return gorm.ErrInvalidData
 	}
-	var existing model.Artwork
+	var existing entity.Artwork
 	if err := d.db.WithContext(ctx).First(&existing, id).Error; err != nil {
 		return err
 	}

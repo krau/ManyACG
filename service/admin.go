@@ -5,18 +5,18 @@ import (
 	"errors"
 
 	"github.com/krau/ManyACG/internal/infra/database"
-	"github.com/krau/ManyACG/internal/infra/database/model"
+	"github.com/krau/ManyACG/internal/model/entity"
 	"github.com/krau/ManyACG/internal/shared"
 	"github.com/krau/ManyACG/types"
 )
 
-func IsAdmin(ctx context.Context, userID int64) (bool, error) {
+func IsAdminByTgID(ctx context.Context, tgid int64) (bool, error) {
 	// admin, err := dao.GetAdminByUserID(ctx, userID)
 	// if err != nil {
 	// 	return false, err
 	// }
 	// return admin != nil, nil
-	admin, err := database.Default().GetAdminByTelegramID(ctx, userID)
+	admin, err := database.Default().GetAdminByTelegramID(ctx, tgid)
 	if err != nil {
 		if errors.Is(err, database.ErrRecordNotFound) {
 			return false, nil
@@ -26,7 +26,7 @@ func IsAdmin(ctx context.Context, userID int64) (bool, error) {
 	return admin != nil, nil
 }
 
-func CreateAdmin(ctx context.Context, userID int64, permissions []types.Permission, grant int64, super bool) error {
+func CreateAdmin(ctx context.Context, userID int64, permissions []shared.Permission, grant int64, super bool) error {
 	// _, err := dao.CreateAdmin(
 	// 	ctx, &types.AdminModel{
 	// 		UserID:      userID,
@@ -43,32 +43,20 @@ func CreateAdmin(ctx context.Context, userID int64, permissions []types.Permissi
 	if exist != nil {
 		return nil
 	}
-	_, err = database.Default().CreateAdmin(ctx, &model.Admin{
-		TelegramID: userID,
-		Permissions: func() []shared.Permission {
-			var perms []shared.Permission
-			for _, p := range permissions {
-				perm, err := shared.ParsePermission(string(p))
-				if err == nil {
-					perms = append(perms, perm)
-				}
-			}
-			if super {
-				perms = append(perms, shared.PermissionSudo)
-			}
-			return perms
-		}(),
+	_, err = database.Default().CreateAdmin(ctx, &entity.Admin{
+		TelegramID:  userID,
+		Permissions: permissions,
 	})
 	return err
 }
 
-func DeleteAdmin(ctx context.Context, userID int64) error {
+func DeleteAdminByTgID(ctx context.Context, tgid int64) error {
 	// _, err := dao.DeleteAdminByUserID(ctx, userID)
 	// return err
-	return database.Default().DeleteAdminByTelegramID(ctx, userID)
+	return database.Default().DeleteAdminByTelegramID(ctx, tgid)
 }
 
-func GetAdminByUserID(ctx context.Context, userID int64) (*types.AdminModel, error) {
+func GetAdminByTgID(ctx context.Context, userID int64) (*types.AdminModel, error) {
 	// return dao.GetAdminByUserID(ctx, userID)
 	admin, err := database.Default().GetAdminByTelegramID(ctx, userID)
 	if err != nil {
@@ -86,7 +74,7 @@ func GetAdminByUserID(ctx context.Context, userID int64) (*types.AdminModel, err
 	}, nil
 }
 
-func CheckAdminPermission(ctx context.Context, userID int64, permissions ...types.Permission) bool {
+func CheckAdminPermissionByTgID(ctx context.Context, userID int64, permissions ...shared.Permission) bool {
 	// admin, err := dao.GetAdminByUserID(ctx, userID)
 	// if err != nil {
 	// 	return false
@@ -121,13 +109,9 @@ func CheckAdminPermission(ctx context.Context, userID int64, permissions ...type
 		return true
 	}
 	for _, p := range permissions {
-		perm, err := shared.ParsePermission(string(p))
-		if err != nil {
-			return false
-		}
 		has := false
 		for _, ap := range admin.Permissions {
-			if ap == perm {
+			if ap == p {
 				has = true
 				break
 			}
@@ -139,7 +123,7 @@ func CheckAdminPermission(ctx context.Context, userID int64, permissions ...type
 	return true
 }
 
-func CreateOrUpdateAdmin(ctx context.Context, userID int64, permissions []types.Permission, grant int64, super bool) error {
+func CreateOrUpdateAdmin(ctx context.Context, tgid int64, permissions []shared.Permission, grant int64, super bool) error {
 	// admin, err := dao.GetAdminByUserID(ctx, userID)
 	// if err != nil {
 	// 	if errors.Is(err, mongo.ErrNoDocuments) {
@@ -154,13 +138,13 @@ func CreateOrUpdateAdmin(ctx context.Context, userID int64, permissions []types.
 	// admin.SuperAdmin = super
 	// _, err = dao.UpdateAdmin(ctx, admin)
 	// return err
-	exist, err := database.Default().GetAdminByTelegramID(ctx, userID)
+	exist, err := database.Default().GetAdminByTelegramID(ctx, tgid)
 	if err != nil && !errors.Is(err, database.ErrRecordNotFound) {
 		return err
 	}
 	if exist == nil {
-		_, err = database.Default().CreateAdmin(ctx, &model.Admin{
-			TelegramID: userID,
+		_, err = database.Default().CreateAdmin(ctx, &entity.Admin{
+			TelegramID: tgid,
 			Permissions: func() []shared.Permission {
 				var perms []shared.Permission
 				for _, p := range permissions {

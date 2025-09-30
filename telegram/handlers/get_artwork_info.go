@@ -6,9 +6,9 @@ import (
 	"time"
 
 	"github.com/krau/ManyACG/common"
+	"github.com/krau/ManyACG/internal/shared"
 	"github.com/krau/ManyACG/service"
 	"github.com/krau/ManyACG/telegram/utils"
-	"github.com/krau/ManyACG/types"
 
 	"github.com/mymmrac/telego"
 	"github.com/mymmrac/telego/telegohandler"
@@ -16,7 +16,7 @@ import (
 )
 
 func GetArtworkInfo(ctx *telegohandler.Context, message telego.Message) error {
-	hasPermission := CheckPermissionInGroup(ctx, message, types.PermissionGetArtworkInfo)
+	hasPermission := CheckPermissionInGroup(ctx, message, shared.PermissionGetArtworkInfo)
 	sourceURL := utils.FindSourceURLForMessage(&message)
 	ogch := utils.GetMssageOriginChannel(&message)
 	if ogch != nil && (ogch.Chat.ID == ChannelChatID.ID || strings.EqualFold(ogch.Chat.Username, strings.TrimPrefix(ChannelChatID.Username, "@"))) {

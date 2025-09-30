@@ -30,6 +30,14 @@ func FromObjectID(oid ObjectID) ObjectUUID {
 	return cu
 }
 
+func FromObjectIDHex(oidHex string) (ObjectUUID, error) {
+	oid, err := ObjectIDFromHex(oidHex)
+	if err != nil {
+		return Nil, err
+	}
+	return FromObjectID(oid), nil
+}
+
 func (cu ObjectUUID) IsZero() bool {
 	return cu == Nil
 }
@@ -41,7 +49,7 @@ func (cu ObjectUUID) ToObjectID() ObjectID {
 	return oid
 }
 
-// String returns objectID hex string
+// Hex returns objectID hex string
 func (cu ObjectUUID) Hex() string {
 	u, err := uuid.FromBytes(cu[:])
 	if err != nil {

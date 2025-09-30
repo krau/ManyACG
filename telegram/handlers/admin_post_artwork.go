@@ -16,6 +16,7 @@ import (
 	"github.com/krau/ManyACG/common/imgtool"
 	"github.com/krau/ManyACG/config"
 	"github.com/krau/ManyACG/errs"
+	"github.com/krau/ManyACG/internal/shared"
 
 	"github.com/krau/ManyACG/service"
 	"github.com/krau/ManyACG/sources"
@@ -29,7 +30,7 @@ import (
 )
 
 func PostArtworkCallbackQuery(ctx *telegohandler.Context, query telego.CallbackQuery) error {
-	if !CheckPermissionForQuery(ctx, query, types.PermissionPostArtwork) {
+	if !CheckPermissionForQuery(ctx, query, shared.PermissionPostArtwork) {
 		ctx.Bot().AnswerCallbackQuery(ctx, &telego.AnswerCallbackQueryParams{
 			CallbackQueryID: query.ID,
 			Text:            "你没有发布作品的权限",
@@ -200,7 +201,7 @@ func PostArtworkCallbackQuery(ctx *telegohandler.Context, query telego.CallbackQ
 }
 
 func PostArtworkCommand(ctx *telegohandler.Context, message telego.Message) error {
-	if !CheckPermissionInGroup(ctx, message, types.PermissionPostArtwork) {
+	if !CheckPermissionInGroup(ctx, message, shared.PermissionPostArtwork) {
 		utils.ReplyMessage(ctx, ctx.Bot(), message, "你没有发布作品的权限")
 		return nil
 	}
@@ -302,7 +303,7 @@ func PostArtworkCommand(ctx *telegohandler.Context, message telego.Message) erro
 }
 
 func ArtworkPreview(ctx *telegohandler.Context, query telego.CallbackQuery) error {
-	if !CheckPermissionForQuery(ctx, query, types.PermissionPostArtwork) {
+	if !CheckPermissionForQuery(ctx, query, shared.PermissionPostArtwork) {
 		ctx.Bot().AnswerCallbackQuery(ctx, &telego.AnswerCallbackQueryParams{
 			CallbackQueryID: query.ID,
 			Text:            "你没有发布作品的权限",
@@ -565,7 +566,7 @@ func downloadAndCompressArtwork(ctx context.Context, artwork *types.Artwork, sta
 }
 
 func BatchPostArtwork(ctx *telegohandler.Context, message telego.Message) error {
-	if !CheckPermissionInGroup(ctx, message, types.PermissionPostArtwork) {
+	if !CheckPermissionInGroup(ctx, message, shared.PermissionPostArtwork) {
 		utils.ReplyMessage(ctx, ctx.Bot(), message, "你没有发布作品的权限")
 		return nil
 	}

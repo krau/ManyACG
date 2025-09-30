@@ -15,7 +15,7 @@ import (
 )
 
 func DumpArtworkInfo(ctx *telegohandler.Context, message telego.Message) error {
-	userAdmin, err := service.GetAdminByUserID(ctx, message.From.ID)
+	userAdmin, err := service.GetAdminByTgID(ctx, message.From.ID)
 	if err != nil {
 		common.Logger.Errorf("获取管理员信息失败: %s", err)
 		utils.ReplyMessage(ctx, ctx.Bot(), message, "获取管理员信息失败")

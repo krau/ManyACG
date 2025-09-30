@@ -3,31 +3,31 @@ package database
 import (
 	"context"
 
-	"github.com/krau/ManyACG/internal/infra/database/model"
+	"github.com/krau/ManyACG/internal/model/entity"
 	"github.com/krau/ManyACG/internal/shared"
 	"gorm.io/gorm"
 )
 
-func (d *DB) CreateCachedArtwork(ctx context.Context, data *model.CachedArtwork) (*model.CachedArtwork, error) {
+func (d *DB) CreateCachedArtwork(ctx context.Context, data *entity.CachedArtwork) (*entity.CachedArtwork, error) {
 	result := gorm.WithResult()
-	err := gorm.G[model.CachedArtwork](d.db, result).Create(ctx, data)
+	err := gorm.G[entity.CachedArtwork](d.db, result).Create(ctx, data)
 	if err != nil {
 		return nil, err
 	}
 	return data, nil
 }
 
-func (d *DB) GetCachedArtworkByURL(ctx context.Context, sourceUrl string) (*model.CachedArtwork, error) {
-	res, err := gorm.G[model.CachedArtwork](d.db).Where("source_url = ?", sourceUrl).First(ctx)
+func (d *DB) GetCachedArtworkByURL(ctx context.Context, sourceUrl string) (*entity.CachedArtwork, error) {
+	res, err := gorm.G[entity.CachedArtwork](d.db).Where("source_url = ?", sourceUrl).First(ctx)
 	return &res, err
 }
 
 func (d *DB) UpdateCachedArtworkStatusByURL(ctx context.Context, sourceUrl string, status shared.ArtworkStatus) error {
-	return d.db.WithContext(ctx).Model(&model.CachedArtwork{}).Where("source_url = ?", sourceUrl).Update("status", status).Error
+	return d.db.WithContext(ctx).Model(&entity.CachedArtwork{}).Where("source_url = ?", sourceUrl).Update("status", status).Error
 }
 
 func (d *DB) DeleteCachedArtworkByURL(ctx context.Context, sourceUrl string) error {
-	n, err := gorm.G[model.CachedArtwork](d.db).Where("source_url = ?", sourceUrl).Delete(ctx)
+	n, err := gorm.G[entity.CachedArtwork](d.db).Where("source_url = ?", sourceUrl).Delete(ctx)
 	if err != nil {
 		return err
 	}

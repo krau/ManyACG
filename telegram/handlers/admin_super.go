@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/krau/ManyACG/common"
+	"github.com/krau/ManyACG/internal/shared"
 	"github.com/krau/ManyACG/service"
 	"github.com/krau/ManyACG/telegram/utils"
 	"github.com/krau/ManyACG/types"
@@ -19,7 +20,7 @@ import (
 )
 
 func ProcessPicturesHashAndSize(ctx *telegohandler.Context, message telego.Message) error {
-	userAdmin, err := service.GetAdminByUserID(ctx, message.From.ID)
+	userAdmin, err := service.GetAdminByTgID(ctx, message.From.ID)
 	if err != nil {
 		common.Logger.Errorf("获取管理员信息失败: %s", err)
 		utils.ReplyMessage(ctx, ctx.Bot(), message, "获取管理员信息失败")
@@ -51,7 +52,7 @@ func ProcessPicturesHashAndSize(ctx *telegohandler.Context, message telego.Messa
 // }
 
 func FixTwitterArtists(ctx *telegohandler.Context, message telego.Message) error {
-	userAdmin, err := service.GetAdminByUserID(ctx, message.From.ID)
+	userAdmin, err := service.GetAdminByTgID(ctx, message.From.ID)
 	if err != nil {
 		common.Logger.Errorf("获取管理员信息失败: %s", err)
 		utils.ReplyMessage(ctx, ctx.Bot(), message, "获取管理员信息失败")
@@ -67,7 +68,7 @@ func FixTwitterArtists(ctx *telegohandler.Context, message telego.Message) error
 }
 
 func SetAdmin(ctx *telegohandler.Context, message telego.Message) error {
-	userAdmin, err := service.GetAdminByUserID(ctx, message.From.ID)
+	userAdmin, err := service.GetAdminByTgID(ctx, message.From.ID)
 	if err != nil {
 		utils.ReplyMessage(ctx, ctx.Bot(), message, "获取管理员信息失败: "+err.Error())
 		return nil
@@ -106,10 +107,10 @@ func SetAdmin(ctx *telegohandler.Context, message telego.Message) error {
 		}
 	}
 
-	inputPermissions := make([]types.Permission, len(args)-1)
+	inputPermissions := make([]shared.Permission, len(args)-1)
 	unsupportedPermissions := make([]string, 0)
 	for i, arg := range args[1:] {
-		for _, p := range types.AllPermissions {
+		for _, p := range shared.PermissionValues() {
 			if string(p) == arg {
 				inputPermissions[i] = p
 				break
@@ -125,7 +126,7 @@ func SetAdmin(ctx *telegohandler.Context, message telego.Message) error {
 		return nil
 	}
 
-	isAdmin, err := service.IsAdmin(ctx, userID)
+	isAdmin, err := service.IsAdminByTgID(ctx, userID)
 	if err != nil {
 		if errors.Is(err, mongo.ErrNoDocuments) {
 			isSuper := len(inputPermissions) == 0
@@ -146,7 +147,7 @@ func SetAdmin(ctx *telegohandler.Context, message telego.Message) error {
 	}
 	if isAdmin {
 		if (len(args) == 0 && message.ReplyToMessage != nil) || (len(args) == 1 && message.ReplyToMessage == nil) {
-			if err := service.DeleteAdmin(ctx, userID); err != nil {
+			if err := service.DeleteAdminByTgID(ctx, userID); err != nil {
 				utils.ReplyMessage(ctx, ctx.Bot(), message, "删除管理员失败: "+err.Error())
 				return nil
 			}
@@ -165,7 +166,7 @@ func SetAdmin(ctx *telegohandler.Context, message telego.Message) error {
 }
 
 func AddTagAlias(ctx *telegohandler.Context, message telego.Message) error {
-	userAdmin, err := service.GetAdminByUserID(ctx, message.From.ID)
+	userAdmin, err := service.GetAdminByTgID(ctx, message.From.ID)
 	if err != nil {
 		common.Logger.Errorf("获取管理员信息失败: %s", err)
 		utils.ReplyMessage(ctx, ctx.Bot(), message, "获取管理员信息失败")
@@ -196,7 +197,7 @@ func AddTagAlias(ctx *telegohandler.Context, message telego.Message) error {
 }
 
 func AutoTagAllArtwork(ctx *telegohandler.Context, message telego.Message) error {
-	userAdmin, err := service.GetAdminByUserID(ctx, message.From.ID)
+	userAdmin, err := service.GetAdminByTgID(ctx, message.From.ID)
 	if err != nil {
 		common.Logger.Errorf("获取管理员信息失败: %s", err)
 		utils.ReplyMessage(ctx, ctx.Bot(), message, "获取管理员信息失败")

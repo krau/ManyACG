@@ -5,7 +5,7 @@ import (
 	"sync"
 
 	"github.com/krau/ManyACG/internal/infra/config/runtimecfg"
-	"github.com/krau/ManyACG/internal/infra/database/model"
+	"github.com/krau/ManyACG/internal/model/entity"
 	"github.com/krau/ManyACG/pkg/log"
 	"github.com/ncruces/go-sqlite3/gormlite"
 	"gorm.io/driver/mysql"
@@ -59,15 +59,15 @@ func initDB(ctx context.Context) {
 		return
 	}
 	err = db.AutoMigrate(
-		&model.Artist{},
-		&model.Tag{},
-		&model.TagAlias{},
-		&model.Artwork{},
-		&model.Picture{},
-		&model.CachedArtwork{},
-		&model.DeletedRecord{},
-		&model.ApiKey{},
-		&model.User{},
+		&entity.Artist{},
+		&entity.Tag{},
+		&entity.TagAlias{},
+		&entity.Artwork{},
+		&entity.Picture{},
+		&entity.CachedArtwork{},
+		&entity.DeletedRecord{},
+		&entity.ApiKey{},
+		&entity.User{},
 	)
 	if err != nil {
 		log.Fatal("failed to migrate database", "err", err)

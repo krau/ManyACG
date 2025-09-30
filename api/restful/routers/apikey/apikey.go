@@ -8,6 +8,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/krau/ManyACG/api/restful/middleware"
 	"github.com/krau/ManyACG/api/restful/utils"
+	"github.com/krau/ManyACG/internal/shared"
 	"github.com/krau/ManyACG/service"
 	"github.com/krau/ManyACG/types"
 )
@@ -34,9 +35,14 @@ func CreateApiKey(ctx *gin.Context) {
 		utils.GinBindError(ctx, errors.New("invalid permission"))
 		return
 	}
-	permissions := []types.ApiKeyPermission{}
+	permissions := make([]shared.Permission, 0)
 	for _, permission := range request.Permissions {
-		permissions = append(permissions, types.ApiKeyPermission(permission))
+		perm, err := shared.ParsePermission(permission)
+		if err != nil {
+			utils.GinBindError(ctx, errors.New("invalid permission: "+permission))
+			return
+		}
+		permissions = append(permissions, perm)
 	}
 	apiKey, err := service.CreateApiKey(ctx, request.Key, request.Quota, permissions, request.Description)
 	if err != nil {

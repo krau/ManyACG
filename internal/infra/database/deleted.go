@@ -3,13 +3,13 @@ package database
 import (
 	"context"
 
-	"github.com/krau/ManyACG/internal/infra/database/model"
+	"github.com/krau/ManyACG/internal/model/entity"
 	"github.com/krau/ManyACG/pkg/objectuuid"
 	"gorm.io/gorm"
 )
 
-func (d *DB) GetDeletedByURL(ctx context.Context, sourceURL string) (*model.DeletedRecord, error) {
-	res, err := gorm.G[model.DeletedRecord](d.db).Where("source_url = ?", sourceURL).First(ctx)
+func (d *DB) GetDeletedByURL(ctx context.Context, sourceURL string) (*entity.DeletedRecord, error) {
+	res, err := gorm.G[entity.DeletedRecord](d.db).Where("source_url = ?", sourceURL).First(ctx)
 	return &res, err
 }
 
@@ -21,9 +21,9 @@ func (d *DB) CheckDeletedByURL(ctx context.Context, sourceURL string) bool {
 	return deleted != nil
 }
 
-func (d *DB) CreateDeleted(ctx context.Context, deleted *model.DeletedRecord) (*objectuuid.ObjectUUID, error) {
+func (d *DB) CreateDeleted(ctx context.Context, deleted *entity.DeletedRecord) (*objectuuid.ObjectUUID, error) {
 	result := gorm.WithResult()
-	err := gorm.G[model.DeletedRecord](d.db, result).Create(ctx, deleted)
+	err := gorm.G[entity.DeletedRecord](d.db, result).Create(ctx, deleted)
 	if err != nil {
 		return nil, err
 	}
@@ -31,7 +31,7 @@ func (d *DB) CreateDeleted(ctx context.Context, deleted *model.DeletedRecord) (*
 }
 
 func (d *DB) CancelDeletedByURL(ctx context.Context, sourceURL string) error {
-	n, err := gorm.G[model.DeletedRecord](d.db).Where("source_url = ?", sourceURL).Delete(ctx)
+	n, err := gorm.G[entity.DeletedRecord](d.db).Where("source_url = ?", sourceURL).Delete(ctx)
 	if err != nil {
 		return err
 	}

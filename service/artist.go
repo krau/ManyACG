@@ -4,33 +4,25 @@ import (
 	"context"
 
 	"github.com/krau/ManyACG/internal/infra/database"
+	"github.com/krau/ManyACG/internal/model/entity"
 	"github.com/krau/ManyACG/internal/shared"
 	"github.com/krau/ManyACG/pkg/objectuuid"
-	"github.com/krau/ManyACG/types"
-
-	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-func GetArtistByID(ctx context.Context, artistID primitive.ObjectID) (*types.Artist, error) {
+func GetArtistByID(ctx context.Context, artistID objectuuid.ObjectUUID) (*entity.Artist, error) {
 	// artist, err := dao.GetArtistByID(ctx, artistID)
 	// if err != nil {
 	// 	return nil, err
 	// }
 	// return artist.ToArtist(), nil
-	artist, err := database.Default().GetArtistByID(ctx, objectuuid.FromObjectID(objectuuid.ObjectID(artistID)))
+	artist, err := database.Default().GetArtistByID(ctx, artistID)
 	if err != nil {
 		return nil, err
 	}
-	return &types.Artist{
-		ID:       artist.ID.Hex(),
-		Name:     artist.Name,
-		UID:      artist.UID,
-		Type:     types.SourceType(artist.Type),
-		Username: artist.Username,
-	}, nil
+	return artist, nil
 }
 
-func GetArtistByUID(ctx context.Context, uid string, sourceType types.SourceType) (*types.Artist, error) {
+func GetArtistByUID(ctx context.Context, uid string, sourceType shared.SourceType) (*entity.Artist, error) {
 	// artist, err := dao.GetArtistByUID(ctx, uid, sourceType)
 	// if err != nil {
 	// 	return nil, err
@@ -40,11 +32,5 @@ func GetArtistByUID(ctx context.Context, uid string, sourceType types.SourceType
 	if err != nil {
 		return nil, err
 	}
-	return &types.Artist{
-		ID:       artist.ID.Hex(),
-		Name:     artist.Name,
-		UID:      artist.UID,
-		Type:     types.SourceType(artist.Type),
-		Username: artist.Username,
-	}, nil
+	return artist, nil
 }
