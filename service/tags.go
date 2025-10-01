@@ -19,29 +19,29 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/readpref"
 )
 
-func GetRandomTags(ctx context.Context, limit int) ([]string, error) {
-	tags, err := dao.GetRandomTags(ctx, limit)
-	if err != nil {
-		return nil, err
-	}
-	tagNames := make([]string, 0, len(tags))
-	for _, tag := range tags {
-		tagNames = append(tagNames, tag.Name)
-	}
-	return tagNames, nil
-}
+// func GetRandomTags(ctx context.Context, limit int) ([]string, error) {
+// 	tags, err := dao.GetRandomTags(ctx, limit)
+// 	if err != nil {
+// 		return nil, err
+// 	}
+// 	tagNames := make([]string, 0, len(tags))
+// 	for _, tag := range tags {
+// 		tagNames = append(tagNames, tag.Name)
+// 	}
+// 	return tagNames, nil
+// }
 
-func GetRandomTagModels(ctx context.Context, limit int) ([]*types.TagModel, error) {
-	tags, err := dao.GetRandomTags(ctx, limit)
-	if err != nil {
-		return nil, err
-	}
-	return tags, nil
-}
+// func GetRandomTagModels(ctx context.Context, limit int) ([]*types.TagModel, error) {
+// 	tags, err := dao.GetRandomTags(ctx, limit)
+// 	if err != nil {
+// 		return nil, err
+// 	}
+// 	return tags, nil
+// }
 
-func GetTagByName(ctx context.Context, name string) (*types.TagModel, error) {
-	return dao.GetTagByName(ctx, name)
-}
+// func GetTagByName(ctx context.Context, name string) (*types.TagModel, error) {
+// 	return dao.GetTagByName(ctx, name)
+// }
 
 // 为已有 tag 添加别名
 //
