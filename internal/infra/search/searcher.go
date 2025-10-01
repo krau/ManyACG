@@ -44,6 +44,23 @@ func Enabled() bool {
 	return enabled
 }
 
+type noopSearcher struct{}
+
+func (s *noopSearcher) SearchArtworks(ctx context.Context, que *query.ArtworkSearch) (*dto.ArtworkSearchResult, error) {
+	return nil, errs.ErrSearchEngineUnavailable
+}
+
+func (s *noopSearcher) FindSimilarArtworks(ctx context.Context, que *query.ArtworkSimilar) (*dto.ArtworkSearchResult, error) {
+	return nil, errs.ErrSearchEngineUnavailable
+}
+
+func Default() Searcher {
+	if !enabled {
+		return &noopSearcher{}
+	}
+	return getDefault(context.Background())
+}
+
 func IsNotEnabledErr(err error) bool {
 	return errors.Is(err, errs.ErrSearchEngineUnavailable)
 }

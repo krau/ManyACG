@@ -10,10 +10,11 @@ import (
 	"github.com/krau/ManyACG/common/imgtool"
 	"github.com/krau/ManyACG/config"
 	"github.com/krau/ManyACG/errs"
+	"github.com/krau/ManyACG/internal/model/entity"
+	"github.com/krau/ManyACG/internal/shared"
 	"github.com/krau/ManyACG/service"
 	"github.com/krau/ManyACG/sources"
 	"github.com/krau/ManyACG/storage"
-	"github.com/krau/ManyACG/types"
 
 	"github.com/mymmrac/telego"
 	"github.com/mymmrac/telego/telegoutil"
@@ -73,7 +74,7 @@ var tagCharsReplacer = strings.NewReplacer(
 )
 
 // 获取作品的 HTML 格式描述, 已转义
-func GetArtworkHTMLCaption(artwork *types.Artwork) string {
+func GetArtworkHTMLCaption(artwork *entity.Artwork) string {
 	caption := fmt.Sprintf("<a href=\"%s\"><b>%s</b></a> / <b>%s</b>", artwork.SourceURL, common.EscapeHTML(artwork.Title), common.EscapeHTML(artwork.Artist.Name))
 	if artwork.Description != "" {
 		desc := artwork.Description
@@ -143,13 +144,13 @@ func GetDeepLink(botUsername, command string, args ...string) string {
 	return fmt.Sprintf("https://t.me/%s/?start=%s_%s", botUsername, command, strings.Join(args, "_"))
 }
 
-func GetPostedPictureReplyMarkup(artwork *types.Artwork, index uint, channelChatID telego.ChatID, botUsername string) *telego.InlineKeyboardMarkup {
+func GetPostedPictureReplyMarkup(artwork *entity.Artwork, index uint, channelChatID telego.ChatID, botUsername string) *telego.InlineKeyboardMarkup {
 	return telegoutil.InlineKeyboard(
 		GetPostedPictureInlineKeyboardButton(artwork, index, channelChatID, botUsername),
 	)
 }
 
-func GetPostedPictureInlineKeyboardButton(artwork *types.Artwork, index uint, channelChatID telego.ChatID, botUsername string) []telego.InlineKeyboardButton {
+func GetPostedPictureInlineKeyboardButton(artwork *entity.Artwork, index uint, channelChatID telego.ChatID, botUsername string) []telego.InlineKeyboardButton {
 	if index >= uint(len(artwork.Pictures)) {
 		common.Logger.Fatalf("图片索引越界: %d", index)
 		return nil
@@ -166,7 +167,7 @@ func GetPostedPictureInlineKeyboardButton(artwork *types.Artwork, index uint, ch
 	}
 }
 
-func GetPostedArtworkInlineKeyboardButton(artwork *types.Artwork, channelChatID telego.ChatID, botUsername string) []telego.InlineKeyboardButton {
+func GetPostedArtworkInlineKeyboardButton(artwork *entity.Artwork, channelChatID telego.ChatID, botUsername string) []telego.InlineKeyboardButton {
 	detailsURL := config.Cfg.API.SiteURL + "/artwork/" + artwork.ID
 	hasValidTelegramInfo := channelChatID.ID != 0 || channelChatID.Username != ""
 	if hasValidTelegramInfo && artwork.Pictures[0].TelegramInfo != nil && artwork.Pictures[0].TelegramInfo.MessageID != 0 {
@@ -274,7 +275,7 @@ func SendPictureFileByID(ctx context.Context, bot *telego.Bot, message telego.Me
 	if documentMessage != nil {
 		if documentMessage.Document != nil {
 			if picture.TelegramInfo == nil {
-				picture.TelegramInfo = &types.TelegramInfo{}
+				picture.TelegramInfo = &shared.TelegramInfo{}
 			}
 			picture.TelegramInfo.DocumentFileID = documentMessage.Document.FileID
 			if service.UpdatePictureTelegramInfo(ctx, picture, picture.TelegramInfo) != nil {
@@ -286,7 +287,7 @@ func SendPictureFileByID(ctx context.Context, bot *telego.Bot, message telego.Me
 }
 
 // GetPicturePreviewInputFile 获取图片预览的 InputFile
-func GetPicturePreviewInputFile(ctx context.Context, picture *types.Picture) (*telego.InputFile, error) {
+func GetPicturePreviewInputFile(ctx context.Context, picture *entity.Picture) (*telego.InputFile, error) {
 	if picture.TelegramInfo != nil && picture.TelegramInfo.PhotoFileID != "" {
 		inputFile := telegoutil.FileFromID(picture.TelegramInfo.PhotoFileID)
 		return &inputFile, nil

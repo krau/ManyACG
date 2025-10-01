@@ -1,22 +1,14 @@
 package service
 
 import (
-	"bytes"
 	"context"
-	"fmt"
-	"image"
-
-	"github.com/krau/ManyACG/common"
-	"github.com/krau/ManyACG/common/imgtool"
-	"github.com/krau/ManyACG/dao"
-	"github.com/krau/ManyACG/internal/infra/database"
-	"github.com/krau/ManyACG/internal/model/entity"
-	"github.com/krau/ManyACG/pkg/objectuuid"
-	"github.com/krau/ManyACG/storage"
-	"github.com/krau/ManyACG/types"
-	"gorm.io/gorm"
 
 	"github.com/duke-git/lancet/v2/slice"
+	"github.com/krau/ManyACG/dao"
+	"github.com/krau/ManyACG/internal/model/entity"
+	"github.com/krau/ManyACG/internal/repo"
+	"github.com/krau/ManyACG/pkg/objectuuid"
+	"github.com/krau/ManyACG/types"
 
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
@@ -153,29 +145,29 @@ func UpdatePictureTelegramInfo(ctx context.Context, picture *types.Picture, tele
 // 删除单张图片, 如果删除后对应的 artwork 中没有图片, 则也删除 artwork
 //
 // 删除后对 artwork 的 pictures 的 index 进行重整
-func DeletePictureByID(ctx context.Context, id objectuuid.ObjectUUID) error {
-	toDelete, err := database.Default().GetPictureByID(ctx, id)
+func (s *Service) DeletePictureByID(ctx context.Context, id objectuuid.ObjectUUID) error {
+	toDelete, err := s.repos.Picture().GetPictureByID(ctx, id)
 	if err != nil {
 		return err
 	}
-	artwork, err := database.Default().GetArtworkByID(ctx, toDelete.ArtworkID)
+	artwork, err := s.repos.Artwork().GetArtworkByID(ctx, toDelete.ArtworkID)
 	if err != nil {
 		return err
 	}
-	err = database.Default().Transaction(ctx, func(tx *database.DB, _ *gorm.DB) error {
+	err = s.repos.Transaction(ctx, func(repos repo.Repositories) error {
 		if len(artwork.Pictures) == 1 {
-			return database.Default().DeleteArtworkByID(ctx, artwork.ID)
+			return repos.Artwork().DeleteArtworkByID(ctx, artwork.ID)
 		}
-		if err := database.Default().DeletePictureByID(ctx, id); err != nil {
+		if err := repos.Picture().DeletePictureByID(ctx, id); err != nil {
 			return err
 		}
 		newPictures := slice.Filter(artwork.Pictures, func(index int, item *entity.Picture) bool {
 			return item.ID != toDelete.ID
 		})
-		if err := database.Default().UpdateArtworkPictures(ctx, artwork.ID, newPictures); err != nil {
+		if err := repos.Artwork().UpdateArtworkPictures(ctx, artwork.ID, newPictures); err != nil {
 			return err
 		}
-		return database.Default().ReorderArtworkPicturesByID(ctx, artwork.ID)
+		return repos.Artwork().ReorderArtworkPictures(ctx, artwork.ID)
 	})
 	return err
 }
@@ -195,69 +187,69 @@ func DeletePictureByID(ctx context.Context, id objectuuid.ObjectUUID) error {
 // 	return result, nil
 // }
 
-func ProcessPictureHashAndUpdate(ctx context.Context, picture *entity.Picture) error {
-	pictureModel, err := dao.GetPictureByOriginal(ctx, picture.Original)
-	if err != nil {
-		return err
-	}
-	var file []byte
-	if picture.StorageInfo.Data().Original != nil {
-		file, err = storage.GetFile(ctx, picture.StorageInfo.Data().Original)
-	} else {
-		file, err = common.DownloadWithCache(ctx, picture.Original, nil)
-	}
-	if err != nil {
-		return err
-	}
-	img, _, err := image.Decode(bytes.NewReader(file))
-	if err != nil {
-		return fmt.Errorf("failed to decode image: %w", err)
-	}
+// func ProcessPictureHashAndUpdate(ctx context.Context, picture *entity.Picture) error {
+// 	pictureModel, err := dao.GetPictureByOriginal(ctx, picture.Original)
+// 	if err != nil {
+// 		return err
+// 	}
+// 	var file []byte
+// 	if picture.StorageInfo.Data().Original != nil {
+// 		file, err = storage.GetFile(ctx, picture.StorageInfo.Data().Original)
+// 	} else {
+// 		file, err = common.DownloadWithCache(ctx, picture.Original, nil)
+// 	}
+// 	if err != nil {
+// 		return err
+// 	}
+// 	img, _, err := image.Decode(bytes.NewReader(file))
+// 	if err != nil {
+// 		return fmt.Errorf("failed to decode image: %w", err)
+// 	}
 
-	hash, err := imgtool.GetImagePhash(img)
-	if err != nil {
-		return err
-	}
-	tbhash, err := imgtool.GetImageThumbHash(img)
-	if err != nil {
-		return err
-	}
-	_, err = dao.UpdatePictureHashByID(ctx, pictureModel.ID, hash, tbhash)
-	if err != nil {
-		return err
-	}
-	if picture.Width == 0 || picture.Height == 0 {
-		width, height, err := imgtool.GetImageSize(img)
-		if err != nil {
-			return err
-		}
-		_, err = dao.UpdatePictureSizeByID(ctx, pictureModel.ID, width, height)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
-}
+// 	hash, err := imgtool.GetImagePhash(img)
+// 	if err != nil {
+// 		return err
+// 	}
+// 	tbhash, err := imgtool.GetImageThumbHash(img)
+// 	if err != nil {
+// 		return err
+// 	}
+// 	_, err = dao.UpdatePictureHashByID(ctx, pictureModel.ID, hash, tbhash)
+// 	if err != nil {
+// 		return err
+// 	}
+// 	if picture.Width == 0 || picture.Height == 0 {
+// 		width, height, err := imgtool.GetImageSize(img)
+// 		if err != nil {
+// 			return err
+// 		}
+// 		_, err = dao.UpdatePictureSizeByID(ctx, pictureModel.ID, width, height)
+// 		if err != nil {
+// 			return err
+// 		}
+// 	}
+// 	return nil
+// }
 
-type processPictureTask struct {
-	Picture *entity.Picture
-	Ctx     context.Context
-}
+// type processPictureTask struct {
+// 	Picture *entity.Picture
+// 	Ctx     context.Context
+// }
 
-var processPictureTaskChan = make(chan *processPictureTask)
+// var processPictureTaskChan = make(chan *processPictureTask)
 
-func AddProcessPictureTask(ctx context.Context, picture *entity.Picture) {
-	processPictureTaskChan <- &processPictureTask{
-		Picture: picture,
-		Ctx:     ctx,
-	}
-}
+// func AddProcessPictureTask(ctx context.Context, picture *entity.Picture) {
+// 	processPictureTaskChan <- &processPictureTask{
+// 		Picture: picture,
+// 		Ctx:     ctx,
+// 	}
+// }
 
-func listenProcessPictureTask() {
-	for task := range processPictureTaskChan {
-		err := ProcessPictureHashAndUpdate(task.Ctx, task.Picture)
-		if err != nil {
-			common.Logger.Errorf("error when processing picture %s: %s", task.Picture.Original, err)
-		}
-	}
-}
+// func listenProcessPictureTask() {
+// 	for task := range processPictureTaskChan {
+// 		err := ProcessPictureHashAndUpdate(task.Ctx, task.Picture)
+// 		if err != nil {
+// 			common.Logger.Errorf("error when processing picture %s: %s", task.Picture.Original, err)
+// 		}
+// 	}
+// }

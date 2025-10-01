@@ -13,10 +13,14 @@ import (
 	"github.com/krau/ManyACG/common/imgtool"
 	"github.com/krau/ManyACG/config"
 	"github.com/krau/ManyACG/errs"
+	"github.com/krau/ManyACG/internal/infra/database"
+	"github.com/krau/ManyACG/internal/model/command"
+	"github.com/krau/ManyACG/internal/model/entity"
+	"github.com/krau/ManyACG/internal/shared"
+	"gorm.io/datatypes"
 
 	"github.com/krau/ManyACG/service"
 	"github.com/krau/ManyACG/storage"
-	"github.com/krau/ManyACG/types"
 
 	"github.com/mymmrac/telego"
 	"github.com/mymmrac/telego/telegoapi"
@@ -25,7 +29,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
-func SendArtworkMediaGroup(ctx context.Context, bot *telego.Bot, chatID telego.ChatID, artwork *types.Artwork) ([]telego.Message, error) {
+func SendArtworkMediaGroup(ctx context.Context, bot *telego.Bot, chatID telego.ChatID, artwork *entity.Artwork) ([]telego.Message, error) {
 	if bot == nil {
 		return nil, errs.ErrNilBot
 	}
@@ -107,27 +111,27 @@ func SendArtworkMediaGroup(ctx context.Context, bot *telego.Bot, chatID telego.C
 }
 
 // start from 0
-func GetArtworkInputMediaPhotos(ctx context.Context, artwork *types.Artwork, start, end int) ([]telego.InputMedia, error) {
+func GetArtworkInputMediaPhotos(ctx context.Context, artwork *entity.Artwork, start, end int) ([]telego.InputMedia, error) {
 	inputMediaPhotos := make([]telego.InputMedia, end-start)
 	for i := start; i < end; i++ {
 		picture := artwork.Pictures[i]
 		var photo *telego.InputMediaPhoto
-		if picture.TelegramInfo != nil && picture.TelegramInfo.PhotoFileID != "" {
-			photo = telegoutil.MediaPhoto(telegoutil.FileFromID(picture.TelegramInfo.PhotoFileID))
+		if id := picture.TelegramInfo.Data().PhotoFileID; id != "" {
+			photo = telegoutil.MediaPhoto(telegoutil.FileFromID(id))
 		}
 		if photo == nil {
 			var fileBytes []byte
 			var err error
 			fileBytes, err = common.GetReqCachedFile(picture.Original)
 			if err != nil {
-				if picture.StorageInfo == nil {
+				if picture.StorageInfo.Data() == shared.ZeroStorageInfo || picture.StorageInfo.Data().Original == nil {
 					fileBytes, err = common.DownloadWithCache(ctx, picture.Original, nil)
 					if err != nil {
 						common.Logger.Errorf("failed to download file: %s", err)
 						return nil, err
 					}
 				} else {
-					fileBytes, err = storage.GetFile(ctx, picture.StorageInfo.Original)
+					fileBytes, err = storage.GetFile(ctx, picture.StorageInfo.Data().Original)
 					if err != nil {
 						common.Logger.Errorf("failed to get file: %s", err)
 						return nil, err
@@ -152,8 +156,8 @@ func GetArtworkInputMediaPhotos(ctx context.Context, artwork *types.Artwork, sta
 	return inputMediaPhotos, nil
 }
 
-func PostAndCreateArtwork(ctx context.Context, artwork *types.Artwork, bot *telego.Bot, fromID int64, messageID int) error {
-	artworkInDB, err := service.GetArtworkByURL(ctx, artwork.SourceURL)
+func PostAndCreateArtwork(ctx context.Context, artwork *command.ArtworkCreation, bot *telego.Bot, fromID int64, messageID int) error {
+	artworkInDB, err := database.Default().GetArtworkByURL(ctx, artwork.SourceURL)
 	if err == nil && artworkInDB != nil {
 		common.Logger.Debugf("Artwork %s already exists", artwork.Title)
 		return fmt.Errorf("post artwork %s error: %w", artwork.Title, errs.ErrArtworkAlreadyExist)
@@ -161,7 +165,7 @@ func PostAndCreateArtwork(ctx context.Context, artwork *types.Artwork, bot *tele
 	if err != nil && !errors.Is(err, mongo.ErrNoDocuments) {
 		return err
 	}
-	if service.CheckDeletedByURL(ctx, artwork.SourceURL) {
+	if database.Default().CheckDeletedByURL(ctx, artwork.SourceURL) {
 		common.Logger.Debugf("Artwork %s is deleted", artwork.Title)
 		return fmt.Errorf("post artwork %s error: %w", artwork.Title, errs.ErrArtworkDeleted)
 	}
@@ -189,7 +193,7 @@ func PostAndCreateArtwork(ctx context.Context, artwork *types.Artwork, bot *tele
 			common.Logger.Errorf("saving picture %d of artwork %s: %s", i, artwork.Title, err)
 			return fmt.Errorf("saving picture %d of artwork %s: %w", i, artwork.Title, err)
 		}
-		artwork.Pictures[i].StorageInfo = info
+		artwork.Pictures[i].StorageInfo = datatypes.NewJSONType(*info)
 	}
 	if showProgress {
 		go bot.EditMessageReplyMarkup(ctx, &telego.EditMessageReplyMarkupParams{
@@ -218,21 +222,29 @@ func PostAndCreateArtwork(ctx context.Context, artwork *types.Artwork, bot *tele
 			),
 		})
 	}
-	for i, picture := range artwork.Pictures {
-		if picture.TelegramInfo == nil {
-			picture.TelegramInfo = &types.TelegramInfo{}
-		}
-		picture.TelegramInfo.MessageID = messages[i].MessageID
-		picture.TelegramInfo.MediaGroupID = messages[i].MediaGroupID
-		if messages[i].Photo != nil {
-			picture.TelegramInfo.PhotoFileID = messages[i].Photo[len(messages[i].Photo)-1].FileID
-		}
-		if messages[i].Document != nil {
-			picture.TelegramInfo.DocumentFileID = messages[i].Document.FileID
-		}
-	}
+	// [TODO] update picture telegram info
+	// for i, picture := range artwork.Pictures {
+	// 	picture.TelegramInfo.Data().MessageID = messages[i].MessageID
+	// 	picture.TelegramInfo.Data().MediaGroupID = messages[i].MediaGroupID
+	// 	if messages[i].Photo != nil {
+	// 		picture.TelegramInfo.PhotoFileID = messages[i].Photo[len(messages[i].Photo)-1].FileID
+	// 	}
+	// 	if messages[i].Document != nil {
+	// 		picture.TelegramInfo.DocumentFileID = messages[i].Document.FileID
+	// 	}
+	// }
 
-	artwork, err = service.CreateArtwork(ctx, artwork)
+	artwork, err = service.CreateArtwork(ctx, &command.ArtworkCreation{
+		Title: artwork.Title, Description: artwork.Description,
+		SourceType: artwork.SourceType, SourceURL: artwork.SourceURL,
+		R18: artwork.R18,
+		Artist: command.ArtworkArtistCreation{
+			Name:     artwork.Artist.Name,
+			UID:      artwork.Artist.UID,
+			Username: artwork.Artist.Username,
+		},
+		Tags: artwork.TagsNames(),
+	})
 	if err != nil {
 		go func() {
 			if bot.DeleteMessages(ctx, &telego.DeleteMessagesParams{
@@ -248,7 +260,7 @@ func PostAndCreateArtwork(ctx context.Context, artwork *types.Artwork, bot *tele
 	return nil
 }
 
-func afterCreate(ctx context.Context, artwork *types.Artwork, bot *telego.Bot, fromID int64) {
+func afterCreate(ctx context.Context, artwork *entity.Artwork, bot *telego.Bot, fromID int64) {
 	time.Sleep(3 * time.Second) // 等待 Telegram 完全处理完消息
 	objectID, err := primitive.ObjectIDFromHex(artwork.ID)
 	if err != nil {
@@ -266,7 +278,7 @@ func afterCreate(ctx context.Context, artwork *types.Artwork, bot *telego.Bot, f
 	}
 }
 
-func checkDuplicate(ctx context.Context, artwork *types.Artwork, bot *telego.Bot, fromID int64) {
+func checkDuplicate(ctx context.Context, artwork *entity.Artwork, bot *telego.Bot, fromID int64) {
 	sendNotify := fromID != 0 && bot != nil
 	artworkID, err := primitive.ObjectIDFromHex(artwork.ID)
 	artworkTitleMarkdown := common.EscapeMarkdown(artwork.Title)
@@ -301,7 +313,7 @@ func checkDuplicate(ctx context.Context, artwork *types.Artwork, bot *telego.Bot
 			common.Logger.Warnf("error when getting pictures by hash: %s", err)
 			continue
 		}
-		similarPictures := make([]*types.Picture, 0)
+		similarPictures := make([]*entity.Picture, 0)
 		for _, resPicture := range resPictures {
 			resArtworkID, err := primitive.ObjectIDFromHex(resPicture.ArtworkID)
 			if err != nil {
@@ -361,7 +373,7 @@ func checkDuplicate(ctx context.Context, artwork *types.Artwork, bot *telego.Bot
 	}
 }
 
-func recaptionArtwork(ctx context.Context, artwork *types.Artwork, bot *telego.Bot) {
+func recaptionArtwork(ctx context.Context, artwork *entity.Artwork, bot *telego.Bot) {
 	newArtwork, err := service.GetArtworkByURL(ctx, artwork.SourceURL)
 	if err != nil {
 		common.Logger.Errorf("error when getting artwork by URL: %s", err)

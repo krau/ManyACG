@@ -1,0 +1,166 @@
+package service
+
+import (
+	"context"
+	"errors"
+
+	"github.com/duke-git/lancet/v2/slice"
+	"github.com/krau/ManyACG/internal/model/command"
+	"github.com/krau/ManyACG/internal/model/entity"
+	"github.com/krau/ManyACG/internal/repo"
+	"github.com/krau/ManyACG/internal/shared/errs"
+	"github.com/krau/ManyACG/pkg/objectuuid"
+	"gorm.io/datatypes"
+)
+
+func (s *Service) CreateArtwork(ctx context.Context, cmd *command.ArtworkCreation) (*entity.Artwork, error) {
+	awExist, err := s.repos.Artwork().GetArtworkByURL(ctx, cmd.SourceURL)
+	if err != nil && !errors.Is(err, errs.ErrRecordNotFound) {
+		return nil, err
+	}
+	if awExist != nil {
+		return nil, errs.ErrArtworkAlreadyExist
+	}
+	if s.repos.DeletedRecord().CheckDeletedByURL(ctx, cmd.SourceURL) {
+		return nil, errs.ErrArtworkDeleted
+	}
+	// 创建 artist
+	err = s.repos.Transaction(ctx, func(repos repo.Repositories) error {
+		atsEnt, err := repos.Artist().GetArtistByUID(ctx, cmd.Artist.UID, cmd.SourceType)
+		if err != nil && !errors.Is(err, errs.ErrRecordNotFound) {
+			return err
+		}
+		var artistID objectuuid.ObjectUUID
+		if atsEnt != nil {
+			atsEnt.Name = cmd.Artist.Name
+			atsEnt.Username = cmd.Artist.Username
+			err := repos.Artist().UpdateArtist(ctx, atsEnt)
+			if err != nil {
+				return err
+			}
+			artistID = atsEnt.ID
+		} else {
+			atsEnt = &entity.Artist{
+				Type:     cmd.SourceType,
+				UID:      cmd.Artist.UID,
+				Username: cmd.Artist.Username,
+				Name:     cmd.Artist.Name,
+			}
+			res, err := repos.Artist().CreateArtist(ctx, atsEnt)
+			if err != nil {
+				return err
+			}
+			artistID = *res
+		}
+		// 创建 tags
+		tagEnts := make([]*entity.Tag, len(cmd.Tags))
+		tagsStr := slice.Unique(cmd.Tags)
+		for _, tag := range tagsStr {
+			tagEnt, err := s.GetTagByNameWithAlias(ctx, tag)
+			if err != nil && !errors.Is(err, errs.ErrRecordNotFound) {
+				return err
+			}
+			if tagEnt != nil {
+				tagEnts = append(tagEnts, tagEnt)
+				continue
+			}
+			tagEnt = &entity.Tag{
+				Name: tag,
+			}
+			res, err := repos.Tag().CreateTag(ctx, tagEnt)
+			if err != nil {
+				return err
+			}
+			resEnt, err := repos.Tag().GetTagByID(ctx, *res)
+			if err != nil {
+				return err
+			}
+			tagEnts = append(tagEnts, resEnt)
+		}
+		// 创建 artwork
+		awEnt := &entity.Artwork{
+			Title:       cmd.Title,
+			Description: cmd.Description,
+			R18:         cmd.R18,
+			SourceType:  cmd.SourceType,
+			SourceURL:   cmd.SourceURL,
+			ArtistID:    artistID,
+			Tags:        tagEnts,
+		}
+		pics := make([]*entity.Picture, len(cmd.Pictures))
+		for i, pic := range cmd.Pictures {
+			pics[i] = &entity.Picture{
+				Index:        pic.Index,
+				ArtworkID:    awEnt.ID,
+				Thumbnail:    pic.Thumbnail,
+				Original:     pic.Original,
+				Width:        pic.Width,
+				Height:       pic.Height,
+				Phash:        pic.Phash,
+				ThumbHash:    pic.ThumbHash,
+				TelegramInfo: datatypes.NewJSONType(*pic.TelegramInfo),
+				StorageInfo:  datatypes.NewJSONType(*pic.StorageInfo),
+			}
+		}
+		awEnt.Pictures = pics
+		_, err = s.repos.Artwork().CreateArtwork(ctx, awEnt)
+		return err
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	created, err := s.repos.Artwork().GetArtworkByURL(ctx, cmd.SourceURL)
+	if err != nil {
+		return nil, err
+	}
+
+	return created, nil
+}
+
+func (s *Service) UpdateArtworkR18ByURL(ctx context.Context, sourceURL string, r18 bool) error {
+	awEnt, err := s.repos.Artwork().GetArtworkByURL(ctx, sourceURL)
+	if err != nil {
+		return err
+	}
+	return s.repos.Artwork().UpdateArtworkByMap(ctx, awEnt.ID, map[string]any{"r18": r18})
+}
+
+func (s *Service) UpdateArtworkR18ByID(ctx context.Context, id objectuuid.ObjectUUID, r18 bool) error {
+	return s.repos.Artwork().UpdateArtworkByMap(ctx, id, map[string]any{"r18": r18})
+}
+
+func (s *Service) UpdateArtworkTagsByURL(ctx context.Context, sourceURL string, tags []string) error {
+	awEnt, err := s.repos.Artwork().GetArtworkByURL(ctx, sourceURL)
+	if err != nil {
+		return err
+	}
+	uniTags := slice.Unique(tags)
+	return s.repos.Transaction(ctx, func(repos repo.Repositories) error {
+		tagEnts := make([]*entity.Tag, 0, len(uniTags))
+		for _, tag := range uniTags {
+			tagEnt, err := s.GetTagByNameWithAlias(ctx, tag)
+			if err != nil && !errors.Is(err, errs.ErrRecordNotFound) {
+				return err
+			}
+			if tagEnt != nil {
+				tagEnts = append(tagEnts, tagEnt)
+				continue
+			}
+			tagEnt = &entity.Tag{
+				Name: tag,
+			}
+			res, err := repos.Tag().CreateTag(ctx, tagEnt)
+			if err != nil {
+				return err
+			}
+			resEnt, err := repos.Tag().GetTagByID(ctx, *res)
+			if err != nil {
+				return err
+			}
+			tagEnts = append(tagEnts, resEnt)
+			// [TODO] tag 排序
+		}
+		return repos.Artwork().UpdateArtworkTags(ctx, awEnt.ID, tagEnts)
+	})
+}

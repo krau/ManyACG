@@ -6,7 +6,7 @@ import (
 	"github.com/krau/ManyACG/internal/infra/database"
 )
 
-func Cleanup(ctx context.Context) error {
+func (s *Service) Cleanup(ctx context.Context) error {
 	// var errs []error
 	// if _, err := dao.CleanPostingCachedArtwork(ctx); err != nil {
 	// 	errs = append(errs, err)

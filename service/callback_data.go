@@ -7,7 +7,9 @@ import (
 	"github.com/krau/ManyACG/pkg/objectuuid"
 )
 
-func GetCallbackDataByID(ctx context.Context, id string) (string, error) {
+// golang please support generic methods :(
+
+func (s *Service) GetStringDataByID(ctx context.Context, id string) (string, error) {
 	// objID, err := primitive.ObjectIDFromHex(id)
 	// if err != nil {
 	// 	return "", err
@@ -29,7 +31,7 @@ func GetCallbackDataByID(ctx context.Context, id string) (string, error) {
 	return data, nil
 }
 
-func CreateCallbackData(ctx context.Context, data string) (id string, err error) {
+func (s *Service) CreateStringData(ctx context.Context, data string) (id string, err error) {
 	// callbackData, err := dao.CreateCallbackData(ctx, data)
 	// if err != nil {
 	// 	return

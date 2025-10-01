@@ -6,25 +6,22 @@ import (
 	"fmt"
 
 	"github.com/duke-git/lancet/v2/slice"
-	"github.com/krau/ManyACG/common"
-	"github.com/krau/ManyACG/errs"
-	"github.com/krau/ManyACG/internal/infra/database"
 	"github.com/krau/ManyACG/internal/model/entity"
+	"github.com/krau/ManyACG/internal/repo"
+	"github.com/krau/ManyACG/internal/shared/errs"
 	"github.com/krau/ManyACG/pkg/objectuuid"
-	"github.com/krau/ManyACG/storage"
-	"gorm.io/gorm"
 )
 
-func GetTagByNameWithAlias(ctx context.Context, name string) (*entity.Tag, error) {
-	tag, err := database.Default().GetTagByName(ctx, name)
+func (s *Service) GetTagByNameWithAlias(ctx context.Context, name string) (*entity.Tag, error) {
+	tag, err := s.repos.Tag().GetTagByName(ctx, name)
 	if err == nil {
 		return tag, nil
 	}
-	alias, err := database.Default().GetAliasTagByName(ctx, name)
+	alias, err := s.repos.Tag().GetAliasTagByName(ctx, name)
 	if err != nil {
 		return nil, err
 	}
-	tag, err = database.Default().GetTagByID(ctx, alias.TagID)
+	tag, err = s.repos.Tag().GetTagByID(ctx, alias.TagID)
 	if err != nil {
 		return nil, err
 	}
@@ -186,9 +183,8 @@ func GetTagByNameWithAlias(ctx context.Context, name string) (*entity.Tag, error
 // 为已有 tag 添加别名
 //
 // 同时检查是否有其他 tag 的 name 为所指定的别名之一, 在添加完成后, 删除这些 tag, 并将其对应的 artwork 添加这个新的 tag (即传入的tagID)
-func AddTagAlias(ctx context.Context, tagID objectuuid.ObjectUUID, alias []string) (*entity.Tag, error) {
-	db := database.Default()
-	tag, err := db.GetTagByID(ctx, tagID)
+func (s *Service) AddTagAlias(ctx context.Context, tagID objectuuid.ObjectUUID, alias []string) (*entity.Tag, error) {
+	tag, err := s.repos.Tag().GetTagByID(ctx, tagID)
 	if err != nil {
 		return nil, err
 	}
@@ -201,8 +197,8 @@ func AddTagAlias(ctx context.Context, tagID objectuuid.ObjectUUID, alias []strin
 		})
 	}
 	for _, a := range aliasEnts {
-		existTag, err := db.GetTagByName(ctx, a.Alias)
-		if err != nil && !errors.Is(err, database.ErrRecordNotFound) {
+		existTag, err := s.repos.Tag().GetTagByName(ctx, a.Alias)
+		if err != nil && !errors.Is(err, errs.ErrRecordNotFound) {
 			return nil, err
 		}
 		if existTag != nil {
@@ -216,13 +212,13 @@ func AddTagAlias(ctx context.Context, tagID objectuuid.ObjectUUID, alias []strin
 			return nil, fmt.Errorf("%w: '%s' used by '%s'", errs.ErrAliasAlreadyUsed, a.Alias, existTag.Name)
 		}
 	}
-	err = db.Transaction(ctx, func(tx *database.DB, rawtx *gorm.DB) error {
-		if err := tx.UpdateTagAlias(ctx, tag.ID, aliasEnts); err != nil {
+	err = s.repos.Transaction(ctx, func(repos repo.Repositories) error {
+		if err := repos.Tag().UpdateTagAlias(ctx, tag.ID, aliasEnts); err != nil {
 			return err
 		}
 		for _, a := range aliasEnts {
-			aliasTag, err := tx.GetTagByName(ctx, a.Alias)
-			if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+			aliasTag, err := repos.Tag().GetTagByName(ctx, a.Alias)
+			if err != nil && !errors.Is(err, errs.ErrRecordNotFound) {
 				return err
 			}
 			if aliasTag == nil || aliasTag.ID == tagID {
@@ -232,7 +228,7 @@ func AddTagAlias(ctx context.Context, tagID objectuuid.ObjectUUID, alias []strin
 			// 如果 aliasTag 还有自己的别名，合并进目标 tag
 			if len(aliasTag.Alias) > 0 {
 				// 重新拉取目标 tag，避免脏读
-				reloadedTag, err := tx.GetTagByID(ctx, tagID)
+				reloadedTag, err := repos.Tag().GetTagByID(ctx, tagID)
 				if err != nil {
 					return err
 				}
@@ -247,28 +243,31 @@ func AddTagAlias(ctx context.Context, tagID objectuuid.ObjectUUID, alias []strin
 				for aa := range aliasSet {
 					newAliases = append(newAliases, &entity.TagAlias{Alias: aa})
 				}
-				if err := tx.UpdateTagAlias(ctx, reloadedTag.ID, newAliases); err != nil {
+				if err := repos.Tag().UpdateTagAlias(ctx, reloadedTag.ID, newAliases); err != nil {
 					return err
 				}
 			}
 			// 迁移 artwork 中的 tag
-			if err := rawtx.WithContext(ctx).
-				Exec(`DELETE FROM artwork_tags WHERE tag_id = ?`, aliasTag.ID).Error; err != nil {
-				return err
-			}
-			if err := rawtx.WithContext(ctx).Exec(`
-    INSERT INTO artwork_tags (artwork_id, tag_id)
-    SELECT artwork_id, ?
-    FROM artwork_tags
-    WHERE tag_id = ?
-      AND artwork_id NOT IN (
-          SELECT artwork_id FROM artwork_tags WHERE tag_id = ?
-      )
-`, tag.ID, aliasTag.ID, tag.ID).Error; err != nil {
-				return err
-			}
-			// 删除别名对应的 tag
-			if err := tx.DeleteTagByID(ctx, aliasTag.ID); err != nil {
+			// 			if err := rawtx.WithContext(ctx).
+			// 				Exec(`DELETE FROM artwork_tags WHERE tag_id = ?`, aliasTag.ID).Error; err != nil {
+			// 				return err
+			// 			}
+			// 			if err := rawtx.WithContext(ctx).Exec(`
+			//     INSERT INTO artwork_tags (artwork_id, tag_id)
+			//     SELECT artwork_id, ?
+			//     FROM artwork_tags
+			//     WHERE tag_id = ?
+			//       AND artwork_id NOT IN (
+			//           SELECT artwork_id FROM artwork_tags WHERE tag_id = ?
+			//       )
+			// `, tag.ID, aliasTag.ID, tag.ID).Error; err != nil {
+			// 				return err
+			// 			}
+			// 			// 删除别名对应的 tag
+			// 			if err := tx.DeleteTagByID(ctx, aliasTag.ID); err != nil {
+			// 				return err
+			// 			}
+			if err := repos.Tag().MigrateTagAlias(ctx, aliasTag.ID, tag.ID); err != nil {
 				return err
 			}
 		}
@@ -277,91 +276,91 @@ func AddTagAlias(ctx context.Context, tagID objectuuid.ObjectUUID, alias []strin
 	if err != nil {
 		return nil, err
 	}
-	return db.GetTagByID(ctx, tagID)
+	return s.repos.Tag().GetTagByID(ctx, tagID)
 }
 
-func PredictArtworkTags(ctx context.Context, artworkID objectuuid.ObjectUUID) error {
-	if common.TaggerClient == nil {
-		return errors.New("tagger not available")
-	}
-	artwork, err := database.Default().GetArtworkByID(ctx, artworkID)
-	if err != nil {
-		return err
-	}
-	origTags := slice.Map(artwork.Tags, func(index int, item *entity.Tag) string {
-		return item.Name
-	})
-	predictedTags := make([]string, 0)
-	for _, picture := range artwork.Pictures {
-		var pictureFile []byte
-		if picture.StorageInfo.Data().Regular != nil {
-			pictureFile, err = storage.GetFile(ctx, picture.StorageInfo.Data().Regular)
-		} else if picture.StorageInfo.Data().Original != nil {
-			pictureFile, err = storage.GetFile(ctx, picture.StorageInfo.Data().Original)
-		} else {
-			pictureFile, err = common.DownloadWithCache(ctx, picture.Original, nil)
-		}
-		if err != nil {
-			return err
-		}
-		common.Logger.Debugf("predict picture %s", picture.Original)
-		result, err := common.TaggerClient.Predict(ctx, pictureFile)
-		if err != nil {
-			common.Logger.Errorf("predict picture %s error: %s", picture.Original, err)
-			continue
-		}
-		if len(result.PredictedTags) == 0 {
-			continue
-		}
-		predictedTags = slice.Union(predictedTags, result.PredictedTags)
-	}
-	newTags := slice.Compact(slice.Union(origTags, predictedTags))
-	if err := UpdateArtworkTagsByURL(ctx, artwork.SourceURL, newTags); err != nil {
-		return err
-	}
-	// if recaption {
-	// 	go func() {
-	// 		artwork, err := GetArtworkByID(ctx, artworkID)
-	// 		if err != nil {
-	// 			common.Logger.Errorf("get artwork %s error: %s", artworkID.Hex(), err)
-	// 			return
-	// 		}
-	// 		if artwork.Pictures[0].TelegramInfo == nil || artwork.Pictures[0].TelegramInfo.MessageID == 0 {
-	// 			return
-	// 		}
-	// 		artworkHTMLCaption := tg.GetArtworkHTMLCaption(artwork)
-	// 		if _, err := tg.Bot().EditMessageCaption(ctx, &telego.EditMessageCaptionParams{
-	// 			ChatID:    tg.ChannelChatID(),
-	// 			MessageID: artwork.Pictures[0].TelegramInfo.MessageID,
-	// 			Caption:   artworkHTMLCaption,
-	// 			ParseMode: telego.ModeHTML,
-	// 		}); err != nil {
-	// 			common.Logger.Errorf("edit message caption error: %s", err)
-	// 		}
-	// 	}()
-	// }
+// func PredictArtworkTags(ctx context.Context, artworkID objectuuid.ObjectUUID) error {
+// 	if common.TaggerClient == nil {
+// 		return errors.New("tagger not available")
+// 	}
+// 	artwork, err := database.Default().GetArtworkByID(ctx, artworkID)
+// 	if err != nil {
+// 		return err
+// 	}
+// 	origTags := slice.Map(artwork.Tags, func(index int, item *entity.Tag) string {
+// 		return item.Name
+// 	})
+// 	predictedTags := make([]string, 0)
+// 	for _, picture := range artwork.Pictures {
+// 		var pictureFile []byte
+// 		if picture.StorageInfo.Data().Regular != nil {
+// 			pictureFile, err = storage.GetFile(ctx, picture.StorageInfo.Data().Regular)
+// 		} else if picture.StorageInfo.Data().Original != nil {
+// 			pictureFile, err = storage.GetFile(ctx, picture.StorageInfo.Data().Original)
+// 		} else {
+// 			pictureFile, err = common.DownloadWithCache(ctx, picture.Original, nil)
+// 		}
+// 		if err != nil {
+// 			return err
+// 		}
+// 		common.Logger.Debugf("predict picture %s", picture.Original)
+// 		result, err := common.TaggerClient.Predict(ctx, pictureFile)
+// 		if err != nil {
+// 			common.Logger.Errorf("predict picture %s error: %s", picture.Original, err)
+// 			continue
+// 		}
+// 		if len(result.PredictedTags) == 0 {
+// 			continue
+// 		}
+// 		predictedTags = slice.Union(predictedTags, result.PredictedTags)
+// 	}
+// 	newTags := slice.Compact(slice.Union(origTags, predictedTags))
+// 	if err := UpdateArtworkTagsByURL(ctx, artwork.SourceURL, newTags); err != nil {
+// 		return err
+// 	}
+// 	// if recaption {
+// 	// 	go func() {
+// 	// 		artwork, err := GetArtworkByID(ctx, artworkID)
+// 	// 		if err != nil {
+// 	// 			common.Logger.Errorf("get artwork %s error: %s", artworkID.Hex(), err)
+// 	// 			return
+// 	// 		}
+// 	// 		if artwork.Pictures[0].TelegramInfo == nil || artwork.Pictures[0].TelegramInfo.MessageID == 0 {
+// 	// 			return
+// 	// 		}
+// 	// 		artworkHTMLCaption := tg.GetArtworkHTMLCaption(artwork)
+// 	// 		if _, err := tg.Bot().EditMessageCaption(ctx, &telego.EditMessageCaptionParams{
+// 	// 			ChatID:    tg.ChannelChatID(),
+// 	// 			MessageID: artwork.Pictures[0].TelegramInfo.MessageID,
+// 	// 			Caption:   artworkHTMLCaption,
+// 	// 			ParseMode: telego.ModeHTML,
+// 	// 		}); err != nil {
+// 	// 			common.Logger.Errorf("edit message caption error: %s", err)
+// 	// 		}
+// 	// 	}()
+// 	// }
 
-	return nil
-}
+// 	return nil
+// }
 
-type predictArtworkTagsTask struct {
-	ArtworkID objectuuid.ObjectUUID
-	Ctx       context.Context
-}
+// type predictArtworkTagsTask struct {
+// 	ArtworkID objectuuid.ObjectUUID
+// 	Ctx       context.Context
+// }
 
-var predictArtworkTagsTaskChan = make(chan *predictArtworkTagsTask)
+// var predictArtworkTagsTaskChan = make(chan *predictArtworkTagsTask)
 
-func AddPredictArtworkTagTask(ctx context.Context, artworkID objectuuid.ObjectUUID) {
-	predictArtworkTagsTaskChan <- &predictArtworkTagsTask{
-		ArtworkID: artworkID,
-		Ctx:       ctx,
-	}
-}
+// func AddPredictArtworkTagTask(ctx context.Context, artworkID objectuuid.ObjectUUID) {
+// 	predictArtworkTagsTaskChan <- &predictArtworkTagsTask{
+// 		ArtworkID: artworkID,
+// 		Ctx:       ctx,
+// 	}
+// }
 
-func listenPredictArtworkTagsTask() {
-	for task := range predictArtworkTagsTaskChan {
-		if err := PredictArtworkTags(task.Ctx, task.ArtworkID); err != nil {
-			common.Logger.Errorf("predict artwork %s tags error: %s", task.ArtworkID.Hex(), err)
-		}
-	}
-}
+// func listenPredictArtworkTagsTask() {
+// 	for task := range predictArtworkTagsTaskChan {
+// 		if err := PredictArtworkTags(task.Ctx, task.ArtworkID); err != nil {
+// 			common.Logger.Errorf("predict artwork %s tags error: %s", task.ArtworkID.Hex(), err)
+// 		}
+// 	}
+// }
