@@ -58,3 +58,31 @@ type Picture struct {
 	TelegramInfo *shared.TelegramInfo `json:"telegram_info" bson:"telegram_info"`
 	StorageInfo  *shared.StorageInfo  `json:"storage_info" bson:"storage_info"`
 }
+
+type FetchedArtwork struct {
+	Title       string            `json:"title"`
+	Description string            `json:"description"`
+	R18         bool              `json:"r18"`
+	SourceType  shared.SourceType `json:"source_type"`
+	SourceURL   string            `json:"source_url"`
+
+	Artist   *FetchedArtist    `json:"artist"`
+	Tags     []string          `json:"tags"`
+	Pictures []*FetchedPicture `json:"pictures"`
+}
+
+type FetchedArtist struct {
+	Name     string            `json:"name"`
+	Type     shared.SourceType `json:"type"`
+	UID      string            `json:"uid"`
+	Username string            `json:"username"`
+}
+
+type FetchedPicture struct {
+	Index     uint   `json:"index"`
+	Thumbnail string `json:"thumbnail"`
+	Original  string `json:"original"`
+
+	Width     uint   `json:"width"`
+	Height    uint   `json:"height"`
+}

@@ -25,7 +25,7 @@ type Config struct {
 	Telegram telegramConfig `toml:"telegram" mapstructure:"telegram" json:"telegram" yaml:"telegram"`
 	Database databaseConfig `toml:"database" mapstructure:"database" json:"database" yaml:"database"`
 	Search   SearchConfig   `toml:"search" mapstructure:"search" json:"search" yaml:"search"`
-	Tagger   taggerConfig   `toml:"tagger" mapstructure:"tagger" json:"tagger" yaml:"tagger"`
+	Tagging   TaggingConfig   `toml:"tagger" mapstructure:"tagger" json:"tagger" yaml:"tagger"`
 	// infrastructures config
 	Cache CacheConfig `toml:"cache" mapstructure:"cache" json:"cache" yaml:"cache"`
 }
