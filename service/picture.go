@@ -14,6 +14,7 @@ import (
 	"github.com/krau/ManyACG/pkg/objectuuid"
 	"github.com/krau/ManyACG/storage"
 	"github.com/krau/ManyACG/types"
+	"gorm.io/gorm"
 
 	"github.com/duke-git/lancet/v2/slice"
 
@@ -161,7 +162,7 @@ func DeletePictureByID(ctx context.Context, id objectuuid.ObjectUUID) error {
 	if err != nil {
 		return err
 	}
-	err = database.Default().Transaction(ctx, func(tx *database.DB) error {
+	err = database.Default().Transaction(ctx, func(tx *database.DB, _ *gorm.DB) error {
 		if len(artwork.Pictures) == 1 {
 			return database.Default().DeleteArtworkByID(ctx, artwork.ID)
 		}

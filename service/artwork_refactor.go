@@ -11,6 +11,7 @@ import (
 	"github.com/krau/ManyACG/internal/model/entity"
 	"github.com/krau/ManyACG/pkg/objectuuid"
 	"gorm.io/datatypes"
+	"gorm.io/gorm"
 )
 
 func CreateArtwork(ctx context.Context, cmd *command.ArtworkCreation) (*entity.Artwork, error) {
@@ -25,7 +26,7 @@ func CreateArtwork(ctx context.Context, cmd *command.ArtworkCreation) (*entity.A
 		return nil, errs.ErrArtworkDeleted
 	}
 	// 创建 artist
-	err = database.Default().Transaction(ctx, func(tx *database.DB) error {
+	err = database.Default().Transaction(ctx, func(tx *database.DB, _ *gorm.DB) error {
 		atsEnt, err := database.Default().GetArtistByUID(ctx, cmd.Artist.UID, cmd.SourceType)
 		if err != nil && !errors.Is(err, database.ErrRecordNotFound) {
 			return err
@@ -56,7 +57,7 @@ func CreateArtwork(ctx context.Context, cmd *command.ArtworkCreation) (*entity.A
 		tagEnts := make([]*entity.Tag, len(cmd.Tags))
 		tagsStr := slice.Unique(cmd.Tags)
 		for _, tag := range tagsStr {
-			tagEnt, err := database.Default().GetTagByNameWithAlias(ctx, tag)
+			tagEnt, err := GetTagByNameWithAlias(ctx, tag)
 			if err != nil && !errors.Is(err, database.ErrRecordNotFound) {
 				return err
 			}
@@ -132,10 +133,10 @@ func UpdateArtworkTagsByURL(ctx context.Context, sourceURL string, tags []string
 		return err
 	}
 	uniTags := slice.Unique(tags)
-	database.Default().Transaction(ctx, func(tx *database.DB) error {
+	database.Default().Transaction(ctx, func(tx *database.DB, _ *gorm.DB) error {
 		tagEnts := make([]*entity.Tag, 0, len(uniTags))
 		for _, tag := range uniTags {
-			tagEnt, err := database.Default().GetTagByNameWithAlias(ctx, tag)
+			tagEnt, err := GetTagByNameWithAlias(ctx, tag)
 			if err != nil && !errors.Is(err, database.ErrRecordNotFound) {
 				return err
 			}

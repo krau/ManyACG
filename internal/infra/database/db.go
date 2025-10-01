@@ -24,9 +24,9 @@ type DB struct {
 	db *gorm.DB
 }
 
-func (d *DB) Transaction(ctx context.Context, fn func(tx *DB) error, opts ...*sql.TxOptions) error {
+func (d *DB) Transaction(ctx context.Context, fn func(tx *DB, rawtx *gorm.DB) error, opts ...*sql.TxOptions) error {
 	return d.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
-		return fn(&DB{db: tx})
+		return fn(&DB{db: tx}, tx)
 	}, opts...)
 }
 
