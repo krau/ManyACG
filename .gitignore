@@ -1,6 +1,5 @@
 config.toml
 logs/
-cache/
 .VSCodeCounter
 downloads/
 tmp/

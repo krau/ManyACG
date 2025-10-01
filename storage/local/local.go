@@ -9,8 +9,7 @@ import (
 
 	"github.com/krau/ManyACG/common"
 	"github.com/krau/ManyACG/config"
-
-	"github.com/krau/ManyACG/types"
+	"github.com/krau/ManyACG/internal/shared"
 )
 
 type Local struct{}
@@ -29,7 +28,7 @@ func (l *Local) Init(ctx context.Context) {
 	}
 }
 
-func (l *Local) Save(ctx context.Context, filePath string, storagePath string) (*types.StorageDetail, error) {
+func (l *Local) Save(ctx context.Context, filePath string, storagePath string) (*shared.StorageDetail, error) {
 	common.Logger.Debugf("saving file %s", filePath)
 	storagePath = filepath.Join(basePath, storagePath)
 	fileBytes, err := os.ReadFile(filePath)
@@ -41,22 +40,22 @@ func (l *Local) Save(ctx context.Context, filePath string, storagePath string) (
 		common.Logger.Errorf("failed to write file: %s", err)
 		return nil, err
 	}
-	return &types.StorageDetail{
-		Type: types.StorageTypeLocal,
+	return &shared.StorageDetail{
+		Type: shared.StorageTypeLocal,
 		Path: storagePath,
 	}, nil
 }
 
-func (l *Local) GetFile(ctx context.Context, detail *types.StorageDetail) ([]byte, error) {
+func (l *Local) GetFile(ctx context.Context, detail *shared.StorageDetail) ([]byte, error) {
 	common.Logger.Debugf("getting file %s", detail.Path)
 	return os.ReadFile(detail.Path)
 }
 
-func (l *Local) GetFileStream(ctx context.Context, detail *types.StorageDetail) (io.ReadCloser, error) {
+func (l *Local) GetFileStream(ctx context.Context, detail *shared.StorageDetail) (io.ReadCloser, error) {
 	return os.Open(detail.Path)
 }
 
-func (l *Local) Delete(ctx context.Context, detail *types.StorageDetail) error {
+func (l *Local) Delete(ctx context.Context, detail *shared.StorageDetail) error {
 	common.Logger.Debugf("deleting file %s", detail.Path)
 	return common.PurgeFile(detail.Path)
 }

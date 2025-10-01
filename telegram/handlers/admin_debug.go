@@ -4,18 +4,15 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/krau/ManyACG/adapter"
 	"github.com/krau/ManyACG/common"
-	"github.com/krau/ManyACG/service"
+	"github.com/krau/ManyACG/internal/infra/database"
 	"github.com/krau/ManyACG/telegram/utils"
-	"github.com/krau/ManyACG/types"
 	"github.com/mymmrac/telego"
 	"github.com/mymmrac/telego/telegohandler"
-	"github.com/mymmrac/telego/telegoutil"
 )
 
 func DumpArtworkInfo(ctx *telegohandler.Context, message telego.Message) error {
-	userAdmin, err := service.GetAdminByTgID(ctx, message.From.ID)
+	userAdmin, err := database.Default().GetAdminByTelegramID(ctx, message.From.ID)
 	if err != nil {
 		common.Logger.Errorf("获取管理员信息失败: %s", err)
 		utils.ReplyMessage(ctx, ctx.Bot(), message, "获取管理员信息失败")
@@ -31,7 +28,7 @@ func DumpArtworkInfo(ctx *telegohandler.Context, message telego.Message) error {
 命令语法: %s
 
 若不提供参数, 默认获取所有信息
-			`, common.EscapeHTML("/dump [tags] [artist] [pictures]"))
+			`, common.EscapeHTML("/dump [tags] [artist] [pictures]")) // [TODO] implement this
 	if message.ReplyToMessage == nil {
 		utils.ReplyMessageWithHTML(ctx, ctx.Bot(), message, helpText)
 		return nil
@@ -41,24 +38,7 @@ func DumpArtworkInfo(ctx *telegohandler.Context, message telego.Message) error {
 		utils.ReplyMessageWithHTML(ctx, ctx.Bot(), message, "回复的消息中没有支持的链接, 命令帮助:\n"+helpText)
 		return nil
 	}
-	_, _, args := telegoutil.ParseCommand(message.Text)
-	adapterOpt := &types.AdapterOption{}
-	if len(args) > 0 {
-		for _, arg := range args {
-			switch arg {
-			case "tags":
-				adapterOpt.LoadTag = true
-			case "artist":
-				adapterOpt.LoadArtist = true
-			case "pictures":
-				adapterOpt.LoadPicture = true
-			}
-		}
-	} else {
-		adapterOpt = adapter.LoadAll()
-	}
-
-	artwork, err := service.GetArtworkByURL(ctx, sourceURL, adapterOpt)
+	artwork, err := database.Default().GetArtworkByURL(ctx, sourceURL)
 	if err != nil {
 		common.Logger.Errorf("获取作品信息失败: %s", err)
 		utils.ReplyMessageWithHTML(ctx, ctx.Bot(), message, fmt.Sprintf("获取作品信息失败\n<code>%s</code>", common.EscapeHTML(err.Error())))

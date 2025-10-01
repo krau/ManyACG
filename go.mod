@@ -1,6 +1,6 @@
 module github.com/krau/ManyACG
 
-go 1.24.6
+go 1.25
 
 require (
 	github.com/HugoSmits86/nativewebp v1.2.0
@@ -39,6 +39,7 @@ require (
 
 require (
 	filippo.io/edwards25519 v1.1.0 // indirect
+	github.com/allegro/bigcache/v3 v3.1.0 // indirect
 	github.com/andybalholm/brotli v1.2.0 // indirect
 	github.com/andybalholm/cascadia v1.3.3 // indirect
 	github.com/aws/aws-sdk-go v1.38.20 // indirect
@@ -56,8 +57,13 @@ require (
 	github.com/charmbracelet/x/term v0.2.1 // indirect
 	github.com/cloudflare/circl v1.6.1 // indirect
 	github.com/cloudwego/base64x v0.1.6 // indirect
+	github.com/dgraph-io/ristretto/v2 v2.3.0 // indirect
 	github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f // indirect
+	github.com/dustin/go-humanize v1.0.1 // indirect
 	github.com/ebitengine/purego v0.8.3 // indirect
+	github.com/eko/gocache/lib/v4 v4.2.1 // indirect
+	github.com/eko/gocache/store/bigcache/v4 v4.2.2 // indirect
+	github.com/eko/gocache/store/rueidis/v4 v4.1.6 // indirect
 	github.com/gin-contrib/sse v1.1.0 // indirect
 	github.com/go-logfmt/logfmt v0.6.0 // indirect
 	github.com/go-playground/locales v0.14.1 // indirect
@@ -67,6 +73,7 @@ require (
 	github.com/go-task/slim-sprig/v3 v3.0.0 // indirect
 	github.com/go-viper/mapstructure/v2 v2.4.0 // indirect
 	github.com/golang-jwt/jwt/v4 v4.5.2 // indirect
+	github.com/golang/mock v1.6.0 // indirect
 	github.com/golang/snappy v1.0.0 // indirect
 	github.com/google/go-github/v30 v30.1.0 // indirect
 	github.com/google/go-querystring v1.1.0 // indirect
@@ -111,6 +118,8 @@ require (
 	github.com/prometheus/procfs v0.16.1 // indirect
 	github.com/quic-go/qpack v0.5.1 // indirect
 	github.com/quic-go/quic-go v0.52.0 // indirect
+	github.com/redis/rueidis v1.0.66 // indirect
+	github.com/redis/rueidis/rueidiscompat v1.0.66 // indirect
 	github.com/refraction-networking/utls v1.7.3 // indirect
 	github.com/rivo/uniseg v0.4.7 // indirect
 	github.com/rogpeppe/go-internal v1.13.1 // indirect
@@ -140,6 +149,8 @@ require (
 
 require (
 	github.com/charmbracelet/log v0.4.2
+	github.com/dgraph-io/ristretto v0.2.0
+	github.com/eko/gocache/store/ristretto/v4 v4.3.1
 	github.com/fsnotify/fsnotify v1.9.0 // indirect
 	github.com/gookit/color v1.5.4 // indirect
 	github.com/gookit/goutil v0.6.18 // indirect
@@ -159,7 +170,7 @@ require (
 	github.com/xo/terminfo v0.0.0-20220910002029-abceb7e1c41e // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.uber.org/zap v1.27.0
-	golang.org/x/exp v0.0.0-20250606033433-dcc06ee1d476 // indirect
+	golang.org/x/exp v0.0.0-20250819193227-8b4c13bb791b // indirect
 	golang.org/x/sync v0.17.0 // indirect
 	golang.org/x/sys v0.36.0 // indirect
 	golang.org/x/text v0.29.0 // indirect

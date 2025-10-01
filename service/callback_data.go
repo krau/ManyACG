@@ -3,29 +3,40 @@ package service
 import (
 	"context"
 
-	"github.com/krau/ManyACG/dao"
-
-	"go.mongodb.org/mongo-driver/bson/primitive"
+	"github.com/krau/ManyACG/internal/infra/cache"
+	"github.com/krau/ManyACG/pkg/objectuuid"
 )
 
 func GetCallbackDataByID(ctx context.Context, id string) (string, error) {
-	objID, err := primitive.ObjectIDFromHex(id)
+	// objID, err := primitive.ObjectIDFromHex(id)
+	// if err != nil {
+	// 	return "", err
+	// }
+	// callbackData, err := dao.GetCallbackDataByID(ctx, objID)
+	// if err != nil {
+	// 	return "", err
+	// }
+	// data := callbackData.Data
+	// return data, nil
+	_, err := objectuuid.FromObjectIDHex(id)
 	if err != nil {
 		return "", err
 	}
-	callbackData, err := dao.GetCallbackDataByID(ctx, objID)
+	data, err := cache.Get[string](ctx, id)
 	if err != nil {
 		return "", err
 	}
-	data := callbackData.Data
 	return data, nil
 }
 
 func CreateCallbackData(ctx context.Context, data string) (id string, err error) {
-	callbackData, err := dao.CreateCallbackData(ctx, data)
-	if err != nil {
-		return
-	}
-	id = callbackData.ID.Hex()
+	// callbackData, err := dao.CreateCallbackData(ctx, data)
+	// if err != nil {
+	// 	return
+	// }
+	// id = callbackData.ID.Hex()
+	// return
+	id = objectuuid.New().Hex()
+	err = cache.Set(ctx, id, data)
 	return
 }

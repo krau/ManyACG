@@ -11,8 +11,7 @@ import (
 
 	"github.com/krau/ManyACG/common"
 	"github.com/krau/ManyACG/config"
-
-	"github.com/krau/ManyACG/types"
+	"github.com/krau/ManyACG/internal/shared"
 
 	"github.com/studio-b12/gowebdav"
 )
@@ -34,7 +33,7 @@ func (w *Webdav) Init(ctx context.Context) {
 	}
 }
 
-func (w *Webdav) Save(ctx context.Context, filePath string, storagePath string) (*types.StorageDetail, error) {
+func (w *Webdav) Save(ctx context.Context, filePath string, storagePath string) (*shared.StorageDetail, error) {
 	common.Logger.Debugf("saving file %s", filePath)
 	storagePath = path.Join(basePath, storagePath)
 	storageDir := path.Dir(storagePath)
@@ -57,13 +56,13 @@ func (w *Webdav) Save(ctx context.Context, filePath string, storagePath string) 
 	cachePath := filepath.Join(config.Cfg.Storage.CacheDir, filepath.Base(storagePath))
 	go common.MkCache(cachePath, fileBytes, time.Duration(config.Cfg.Storage.CacheTTL)*time.Second)
 
-	return &types.StorageDetail{
-		Type: types.StorageTypeWebdav,
+	return &shared.StorageDetail{
+		Type: shared.StorageTypeWebdav,
 		Path: storagePath,
 	}, nil
 }
 
-func (w *Webdav) GetFile(ctx context.Context, detail *types.StorageDetail) ([]byte, error) {
+func (w *Webdav) GetFile(ctx context.Context, detail *shared.StorageDetail) ([]byte, error) {
 	common.Logger.Debugf("Getting file %s", detail.Path)
 	cachePath := filepath.Join(config.Cfg.Storage.CacheDir, path.Base(detail.Path))
 	data, err := os.ReadFile(cachePath)
@@ -79,7 +78,7 @@ func (w *Webdav) GetFile(ctx context.Context, detail *types.StorageDetail) ([]by
 	return data, nil
 }
 
-func (w *Webdav) GetFileStream(ctx context.Context, detail *types.StorageDetail) (io.ReadCloser, error) {
+func (w *Webdav) GetFileStream(ctx context.Context, detail *shared.StorageDetail) (io.ReadCloser, error) {
 	common.Logger.Debugf("Getting file %s", detail.Path)
 	cachePath := filepath.Join(config.Cfg.Storage.CacheDir, path.Base(detail.Path))
 	file, err := os.Open(cachePath)
@@ -94,7 +93,7 @@ func (w *Webdav) GetFileStream(ctx context.Context, detail *types.StorageDetail)
 	return steam, nil
 }
 
-func (w *Webdav) Delete(ctx context.Context, detail *types.StorageDetail) error {
+func (w *Webdav) Delete(ctx context.Context, detail *shared.StorageDetail) error {
 	common.Logger.Debugf("Deleting file %s", detail.Path)
 	return Client.Remove(detail.Path)
 }

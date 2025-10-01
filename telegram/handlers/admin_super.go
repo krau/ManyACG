@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/krau/ManyACG/common"
+	"github.com/krau/ManyACG/internal/infra/database"
 	"github.com/krau/ManyACG/internal/shared"
 	"github.com/krau/ManyACG/service"
 	"github.com/krau/ManyACG/telegram/utils"
@@ -20,14 +21,8 @@ import (
 )
 
 func ProcessPicturesHashAndSize(ctx *telegohandler.Context, message telego.Message) error {
-	userAdmin, err := service.GetAdminByTgID(ctx, message.From.ID)
-	if err != nil {
-		common.Logger.Errorf("获取管理员信息失败: %s", err)
-		utils.ReplyMessage(ctx, ctx.Bot(), message, "获取管理员信息失败")
-		return nil
-	}
-	if userAdmin != nil && !userAdmin.SuperAdmin {
-		utils.ReplyMessage(ctx, ctx.Bot(), message, "你没有权限处理图片信息")
+	if !service.CheckAdminPermissionByTgID(ctx, message.From.ID, shared.PermissionSudo) {
+		utils.ReplyMessage(ctx, ctx.Bot(), message, "你没有权限处理图片的哈希和尺寸信息")
 		return nil
 	}
 	go service.ProcessPicturesHashAndSizeAndUpdate(context.Background(), ctx.Bot(), &message)
@@ -52,13 +47,17 @@ func ProcessPicturesHashAndSize(ctx *telegohandler.Context, message telego.Messa
 // }
 
 func FixTwitterArtists(ctx *telegohandler.Context, message telego.Message) error {
-	userAdmin, err := service.GetAdminByTgID(ctx, message.From.ID)
-	if err != nil {
-		common.Logger.Errorf("获取管理员信息失败: %s", err)
-		utils.ReplyMessage(ctx, ctx.Bot(), message, "获取管理员信息失败")
-		return nil
-	}
-	if userAdmin != nil && !userAdmin.SuperAdmin {
+	// userAdmin, err := service.GetAdminByTgID(ctx, message.From.ID)
+	// if err != nil {
+	// 	common.Logger.Errorf("获取管理员信息失败: %s", err)
+	// 	utils.ReplyMessage(ctx, ctx.Bot(), message, "获取管理员信息失败")
+	// 	return nil
+	// }
+	// if userAdmin != nil && !userAdmin.SuperAdmin {
+	// 	utils.ReplyMessage(ctx, ctx.Bot(), message, "你没有权限修复Twitter作者信息")
+	// 	return nil
+	// }
+	if !service.CheckAdminPermissionByTgID(ctx, message.From.ID, shared.PermissionSudo) {
 		utils.ReplyMessage(ctx, ctx.Bot(), message, "你没有权限修复Twitter作者信息")
 		return nil
 	}
@@ -68,12 +67,12 @@ func FixTwitterArtists(ctx *telegohandler.Context, message telego.Message) error
 }
 
 func SetAdmin(ctx *telegohandler.Context, message telego.Message) error {
-	userAdmin, err := service.GetAdminByTgID(ctx, message.From.ID)
+	userAdmin, err := database.Default().GetAdminByTelegramID(ctx, message.From.ID)
 	if err != nil {
 		utils.ReplyMessage(ctx, ctx.Bot(), message, "获取管理员信息失败: "+err.Error())
 		return nil
 	}
-	if userAdmin == nil || !userAdmin.SuperAdmin {
+	if userAdmin.HasPermission(shared.PermissionSudo) == false {
 		utils.ReplyMessage(ctx, ctx.Bot(), message, "你没有权限设置管理员")
 		return nil
 	}
@@ -147,7 +146,7 @@ func SetAdmin(ctx *telegohandler.Context, message telego.Message) error {
 	}
 	if isAdmin {
 		if (len(args) == 0 && message.ReplyToMessage != nil) || (len(args) == 1 && message.ReplyToMessage == nil) {
-			if err := service.DeleteAdminByTgID(ctx, userID); err != nil {
+			if err := database.Default().DeleteAdminByTelegramID(ctx, userID); err != nil {
 				utils.ReplyMessage(ctx, ctx.Bot(), message, "删除管理员失败: "+err.Error())
 				return nil
 			}
@@ -166,13 +165,7 @@ func SetAdmin(ctx *telegohandler.Context, message telego.Message) error {
 }
 
 func AddTagAlias(ctx *telegohandler.Context, message telego.Message) error {
-	userAdmin, err := service.GetAdminByTgID(ctx, message.From.ID)
-	if err != nil {
-		common.Logger.Errorf("获取管理员信息失败: %s", err)
-		utils.ReplyMessage(ctx, ctx.Bot(), message, "获取管理员信息失败")
-		return nil
-	}
-	if userAdmin != nil && !userAdmin.SuperAdmin {
+	if !service.CheckAdminPermissionByTgID(ctx, message.From.ID, shared.PermissionSudo) {
 		utils.ReplyMessage(ctx, ctx.Bot(), message, "你没有权限添加标签别名")
 		return nil
 	}
@@ -197,13 +190,7 @@ func AddTagAlias(ctx *telegohandler.Context, message telego.Message) error {
 }
 
 func AutoTagAllArtwork(ctx *telegohandler.Context, message telego.Message) error {
-	userAdmin, err := service.GetAdminByTgID(ctx, message.From.ID)
-	if err != nil {
-		common.Logger.Errorf("获取管理员信息失败: %s", err)
-		utils.ReplyMessage(ctx, ctx.Bot(), message, "获取管理员信息失败")
-		return nil
-	}
-	if userAdmin != nil && !userAdmin.SuperAdmin {
+	if !service.CheckAdminPermissionByTgID(ctx, message.From.ID, shared.PermissionSudo) {
 		utils.ReplyMessage(ctx, ctx.Bot(), message, "你没有权限")
 		return nil
 	}

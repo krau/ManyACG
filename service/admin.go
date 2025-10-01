@@ -7,7 +7,6 @@ import (
 	"github.com/krau/ManyACG/internal/infra/database"
 	"github.com/krau/ManyACG/internal/model/entity"
 	"github.com/krau/ManyACG/internal/shared"
-	"github.com/krau/ManyACG/types"
 )
 
 func IsAdminByTgID(ctx context.Context, tgid int64) (bool, error) {
@@ -50,29 +49,20 @@ func CreateAdmin(ctx context.Context, userID int64, permissions []shared.Permiss
 	return err
 }
 
-func DeleteAdminByTgID(ctx context.Context, tgid int64) error {
-	// _, err := dao.DeleteAdminByUserID(ctx, userID)
-	// return err
-	return database.Default().DeleteAdminByTelegramID(ctx, tgid)
-}
+// func DeleteAdminByTgID(ctx context.Context, tgid int64) error {
+// 	// _, err := dao.DeleteAdminByUserID(ctx, userID)
+// 	// return err
+// 	return database.Default().DeleteAdminByTelegramID(ctx, tgid)
+// }
 
-func GetAdminByTgID(ctx context.Context, userID int64) (*types.AdminModel, error) {
-	// return dao.GetAdminByUserID(ctx, userID)
-	admin, err := database.Default().GetAdminByTelegramID(ctx, userID)
-	if err != nil {
-		return nil, err
-	}
-	return &types.AdminModel{
-		UserID: admin.TelegramID,
-		Permissions: func() []types.Permission {
-			var perms []types.Permission
-			for _, p := range admin.Permissions {
-				perms = append(perms, types.Permission(p))
-			}
-			return perms
-		}(),
-	}, nil
-}
+// func GetAdminByTgID(ctx context.Context, userID int64) (*entity.Admin, error) {
+// 	// return dao.GetAdminByUserID(ctx, userID)
+// 	admin, err := database.Default().GetAdminByTelegramID(ctx, userID)
+// 	if err != nil {
+// 		return nil, err
+// 	}
+// 	return admin, nil
+// }
 
 func CheckAdminPermissionByTgID(ctx context.Context, userID int64, permissions ...shared.Permission) bool {
 	// admin, err := dao.GetAdminByUserID(ctx, userID)
@@ -144,36 +134,12 @@ func CreateOrUpdateAdmin(ctx context.Context, tgid int64, permissions []shared.P
 	}
 	if exist == nil {
 		_, err = database.Default().CreateAdmin(ctx, &entity.Admin{
-			TelegramID: tgid,
-			Permissions: func() []shared.Permission {
-				var perms []shared.Permission
-				for _, p := range permissions {
-					perm, err := shared.ParsePermission(string(p))
-					if err == nil {
-						perms = append(perms, perm)
-					}
-				}
-				if super {
-					perms = append(perms, shared.PermissionSudo)
-				}
-				return perms
-			}(),
+			TelegramID:  tgid,
+			Permissions: permissions,
 		})
 		return err
 	}
-	err = database.Default().UpdateAdminPermissions(ctx, exist.ID, func() []shared.Permission {
-		var perms []shared.Permission
-		for _, p := range permissions {
-			perm, err := shared.ParsePermission(string(p))
-			if err == nil {
-				perms = append(perms, perm)
-			}
-		}
-		if super {
-			perms = append(perms, shared.PermissionSudo)
-		}
-		return perms
-	}())
+	err = database.Default().UpdateAdminPermissions(ctx, exist.ID, permissions)
 	return err
 }
 

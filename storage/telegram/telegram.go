@@ -12,7 +12,7 @@ import (
 
 	"github.com/krau/ManyACG/common"
 	"github.com/krau/ManyACG/config"
-	"github.com/krau/ManyACG/types"
+	"github.com/krau/ManyACG/internal/shared"
 	"github.com/mymmrac/telego"
 	"github.com/mymmrac/telego/telegoapi"
 	"github.com/mymmrac/telego/telegoutil"
@@ -48,7 +48,7 @@ func (t *TelegramStorage) Init(ctx context.Context) {
 	common.Logger.Infof("telegram storage bot %s is ready", botInfo.Username)
 }
 
-func (t *TelegramStorage) Save(ctx context.Context, filePath string, _ string) (*types.StorageDetail, error) {
+func (t *TelegramStorage) Save(ctx context.Context, filePath string, _ string) (*shared.StorageDetail, error) {
 	common.Logger.Debugf("saving file %s", filePath)
 	var msg *telego.Message
 	var err error
@@ -88,13 +88,13 @@ func (t *TelegramStorage) Save(ctx context.Context, filePath string, _ string) (
 	}
 	cachePath := filepath.Join(config.Cfg.Storage.CacheDir, common.MD5Hash(fileMessage.FileID))
 	go common.MkCache(cachePath, fileBytes, time.Duration(config.Cfg.Storage.CacheTTL)*time.Second)
-	return &types.StorageDetail{
-		Type: types.StorageTypeTelegram,
+	return &shared.StorageDetail{
+		Type: shared.StorageTypeTelegram,
 		Path: string(data),
 	}, nil
 }
 
-func (t *TelegramStorage) GetFile(ctx context.Context, detail *types.StorageDetail) ([]byte, error) {
+func (t *TelegramStorage) GetFile(ctx context.Context, detail *shared.StorageDetail) ([]byte, error) {
 	var file fileMessage
 	if err := json.Unmarshal([]byte(detail.Path), &file); err != nil {
 		return nil, err
@@ -118,7 +118,7 @@ func (t *TelegramStorage) GetFile(ctx context.Context, detail *types.StorageDeta
 	return data, nil
 }
 
-func (t *TelegramStorage) Delete(ctx context.Context, detail *types.StorageDetail) error {
+func (t *TelegramStorage) Delete(ctx context.Context, detail *shared.StorageDetail) error {
 	// do nothing
 	return nil
 }

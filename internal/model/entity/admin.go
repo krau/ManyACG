@@ -1,6 +1,8 @@
 package entity
 
 import (
+	"slices"
+
 	"github.com/krau/ManyACG/internal/shared"
 	"github.com/krau/ManyACG/pkg/objectuuid"
 	"gorm.io/datatypes"
@@ -18,4 +20,8 @@ func (a *Admin) BeforeCreate(tx *gorm.DB) (err error) {
 		a.ID = objectuuid.New()
 	}
 	return nil
+}
+
+func (a *Admin) HasPermission(perm shared.Permission) bool {
+	return slices.Contains(a.Permissions, perm)
 }

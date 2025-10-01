@@ -36,22 +36,22 @@ func CreateApiKey(ctx context.Context, key string, quota int, permissions []shar
 	return database.Default().GetApiKeyByKey(ctx, key)
 }
 
-func GetApiKeyByKey(ctx context.Context, key string) (*entity.ApiKey, error) {
-	// return dao.GetApiKeyByKey(ctx, key)
-	return database.Default().GetApiKeyByKey(ctx, key)
-}
+// func GetApiKeyByKey(ctx context.Context, key string) (*entity.ApiKey, error) {
+// 	// return dao.GetApiKeyByKey(ctx, key)
+// 	return database.Default().GetApiKeyByKey(ctx, key)
+// }
 
-func IncreaseApiKeyUsed(ctx context.Context, key string) error {
-	// return dao.IncreaseApiKeyUsed(ctx, key)
-	return database.Default().IncreaseApiKeyUsed(ctx, key)
-}
+// func IncreaseApiKeyUsed(ctx context.Context, key string) error {
+// 	// return dao.IncreaseApiKeyUsed(ctx, key)
+// 	return database.Default().IncreaseApiKeyUsed(ctx, key)
+// }
 
-func AddApiKeyQuota(ctx context.Context, key string, quota int) error {
-	// return dao.AddApiKeyQuota(ctx, key, quota)
-	return database.Default().AddApiKeyQuota(ctx, key, quota)
-}
+// func AddApiKeyQuota(ctx context.Context, key string, quota int) error {
+// 	// return dao.AddApiKeyQuota(ctx, key, quota)
+// 	return database.Default().AddApiKeyQuota(ctx, key, quota)
+// }
 
-func DeleteApiKey(ctx context.Context, key string) error {
-	// return dao.DeleteApiKey(ctx, key)
-	return database.Default().DeleteApiKey(ctx, key)
-}
+// func DeleteApiKey(ctx context.Context, key string) error {
+// 	// return dao.DeleteApiKey(ctx, key)
+// 	return database.Default().DeleteApiKey(ctx, key)
+// }

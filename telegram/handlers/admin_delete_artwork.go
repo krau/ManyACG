@@ -6,16 +6,18 @@ import (
 	"strings"
 
 	"github.com/krau/ManyACG/common"
+	"github.com/krau/ManyACG/internal/infra/database"
 	"github.com/krau/ManyACG/internal/shared"
+	"github.com/krau/ManyACG/pkg/objectuuid"
 	"github.com/krau/ManyACG/service"
 	"github.com/krau/ManyACG/sources"
 	"github.com/krau/ManyACG/storage"
 	"github.com/krau/ManyACG/telegram/utils"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 
 	"github.com/mymmrac/telego"
 	"github.com/mymmrac/telego/telegohandler"
 	"github.com/mymmrac/telego/telegoutil"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 func DeleteArtwork(ctx *telegohandler.Context, message telego.Message) error {
@@ -39,7 +41,7 @@ func DeleteArtwork(ctx *telegohandler.Context, message telego.Message) error {
 		utils.ReplyMessageWithHTML(ctx, ctx.Bot(), message, helpText)
 		return nil
 	}
-	artwork, err := service.GetArtworkByURL(ctx, sourceURL)
+	artwork, err := database.Default().GetArtworkByURL(ctx, sourceURL)
 	if err != nil {
 		utils.ReplyMessage(ctx, ctx.Bot(), message, "获取作品信息失败: "+err.Error())
 		return nil
@@ -53,7 +55,7 @@ func DeleteArtwork(ctx *telegohandler.Context, message telego.Message) error {
 		}
 		utils.ReplyMessage(ctx, ctx.Bot(), message, "在数据库中已删除该作品")
 		for _, picture := range artwork.Pictures {
-			if err := storage.DeleteAll(ctx, picture.StorageInfo); err != nil {
+			if err := storage.DeleteAll(ctx, picture.StorageInfo.Data()); err != nil {
 				common.Logger.Errorf("删除图片失败: %s", err)
 			}
 		}
@@ -80,17 +82,17 @@ func DeleteArtwork(ctx *telegohandler.Context, message telego.Message) error {
 	pictureIndex--
 
 	picture := artwork.Pictures[pictureIndex]
-	pictureID, err := primitive.ObjectIDFromHex(picture.ID)
-	if err != nil {
-		utils.ReplyMessage(ctx, ctx.Bot(), message, fmt.Sprintf("删除失败, 无效的ID\nerror: %s", err))
-		return nil
-	}
-	if err := service.DeletePictureByID(ctx, pictureID); err != nil {
+	// pictureID, err := primitive.ObjectIDFromHex(picture.ID)
+	// if err != nil {
+	// 	utils.ReplyMessage(ctx, ctx.Bot(), message, fmt.Sprintf("删除失败, 无效的ID\nerror: %s", err))
+	// 	return nil
+	// }
+	if err := service.DeletePictureByID(ctx, primitive.ObjectID(picture.ID.ToObjectID())); err != nil { // [TODO] wip
 		utils.ReplyMessage(ctx, ctx.Bot(), message, fmt.Sprintf("删除失败\nerror: %s", err))
 		return nil
 	}
 	utils.ReplyMessage(ctx, ctx.Bot(), message, "在数据库中已删除该图片")
-	if err := storage.DeleteAll(ctx, picture.StorageInfo); err != nil {
+	if err := storage.DeleteAll(ctx, picture.StorageInfo.Data()); err != nil {
 		common.Logger.Errorf("删除图片失败: %s", err)
 	}
 	return nil
@@ -109,19 +111,23 @@ func DeleteArtworkCallbackQuery(ctx *telegohandler.Context, query telego.Callbac
 		return nil
 	}
 
-	artworkID, err := primitive.ObjectIDFromHex(args[1])
+	artworkID, err := objectuuid.FromObjectIDHex(args[1])
 	if err != nil {
 		ctx.Bot().AnswerCallbackQuery(ctx, telegoutil.CallbackQuery(query.ID).WithText("无效的ID").WithCacheTime(60).WithShowAlert())
 		return nil
 	}
 
-	artwork, err := service.GetArtworkByID(ctx, artworkID)
+	artwork, err := database.Default().GetArtworkByID(ctx, artworkID)
 	if err != nil {
 		ctx.Bot().AnswerCallbackQuery(ctx, telegoutil.CallbackQuery(query.ID).WithText("获取作品信息失败: "+err.Error()).WithCacheTime(60).WithShowAlert())
 		return nil
 	}
 
-	if err := service.DeleteArtworkByID(ctx, artworkID); err != nil {
+	// if err := service.DeleteArtworkByID(ctx, artworkID); err != nil {
+	// 	ctx.Bot().AnswerCallbackQuery(ctx, telegoutil.CallbackQuery(query.ID).WithText("从数据库中删除失败: "+err.Error()).WithCacheTime(60).WithShowAlert())
+	// 	return nil
+	// }
+	if err := database.Default().DeleteArtworkByID(ctx, artworkID); err != nil {
 		ctx.Bot().AnswerCallbackQuery(ctx, telegoutil.CallbackQuery(query.ID).WithText("从数据库中删除失败: "+err.Error()).WithCacheTime(60).WithShowAlert())
 		return nil
 	}
@@ -129,7 +135,7 @@ func DeleteArtworkCallbackQuery(ctx *telegohandler.Context, query telego.Callbac
 	ctx.Bot().AnswerCallbackQuery(ctx, telegoutil.CallbackQuery(query.ID).WithText("在数据库中已删除该作品").WithCacheTime(60))
 
 	for _, picture := range artwork.Pictures {
-		if err := storage.DeleteAll(ctx, picture.StorageInfo); err != nil {
+		if err := storage.DeleteAll(ctx, picture.StorageInfo.Data()); err != nil {
 			common.Logger.Warnf("删除图片失败: %s", err)
 			ctx.Bot().AnswerCallbackQuery(ctx, telegoutil.CallbackQuery(query.ID).WithText("从存储中删除图片失败: "+err.Error()))
 		}

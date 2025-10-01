@@ -22,8 +22,8 @@ type Picture struct {
 	Phash     string `gorm:"type:varchar(18);index" json:"phash"` // phash
 	ThumbHash string `gorm:"type:varchar(28)" json:"thumb_hash"`  // thumbhash
 
-	TelegramInfo datatypes.JSONType[shared.TelegramInfo] `json:"telegram_info"` // original TelegramInfo struct as JSON
-	StorageInfo  datatypes.JSONType[shared.StorageInfo]  `json:"storage_info"`  // StorageInfo as JSON
+	TelegramInfo datatypes.JSONType[shared.TelegramInfo] `json:"telegram_info"`
+	StorageInfo  datatypes.JSONType[shared.StorageInfo]  `json:"storage_info"`
 
 	CreatedAt time.Time `gorm:"autoCreateTime" json:"created_at"`
 	UpdatedAt time.Time `gorm:"autoUpdateTime" json:"updated_at"`

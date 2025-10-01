@@ -36,3 +36,15 @@ func (d *DB) DeleteCachedArtworkByURL(ctx context.Context, sourceUrl string) err
 	}
 	return nil
 }
+
+func (d *DB) SaveCachedArtwork(ctx context.Context, artwork *entity.CachedArtwork) (*entity.CachedArtwork, error) {
+	err := d.db.WithContext(ctx).Save(artwork).Error
+	if err != nil {
+		return nil, err
+	}
+	return artwork, nil
+}
+
+func (d *DB) ResetPostingCachedArtworkStatus(ctx context.Context) error {
+	return d.db.WithContext(ctx).Model(&entity.CachedArtwork{}).Where("status = ?", shared.ArtworkStatusPosting).Update("status", shared.ArtworkStatusCached).Error
+}

@@ -8,6 +8,7 @@ import (
 
 	"github.com/duke-git/lancet/v2/slice"
 	"github.com/krau/ManyACG/common"
+	"github.com/krau/ManyACG/internal/infra/database"
 	"github.com/krau/ManyACG/internal/shared"
 	"github.com/krau/ManyACG/service"
 	"github.com/krau/ManyACG/sources"
@@ -43,7 +44,7 @@ func ToggleArtworkR18(ctx *telegohandler.Context, message telego.Message) error 
 		return nil
 	}
 
-	artwork, err := service.GetArtworkByURL(ctx, sourceURL)
+	artwork, err := database.Default().GetArtworkByURL(ctx, sourceURL)
 	if err != nil {
 		utils.ReplyMessage(ctx, ctx.Bot(), message, "获取作品信息失败: "+err.Error())
 		return nil
@@ -73,7 +74,7 @@ func SetArtworkTags(ctx *telegohandler.Context, message telego.Message) error {
 		return nil
 	}
 
-	artwork, err := service.GetArtworkByURL(ctx, sourceURL)
+	artwork, err := database.Default().GetArtworkByURL(ctx, sourceURL)
 	if err != nil {
 		utils.ReplyMessage(ctx, ctx.Bot(), message, "获取作品信息失败: "+err.Error())
 		return nil
@@ -119,7 +120,7 @@ func SetArtworkTags(ctx *telegohandler.Context, message telego.Message) error {
 		utils.ReplyMessage(ctx, ctx.Bot(), message, "更新作品标签失败: "+err.Error())
 		return nil
 	}
-	artwork, err = service.GetArtworkByURL(ctx, artwork.SourceURL)
+	artwork, err = database.Default().GetArtworkByURL(ctx, artwork.SourceURL)
 	if err != nil {
 		utils.ReplyMessage(ctx, ctx.Bot(), message, "获取更新后的作品信息失败: "+err.Error())
 		return nil
@@ -212,7 +213,7 @@ func EditArtworkTitle(ctx *telegohandler.Context, message telego.Message) error 
 		return nil
 	}
 
-	artwork, err := service.GetArtworkByURL(ctx, sourceURL)
+	artwork, err := database.Default().GetArtworkByURL(ctx, sourceURL)
 	if err != nil {
 		utils.ReplyMessage(ctx, ctx.Bot(), message, "获取作品信息失败: "+err.Error())
 		return nil
@@ -238,7 +239,7 @@ func EditArtworkTitle(ctx *telegohandler.Context, message telego.Message) error 
 		utils.ReplyMessage(ctx, ctx.Bot(), message, "更新作品标题失败: "+err.Error())
 		return nil
 	}
-	artwork, err = service.GetArtworkByURL(ctx, artwork.SourceURL)
+	artwork, err = database.Default().GetArtworkByURL(ctx, artwork.SourceURL)
 	if err != nil {
 		utils.ReplyMessage(ctx, ctx.Bot(), message, "获取更新后的作品信息失败: "+err.Error())
 		return nil
@@ -282,7 +283,7 @@ func RefreshArtwork(ctx *telegohandler.Context, message telego.Message) error {
 		}
 	}
 
-	artwork, err := service.GetArtworkByURL(ctx, sourceURL)
+	artwork, err := database.Default().GetArtworkByURL(ctx, sourceURL)
 	if err != nil {
 		if !errors.Is(err, mongo.ErrNoDocuments) {
 			utils.ReplyMessage(ctx, ctx.Bot(), message, "获取作品信息失败: "+err.Error())
@@ -321,7 +322,7 @@ func ReCaptionArtwork(ctx *telegohandler.Context, message telego.Message) error 
 		utils.ReplyMessage(ctx, ctx.Bot(), message, "请回复一条消息, 或者指定作品链接")
 		return nil
 	}
-	artwork, err := service.GetArtworkByURL(ctx, sourceURL)
+	artwork, err := database.Default().GetArtworkByURL(ctx, sourceURL)
 	if err != nil {
 		utils.ReplyMessage(ctx, ctx.Bot(), message, "获取作品信息失败: "+err.Error())
 		return nil
@@ -369,7 +370,7 @@ func AutoTaggingArtwork(ctx *telegohandler.Context, message telego.Message) erro
 		return nil
 	}
 
-	artwork, err := service.GetArtworkByURL(ctx, sourceURL)
+	artwork, err := database.Default().GetArtworkByURL(ctx, sourceURL)
 	if err != nil {
 		utils.ReplyMessage(ctx, ctx.Bot(), message, "获取作品信息失败: "+err.Error())
 		return nil
@@ -435,7 +436,7 @@ func AutoTaggingArtwork(ctx *telegohandler.Context, message telego.Message) erro
 			utils.ReplyMessage(ctx, ctx.Bot(), message, "更新作品标签失败: "+err.Error())
 			return nil
 		}
-		artwork, err = service.GetArtworkByURL(ctx, artwork.SourceURL)
+		artwork, err = database.Default().GetArtworkByURL(ctx, artwork.SourceURL)
 		if err != nil {
 			utils.ReplyMessage(ctx, ctx.Bot(), message, "获取更新后的作品信息失败: "+err.Error())
 			return nil

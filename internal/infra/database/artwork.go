@@ -104,6 +104,19 @@ func (d *DB) DeleteArtworkByID(ctx context.Context, id objectuuid.ObjectUUID) er
 	return nil
 }
 
+func (d *DB) DeleteArtworkByURL(ctx context.Context, url string) error {
+	n, err := gorm.G[entity.Artwork](d.db).
+		Where("source_url = ?", url).
+		Delete(ctx)
+	if err != nil {
+		return err
+	}
+	if n == 0 {
+		return gorm.ErrRecordNotFound
+	}
+	return nil
+}
+
 // UpdateArtwork updates non-zero fields in the patch.
 func (d *DB) UpdateArtwork(ctx context.Context, patch *entity.Artwork) error {
 	if patch.ID == objectuuid.Nil {
@@ -150,4 +163,17 @@ func (d *DB) UpdateArtworkTags(ctx context.Context, id objectuuid.ObjectUUID, ta
 		return err
 	}
 	return d.db.WithContext(ctx).Model(&existing).Association("Tags").Replace(tags)
+}
+
+func (d *DB) CountArtworks(ctx context.Context, r18 shared.R18Type) (int64, error) {
+	var count int64
+	query := d.db.WithContext(ctx).Model(&entity.Artwork{})
+	if r18 != shared.R18TypeAll {
+		query = query.Where("r18 = ?", r18 == shared.R18TypeR18)
+	}
+	err := query.Count(&count).Error
+	if err != nil {
+		return 0, err
+	}
+	return count, nil
 }

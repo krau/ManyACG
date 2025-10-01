@@ -15,8 +15,7 @@ import (
 
 	"github.com/krau/ManyACG/common"
 	"github.com/krau/ManyACG/config"
-
-	"github.com/krau/ManyACG/types"
+	"github.com/krau/ManyACG/internal/shared"
 
 	"github.com/imroc/req/v3"
 )
@@ -54,7 +53,7 @@ func (a *Alist) Init(ctx context.Context) {
 	go refreshJwtToken(reqClient)
 }
 
-func (a *Alist) Save(ctx context.Context, filePath string, storagePath string) (*types.StorageDetail, error) {
+func (a *Alist) Save(ctx context.Context, filePath string, storagePath string) (*shared.StorageDetail, error) {
 	common.Logger.Debugf("saving file %s", filePath)
 	storagePath = path.Join(basePath, storagePath)
 	fileBytes, err := os.ReadFile(filePath)
@@ -81,13 +80,13 @@ func (a *Alist) Save(ctx context.Context, filePath string, storagePath string) (
 	}
 	cachePath := strings.TrimSuffix(config.Cfg.Storage.CacheDir, "/") + "/" + filepath.Base(storagePath)
 	go common.MkCache(cachePath, fileBytes, time.Duration(config.Cfg.Storage.CacheTTL)*time.Second)
-	return &types.StorageDetail{
-		Type: types.StorageTypeAlist,
+	return &shared.StorageDetail{
+		Type: shared.StorageTypeAlist,
 		Path: storagePath,
 	}, nil
 }
 
-func (a *Alist) GetFile(ctx context.Context, detail *types.StorageDetail) ([]byte, error) {
+func (a *Alist) GetFile(ctx context.Context, detail *shared.StorageDetail) ([]byte, error) {
 	common.Logger.Debugf("Getting file %s", detail.Path)
 	cachePath := path.Join(config.Cfg.Storage.CacheDir, filepath.Base(detail.Path))
 	data, err := os.ReadFile(cachePath)
@@ -122,7 +121,7 @@ func (a *Alist) GetFile(ctx context.Context, detail *types.StorageDetail) ([]byt
 	return os.ReadFile(cachePath)
 }
 
-func (a *Alist) GetFileStream(ctx context.Context, detail *types.StorageDetail) (io.ReadCloser, error) {
+func (a *Alist) GetFileStream(ctx context.Context, detail *shared.StorageDetail) (io.ReadCloser, error) {
 	common.Logger.Debugf("Getting file %s", detail.Path)
 	cachePath := path.Join(config.Cfg.Storage.CacheDir, filepath.Base(detail.Path))
 	file, err := os.Open(cachePath)
@@ -154,7 +153,7 @@ func (a *Alist) GetFileStream(ctx context.Context, detail *types.StorageDetail) 
 	return resp.Body, nil
 }
 
-func (a *Alist) Delete(ctx context.Context, detail *types.StorageDetail) error {
+func (a *Alist) Delete(ctx context.Context, detail *shared.StorageDetail) error {
 	common.Logger.Debugf("Deleting file %s", detail.Path)
 	resp, err := reqClient.R().SetContext(ctx).SetBodyJsonMarshal(map[string]any{
 		"names": []string{filepath.Base(detail.Path)},
