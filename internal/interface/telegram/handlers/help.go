@@ -4,14 +4,15 @@ import (
 	"fmt"
 
 	"github.com/krau/ManyACG/common"
+	"github.com/krau/ManyACG/internal/interface/telegram/handlers/utils"
 	"github.com/krau/ManyACG/service"
-	"github.com/krau/ManyACG/telegram/utils"
 
 	"github.com/mymmrac/telego"
 	"github.com/mymmrac/telego/telegohandler"
 )
 
 func Help(ctx *telegohandler.Context, message telego.Message) error {
+	serv := service.FromContext(ctx)
 	helpText := `使用方法:
 /setu - 随机图片(NSFW)
 /random - 随机全年龄图片
@@ -32,7 +33,7 @@ func Help(ctx *telegohandler.Context, message telego.Message) error {
 表示搜索包含"萝莉"或"白丝", 且包含"猫耳"或"原创"的图片.
 Inline 查询(在任意聊天框中@本bot)支持同样的参数格式.
 `
-	isAdmin, _ := service.IsAdminByTgID(ctx, message.From.ID)
+	isAdmin, _ := serv.IsAdminByTgID(ctx, message.From.ID)
 	if isAdmin {
 		helpText += `
 管理员命令:
@@ -50,6 +51,6 @@ Inline 查询(在任意聊天框中@本bot)支持同样的参数格式.
 `
 	}
 	helpText += fmt.Sprintf("\n版本: %s, 构建日期 %s, 提交 %s\nhttps://github.com/krau/ManyACG", common.Version, common.BuildTime, common.Commit[:7])
-	utils.ReplyMessage(ctx, ctx.Bot(), message, helpText)
+	utils.ReplyMessage(ctx, message, helpText)
 	return nil
 }

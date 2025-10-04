@@ -7,6 +7,7 @@ import (
 	"github.com/duke-git/lancet/v2/slice"
 	"github.com/krau/ManyACG/internal/model/command"
 	"github.com/krau/ManyACG/internal/model/entity"
+	"github.com/krau/ManyACG/internal/model/query"
 	"github.com/krau/ManyACG/internal/repo"
 	"github.com/krau/ManyACG/internal/shared/errs"
 	"github.com/krau/ManyACG/pkg/objectuuid"
@@ -213,4 +214,8 @@ func (s *Service) UpdateArtworkTitleByURL(ctx context.Context, sourceURL, title 
 		return err
 	}
 	return s.repos.Artwork().UpdateArtworkByMap(ctx, awEnt.ID, map[string]any{"title": title})
+}
+
+func (s *Service) QueryArtworks(ctx context.Context, que query.ArtworksDB) ([]*entity.Artwork, error) {
+	return s.repos.Artwork().QueryArtworks(ctx, que)
 }

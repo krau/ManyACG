@@ -339,6 +339,7 @@ func ReCaptionArtwork(ctx *telegohandler.Context, message telego.Message) error 
 	return nil
 }
 
+// [TODO] implement this
 // func AutoTaggingArtwork(ctx *telegohandler.Context, message telego.Message) error {
 // 	if !CheckPermissionInGroup(ctx, message, shared.PermissionEditArtwork) {
 // 		utils.ReplyMessage(ctx, message, "你没有编辑作品的权限")

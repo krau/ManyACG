@@ -5,8 +5,10 @@ import (
 	"html"
 	"strings"
 
+	"github.com/krau/ManyACG/internal/infra/config/runtimecfg"
 	"github.com/krau/ManyACG/internal/interface/telegram/metautil"
 	"github.com/krau/ManyACG/internal/model/entity"
+	"github.com/krau/ManyACG/pkg/objectuuid"
 	"github.com/krau/ManyACG/service"
 	"github.com/mymmrac/telego"
 	"github.com/mymmrac/telego/telegohandler"
@@ -62,7 +64,6 @@ var tagCharsReplacer = strings.NewReplacer(
 	" ", "_",
 )
 
-
 func ArtworkHTMLCaption(meta *metautil.MetaData, artwork entity.ArtworkLike) string {
 	caption := fmt.Sprintf("<a href=\"%s\"><b>%s</b></a> / <b>%s</b>", artwork.GetSourceURL(), html.EscapeString(artwork.GetTitle()), html.EscapeString(artwork.GetArtistName()))
 	if artwork.GetDescription() != "" {
@@ -88,6 +89,7 @@ func ArtworkHTMLCaption(meta *metautil.MetaData, artwork entity.ArtworkLike) str
 		tags += "#" + strings.TrimSpace(html.EscapeString(tag)) + " "
 	}
 	caption += fmt.Sprintf("\n<blockquote expandable=true>%s</blockquote>\n", tags)
+	// [TODO] implement channel signature
 	// posted := meta.ChannelChatID.Username != ""
 	// if posted {
 	// 	caption += html.EscapeString(meta.ChannelChatID.Username)
@@ -99,4 +101,39 @@ func ArtworkHTMLCaption(meta *metautil.MetaData, artwork entity.ArtworkLike) str
 	// 	caption += fmt.Sprintf("<a href=\"%s/artwork/%s\">在网站查看</a>", config.Cfg.API.SiteURL, artwork.ID)
 	// }
 	return caption
+}
+
+func GetMssageOriginChannel(message *telego.Message) *telego.MessageOriginChannel {
+	if message.ForwardOrigin == nil {
+		return nil
+	}
+	if message.ForwardOrigin.OriginType() == telego.OriginTypeChannel {
+		return message.ForwardOrigin.(*telego.MessageOriginChannel)
+	} else {
+		return nil
+	}
+}
+
+func GetPostedArtworkInlineKeyboardButton(artwork *entity.Artwork, meta *metautil.MetaData) []telego.InlineKeyboardButton {
+	detailsURL := runtimecfg.Get().API.SiteURL + "/artwork/" + artwork.ID.Hex() // [TODO] refactor this
+	hasValidTelegramInfo := meta.ChannelChatID.ID != 0 || meta.ChannelChatID.Username != ""
+	if hasValidTelegramInfo && artwork.Pictures[0].TelegramInfo.Data().MessageID != 0 {
+		detailsURL = meta.ChannelMessageURL(artwork.Pictures[0].TelegramInfo.Data().MessageID)
+	}
+	return []telego.InlineKeyboardButton{
+		telegoutil.InlineKeyboardButton("详情").WithURL(detailsURL),
+		telegoutil.InlineKeyboardButton("原图").WithURL(meta.BotDeepLink("files", artwork.ID.Hex())),
+	}
+}
+
+func GetMessagePhotoFile(ctx *telegohandler.Context, message *telego.Message) ([]byte, error) {
+	panic("unimplemented")
+}
+
+func SendPictureFileByID(ctx *telegohandler.Context, meta *metautil.MetaData, id objectuuid.ObjectUUID) (telego.Message, error) {
+	panic("unimplemented")
+}
+
+func GetPostedPictureInlineKeyboardButton(artwork *entity.Artwork, picIndex uint, meta *metautil.MetaData) []telego.InlineKeyboardButton {
+	panic("unimplemented")
 }

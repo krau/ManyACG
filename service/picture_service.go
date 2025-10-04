@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/krau/ManyACG/internal/model/entity"
+	"github.com/krau/ManyACG/internal/model/query"
 	"github.com/krau/ManyACG/internal/shared"
 )
 
@@ -13,4 +14,8 @@ func (s *Service) UpdatePictureTelegramInfo(ctx context.Context, pic *entity.Pic
 		return err
 	}
 	return nil
+}
+
+func (s *Service) QueryPicturesByPhash(ctx context.Context, que query.PicturesPhash) ([]*entity.Picture, error) {
+	return s.repos.Picture().QueryPicturesByPhash(ctx, que)
 }

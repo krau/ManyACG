@@ -237,3 +237,19 @@ func ArtworkInputMediaPhotos(ctx context.Context,
 func GetPicturePreviewInputFile(ctx context.Context, picture entity.PictureLike) (telego.InputFile, error) {
 	panic("not implemented")
 }
+
+type SendArtworkInfoOption struct {
+	ChatID        *telego.ChatID
+	SourceURL     string
+	AppendCaption string
+	Verify        bool
+	HasPermission bool
+	IgnoreDeleted bool
+	ReplyParams   *telego.ReplyParameters
+	SendFull      bool
+}
+
+func SendArtworkInfo(ctx *telegohandler.Context, opts SendArtworkInfoOption) error {
+	// Implementation here
+	return nil
+}

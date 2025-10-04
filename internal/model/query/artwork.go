@@ -13,6 +13,7 @@ type Paginate struct {
 type ArtworksFilter struct {
 	R18      shared.R18Type
 	Tags     [][]objectuuid.ObjectUUID
+	Keywords [][]string
 	ArtistID objectuuid.ObjectUUID
 }
 

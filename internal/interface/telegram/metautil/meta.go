@@ -2,6 +2,8 @@ package metautil
 
 import (
 	"context"
+	"fmt"
+	"strings"
 
 	"github.com/mymmrac/telego"
 )
@@ -35,4 +37,15 @@ func FromContext(ctx context.Context) *MetaData {
 
 func WithContext(ctx context.Context, meta *MetaData) context.Context {
 	return context.WithValue(ctx, MetaDataCtxKey{}, meta)
+}
+
+func (m *MetaData) BotDeepLink(cmd string, params ...string) string {
+	return fmt.Sprintf("https://t.me/%s/?start=%s_%s", m.BotUsername, cmd, strings.Join(params, "_"))
+}
+
+func (m *MetaData) ChannelMessageURL(messageID int) string {
+	if m.ChannelChatID.Username != "" {
+		return fmt.Sprintf("https://t.me/%s/%d", strings.TrimPrefix(m.ChannelChatID.String(), "@"), messageID)
+	}
+	return fmt.Sprintf("https://t.me/c/%s/%d", strings.TrimPrefix(m.ChannelChatID.String(), "-100"), messageID)
 }

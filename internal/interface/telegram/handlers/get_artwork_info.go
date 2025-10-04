@@ -5,26 +5,28 @@ import (
 	"strings"
 	"time"
 
-	"github.com/krau/ManyACG/common"
+	"github.com/krau/ManyACG/internal/interface/telegram/handlers/utils"
+	"github.com/krau/ManyACG/internal/interface/telegram/metautil"
 	"github.com/krau/ManyACG/internal/shared"
+	"github.com/krau/ManyACG/pkg/log"
 	"github.com/krau/ManyACG/service"
-	"github.com/krau/ManyACG/telegram/utils"
-
 	"github.com/mymmrac/telego"
 	"github.com/mymmrac/telego/telegohandler"
 	"github.com/mymmrac/telego/telegoutil"
 )
 
 func GetArtworkInfo(ctx *telegohandler.Context, message telego.Message) error {
-	hasPermission := CheckPermissionInGroup(ctx, message, shared.PermissionGetArtworkInfo)
-	sourceURL := utils.FindSourceURLForMessage(&message)
+	serv := service.FromContext(ctx)
+	hasPermission := utils.CheckPermissionInGroup(ctx, serv, message, shared.PermissionGetArtworkInfo)
+	sourceURL := utils.FindSourceURLInMessage(serv, &message)
 	ogch := utils.GetMssageOriginChannel(&message)
-	if ogch != nil && (ogch.Chat.ID == ChannelChatID.ID || strings.EqualFold(ogch.Chat.Username, strings.TrimPrefix(ChannelChatID.Username, "@"))) {
+	meta := metautil.FromContext(ctx)
+	if ogch != nil && (ogch.Chat.ID == meta.ChannelChatID.ID || strings.EqualFold(ogch.Chat.Username, strings.TrimPrefix(meta.ChannelChatID.Username, "@"))) {
 		// handle the posted artwork in our channel
-		time.Sleep(3 * time.Second)
-		artwork, err := service.GetArtworkByURL(ctx, sourceURL)
+		// time.Sleep(3 * time.Second)
+		artwork, err := serv.GetArtworkByURL(ctx, sourceURL)
 		if err != nil {
-			common.Logger.Errorf("failed to get posted artwork: %s", err)
+			log.Errorf("failed to get posted artwork: %s", err)
 			return nil
 		}
 		ctx.Bot().SendMessage(ctx, telegoutil.Message(
@@ -33,16 +35,16 @@ func GetArtworkInfo(ctx *telegohandler.Context, message telego.Message) error {
 		).WithReplyParameters(&telego.ReplyParameters{
 			MessageID: message.MessageID,
 		}).WithReplyMarkup(telegoutil.InlineKeyboard(
-			utils.GetPostedArtworkInlineKeyboardButton(artwork, ChannelChatID, BotUsername),
+			utils.GetPostedArtworkInlineKeyboardButton(artwork, meta),
 		)))
 		return nil
 	}
 	var waitMessageID int
 	if hasPermission {
 		go func() {
-			msg, err := utils.ReplyMessage(ctx, ctx.Bot(), message, "正在获取作品信息...")
+			msg, err := utils.ReplyMessage(ctx, message, "正在获取作品信息...")
 			if err != nil {
-				common.Logger.Warnf("发送消息失败: %s", err)
+				log.Warnf("发送消息失败: %s", err)
 				return
 			}
 			waitMessageID = msg.MessageID
@@ -56,7 +58,7 @@ func GetArtworkInfo(ctx *telegohandler.Context, message telego.Message) error {
 	}()
 	chatID := message.Chat.ChatID()
 
-	err := utils.SendArtworkInfo(ctx, ctx.Bot(), &utils.SendArtworkInfoParams{
+	err := utils.SendArtworkInfo(ctx, utils.SendArtworkInfoOption{
 		ChatID:        &chatID,
 		SourceURL:     sourceURL,
 		AppendCaption: "",
@@ -68,16 +70,17 @@ func GetArtworkInfo(ctx *telegohandler.Context, message telego.Message) error {
 		},
 	})
 	if err != nil {
-		common.Logger.Error(err)
-		utils.ReplyMessage(ctx, ctx.Bot(), message, err.Error())
+		log.Error(err)
+		utils.ReplyMessage(ctx, message, err.Error())
 	}
 	return nil
 }
 
 func GetArtworkInfoCommand(ctx *telegohandler.Context, message telego.Message) error {
-	sourceURL := utils.FindSourceURLForMessage(&message)
+	serv := service.FromContext(ctx)
+	sourceURL := utils.FindSourceURLInMessage(serv, &message)
 	if sourceURL == "" {
-		sourceURL = utils.FindSourceURLForMessage(message.ReplyToMessage)
+		sourceURL = utils.FindSourceURLInMessage(serv, message.ReplyToMessage)
 	}
 	if sourceURL == "" {
 		helpText := `
@@ -85,11 +88,17 @@ func GetArtworkInfoCommand(ctx *telegohandler.Context, message telego.Message) e
 
 命令语法: /info [作品链接]
 `
-		utils.ReplyMessageWithHTML(ctx, ctx.Bot(), message, helpText)
+		utils.ReplyMessageWithHTML(ctx, message, helpText)
 		return nil
 	}
-	if err := utils.SendFullArtworkInfo(ctx, ctx.Bot(), message, sourceURL); err != nil {
-		utils.ReplyMessage(ctx, ctx.Bot(), message, err.Error())
+	chatID := message.Chat.ChatID()
+
+	if err := utils.SendArtworkInfo(ctx, utils.SendArtworkInfoOption{
+		SendFull:  true,
+		ChatID:    &chatID,
+		SourceURL: sourceURL,
+	}); err != nil {
+		utils.ReplyMessage(ctx, message, err.Error())
 	}
 	return nil
 }

@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/krau/ManyACG/internal/model/entity"
+	"github.com/krau/ManyACG/internal/model/query"
 	"github.com/krau/ManyACG/internal/shared"
 	"github.com/krau/ManyACG/pkg/objectuuid"
 )
@@ -17,6 +18,7 @@ type Artwork interface {
 	UpdateArtworkPictures(ctx context.Context, id objectuuid.ObjectUUID, pictures []*entity.Picture) error
 	ReorderArtworkPictures(ctx context.Context, id objectuuid.ObjectUUID) error
 	DeleteArtworkByID(ctx context.Context, id objectuuid.ObjectUUID) error
+	QueryArtworks(ctx context.Context, que query.ArtworksDB) ([]*entity.Artwork, error)
 }
 
 type DeletedRecord interface {
