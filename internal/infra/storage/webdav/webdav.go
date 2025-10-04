@@ -3,16 +3,14 @@ package webdav
 import (
 	"context"
 	"fmt"
+	"io"
 	"os"
 	"path"
-	"path/filepath"
 	"strings"
-	"time"
 
 	config "github.com/krau/ManyACG/internal/infra/config/runtimecfg"
 	"github.com/krau/ManyACG/internal/infra/storage"
 	"github.com/krau/ManyACG/internal/shared"
-	"github.com/krau/ManyACG/pkg/osutil"
 
 	"github.com/studio-b12/gowebdav"
 )
@@ -41,24 +39,19 @@ func (w *Webdav) Init(ctx context.Context) error {
 	return nil
 }
 
-func (w *Webdav) Save(ctx context.Context, filePath string, storagePath string) (*shared.StorageDetail, error) {
+func (w *Webdav) Save(ctx context.Context, r io.Reader, storagePath string) (*shared.StorageDetail, error) {
 	storagePath = path.Join(w.basePath, storagePath)
 	storageDir := path.Dir(storagePath)
 	if err := w.client.MkdirAll(storageDir, os.ModePerm); err != nil {
 		return nil, ErrFailedMkdirAll
 	}
 
-	fileBytes, err := os.ReadFile(filePath)
-	if err != nil {
-		return nil, ErrReadFile
-	}
-
-	if err := w.client.Write(storagePath, fileBytes, os.ModePerm); err != nil {
+	if err := w.client.WriteStream(storagePath, r, os.ModePerm); err != nil {
 		return nil, ErrFailedWrite
 	}
 
-	cachePath := filepath.Join(config.Get().Storage.CacheDir, filepath.Base(storagePath))
-	go osutil.MkCache(cachePath, fileBytes, time.Duration(config.Get().Storage.CacheTTL)*time.Second)
+	// cachePath := filepath.Join(config.Get().Storage.CacheDir, filepath.Base(storagePath))
+	// go osutil.MkCache(cachePath, fileBytes, time.Duration(config.Get().Storage.CacheTTL)*time.Second)
 
 	return &shared.StorageDetail{
 		Type: shared.StorageTypeWebdav,
@@ -66,17 +59,17 @@ func (w *Webdav) Save(ctx context.Context, filePath string, storagePath string) 
 	}, nil
 }
 
-func (w *Webdav) GetFile(ctx context.Context, detail *shared.StorageDetail) ([]byte, error) {
-	cachePath := filepath.Join(config.Get().Storage.CacheDir, path.Base(detail.Path))
-	data, err := os.ReadFile(cachePath)
-	if err == nil {
-		return data, nil
-	}
-	data, err = w.client.Read(detail.Path)
+func (w *Webdav) GetFile(ctx context.Context, detail shared.StorageDetail) ([]byte, error) {
+	// cachePath := filepath.Join(config.Get().Storage.CacheDir, path.Base(detail.Path))
+	// data, err := os.ReadFile(cachePath)
+	// if err == nil {
+	// 	return data, nil
+	// }
+	data, err := w.client.Read(detail.Path)
 	if err != nil {
 		return nil, ErrReadFile
 	}
-	go osutil.MkCache(cachePath, data, time.Duration(config.Get().Storage.CacheTTL)*time.Second)
+	// go osutil.MkCache(cachePath, data, time.Duration(config.Get().Storage.CacheTTL)*time.Second)
 	return data, nil
 }
 
@@ -94,6 +87,6 @@ func (w *Webdav) GetFile(ctx context.Context, detail *shared.StorageDetail) ([]b
 // 	return steam, nil
 // }
 
-func (w *Webdav) Delete(ctx context.Context, detail *shared.StorageDetail) error {
+func (w *Webdav) Delete(ctx context.Context, detail shared.StorageDetail) error {
 	return w.client.Remove(detail.Path)
 }

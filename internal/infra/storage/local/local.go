@@ -3,6 +3,7 @@ package local
 import (
 	"context"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -32,9 +33,9 @@ func (l *Local) Init(ctx context.Context) error {
 	return nil
 }
 
-func (l *Local) Save(ctx context.Context, filePath string, storagePath string) (*shared.StorageDetail, error) {
+func (l *Local) Save(ctx context.Context, r io.Reader, storagePath string) (*shared.StorageDetail, error) {
 	storagePath = filepath.Join(l.basePath, storagePath)
-	fileBytes, err := os.ReadFile(filePath)
+	fileBytes, err := io.ReadAll(r)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read file: %w", err)
 	}
@@ -47,10 +48,10 @@ func (l *Local) Save(ctx context.Context, filePath string, storagePath string) (
 	}, nil
 }
 
-func (l *Local) GetFile(ctx context.Context, detail *shared.StorageDetail) ([]byte, error) {
+func (l *Local) GetFile(ctx context.Context, detail shared.StorageDetail) ([]byte, error) {
 	return os.ReadFile(detail.Path)
 }
 
-func (l *Local) Delete(ctx context.Context, detail *shared.StorageDetail) error {
+func (l *Local) Delete(ctx context.Context, detail shared.StorageDetail) error {
 	return osutil.PurgeFile(detail.Path)
 }
