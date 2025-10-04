@@ -14,7 +14,7 @@ type Artist struct {
 	Username string                `gorm:"type:text;not null;index" json:"username"`
 
 	// reverse relation
-	Artworks []*Artwork `gorm:"foreignKey:ArtistID" json:"artworks"`
+	Artworks []*Artwork `gorm:"foreignKey:ArtistID" json:"-"` // json ignore to avoid circular reference
 }
 
 func (a *Artist) BeforeCreate(tx *gorm.DB) (err error) {

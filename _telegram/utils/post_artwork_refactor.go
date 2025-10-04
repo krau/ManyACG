@@ -8,12 +8,14 @@ import (
 	"strings"
 	"time"
 
+	"github.com/samber/oops"
+
 	"github.com/google/uuid"
 	"github.com/krau/ManyACG/common"
 	"github.com/krau/ManyACG/common/imgtool"
 	"github.com/krau/ManyACG/config"
 	"github.com/krau/ManyACG/errs"
-	"github.com/krau/ManyACG/internal/infra/database"
+	"github.com/krau/ManyACG/internal/common/httpclient"
 	"github.com/krau/ManyACG/internal/model/command"
 	"github.com/krau/ManyACG/internal/model/entity"
 	"github.com/krau/ManyACG/internal/shared"
@@ -31,11 +33,10 @@ import (
 
 func SendArtworkMediaGroup(ctx context.Context, bot *telego.Bot, chatID telego.ChatID, artwork *entity.Artwork) ([]telego.Message, error) {
 	if bot == nil {
-		return nil, errs.ErrNilBot
+		return nil, oops.New("bot is nil")
 	}
 	if artwork == nil {
-		common.Logger.Fatal("Artwork is nil")
-		return nil, errs.ErrNilArtwork
+		return nil, oops.New("artwork is nil")
 	}
 	if len(artwork.Pictures) <= 10 {
 		inputMediaPhotos, err := GetArtworkInputMediaPhotos(ctx, artwork, 0, len(artwork.Pictures))
@@ -157,7 +158,7 @@ func GetArtworkInputMediaPhotos(ctx context.Context, artwork *entity.Artwork, st
 }
 
 func PostAndCreateArtwork(ctx context.Context, artwork *command.ArtworkCreation, bot *telego.Bot, fromID int64, messageID int) error {
-	artworkInDB, err := database.Default().GetArtworkByURL(ctx, artwork.SourceURL)
+	artworkInDB, err := service.Default().GetArtworkByURL(ctx, artwork.SourceURL)
 	if err == nil && artworkInDB != nil {
 		common.Logger.Debugf("Artwork %s already exists", artwork.Title)
 		return fmt.Errorf("post artwork %s error: %w", artwork.Title, errs.ErrArtworkAlreadyExist)
@@ -165,7 +166,7 @@ func PostAndCreateArtwork(ctx context.Context, artwork *command.ArtworkCreation,
 	if err != nil && !errors.Is(err, mongo.ErrNoDocuments) {
 		return err
 	}
-	if database.Default().CheckDeletedByURL(ctx, artwork.SourceURL) {
+	if service.Default().CheckDeletedByURL(ctx, artwork.SourceURL) {
 		common.Logger.Debugf("Artwork %s is deleted", artwork.Title)
 		return fmt.Errorf("post artwork %s error: %w", artwork.Title, errs.ErrArtworkDeleted)
 	}
@@ -188,7 +189,8 @@ func PostAndCreateArtwork(ctx context.Context, artwork *command.ArtworkCreation,
 				),
 			})
 		}
-		info, err := storage.SaveAll(ctx, artwork, picture)
+		fileBytes, err := httpclient.DownloadWithCache(ctx, picture.Original, nil)
+		info, err := service.Default().StorageSaveAll(ctx, artwork, picture)
 		if err != nil {
 			common.Logger.Errorf("saving picture %d of artwork %s: %s", i, artwork.Title, err)
 			return fmt.Errorf("saving picture %d of artwork %s: %w", i, artwork.Title, err)

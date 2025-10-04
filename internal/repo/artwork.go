@@ -20,6 +20,7 @@ type Artwork interface {
 
 type DeletedRecord interface {
 	CheckDeletedByURL(ctx context.Context, url string) bool
+	CreateDeletedRecord(ctx context.Context, record *entity.DeletedRecord) error
 }
 
 type CachedArtwork interface {

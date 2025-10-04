@@ -192,3 +192,10 @@ func (s *Service) GetAdminGroupIDs(ctx context.Context) ([]int64, error) {
 	}
 	return groupIDs, nil
 }
+
+
+// some simple wrappers
+
+func (s *Service) GetAdminByTelegramID(ctx context.Context, tgid int64) (*entity.Admin, error) {
+	return s.repos.Admin().GetAdminByTelegramID(ctx, tgid)
+}

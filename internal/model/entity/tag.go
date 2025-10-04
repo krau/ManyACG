@@ -11,7 +11,7 @@ type Tag struct {
 	Alias []TagAlias            `gorm:"foreignKey:TagID;constraint:OnDelete:CASCADE" json:"alias"` // one-to-many relation
 
 	// reverse relation via many2many
-	Artworks []*Artwork `gorm:"many2many:artwork_tags" json:"artworks"`
+	Artworks []*Artwork `gorm:"many2many:artwork_tags" json:"-"`
 }
 
 type TagAlias struct {

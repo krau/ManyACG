@@ -1,6 +1,6 @@
 package runtimecfg
 
-type storageConfigs struct {
+type StorageConfig struct {
 	OriginalType  string                `toml:"original_type" mapstructure:"original_type" json:"original_type" yaml:"original_type"`
 	RegularType   string                `toml:"regular_type" mapstructure:"regular_type" json:"regular_type" yaml:"regular_type"`
 	RegularFormat string                `toml:"regular_format" mapstructure:"regular_format" json:"regular_format" yaml:"regular_format"`
@@ -8,14 +8,14 @@ type storageConfigs struct {
 	ThumbFormat   string                `toml:"thumb_format" mapstructure:"thumb_format" json:"thumb_format" yaml:"thumb_format"`
 	CacheDir      string                `toml:"cache_dir" mapstructure:"cache_dir" json:"cache_dir" yaml:"cache_dir"`
 	CacheTTL      uint                  `toml:"cache_ttl" mapstructure:"cache_ttl" json:"cache_ttl" yaml:"cache_ttl"`
-	Rules         []storageRuleConfig   `toml:"rules" mapstructure:"rules" json:"rules" yaml:"rules"`
+	Rules         []StorageRuleConfig   `toml:"rules" mapstructure:"rules" json:"rules" yaml:"rules"`
 	Webdav        StorageWebdavConfig   `toml:"webdav" mapstructure:"webdav" json:"webdav" yaml:"webdav"`
 	Local         StorageLocalConfig    `toml:"local" mapstructure:"local" json:"local" yaml:"local"`
 	Alist         StorageAlistConfig    `toml:"alist" mapstructure:"alist" json:"alist" yaml:"alist"`
 	Telegram      StorageTelegramConfig `toml:"telegram" mapstructure:"telegram" json:"telegram" yaml:"telegram"`
 }
 
-type storageRuleConfig struct {
+type StorageRuleConfig struct {
 	/*
 		Match: 进行 与 匹配
 		Replace: 依次进行替换

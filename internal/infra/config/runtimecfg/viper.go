@@ -10,41 +10,30 @@ import (
 )
 
 type Config struct {
-	Debug   bool   `toml:"debug" mapstructure:"debug" json:"debug" yaml:"debug"`
-	WSRVURL string `toml:"wsrv_url" mapstructure:"wsrv_url" json:"wsrv_url" yaml:"wsrv_url"`
+	App     AppConfig `toml:"app" mapstructure:"app" json:"app" yaml:"app"`
+	WSRVURL string    `toml:"wsrv_url" mapstructure:"wsrv_url" json:"wsrv_url" yaml:"wsrv_url"`
 	Web     struct {
 		Enable  bool   `toml:"enable" mapstructure:"enable" json:"enable" yaml:"enable"`
 		Address string `toml:"address" mapstructure:"address" json:"address" yaml:"address"`
 	} `toml:"web" mapstructure:"web" json:"web" yaml:"web"`
-	API      apiConfig      `toml:"api" mapstructure:"api" json:"api" yaml:"api"`
-	Auth     authConfig     `toml:"auth" mapstructure:"auth" json:"auth" yaml:"auth"`
-	Fetcher  fetcherConfig  `toml:"fetcher" mapstructure:"fetcher" json:"fetcher" yaml:"fetcher"`
-	Log      logConfig      `toml:"log" mapstructure:"log" json:"log" yaml:"log"`
-	Source   sourceConfigs  `toml:"source" mapstructure:"source" json:"source" yaml:"source"`
-	Storage  storageConfigs `toml:"storage" mapstructure:"storage" json:"storage" yaml:"storage"`
-	Telegram telegramConfig `toml:"telegram" mapstructure:"telegram" json:"telegram" yaml:"telegram"`
-	Database databaseConfig `toml:"database" mapstructure:"database" json:"database" yaml:"database"`
-	Search   SearchConfig   `toml:"search" mapstructure:"search" json:"search" yaml:"search"`
-	Tagging   TaggingConfig   `toml:"tagger" mapstructure:"tagger" json:"tagger" yaml:"tagger"`
+	API        apiConfig        `toml:"api" mapstructure:"api" json:"api" yaml:"api"`
+	Auth       authConfig       `toml:"auth" mapstructure:"auth" json:"auth" yaml:"auth"`
+	Fetcher    fetcherConfig    `toml:"fetcher" mapstructure:"fetcher" json:"fetcher" yaml:"fetcher"`
+	Log        logConfig        `toml:"log" mapstructure:"log" json:"log" yaml:"log"`
+	Telegram   TelegramConfig   `toml:"telegram" mapstructure:"telegram" json:"telegram" yaml:"telegram"`
+	HttpClient HttpClientConfig `toml:"http_client" mapstructure:"http_client" json:"http_client" yaml:"http_client"`
+
 	// infrastructures config
-	Cache CacheConfig `toml:"cache" mapstructure:"cache" json:"cache" yaml:"cache"`
+	Cache    CacheConfig    `toml:"cache" mapstructure:"cache" json:"cache" yaml:"cache"`
+	Search   SearchConfig   `toml:"search" mapstructure:"search" json:"search" yaml:"search"`
+	Tagging  TaggingConfig  `toml:"tagger" mapstructure:"tagger" json:"tagger" yaml:"tagger"`
+	Database databaseConfig `toml:"database" mapstructure:"database" json:"database" yaml:"database"`
+	Source   SourceConfig   `toml:"source" mapstructure:"source" json:"source" yaml:"source"`
+	Storage  StorageConfig  `toml:"storage" mapstructure:"storage" json:"storage" yaml:"storage"`
 }
 
-type CacheConfig struct {
-	Type       string `toml:"type" mapstructure:"type" json:"type" yaml:"type"`
-	DefaultTTL int    `toml:"default_ttl" mapstructure:"default_ttl" json:"default_ttl" yaml:"default_ttl"` // seconds
-	// bigcache, ristretto(default), redis
-	BigCache struct {
-		Eviction int `toml:"eviction" mapstructure:"eviction" json:"eviction" yaml:"eviction"` // seconds
-	} `toml:"bigcache" mapstructure:"bigcache" json:"bigcache" yaml:"bigcache"`
-	Ristretto struct {
-		NumCounters int64 `toml:"num_counters" mapstructure:"num_counters" json:"num_counters" yaml:"num_counters"`
-		MaxCost     int64 `toml:"max_cost" mapstructure:"max_cost" json:"max_cost" yaml:"max_cost"`
-		BufferItems int64 `toml:"buffer_items" mapstructure:"buffer_items" json:"buffer_items" yaml:"buffer_items"`
-	} `toml:"ristretto" mapstructure:"ristretto" json:"ristretto" yaml:"ristretto"`
-	Redis struct {
-		InitAddress []string `toml:"init_address" mapstructure:"init_address" json:"init_address" yaml:"init_address"`
-	}
+type AppConfig struct {
+	Debug bool `toml:"debug" mapstructure:"debug" json:"debug" yaml:"debug"`
 }
 
 type fetcherConfig struct {

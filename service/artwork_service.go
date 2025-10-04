@@ -164,3 +164,45 @@ func (s *Service) UpdateArtworkTagsByURL(ctx context.Context, sourceURL string, 
 		return repos.Artwork().UpdateArtworkTags(ctx, awEnt.ID, tagEnts)
 	})
 }
+
+func (s *Service) GetArtworkByURL(ctx context.Context, sourceURL string) (*entity.Artwork, error) {
+	return s.repos.Artwork().GetArtworkByURL(ctx, sourceURL)
+}
+
+func (s *Service) DeleteArtworkByURL(ctx context.Context, sourceURL string) error {
+	awEnt, err := s.repos.Artwork().GetArtworkByURL(ctx, sourceURL)
+	if err != nil {
+		return err
+	}
+	err = s.repos.Transaction(ctx, func(repos repo.Repositories) error {
+		err := repos.DeletedRecord().CreateDeletedRecord(ctx, &entity.DeletedRecord{
+			SourceURL: sourceURL,
+		})
+		if err != nil {
+			return err
+		}
+		return repos.Artwork().DeleteArtworkByID(ctx, awEnt.ID)
+	})
+	return err
+}
+
+func (s *Service) GetArtworkByID(ctx context.Context, id objectuuid.ObjectUUID) (*entity.Artwork, error) {
+	return s.repos.Artwork().GetArtworkByID(ctx, id)
+}
+
+func (s *Service) DeleteArtworkByID(ctx context.Context, id objectuuid.ObjectUUID) error {
+	awEnt, err := s.repos.Artwork().GetArtworkByID(ctx, id)
+	if err != nil {
+		return err
+	}
+	err = s.repos.Transaction(ctx, func(repos repo.Repositories) error {
+		err := repos.DeletedRecord().CreateDeletedRecord(ctx, &entity.DeletedRecord{
+			SourceURL: awEnt.SourceURL,
+		})
+		if err != nil {
+			return err
+		}
+		return repos.Artwork().DeleteArtworkByID(ctx, id)
+	})
+	return err
+}

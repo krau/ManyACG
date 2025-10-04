@@ -12,8 +12,23 @@ type charmLog struct {
 	file    *log.Logger
 }
 
+func toCharmLevel(l Level) log.Level {
+	switch l {
+	case LevelDebug:
+		return log.DebugLevel
+	case LevelInfo:
+		return log.InfoLevel
+	case LevelWarn:
+		return log.WarnLevel
+	case LevelError:
+		return log.ErrorLevel
+	case LevelFatal:
+		return log.FatalLevel
+	}
+	return log.InfoLevel
+}
+
 func CharmLog(cfg Config) Logger {
-	cfg.ApplyDefaults()
 	lj := &lumberjack.Logger{
 		Filename:   cfg.LogFile,
 		MaxSize:    cfg.MaxSize,
@@ -26,7 +41,7 @@ func CharmLog(cfg Config) Logger {
 		Formatter:       log.TextFormatter,
 		ReportCaller:    true,
 		ReportTimestamp: true,
-		Level:           log.DebugLevel,
+		Level:           toCharmLevel(cfg.Level),
 		CallerFormatter: log.ShortCallerFormatter,
 		CallerOffset:    1,
 		TimeFunction:    nowLocal,
@@ -37,7 +52,7 @@ func CharmLog(cfg Config) Logger {
 		Formatter:       log.JSONFormatter,
 		ReportCaller:    true,
 		ReportTimestamp: true,
-		Level:           log.DebugLevel,
+		Level:           toCharmLevel(cfg.FileLevel),
 		CallerFormatter: log.ShortCallerFormatter,
 		CallerOffset:    1,
 		TimeFunction:    nowLocal,
@@ -73,4 +88,34 @@ func (c *charmLog) Error(msg any, args ...any) {
 func (c *charmLog) Fatal(msg any, args ...any) {
 	c.console.Fatal(msg, args...)
 	c.file.Fatal(msg, args...)
+}
+
+// Debugf implements Logger.
+func (c *charmLog) Debugf(format string, args ...any) {
+	c.console.Debugf(format, args...)
+	c.file.Debugf(format, args...)
+}
+
+// Errorf implements Logger.
+func (c *charmLog) Errorf(format string, args ...any) {
+	c.console.Errorf(format, args...)
+	c.file.Errorf(format, args...)
+}
+
+// Fatalf implements Logger.
+func (c *charmLog) Fatalf(format string, args ...any) {
+	c.console.Fatalf(format, args...)
+	c.file.Fatalf(format, args...)
+}
+
+// Infof implements Logger.
+func (c *charmLog) Infof(format string, args ...any) {
+	c.console.Infof(format, args...)
+	c.file.Infof(format, args...)
+}
+
+// Warnf implements Logger.
+func (c *charmLog) Warnf(format string, args ...any) {
+	c.console.Warnf(format, args...)
+	c.file.Warnf(format, args...)
 }

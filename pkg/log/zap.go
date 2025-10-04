@@ -12,9 +12,26 @@ type zapLogger struct {
 	logger *zap.Logger
 }
 
+func toZapLevel(l Level) zapcore.Level {
+	switch l {
+	case LevelDebug:
+		return zapcore.DebugLevel
+	case LevelInfo:
+		return zapcore.InfoLevel
+	case LevelWarn:
+		return zapcore.WarnLevel
+	case LevelError:
+		return zapcore.ErrorLevel
+	case LevelFatal:
+		return zapcore.FatalLevel
+	}
+	return zapcore.InfoLevel
+}
+
 func ZapLog(cfg Config) Logger {
 	cfg.ApplyDefaults()
-	level := zapcore.DebugLevel
+	consoleLevel := toZapLevel(cfg.Level)
+	fileLevel := toZapLevel(cfg.FileLevel)
 	consoleEncoder := zapcore.NewConsoleEncoder(zap.NewDevelopmentEncoderConfig())
 	consoleWriter := zapcore.Lock(os.Stdout)
 
@@ -28,8 +45,8 @@ func ZapLog(cfg Config) Logger {
 	fileEncoder := zapcore.NewJSONEncoder(zap.NewProductionEncoderConfig())
 
 	core := zapcore.NewTee(
-		zapcore.NewCore(consoleEncoder, consoleWriter, level),
-		zapcore.NewCore(fileEncoder, fileWriter, level),
+		zapcore.NewCore(consoleEncoder, consoleWriter, consoleLevel),
+		zapcore.NewCore(fileEncoder, fileWriter, fileLevel),
 	)
 
 	logger := zap.New(core, zap.AddCaller(), zap.AddCallerSkip(1))
@@ -54,4 +71,29 @@ func (z *zapLogger) Error(msg any, args ...any) {
 
 func (z *zapLogger) Fatal(msg any, args ...any) {
 	z.logger.Sugar().Fatalw(toString(msg), args...)
+}
+
+// Debugf implements Logger.
+func (z *zapLogger) Debugf(format string, args ...any) {
+	z.logger.Sugar().Debugf(format, args...)
+}
+
+// Errorf implements Logger.
+func (z *zapLogger) Errorf(format string, args ...any) {
+	z.logger.Sugar().Errorf(format, args...)
+}
+
+// Fatalf implements Logger.
+func (z *zapLogger) Fatalf(format string, args ...any) {
+	z.logger.Sugar().Fatalf(format, args...)
+}
+
+// Infof implements Logger.
+func (z *zapLogger) Infof(format string, args ...any) {
+	z.logger.Sugar().Infof(format, args...)
+}
+
+// Warnf implements Logger.
+func (z *zapLogger) Warnf(format string, args ...any) {
+	z.logger.Sugar().Warnf(format, args...)
 }

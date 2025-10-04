@@ -4,13 +4,9 @@ import (
 	"context"
 
 	"github.com/duke-git/lancet/v2/slice"
-	"github.com/krau/ManyACG/dao"
 	"github.com/krau/ManyACG/internal/model/entity"
 	"github.com/krau/ManyACG/internal/repo"
 	"github.com/krau/ManyACG/pkg/objectuuid"
-	"github.com/krau/ManyACG/types"
-
-	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 // Deprecated: MessageID 现在可能为 0
@@ -22,37 +18,37 @@ import (
 // 	return pictureModel.ToPicture(), nil
 // }
 
-func GetPictureByID(ctx context.Context, id primitive.ObjectID) (*types.Picture, error) {
-	pictureModel, err := dao.GetPictureByID(ctx, id)
-	if err != nil {
-		return nil, err
-	}
-	return pictureModel.ToPicture(), nil
-}
+// func GetPictureByID(ctx context.Context, id primitive.ObjectID) (*types.Picture, error) {
+// 	pictureModel, err := dao.GetPictureByID(ctx, id)
+// 	if err != nil {
+// 		return nil, err
+// 	}
+// 	return pictureModel.ToPicture(), nil
+// }
 
-func GetRandomPictures(ctx context.Context, limit int) ([]*types.Picture, error) {
-	pictures, err := dao.GetRandomPictures(ctx, limit)
-	if err != nil {
-		return nil, err
-	}
-	var result []*types.Picture
-	for _, picture := range pictures {
-		result = append(result, picture.ToPicture())
-	}
-	return result, nil
-}
+// func GetRandomPictures(ctx context.Context, limit int) ([]*types.Picture, error) {
+// 	pictures, err := dao.GetRandomPictures(ctx, limit)
+// 	if err != nil {
+// 		return nil, err
+// 	}
+// 	var result []*types.Picture
+// 	for _, picture := range pictures {
+// 		result = append(result, picture.ToPicture())
+// 	}
+// 	return result, nil
+// }
 
-func UpdatePictureTelegramInfo(ctx context.Context, picture *types.Picture, telegramInfo *types.TelegramInfo) error {
-	pictureModel, err := dao.GetPictureByOriginal(ctx, picture.Original)
-	if err != nil {
-		return err
-	}
-	_, err = dao.UpdatePictureTelegramInfoByID(ctx, pictureModel.ID, telegramInfo)
-	if err != nil {
-		return err
-	}
-	return nil
-}
+// func UpdatePictureTelegramInfo(ctx context.Context, picture *types.Picture, telegramInfo *types.TelegramInfo) error {
+// 	pictureModel, err := dao.GetPictureByOriginal(ctx, picture.Original)
+// 	if err != nil {
+// 		return err
+// 	}
+// 	_, err = dao.UpdatePictureTelegramInfoByID(ctx, pictureModel.ID, telegramInfo)
+// 	if err != nil {
+// 		return err
+// 	}
+// 	return nil
+// }
 
 /*
 通过消息删除 Picture

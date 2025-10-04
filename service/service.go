@@ -1,13 +1,22 @@
 package service
 
 import (
+	"context"
+	"log"
+	"sync"
+
 	"github.com/krau/ManyACG/internal/infra/search"
+	"github.com/krau/ManyACG/internal/infra/source"
+	"github.com/krau/ManyACG/internal/infra/storage"
 	"github.com/krau/ManyACG/internal/repo"
+	"github.com/krau/ManyACG/internal/shared"
 )
 
 type Service struct {
 	repos    repo.Repositories
 	searcher search.Searcher
+	storages map[shared.StorageType]storage.Storage
+	sources  map[shared.SourceType]source.ArtworkSource
 }
 
 type Option func(*Service)
@@ -15,16 +24,47 @@ type Option func(*Service)
 func NewService(
 	repos repo.Repositories,
 	searcher search.Searcher,
+	storageMap map[shared.StorageType]storage.Storage,
+	sourceMap map[shared.SourceType]source.ArtworkSource,
 	opts ...Option,
 ) *Service {
 	s := &Service{
 		repos:    repos,
 		searcher: searcher,
+		storages: storageMap,
+		sources:  sourceMap,
 	}
 	for _, opt := range opts {
 		opt(s)
 	}
 	return s
+}
+
+var (
+	defaultService *Service
+	defaultOnce    sync.Once
+)
+
+func SetDefault(s *Service) { defaultOnce.Do(func() { defaultService = s }) }
+
+func Default() *Service {
+	if defaultService == nil {
+		log.Fatal("service: Default service is not set")
+	}
+	return defaultService
+}
+
+type serviceCtxKey struct{}
+
+func WithContext(ctx context.Context, serv *Service) context.Context {
+	return context.WithValue(ctx, serviceCtxKey{}, serv)
+}
+
+func FromContext(ctx context.Context) *Service {
+	if serv, ok := ctx.Value(serviceCtxKey{}).(*Service); ok {
+		return serv
+	}
+	return Default()
 }
 
 // func InitService(ctx context.Context) {

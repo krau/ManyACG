@@ -3,6 +3,7 @@ package storage
 import (
 	"context"
 	"fmt"
+	"maps"
 	"sync"
 
 	"github.com/krau/ManyACG/internal/shared"
@@ -36,4 +37,12 @@ func InitAll(ctx context.Context) error {
 		storages[storageType] = storage
 	}
 	return nil
+}
+
+func Storages() map[shared.StorageType]Storage {
+	factoryMu.RLock()
+	defer factoryMu.RUnlock()
+	stors := make(map[shared.StorageType]Storage)
+	maps.Copy(stors, storages)
+	return stors
 }
