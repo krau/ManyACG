@@ -4,8 +4,7 @@ import (
 	"fmt"
 	"runtime"
 
-	"github.com/krau/ManyACG/common"
-
+	"github.com/krau/ManyACG/internal/common/version"
 	"github.com/spf13/cobra"
 )
 
@@ -24,5 +23,5 @@ func init() {
 
 func ShowVersion() {
 	fmt.Printf("ManyACG version: %s %s/%s\nBuildTime: %s, Commit: %s\n",
-		common.Version, runtime.GOOS, runtime.GOARCH, common.BuildTime, common.Commit)
+		version.Version, runtime.GOOS, runtime.GOARCH, version.BuildTime, version.Commit)
 }

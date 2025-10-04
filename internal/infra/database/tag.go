@@ -69,3 +69,28 @@ func (d *DB) DeleteTagByID(ctx context.Context, id objectuuid.ObjectUUID) error 
 	}
 	return nil
 }
+
+// MigrateTagAlias implements repo.Tag.
+func (d *DB) MigrateTagAlias(ctx context.Context, aliasTagID objectuuid.ObjectUUID, targetTagID objectuuid.ObjectUUID) error {
+	// 迁移 artwork 中的 tag
+	// 			if err := rawtx.WithContext(ctx).
+	// 				Exec(`DELETE FROM artwork_tags WHERE tag_id = ?`, aliasTag.ID).Error; err != nil {
+	// 				return err
+	// 			}
+	// 			if err := rawtx.WithContext(ctx).Exec(`
+	//     INSERT INTO artwork_tags (artwork_id, tag_id)
+	//     SELECT artwork_id, ?
+	//     FROM artwork_tags
+	//     WHERE tag_id = ?
+	//       AND artwork_id NOT IN (
+	//           SELECT artwork_id FROM artwork_tags WHERE tag_id = ?
+	//       )
+	// `, tag.ID, aliasTag.ID, tag.ID).Error; err != nil {
+	// 				return err
+	// 			}
+	// 			// 删除别名对应的 tag
+	// 			if err := tx.DeleteTagByID(ctx, aliasTag.ID); err != nil {
+	// 				return err
+	// 			}
+	panic("unimplemented")
+}

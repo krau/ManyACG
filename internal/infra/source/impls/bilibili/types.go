@@ -5,8 +5,9 @@ import (
 	"fmt"
 	"strconv"
 
+	"github.com/krau/ManyACG/internal/model/dto"
+	"github.com/krau/ManyACG/internal/shared"
 	"github.com/krau/ManyACG/pkg/strutil"
-	"github.com/krau/ManyACG/types"
 )
 
 type BilibiliWebDynamicApiResp struct {
@@ -56,7 +57,7 @@ type BilibiliWebDynamicApiSummary struct {
 	Text string `json:"text"`
 }
 
-func (resp *BilibiliWebDynamicApiResp) ToArtwork() (*types.Artwork, error) {
+func (resp *BilibiliWebDynamicApiResp) ToArtwork() (*dto.FetchedArtwork, error) {
 	if resp.Code != 0 {
 		return nil, errors.New(resp.Message + " (code: " + fmt.Sprint(resp.Code) + ")")
 	}
@@ -83,9 +84,9 @@ func (resp *BilibiliWebDynamicApiResp) ToArtwork() (*types.Artwork, error) {
 
 	pics := opus.Pics
 	summary := opus.Summary
-	pictures := make([]*types.Picture, 0, len(pics))
+	pictures := make([]*dto.FetchedPicture, 0, len(pics))
 	for i, pic := range pics {
-		pictures = append(pictures, &types.Picture{
+		pictures = append(pictures, &dto.FetchedPicture{
 			Index:     uint(i),
 			Original:  pic.Url,
 			Width:     uint(pic.Width),
@@ -97,16 +98,16 @@ func (resp *BilibiliWebDynamicApiResp) ToArtwork() (*types.Artwork, error) {
 	if title == "" {
 		title = "bilibili/" + item.IdStr
 	}
-	artwork := &types.Artwork{
+	artwork := &dto.FetchedArtwork{
 		Title:       title,
 		Description: summary.Text,
-		SourceType:  types.SourceTypeBilibili,
+		SourceType:  shared.SourceTypeBilibili,
 		SourceURL:   "https://t.bilibili.com/" + item.IdStr,
 		R18:         false,
-		Artist: &types.Artist{
+		Artist: &dto.FetchedArtist{
 			Name:     author.Name,
 			Username: author.Name,
-			Type:     types.SourceTypeBilibili,
+			Type:     shared.SourceTypeBilibili,
 			UID:      strconv.Itoa(author.Mid),
 		},
 		Pictures: pictures,
@@ -181,7 +182,7 @@ type BilibiliDesktopDynamicApiDrawItem struct {
 	Tags   []string `json:"tags"`
 }
 
-func (resp *BilibiliDesktopDynamicApiResp) ToArtwork() (*types.Artwork, error) {
+func (resp *BilibiliDesktopDynamicApiResp) ToArtwork() (*dto.FetchedArtwork, error) {
 	if resp.Code != 0 {
 		return nil, errors.New(resp.Message + " (code: " + fmt.Sprint(resp.Code) + ")")
 	}
@@ -201,8 +202,8 @@ func (resp *BilibiliDesktopDynamicApiResp) ToArtwork() (*types.Artwork, error) {
 		return nil, ErrInvalidURL
 	}
 
-	artwork := &types.Artwork{
-		SourceType: types.SourceTypeBilibili,
+	artwork := &dto.FetchedArtwork{
+		SourceType: shared.SourceTypeBilibili,
 		Title:      "bilibili/" + item.IdStr,
 		SourceURL:  "https://t.bilibili.com/" + item.IdStr,
 	}
@@ -219,10 +220,10 @@ func (resp *BilibiliDesktopDynamicApiResp) ToArtwork() (*types.Artwork, error) {
 			if author.Name == "" || author.Mid == 0 {
 				return nil, ErrInvalidURL
 			}
-			artwork.Artist = &types.Artist{
+			artwork.Artist = &dto.FetchedArtist{
 				Name:     author.Name,
 				Username: author.Name,
-				Type:     types.SourceTypeBilibili,
+				Type:     shared.SourceTypeBilibili,
 				UID:      strconv.Itoa(author.Mid),
 			}
 		case "MODULE_TYPE_DESC":
@@ -239,12 +240,12 @@ func (resp *BilibiliDesktopDynamicApiResp) ToArtwork() (*types.Artwork, error) {
 			if dynamic.DynDraw == nil || len(dynamic.DynDraw.Items) == 0 {
 				return nil, ErrInvalidURL
 			}
-			pictures := make([]*types.Picture, 0, len(dynamic.DynDraw.Items))
+			pictures := make([]*dto.FetchedPicture, 0, len(dynamic.DynDraw.Items))
 			for i, item := range dynamic.DynDraw.Items {
 				if item.Src == "" {
 					return nil, ErrInvalidURL
 				}
-				pictures = append(pictures, &types.Picture{
+				pictures = append(pictures, &dto.FetchedPicture{
 					Index:     uint(i),
 					Original:  item.Src,
 					Width:     uint(item.Width),
@@ -263,8 +264,8 @@ func (resp *BilibiliDesktopDynamicApiResp) ToArtwork() (*types.Artwork, error) {
 	return artwork, nil
 }
 
-func checkArtworkField(artwork *types.Artwork) error {
-	if artwork.SourceType != types.SourceTypeBilibili {
+func checkArtworkField(artwork *dto.FetchedArtwork) error {
+	if artwork.SourceType != shared.SourceTypeBilibili {
 		return fmt.Errorf("%w: %v", ErrInvalidArtwork, artwork.SourceType)
 	}
 	if artwork.SourceURL == "" || artwork.Title == "" {

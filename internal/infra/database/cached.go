@@ -5,6 +5,7 @@ import (
 
 	"github.com/krau/ManyACG/internal/model/entity"
 	"github.com/krau/ManyACG/internal/shared"
+	"github.com/krau/ManyACG/pkg/objectuuid"
 	"gorm.io/gorm"
 )
 
@@ -37,6 +38,17 @@ func (d *DB) DeleteCachedArtworkByURL(ctx context.Context, sourceUrl string) err
 	return nil
 }
 
+func (d *DB) DeleteCachedArtworkByID(ctx context.Context, id objectuuid.ObjectUUID) error {
+	n, err := gorm.G[entity.CachedArtwork](d.db).Where("id = ?", id).Delete(ctx)
+	if err != nil {
+		return err
+	}
+	if n == 0 {
+		return gorm.ErrRecordNotFound
+	}
+	return nil
+}
+
 func (d *DB) SaveCachedArtwork(ctx context.Context, artwork *entity.CachedArtwork) (*entity.CachedArtwork, error) {
 	err := d.db.WithContext(ctx).Save(artwork).Error
 	if err != nil {
@@ -47,4 +59,14 @@ func (d *DB) SaveCachedArtwork(ctx context.Context, artwork *entity.CachedArtwor
 
 func (d *DB) ResetPostingCachedArtworkStatus(ctx context.Context) error {
 	return d.db.WithContext(ctx).Model(&entity.CachedArtwork{}).Where("status = ?", shared.ArtworkStatusPosting).Update("status", shared.ArtworkStatusCached).Error
+}
+
+// GetCachedArtworkByID implements repo.CachedArtwork.
+func (d *DB) GetCachedArtworkByID(ctx context.Context, id objectuuid.ObjectUUID) (*entity.CachedArtwork, error) {
+	panic("unimplemented")
+}
+
+// UpdateCachedArtworkStatusByID implements repo.CachedArtwork.
+func (d *DB) UpdateCachedArtworkStatusByID(ctx context.Context, id objectuuid.ObjectUUID, status shared.ArtworkStatus) (*entity.CachedArtwork, error) {
+	panic("unimplemented")
 }

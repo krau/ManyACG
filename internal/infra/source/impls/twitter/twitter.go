@@ -9,15 +9,12 @@ import (
 	"github.com/krau/ManyACG/internal/infra/source"
 	"github.com/krau/ManyACG/internal/model/dto"
 	"github.com/krau/ManyACG/internal/shared"
-	"github.com/krau/ManyACG/types"
 )
 
 type Twitter struct {
 	cfg       runtimecfg.SourceTwitterConfig
 	reqClient *req.Client
 }
-
-var service types.Service
 
 func init() {
 	source.Register(shared.SourceTypeTwitter, func() source.ArtworkSource {

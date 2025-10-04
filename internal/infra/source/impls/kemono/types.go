@@ -7,7 +7,8 @@ import (
 	"strings"
 
 	"github.com/duke-git/lancet/v2/slice"
-	"github.com/krau/ManyACG/types"
+	"github.com/krau/ManyACG/internal/model/dto"
+	"github.com/krau/ManyACG/internal/shared"
 )
 
 type KemonoPostResp struct {
@@ -48,14 +49,14 @@ type KemonoPreview struct {
 
 var htmlRe = regexp.MustCompile("<[^>]+>")
 
-func (resp *KemonoPostResp) ToArtwork() (*types.Artwork, error) {
+func (resp *KemonoPostResp) ToArtwork() (*dto.FetchedArtwork, error) {
 	postResp := resp.Post
 	creatorResp, err := getAuthorProfile(postResp.Service, postResp.User)
 	if err != nil {
 		return nil, err
 	}
-	artist := &types.Artist{
-		Type:     types.SourceTypeKemono,
+	artist := &dto.FetchedArtist{
+		Type:     shared.SourceTypeKemono,
 		Name:     creatorResp.Name,
 		Username: postResp.Service + "_" + creatorResp.PubilcID,
 		UID:      creatorResp.ID,
@@ -67,7 +68,7 @@ func (resp *KemonoPostResp) ToArtwork() (*types.Artwork, error) {
 		}
 		picCdnMap[preview.Path] = preview.Server
 	}
-	pictures := make([]*types.Picture, 0)
+	pictures := make([]*dto.FetchedPicture, 0)
 	if isImage(postResp.File.Path) {
 		thumbnailUrl, err := url.JoinPath(thumbnailsBase, postResp.File.Path)
 		if err != nil {
@@ -77,7 +78,7 @@ func (resp *KemonoPostResp) ToArtwork() (*types.Artwork, error) {
 		if err != nil {
 			return nil, fmt.Errorf("failed to join original path: %w", err)
 		}
-		pictures = append(pictures, &types.Picture{
+		pictures = append(pictures, &dto.FetchedPicture{
 			Index:     0,
 			Thumbnail: thumbnailUrl,
 			Original:  originalUrl,
@@ -95,7 +96,7 @@ func (resp *KemonoPostResp) ToArtwork() (*types.Artwork, error) {
 		if err != nil {
 			return nil, fmt.Errorf("failed to join original path: %w", err)
 		}
-		pictures = append(pictures, &types.Picture{
+		pictures = append(pictures, &dto.FetchedPicture{
 			Index:     uint(i + 1),
 			Thumbnail: thumbnailUrl,
 			Original:  originalUrl,
@@ -104,17 +105,17 @@ func (resp *KemonoPostResp) ToArtwork() (*types.Artwork, error) {
 	if len(pictures) == 0 {
 		return nil, ErrNotPicture
 	}
-	pictures = slice.UniqueByComparator(pictures, func(item, other *types.Picture) bool {
+	pictures = slice.UniqueByComparator(pictures, func(item, other *dto.FetchedPicture) bool {
 		return item.Original == other.Original
 	})
 	for i, pic := range pictures {
 		pic.Index = uint(i)
 	}
-	artwork := &types.Artwork{
+	artwork := &dto.FetchedArtwork{
 		Title:       postResp.Title,
 		Description: htmlRe.ReplaceAllString(strings.ReplaceAll(postResp.Content, "<br/>", "\n"), ""),
 		R18:         false,
-		SourceType:  types.SourceTypeKemono,
+		SourceType:  shared.SourceTypeKemono,
 		SourceURL:   fmt.Sprintf("https://kemono.cr/%s/user/%s/post/%s", postResp.Service, postResp.User, postResp.ID),
 		Artist:      artist,
 		Tags:        postResp.Tags,

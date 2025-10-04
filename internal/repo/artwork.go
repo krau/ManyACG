@@ -16,9 +16,10 @@ type Artwork interface {
 	UpdateArtworkByMap(ctx context.Context, id objectuuid.ObjectUUID, patch map[string]any) error
 	UpdateArtworkTags(ctx context.Context, id objectuuid.ObjectUUID, tags []*entity.Tag) error
 	UpdateArtworkPictures(ctx context.Context, id objectuuid.ObjectUUID, pictures []*entity.Picture) error
-	ReorderArtworkPictures(ctx context.Context, id objectuuid.ObjectUUID) error
+	ReorderArtworkPicturesByID(ctx context.Context, id objectuuid.ObjectUUID) error
 	DeleteArtworkByID(ctx context.Context, id objectuuid.ObjectUUID) error
 	QueryArtworks(ctx context.Context, que query.ArtworksDB) ([]*entity.Artwork, error)
+	GetArtworksByIDs(ctx context.Context, ids []objectuuid.ObjectUUID) ([]*entity.Artwork, error)
 }
 
 type DeletedRecord interface {

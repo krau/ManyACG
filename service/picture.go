@@ -163,7 +163,7 @@ func (s *Service) DeletePictureByID(ctx context.Context, id objectuuid.ObjectUUI
 		if err := repos.Artwork().UpdateArtworkPictures(ctx, artwork.ID, newPictures); err != nil {
 			return err
 		}
-		return repos.Artwork().ReorderArtworkPictures(ctx, artwork.ID)
+		return repos.Artwork().ReorderArtworkPicturesByID(ctx, artwork.ID)
 	})
 	return err
 }

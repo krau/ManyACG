@@ -247,26 +247,7 @@ func (s *Service) AddTagAlias(ctx context.Context, tagID objectuuid.ObjectUUID, 
 					return err
 				}
 			}
-			// 迁移 artwork 中的 tag
-			// 			if err := rawtx.WithContext(ctx).
-			// 				Exec(`DELETE FROM artwork_tags WHERE tag_id = ?`, aliasTag.ID).Error; err != nil {
-			// 				return err
-			// 			}
-			// 			if err := rawtx.WithContext(ctx).Exec(`
-			//     INSERT INTO artwork_tags (artwork_id, tag_id)
-			//     SELECT artwork_id, ?
-			//     FROM artwork_tags
-			//     WHERE tag_id = ?
-			//       AND artwork_id NOT IN (
-			//           SELECT artwork_id FROM artwork_tags WHERE tag_id = ?
-			//       )
-			// `, tag.ID, aliasTag.ID, tag.ID).Error; err != nil {
-			// 				return err
-			// 			}
-			// 			// 删除别名对应的 tag
-			// 			if err := tx.DeleteTagByID(ctx, aliasTag.ID); err != nil {
-			// 				return err
-			// 			}
+		
 			if err := repos.Tag().MigrateTagAlias(ctx, aliasTag.ID, tag.ID); err != nil {
 				return err
 			}

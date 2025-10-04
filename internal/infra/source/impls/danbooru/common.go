@@ -4,16 +4,17 @@ import (
 	"errors"
 	"regexp"
 
-	"github.com/krau/ManyACG/types"
+	"github.com/krau/ManyACG/internal/model/dto"
+	"github.com/krau/ManyACG/internal/shared"
 )
 
 var (
 	danbooruSourceURLRegexp = regexp.MustCompile(`danbooru\.donmai\.us/(posts|post\/show)/\d+`)
-	fakeArtist              = &types.Artist{
+	fakeArtist              = &dto.FetchedArtist{
 		Name:     "Danbooru",
 		Username: "Danbooru",
 		UID:      "1",
-		Type:     types.SourceTypeDanbooru,
+		Type:     shared.SourceTypeDanbooru,
 	}
 	ErrInvalidDanbooruPostURL = errors.New("invalid danbooru post url")
 	numberRegexp              = regexp.MustCompile(`\d+`)

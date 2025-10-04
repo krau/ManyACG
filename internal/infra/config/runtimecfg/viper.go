@@ -10,6 +10,11 @@ import (
 )
 
 type Config struct {
+	Migrate struct {
+		Target string `toml:"target" mapstructure:"target" json:"target" yaml:"target"`
+		DSN    string `toml:"dsn" mapstructure:"dsn" json:"dsn" yaml:"dsn"`
+	} `toml:"migrate" mapstructure:"migrate" json:"migrate" yaml:"migrate"`
+
 	App     AppConfig `toml:"app" mapstructure:"app" json:"app" yaml:"app"`
 	WSRVURL string    `toml:"wsrv_url" mapstructure:"wsrv_url" json:"wsrv_url" yaml:"wsrv_url"`
 	Web     struct {

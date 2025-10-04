@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/krau/ManyACG/internal/model/entity"
-	"github.com/krau/ManyACG/pkg/objectuuid"
 	"gorm.io/gorm"
 )
 
@@ -21,16 +20,16 @@ func (d *DB) CheckDeletedByURL(ctx context.Context, sourceURL string) bool {
 	return deleted != nil
 }
 
-func (d *DB) CreateDeleted(ctx context.Context, deleted *entity.DeletedRecord) (*objectuuid.ObjectUUID, error) {
+func (d *DB) CreateDeletedRecord(ctx context.Context, deleted *entity.DeletedRecord) error {
 	result := gorm.WithResult()
 	err := gorm.G[entity.DeletedRecord](d.db, result).Create(ctx, deleted)
 	if err != nil {
-		return nil, err
+		return err
 	}
-	return &deleted.ID, nil
+	return nil
 }
 
-func (d *DB) CancelDeletedByURL(ctx context.Context, sourceURL string) error {
+func (d *DB) DeleteDeletedByURL(ctx context.Context, sourceURL string) error {
 	n, err := gorm.G[entity.DeletedRecord](d.db).Where("source_url = ?", sourceURL).Delete(ctx)
 	if err != nil {
 		return err

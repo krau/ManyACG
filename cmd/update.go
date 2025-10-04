@@ -4,9 +4,8 @@ import (
 	"log"
 	"strings"
 
-	"github.com/krau/ManyACG/common"
-
 	"github.com/blang/semver"
+	"github.com/krau/ManyACG/internal/common/version"
 	"github.com/rhysd/go-github-selfupdate/selfupdate"
 	"github.com/spf13/cobra"
 )
@@ -25,7 +24,7 @@ func init() {
 }
 
 func Update() {
-	v := semver.MustParse(strings.TrimPrefix(common.Version, "v"))
+	v := semver.MustParse(strings.TrimPrefix(version.Version, "v"))
 	release, found, err := selfupdate.DetectLatest("krau/ManyACG")
 	if err != nil {
 		log.Println("Error occurred while detecting version:", err)
@@ -36,11 +35,11 @@ func Update() {
 		return
 	}
 	if release.Version.Equals(v) {
-		log.Println("Current binary is the latest version", common.Version)
+		log.Println("Current binary is the latest version", version.Version)
 		return
 	}
 	if release.Version.LT(v) {
-		log.Println("Current binary version", common.Version, "is newer than latest release", release.Version)
+		log.Println("Current binary version", version.Version, "is newer than latest release", release.Version)
 		return
 	}
 	// check major version
@@ -54,7 +53,7 @@ func Update() {
 		return
 	}
 	if latest.Version.Equals(v) {
-		log.Println("Current binary is the latest version", common.Version)
+		log.Println("Current binary is the latest version", version.Version)
 		return
 	}
 	log.Println("Successfully updated to version", latest.Version)

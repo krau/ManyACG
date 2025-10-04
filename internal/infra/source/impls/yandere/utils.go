@@ -10,16 +10,17 @@ import (
 	"strings"
 
 	"github.com/duke-git/lancet/v2/slice"
-	"github.com/krau/ManyACG/types"
+	"github.com/krau/ManyACG/internal/model/dto"
+	"github.com/krau/ManyACG/internal/shared"
 )
 
 var (
 	yandereSourceURLRegexp = regexp.MustCompile(`yande\.re/post/show/\d+`)
-	fakeArtist             = &types.Artist{
+	fakeArtist             = &dto.FetchedArtist{
 		Name:     "Yandere",
 		Username: "Yandere",
 		UID:      "1",
-		Type:     types.SourceTypeYandere,
+		Type:     shared.SourceTypeYandere,
 	}
 	sourceURLPrefix = "https://yande.re/post/show/"
 	apiBaseURL      = "https://yande.re/post.json?tags=parent:"
@@ -52,7 +53,7 @@ type YanderePostJsonResp struct {
 	ParentID  int    `json:"parent_id"`
 }
 
-func (resp YandereJsonResp) ToArtwork() *types.Artwork {
+func (resp YandereJsonResp) ToArtwork() *dto.FetchedArtwork {
 	slices.SortFunc(resp, func(a, b YanderePostJsonResp) int {
 		if a.ParentID == 0 && b.ParentID != 0 {
 			return -1
@@ -63,7 +64,7 @@ func (resp YandereJsonResp) ToArtwork() *types.Artwork {
 		return cmp.Compare(a.ID, b.ID)
 	})
 
-	var pictures []*types.Picture
+	var pictures []*dto.FetchedPicture
 	var tags []string
 	var title, description, sourceURL string
 	gotParent := false
@@ -79,7 +80,7 @@ func (resp YandereJsonResp) ToArtwork() *types.Artwork {
 			gotParent = true
 		}
 		tags = append(tags, strings.Split(post.Tags, " ")...)
-		pictures = append(pictures, &types.Picture{
+		pictures = append(pictures, &dto.FetchedPicture{
 			Index:     uint(i),
 			Thumbnail: post.SampleURL,
 			Original:  post.FileURL,
@@ -90,11 +91,11 @@ func (resp YandereJsonResp) ToArtwork() *types.Artwork {
 
 	tags = slice.Unique(tags)
 
-	return &types.Artwork{
+	return &dto.FetchedArtwork{
 		Title:       title,
 		Description: description,
 		R18:         false,
-		SourceType:  types.SourceTypeYandere,
+		SourceType:  shared.SourceTypeYandere,
 		SourceURL:   sourceURL,
 		Artist:      fakeArtist,
 		Tags:        tags,

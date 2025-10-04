@@ -3,8 +3,10 @@ package service
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	"github.com/duke-git/lancet/v2/slice"
+	"github.com/krau/ManyACG/internal/infra/search"
 	"github.com/krau/ManyACG/internal/model/command"
 	"github.com/krau/ManyACG/internal/model/entity"
 	"github.com/krau/ManyACG/internal/model/query"
@@ -72,11 +74,7 @@ func (s *Service) CreateArtwork(ctx context.Context, cmd *command.ArtworkCreatio
 			if err != nil {
 				return err
 			}
-			resEnt, err := repos.Tag().GetTagByID(ctx, *res)
-			if err != nil {
-				return err
-			}
-			tagEnts = append(tagEnts, resEnt)
+			tagEnts = append(tagEnts, res)
 		}
 		// 创建 artwork
 		awEnt := &entity.Artwork{
@@ -155,11 +153,7 @@ func (s *Service) UpdateArtworkTagsByURL(ctx context.Context, sourceURL string, 
 			if err != nil {
 				return err
 			}
-			resEnt, err := repos.Tag().GetTagByID(ctx, *res)
-			if err != nil {
-				return err
-			}
-			tagEnts = append(tagEnts, resEnt)
+			tagEnts = append(tagEnts, res)
 			// [TODO] tag 排序
 		}
 		return repos.Artwork().UpdateArtworkTags(ctx, awEnt.ID, tagEnts)
@@ -218,4 +212,40 @@ func (s *Service) UpdateArtworkTitleByURL(ctx context.Context, sourceURL, title 
 
 func (s *Service) QueryArtworks(ctx context.Context, que query.ArtworksDB) ([]*entity.Artwork, error) {
 	return s.repos.Artwork().QueryArtworks(ctx, que)
+}
+
+func (s *Service) FindSimilarArtworks(ctx context.Context, que *query.ArtworkSimilar) ([]*entity.Artwork, error) {
+	if s.searcher == nil {
+		return nil, search.ErrNotEnabled
+	}
+	result, err := s.searcher.FindSimilarArtworks(ctx, que)
+	if err != nil {
+		return nil, fmt.Errorf("find similar artworks failed: %w", err)
+	}
+	if len(result.IDs) == 0 {
+		return []*entity.Artwork{}, nil
+	}
+	artworks, err := s.repos.Artwork().GetArtworksByIDs(ctx, result.IDs)
+	if err != nil {
+		return nil, fmt.Errorf("get artworks by ids failed: %w", err)
+	}
+	return artworks, nil
+}
+
+func (s *Service) SearchArtworks(ctx context.Context, que *query.ArtworkSearch) ([]*entity.Artwork, error) {
+	if s.searcher == nil {
+		return nil, search.ErrNotEnabled
+	}
+	result, err := s.searcher.SearchArtworks(ctx, que)
+	if err != nil {
+		return nil, fmt.Errorf("search artworks failed: %w", err)
+	}
+	if len(result.IDs) == 0 {
+		return []*entity.Artwork{}, nil
+	}
+	artworks, err := s.repos.Artwork().GetArtworksByIDs(ctx, result.IDs)
+	if err != nil {
+		return nil, fmt.Errorf("get artworks by ids failed: %w", err)
+	}
+	return artworks, nil
 }

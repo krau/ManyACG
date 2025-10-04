@@ -5,7 +5,6 @@ import (
 	"errors"
 	"sync"
 
-	"github.com/krau/ManyACG/errs"
 	"github.com/krau/ManyACG/internal/infra/config/runtimecfg"
 	"github.com/krau/ManyACG/internal/infra/search/meilisearch"
 	"github.com/krau/ManyACG/internal/model/dto"
@@ -22,6 +21,7 @@ var (
 	defaultSearcher Searcher
 	enabled         bool
 	once            sync.Once
+	ErrNotEnabled   = errors.New("search engine is not enabled")
 )
 
 func initDefault(ctx context.Context) {
@@ -47,11 +47,11 @@ func Enabled() bool {
 type noopSearcher struct{}
 
 func (s *noopSearcher) SearchArtworks(ctx context.Context, que *query.ArtworkSearch) (*dto.ArtworkSearchResult, error) {
-	return nil, errs.ErrSearchEngineUnavailable
+	return nil, ErrNotEnabled
 }
 
 func (s *noopSearcher) FindSimilarArtworks(ctx context.Context, que *query.ArtworkSimilar) (*dto.ArtworkSearchResult, error) {
-	return nil, errs.ErrSearchEngineUnavailable
+	return nil, ErrNotEnabled
 }
 
 func Default() Searcher {
@@ -62,7 +62,7 @@ func Default() Searcher {
 }
 
 func IsNotEnabledErr(err error) bool {
-	return errors.Is(err, errs.ErrSearchEngineUnavailable)
+	return errors.Is(err, ErrNotEnabled)
 }
 
 func getDefault(ctx context.Context) Searcher {
@@ -74,14 +74,14 @@ func getDefault(ctx context.Context) Searcher {
 
 func SearchArtworks(ctx context.Context, que *query.ArtworkSearch) (*dto.ArtworkSearchResult, error) {
 	if !enabled {
-		return nil, errs.ErrSearchEngineUnavailable
+		return nil, ErrNotEnabled
 	}
 	return getDefault(ctx).SearchArtworks(ctx, que)
 }
 
 func FindSimilarArtworks(ctx context.Context, que *query.ArtworkSimilar) (*dto.ArtworkSearchResult, error) {
 	if !enabled {
-		return nil, errs.ErrSearchEngineUnavailable
+		return nil, ErrNotEnabled
 	}
 	return getDefault(ctx).FindSimilarArtworks(ctx, que)
 }

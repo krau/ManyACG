@@ -1,6 +1,7 @@
 package source
 
 import (
+	"maps"
 	"sync"
 
 	"github.com/krau/ManyACG/internal/shared"
@@ -30,4 +31,12 @@ func InitAll() {
 		source := factory()
 		sources[sourceType] = source
 	}
+}
+
+func Sources() map[shared.SourceType]ArtworkSource {
+	factoryMu.RLock()
+	defer factoryMu.RUnlock()
+	ss := make(map[shared.SourceType]ArtworkSource)
+	maps.Copy(ss, sources)
+	return ss
 }

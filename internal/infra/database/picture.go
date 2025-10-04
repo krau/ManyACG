@@ -7,6 +7,7 @@ import (
 	"github.com/corona10/goimagehash"
 	"github.com/krau/ManyACG/internal/model/entity"
 	"github.com/krau/ManyACG/internal/model/query"
+	"github.com/krau/ManyACG/internal/shared"
 	"github.com/krau/ManyACG/pkg/objectuuid"
 	"gorm.io/gorm"
 )
@@ -82,4 +83,9 @@ func (d *DB) QueryPicturesByPhash(ctx context.Context, que query.PicturesPhash) 
 		}
 	}
 	return result, nil
+}
+
+// UpdatePictureTelegramInfoByID implements repo.Picture.
+func (d *DB) UpdatePictureTelegramInfoByID(ctx context.Context, id objectuuid.ObjectUUID, tgInfo *shared.TelegramInfo) (*entity.Picture, error) {
+	panic("unimplemented")
 }

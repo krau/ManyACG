@@ -8,7 +8,6 @@ import (
 	"github.com/krau/ManyACG/internal/infra/source"
 	"github.com/krau/ManyACG/internal/model/dto"
 	"github.com/krau/ManyACG/internal/shared"
-	"github.com/krau/ManyACG/types"
 
 	"github.com/imroc/req/v3"
 )
@@ -17,8 +16,6 @@ type Pixiv struct {
 	cfg       config.SourcePixivConfig
 	reqClient *req.Client
 }
-
-var service types.Service
 
 func init() {
 	source.Register(shared.SourceTypePixiv, func() source.ArtworkSource {

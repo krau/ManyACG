@@ -1,16 +1,5 @@
 package service
 
-import (
-	"context"
-	"fmt"
-
-	"github.com/krau/ManyACG/errs"
-	"github.com/krau/ManyACG/internal/infra/database"
-	"github.com/krau/ManyACG/internal/infra/search"
-	"github.com/krau/ManyACG/internal/model/entity"
-	"github.com/krau/ManyACG/internal/model/query"
-)
-
 // func HybridSearchArtworks(ctx context.Context, queryText string, hybridSemanticRatio float64, offset, limit int64, r18 types.R18Type, options ...*types.AdapterOption) ([]*types.Artwork, error) {
 // 	if common.MeilisearchClient == nil {
 // 		return nil, errs.ErrSearchEngineUnavailable
@@ -64,24 +53,6 @@ import (
 // 	}
 // 	return adapter.ConvertToArtworks(ctx, artworkModels, options...)
 // }
-
-func SearchArtworks(ctx context.Context, que *query.ArtworkSearch) ([]*entity.Artwork, error) {
-	if !search.Enabled() {
-		return nil, errs.ErrSearchEngineUnavailable
-	}
-	result, err := search.SearchArtworks(ctx, que)
-	if err != nil {
-		return nil, fmt.Errorf("search artworks failed: %w", err)
-	}
-	if len(result.IDs) == 0 {
-		return []*entity.Artwork{}, nil
-	}
-	artworks, err := database.Default().GetArtworksByIDs(ctx, result.IDs)
-	if err != nil {
-		return nil, fmt.Errorf("get artworks by ids failed: %w", err)
-	}
-	return artworks, nil
-}
 
 // func SearchSimilarArtworks(ctx context.Context, artworkIdStr string, offset, limit int64, r18 types.R18Type, options ...*types.AdapterOption) ([]*types.Artwork, error) {
 // 	if common.MeilisearchClient == nil {
@@ -168,21 +139,3 @@ func SearchArtworks(ctx context.Context, que *query.ArtworkSearch) ([]*entity.Ar
 // 	}
 // 	return adapter.ConvertToArtworks(ctx, artworkModels, options...)
 // }
-
-func FindSimilarArtworks(ctx context.Context, que *query.ArtworkSimilar) ([]*entity.Artwork, error) {
-	if !search.Enabled() {
-		return nil, errs.ErrSearchEngineUnavailable
-	}
-	result, err := search.FindSimilarArtworks(ctx, que)
-	if err != nil {
-		return nil, fmt.Errorf("find similar artworks failed: %w", err)
-	}
-	if len(result.IDs) == 0 {
-		return []*entity.Artwork{}, nil
-	}
-	artworks, err := database.Default().GetArtworksByIDs(ctx, result.IDs)
-	if err != nil {
-		return nil, fmt.Errorf("get artworks by ids failed: %w", err)
-	}
-	return artworks, nil
-}

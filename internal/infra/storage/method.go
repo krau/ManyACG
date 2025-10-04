@@ -1,23 +1,5 @@
 package storage
 
-import (
-	"context"
-
-	"github.com/krau/ManyACG/types"
-)
-
-func DeleteAll(ctx context.Context, info *types.StorageInfo) error {
-	panic("unimplemented")
-}
-
-func GetFile(ctx context.Context, detail *types.StorageDetail) ([]byte, error) {
-	panic("unimplemented")
-}
-
-func SaveAll(ctx context.Context, artwork *types.Artwork, picture *types.Picture) (*types.StorageInfo, error) {
-	panic("unimplemented")
-}
-
 // // 保存图片的所有尺寸
 // func SaveAll(ctx context.Context, artwork *types.Artwork, picture *types.Picture) (*types.StorageInfo, error) {
 // 	if len(Storages) == 0 {
