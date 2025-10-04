@@ -25,4 +25,7 @@ type DeletedRecord interface {
 
 type CachedArtwork interface {
 	ResetPostingCachedArtworkStatus(ctx context.Context) error
+	DeleteCachedArtworkByID(ctx context.Context, id objectuuid.ObjectUUID) error
+	GetCachedArtworkByID(ctx context.Context, id objectuuid.ObjectUUID) (*entity.CachedArtwork, error)
+	GetCachedArtworkByURL(ctx context.Context, url string) (*entity.CachedArtwork, error)
 }

@@ -206,3 +206,11 @@ func (s *Service) DeleteArtworkByID(ctx context.Context, id objectuuid.ObjectUUI
 	})
 	return err
 }
+
+func (s *Service) UpdateArtworkTitleByURL(ctx context.Context, sourceURL, title string) error {
+	awEnt, err := s.repos.Artwork().GetArtworkByURL(ctx, sourceURL)
+	if err != nil {
+		return err
+	}
+	return s.repos.Artwork().UpdateArtworkByMap(ctx, awEnt.ID, map[string]any{"title": title})
+}
