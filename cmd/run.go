@@ -16,6 +16,7 @@ import (
 	"github.com/krau/ManyACG/internal/infra/search"
 	"github.com/krau/ManyACG/internal/infra/source"
 	"github.com/krau/ManyACG/internal/infra/storage"
+	"github.com/krau/ManyACG/internal/interface/telegram"
 	"github.com/krau/ManyACG/pkg/log"
 	"github.com/krau/ManyACG/service"
 )
@@ -54,7 +55,13 @@ func Run() {
 	if err := storage.InitAll(ctx); err != nil {
 		log.Fatal(err)
 	}
+	database.Init(ctx)
 	serv := service.NewService(database.Default(), search.Default(), storage.Storages(), source.Sources(), runtimecfg.Get().Storage)
+	botapp, err := telegram.Init(ctx, serv)
+	if err != nil {
+		log.Fatal(err)
+	}
+	go botapp.Run(ctx, serv)
 
 	log.Info("ManyACG is running !")
 
@@ -65,7 +72,7 @@ func Run() {
 	if err := serv.Cleanup(cleanCtx); err != nil {
 		log.Error(err)
 	}
-	cleanCacheDir(runtimecfg.Get())
+	// cleanCacheDir(runtimecfg.Get())
 }
 
 func cleanCacheDir(cfg runtimecfg.Config) {

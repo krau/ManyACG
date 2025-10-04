@@ -43,7 +43,7 @@ func CharmLog(cfg Config) Logger {
 		ReportTimestamp: true,
 		Level:           toCharmLevel(cfg.Level),
 		CallerFormatter: log.ShortCallerFormatter,
-		CallerOffset:    1,
+		CallerOffset:    2,
 		TimeFunction:    nowLocal,
 		TimeFormat:      log.DefaultTimeFormat,
 	})
@@ -54,7 +54,7 @@ func CharmLog(cfg Config) Logger {
 		ReportTimestamp: true,
 		Level:           toCharmLevel(cfg.FileLevel),
 		CallerFormatter: log.ShortCallerFormatter,
-		CallerOffset:    1,
+		CallerOffset:    2,
 		TimeFunction:    nowLocal,
 		TimeFormat:      log.DefaultTimeFormat,
 	})

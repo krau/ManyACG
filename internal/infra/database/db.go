@@ -8,7 +8,9 @@ import (
 	"github.com/krau/ManyACG/internal/model/entity"
 	"github.com/krau/ManyACG/internal/repo"
 	"github.com/krau/ManyACG/pkg/log"
+	_ "github.com/ncruces/go-sqlite3/embed"
 	"github.com/ncruces/go-sqlite3/gormlite"
+
 	"gorm.io/driver/mysql"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -74,7 +76,13 @@ func (d *DB) Transaction(ctx context.Context, fn func(repos repo.Repositories) e
 func Default() *DB {
 	if defaultDB == nil {
 		initOnce.Do(func() {
-			initDB(context.Background())
+			okCh := make(chan struct{})
+			initDB(context.Background(), okCh)
+			select {
+			case <-context.Background().Done():
+				log.Fatal("Database initialization canceled")
+			case <-okCh:
+			}
 		})
 	}
 	return defaultDB
@@ -82,11 +90,17 @@ func Default() *DB {
 
 func Init(ctx context.Context) {
 	initOnce.Do(func() {
-		initDB(ctx)
+		okCh := make(chan struct{})
+		go initDB(ctx, okCh)
+		select {
+		case <-ctx.Done():
+			log.Fatal("Database initialization canceled")
+		case <-okCh:
+		}
 	})
 }
 
-func initDB(ctx context.Context) {
+func initDB(ctx context.Context, okCh chan struct{}) {
 	log.Info("Initializing database...")
 	dbType := runtimecfg.Get().Database.Type
 	dsn := runtimecfg.Get().Database.DSN
@@ -102,13 +116,12 @@ func initDB(ctx context.Context) {
 		db, err = gorm.Open(mysql.Open(dsn))
 	default:
 		log.Fatal("unsupported database type", "type", dbType)
-		return
 	}
 	if err != nil {
 		log.Fatal("failed to connect database", "err", err)
-		return
 	}
 	err = db.AutoMigrate(
+		&entity.Admin{},
 		&entity.Artist{},
 		&entity.Tag{},
 		&entity.TagAlias{},
@@ -121,17 +134,16 @@ func initDB(ctx context.Context) {
 	)
 	if err != nil {
 		log.Fatal("failed to migrate database", "err", err)
-		return
 	}
 	sqlDB, err := db.DB()
 	if err != nil {
 		log.Fatal("failed to get database instance", "err", err)
-		return
 	}
 	if err := sqlDB.PingContext(ctx); err != nil {
 		log.Fatal("failed to ping database", "err", err)
-		return
 	}
 	defaultDB = &DB{db: db}
 	log.Info("Database initialized")
+
+	okCh <- struct{}{}
 }

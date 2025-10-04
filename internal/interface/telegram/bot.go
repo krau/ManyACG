@@ -25,7 +25,7 @@ type BotApp struct {
 	channelAvailable bool          // 是否可以发布到频道
 }
 
-func Init(ctx context.Context) (*BotApp, error) {
+func Init(ctx context.Context, serv *service.Service) (*BotApp, error) {
 	log.Info("Initialize telegram client")
 	cfg := runtimecfg.Get().Telegram
 	var err error
@@ -74,76 +74,78 @@ func Init(ctx context.Context) (*BotApp, error) {
 	}
 	botUsername := me.Username
 
-	bot.SetMyCommands(ctx, &telego.SetMyCommandsParams{
-		Commands: CommonCommands,
-		Scope:    &telego.BotCommandScopeDefault{Type: telego.ScopeTypeDefault},
-	})
+	go func() {
 
-	allCommands := append(CommonCommands, AdminCommands...)
+		bot.SetMyCommands(ctx, &telego.SetMyCommandsParams{
+			Commands: CommonCommands,
+			Scope:    &telego.BotCommandScopeDefault{Type: telego.ScopeTypeDefault},
+		})
 
-	serv := service.FromContext(ctx)
+		allCommands := append(CommonCommands, AdminCommands...)
 
-	adminUserIDs, err := serv.GetAdminUserIDs(ctx)
-	if err != nil {
-		log.Warnf("Error when getting admin user IDs: %s", err)
-	} else {
-		for _, adminID := range adminUserIDs {
-			bot.SetMyCommands(ctx, &telego.SetMyCommandsParams{
-				Commands: allCommands,
-				Scope: &telego.BotCommandScopeChat{
-					Type:   telego.ScopeTypeChat,
-					ChatID: telegoutil.ID(adminID),
-				},
-			})
-			if cfg.GroupID == 0 {
-				continue
+		adminUserIDs, err := serv.GetAdminUserIDs(ctx)
+		if err != nil {
+			log.Warnf("Error when getting admin user IDs: %s", err)
+		} else {
+			for _, adminID := range adminUserIDs {
+				bot.SetMyCommands(ctx, &telego.SetMyCommandsParams{
+					Commands: allCommands,
+					Scope: &telego.BotCommandScopeChat{
+						Type:   telego.ScopeTypeChat,
+						ChatID: telegoutil.ID(adminID),
+					},
+				})
+				if cfg.GroupID == 0 {
+					continue
+				}
+				bot.SetMyCommands(ctx, &telego.SetMyCommandsParams{
+					Commands: allCommands,
+					Scope: &telego.BotCommandScopeChatMember{
+						Type:   telego.ScopeTypeChat,
+						ChatID: groupChatID,
+						UserID: adminID,
+					},
+				})
 			}
-			bot.SetMyCommands(ctx, &telego.SetMyCommandsParams{
-				Commands: allCommands,
-				Scope: &telego.BotCommandScopeChatMember{
-					Type:   telego.ScopeTypeChat,
-					ChatID: groupChatID,
-					UserID: adminID,
-				},
-			})
-		}
-		for _, adminID := range adminUserIDs {
-			bot.SetMyCommands(ctx, &telego.SetMyCommandsParams{
-				Commands: allCommands,
-				Scope: &telego.BotCommandScopeChat{
-					Type:   telego.ScopeTypeChat,
-					ChatID: telegoutil.ID(adminID),
-				},
-			})
-			if cfg.GroupID == 0 {
-				continue
+			for _, adminID := range adminUserIDs {
+				bot.SetMyCommands(ctx, &telego.SetMyCommandsParams{
+					Commands: allCommands,
+					Scope: &telego.BotCommandScopeChat{
+						Type:   telego.ScopeTypeChat,
+						ChatID: telegoutil.ID(adminID),
+					},
+				})
+				if cfg.GroupID == 0 {
+					continue
+				}
+				bot.SetMyCommands(ctx, &telego.SetMyCommandsParams{
+					Commands: allCommands,
+					Scope: &telego.BotCommandScopeChatMember{
+						Type:   telego.ScopeTypeChat,
+						ChatID: groupChatID,
+						UserID: adminID,
+					},
+				})
 			}
-			bot.SetMyCommands(ctx, &telego.SetMyCommandsParams{
-				Commands: allCommands,
-				Scope: &telego.BotCommandScopeChatMember{
-					Type:   telego.ScopeTypeChat,
-					ChatID: groupChatID,
-					UserID: adminID,
-				},
-			})
+
 		}
 
-	}
-
-	adminGroupIDs, err := serv.GetAdminGroupIDs(ctx)
-	if err != nil {
-		log.Warnf("Error when getting admin group IDs: %s", err)
-	} else {
-		for _, adminID := range adminGroupIDs {
-			bot.SetMyCommands(ctx, &telego.SetMyCommandsParams{
-				Commands: allCommands,
-				Scope: &telego.BotCommandScopeChat{
-					Type:   telego.ScopeTypeChat,
-					ChatID: telegoutil.ID(adminID),
-				},
-			})
+		adminGroupIDs, err := serv.GetAdminGroupIDs(ctx)
+		if err != nil {
+			log.Warnf("Error when getting admin group IDs: %s", err)
+		} else {
+			for _, adminID := range adminGroupIDs {
+				bot.SetMyCommands(ctx, &telego.SetMyCommandsParams{
+					Commands: allCommands,
+					Scope: &telego.BotCommandScopeChat{
+						Type:   telego.ScopeTypeChat,
+						ChatID: telegoutil.ID(adminID),
+					},
+				})
+			}
 		}
-	}
+	}()
+
 	return &BotApp{
 		Bot:              bot,
 		channelChatID:    channelChatID,
@@ -153,7 +155,7 @@ func Init(ctx context.Context) (*BotApp, error) {
 	}, nil
 }
 
-func (app *BotApp) Run(ctx context.Context) {
+func (app *BotApp) Run(ctx context.Context, serv *service.Service) {
 	log.Info("Start polling")
 	updates, err := app.Bot.UpdatesViaLongPolling(ctx, &telego.GetUpdatesParams{
 		Offset: -1,
@@ -191,7 +193,7 @@ func (app *BotApp) Run(ctx context.Context) {
 	handlers.New(&metautil.MetaData{
 		ChannelChatID: app.channelChatID,
 		BotUsername:   app.botUsername,
-	}, service.FromContext(ctx)).Register(baseGroup)
+	}, serv).Register(baseGroup)
 	if err := botHandler.Start(); err != nil {
 		log.Fatalf("Error when starting bot handler: %s", err)
 	}
@@ -202,5 +204,4 @@ func (app *BotApp) Run(ctx context.Context) {
 	if err := botHandler.StopWithContext(stopCtx); err != nil {
 		log.Warnf("Error when stopping bot handler: %s", err)
 	}
-	log.Info("Stopped bot handler")
 }

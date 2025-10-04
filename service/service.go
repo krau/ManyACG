@@ -2,7 +2,6 @@ package service
 
 import (
 	"context"
-	"log"
 	"sync"
 
 	"github.com/krau/ManyACG/internal/infra/config/runtimecfg"
@@ -11,6 +10,7 @@ import (
 	"github.com/krau/ManyACG/internal/infra/storage"
 	"github.com/krau/ManyACG/internal/repo"
 	"github.com/krau/ManyACG/internal/shared"
+	"github.com/krau/ManyACG/pkg/log"
 )
 
 type Service struct {
@@ -18,7 +18,7 @@ type Service struct {
 	searcher search.Searcher
 	storages map[shared.StorageType]storage.Storage
 	sources  map[shared.SourceType]source.ArtworkSource
-	storCfg      runtimecfg.StorageConfig
+	storCfg  runtimecfg.StorageConfig
 }
 
 type Option func(*Service)
@@ -36,7 +36,7 @@ func NewService(
 		searcher: searcher,
 		storages: storageMap,
 		sources:  sourceMap,
-		storCfg:      storCfg,
+		storCfg:  storCfg,
 	}
 	for _, opt := range opts {
 		opt(s)
@@ -60,14 +60,17 @@ func Default() *Service {
 
 type serviceCtxKey struct{}
 
+var contextKey = serviceCtxKey{}
+
 func WithContext(ctx context.Context, serv *Service) context.Context {
-	return context.WithValue(ctx, serviceCtxKey{}, serv)
+	return context.WithValue(ctx, contextKey, serv)
 }
 
 func FromContext(ctx context.Context) *Service {
-	if serv, ok := ctx.Value(serviceCtxKey{}).(*Service); ok {
+	if serv, ok := ctx.Value(contextKey).(*Service); ok {
 		return serv
 	}
+
 	return Default()
 }
 

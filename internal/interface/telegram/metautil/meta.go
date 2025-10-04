@@ -20,6 +20,8 @@ func (m *MetaData) ChannelAvailable() bool {
 
 type MetaDataCtxKey struct{}
 
+var contextKey = MetaDataCtxKey{}
+
 func NewMetaData(channelChatID telego.ChatID, botUsername string) *MetaData {
 	return &MetaData{
 		ChannelChatID:    channelChatID,
@@ -29,14 +31,14 @@ func NewMetaData(channelChatID telego.ChatID, botUsername string) *MetaData {
 }
 
 func FromContext(ctx context.Context) *MetaData {
-	if meta, ok := ctx.Value(MetaDataCtxKey{}).(*MetaData); ok {
+	if meta, ok := ctx.Value(contextKey).(*MetaData); ok {
 		return meta
 	}
 	return &MetaData{}
 }
 
 func WithContext(ctx context.Context, meta *MetaData) context.Context {
-	return context.WithValue(ctx, MetaDataCtxKey{}, meta)
+	return context.WithValue(ctx, contextKey, meta)
 }
 
 func (m *MetaData) BotDeepLink(cmd string, params ...string) string {
