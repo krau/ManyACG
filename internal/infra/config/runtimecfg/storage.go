@@ -4,7 +4,9 @@ type StorageConfig struct {
 	OriginalType  string                `toml:"original_type" mapstructure:"original_type" json:"original_type" yaml:"original_type"`
 	RegularType   string                `toml:"regular_type" mapstructure:"regular_type" json:"regular_type" yaml:"regular_type"`
 	RegularFormat string                `toml:"regular_format" mapstructure:"regular_format" json:"regular_format" yaml:"regular_format"`
+	RegularLength int                   `toml:"regular_length" mapstructure:"regular_length" json:"regular_length" yaml:"regular_length"`
 	ThumbType     string                `toml:"thumb_type" mapstructure:"thumb_type" json:"thumb_type" yaml:"thumb_type"`
+	ThumbLength   int                   `toml:"thumb_length" mapstructure:"thumb_length" json:"thumb_length" yaml:"thumb_length"`
 	ThumbFormat   string                `toml:"thumb_format" mapstructure:"thumb_format" json:"thumb_format" yaml:"thumb_format"`
 	CacheDir      string                `toml:"cache_dir" mapstructure:"cache_dir" json:"cache_dir" yaml:"cache_dir"`
 	CacheTTL      uint                  `toml:"cache_ttl" mapstructure:"cache_ttl" json:"cache_ttl" yaml:"cache_ttl"`
@@ -63,5 +65,5 @@ type StorageTelegramConfig struct {
 	Token  string         `toml:"token" mapstructure:"token" json:"token" yaml:"token"`
 	ChatID int64          `toml:"chat_id" mapstructure:"chat_id" json:"chat_id" yaml:"chat_id"`
 	ApiUrl string         `toml:"api_url" mapstructure:"api_url" json:"api_url" yaml:"api_url"`
-	Retry  botRetryConfig `toml:"retry" mapstructure:"retry" json:"retry" yaml:"retry"`
+	Retry  BotRetryConfig `toml:"retry" mapstructure:"retry" json:"retry" yaml:"retry"`
 }

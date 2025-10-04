@@ -36,16 +36,22 @@ func getCachePath(url string) string {
 	return filepath.Join(runtimecfg.Get().Storage.CacheDir, "req", strutil.MD5Hash(url))
 }
 
-func DownloadWithCache(ctx context.Context, url string, client *req.Client) ([]byte, error) {
+// DownloadWithCache downloads a file with caching. If the file is already cached, it returns the cached file.
+//
+// It returns the file, a cleanup function to remove the file after a certain duration, and an error if any.
+func DownloadWithCache(ctx context.Context, url string, client *req.Client) (
+	*os.File,
+	func(),
+	error,
+) {
 	once.Do(initDefaultClient)
 	if client == nil {
 		client = defaultClient
 	}
 
 	cachePath := getCachePath(url)
-	data, err := os.ReadFile(cachePath)
-	if err == nil {
-		return data, nil
+	if file, err := os.Open(cachePath); err == nil {
+		return file, nil, nil
 	}
 
 	lock, _ := cacheLocks.LoadOrStore(url, &sync.Mutex{})
@@ -57,14 +63,22 @@ func DownloadWithCache(ctx context.Context, url string, client *req.Client) ([]b
 
 	resp, err := client.R().SetContext(ctx).Get(url)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	if resp.IsErrorState() {
-		return nil, fmt.Errorf("http error: %d", resp.GetStatusCode())
+		return nil, nil, fmt.Errorf("http error: %d", resp.GetStatusCode())
 	}
-	data = resp.Bytes()
-	osutil.MkCache(cachePath, data, time.Duration(runtimecfg.Get().Storage.CacheTTL)*time.Second)
-	return data, nil
+	// osutil.MkCache(cachePath, resp.Bytes(), time.Duration(runtimecfg.Get().Storage.CacheTTL)*time.Second)
+	if osutil.MkFile(cachePath, resp.Bytes()) != nil {
+		return nil, nil, err
+	}
+	file, err := os.Open(cachePath)
+	if err != nil {
+		return nil, nil, err
+	}
+	return file, func() {
+		go osutil.RmFileAfter(cachePath, time.Duration(runtimecfg.Get().Storage.CacheTTL)*time.Second)
+	}, nil
 }
 
 func GetBodyReader(ctx context.Context, url string, client *req.Client) (io.ReadCloser, error) {

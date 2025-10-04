@@ -46,10 +46,11 @@ func TestCompressImageByVIPS(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := CompressImage(tt.input, tt.output, tt.format, tt.maxEdgeLength)
+			file, err := CompressImage(tt.input, tt.output, tt.format, tt.maxEdgeLength)
 			if err != nil {
 				t.Fatalf("CompressImageByVIPS() error = %v", err)
 			}
+			file.Close()
 		})
 	}
 }

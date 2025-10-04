@@ -30,6 +30,48 @@ type Artwork struct {
 	Pictures []*Picture `gorm:"foreignKey:ArtworkID;constraint:OnDelete:CASCADE" json:"pictures"`
 }
 
+// GetArtistName implements ArtworkLike.
+func (a *Artwork) GetArtistName() string {
+	return a.Artist.Name
+}
+
+// GetDescription implements ArtworkLike.
+func (a *Artwork) GetDescription() string {
+	return a.Description
+}
+
+// GetPictures implements ArtworkLike.
+func (a *Artwork) GetPictures() []PictureLike {
+	var pictures []PictureLike
+	for _, pic := range a.Pictures {
+		pictures = append(pictures, pic)
+	}
+	return pictures
+}
+
+// GetSourceURL implements ArtworkLike.
+func (a *Artwork) GetSourceURL() string {
+	return a.SourceURL
+}
+
+// GetTags implements ArtworkLike.
+func (a *Artwork) GetTags() []string {
+	var tags []string
+	for _, tag := range a.Tags {
+		tags = append(tags, tag.Name)
+	}
+	return tags
+}
+
+// GetTitle implements ArtworkLike.
+func (a *Artwork) GetTitle() string {
+	return a.Title
+}
+
+func (a *Artwork) GetR18() bool {
+	return a.R18
+}
+
 func (a *Artwork) BeforeCreate(tx *gorm.DB) (err error) {
 	if a.ID == objectuuid.Nil {
 		a.ID = objectuuid.New()

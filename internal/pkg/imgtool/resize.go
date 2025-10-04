@@ -46,20 +46,32 @@ func GetImageSize(img image.Image) (int, int, error) {
 	return bounds.Dx(), bounds.Dy(), nil
 }
 
-func CompressImage(inputPath, outputPath, format string, maxEdgeLength int) error {
+func CompressImage(inputPath, outputPath, format string, maxEdgeLength int) (*os.File, error) {
 	if _, ok := vipsFormat[format]; ok {
 		fmt.Printf("Using vips to compress image: %s , %s , %s\n", inputPath, outputPath, format)
-		return compressImageVIPS(inputPath, outputPath, format, maxEdgeLength)
+		err := compressImageVIPS(inputPath, outputPath, format, maxEdgeLength)
+		if err != nil {
+			return nil, fmt.Errorf("failed to compress image with vips: %w", err)
+		}
+		return os.Open(outputPath)
 	}
 	if ffmpegAvailable {
 		fmt.Printf("Using ffmpeg to compress image: %s , %s , %s\n", inputPath, outputPath, format)
-		return compressImageByFFmpeg(inputPath, outputPath, maxEdgeLength)
+		err := compressImageByFFmpeg(inputPath, outputPath, maxEdgeLength)
+		if err != nil {
+			return nil, fmt.Errorf("failed to compress image with ffmpeg: %w", err)
+		}
+		return os.Open(outputPath)
 	}
 	if _, ok := nativeFormat[format]; ok {
 		fmt.Printf("Using native to compress image: %s , %s , %s\n", inputPath, outputPath, format)
-		return compressImageNative(inputPath, outputPath, format, maxEdgeLength)
+		err := compressImageNative(inputPath, outputPath, format, maxEdgeLength)
+		if err != nil {
+			return nil, fmt.Errorf("failed to compress image with native: %w", err)
+		}
+		return os.Open(outputPath)
 	}
-	return fmt.Errorf("unsupported image format: %s", format)
+	return nil, fmt.Errorf("unsupported image format: %s", format)
 }
 
 func CompressImageForTelegram(input []byte) ([]byte, error) {

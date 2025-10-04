@@ -29,6 +29,31 @@ type Picture struct {
 	UpdatedAt time.Time `gorm:"autoUpdateTime" json:"updated_at"`
 }
 
+// GetOriginal implements PictureLike.
+func (p *Picture) GetOriginal() string {
+	return p.Original
+}
+
+// GetSize implements PictureLike.
+func (p *Picture) GetSize() (width uint, height uint) {
+	return p.Width, p.Height
+}
+
+// GetStorageInfo implements PictureLike.
+func (p *Picture) GetStorageInfo() shared.StorageInfo {
+	return p.StorageInfo.Data()
+}
+
+// GetTelegramInfo implements PictureLike.
+func (p *Picture) GetTelegramInfo() shared.TelegramInfo {
+	return p.TelegramInfo.Data()
+}
+
+// GetThumbnail implements PictureLike.
+func (p *Picture) GetThumbnail() string {
+	return p.Thumbnail
+}
+
 func (p *Picture) BeforeCreate(tx *gorm.DB) (err error) {
 	if p.ID == objectuuid.Nil {
 		p.ID = objectuuid.New()

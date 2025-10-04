@@ -1,7 +1,5 @@
 package service
 
-import "context"
-
 // func DeleteDeletedByURL(ctx context.Context, sourceURL string) error {
 // 	// _, err := dao.DeleteDeletedByURL(ctx, sourceURL)
 // 	// if err != nil {
@@ -25,6 +23,3 @@ import "context"
 // 	return deleted, nil
 // }
 
-func (s *Service) CheckDeletedByURL(ctx context.Context, sourceURL string) bool {
-	return s.repos.DeletedRecord().CheckDeletedByURL(ctx, sourceURL)
-}

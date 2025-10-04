@@ -5,6 +5,7 @@ import (
 	"log"
 	"sync"
 
+	"github.com/krau/ManyACG/internal/infra/config/runtimecfg"
 	"github.com/krau/ManyACG/internal/infra/search"
 	"github.com/krau/ManyACG/internal/infra/source"
 	"github.com/krau/ManyACG/internal/infra/storage"
@@ -17,6 +18,7 @@ type Service struct {
 	searcher search.Searcher
 	storages map[shared.StorageType]storage.Storage
 	sources  map[shared.SourceType]source.ArtworkSource
+	storCfg      runtimecfg.StorageConfig
 }
 
 type Option func(*Service)
@@ -26,6 +28,7 @@ func NewService(
 	searcher search.Searcher,
 	storageMap map[shared.StorageType]storage.Storage,
 	sourceMap map[shared.SourceType]source.ArtworkSource,
+	storCfg runtimecfg.StorageConfig,
 	opts ...Option,
 ) *Service {
 	s := &Service{
@@ -33,6 +36,7 @@ func NewService(
 		searcher: searcher,
 		storages: storageMap,
 		sources:  sourceMap,
+		storCfg:      storCfg,
 	}
 	for _, opt := range opts {
 		opt(s)

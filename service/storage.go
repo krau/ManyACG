@@ -2,8 +2,14 @@ package service
 
 import (
 	"context"
+	"io"
+	"os"
+	"path"
+	"path/filepath"
+	"strings"
 
 	"github.com/krau/ManyACG/internal/infra/storage"
+	"github.com/krau/ManyACG/internal/pkg/imgtool"
 	"github.com/krau/ManyACG/internal/shared"
 	"github.com/samber/oops"
 )
@@ -36,4 +42,67 @@ func (s *Service) StorageDeleteByInfo(ctx context.Context, info shared.StorageIn
 		}
 	}
 	return nil
+}
+
+func (s *Service) StorageSaveAllSize(ctx context.Context, file *os.File, storDirPath, fileName string) (*shared.StorageInfo, error) {
+	if len(s.storages) == 0 {
+		return nil, oops.New("no storage configured")
+	}
+	var originalDetail, regularDetail, thumbDetail *shared.StorageDetail
+	file.Seek(0, io.SeekStart)
+	if s.storCfg.OriginalType != "" {
+		origStor := s.storages[shared.StorageType(s.storCfg.OriginalType)]
+		if origStor == nil {
+			return nil, oops.Errorf("original storage type %s not found", s.storCfg.OriginalType)
+		}
+		origPath := path.Join(storDirPath, fileName)
+		var err error
+		originalDetail, err = origStor.Save(ctx, file, origPath)
+		if err != nil {
+			return nil, oops.Wrapf(err, "failed to save original file to storage %s", s.storCfg.OriginalType)
+		}
+	}
+	file.Seek(0, io.SeekStart)
+	compressedFile, err := imgtool.CompressImage(file.Name(), filepath.Join(s.storCfg.CacheDir, "compress", fileName), s.storCfg.RegularFormat, s.storCfg.RegularLength)
+	if err != nil {
+		return nil, oops.Wrapf(err, "failed to compress image for regular storage %s", s.storCfg.RegularType)
+	}
+	defer os.Remove(compressedFile.Name())
+	defer compressedFile.Close()
+	if s.storCfg.RegularType != "" {
+		regStor := s.storages[shared.StorageType(s.storCfg.RegularType)]
+		if regStor == nil {
+			return nil, oops.Errorf("regular storage type %s not found", s.storCfg.RegularType)
+		}
+		regPath := path.Join(storDirPath, strings.Split(fileName, ".")[0]+"_regular"+path.Ext(fileName))
+		var err error
+		regularDetail, err = regStor.Save(ctx, compressedFile, regPath)
+		if err != nil {
+			return nil, oops.Wrapf(err, "failed to save regular file to storage %s", s.storCfg.RegularType)
+		}
+	}
+	file.Seek(0, io.SeekStart)
+	compressedFile, err = imgtool.CompressImage(file.Name(), filepath.Join(s.storCfg.CacheDir, "compress", fileName), s.storCfg.ThumbFormat, s.storCfg.ThumbLength)
+	if err != nil {
+		return nil, oops.Wrapf(err, "failed to compress image for thumb storage %s", s.storCfg.ThumbType)
+	}
+	defer os.Remove(compressedFile.Name())
+	defer compressedFile.Close()
+	if s.storCfg.ThumbType != "" {
+		thumbStor := s.storages[shared.StorageType(s.storCfg.ThumbType)]
+		if thumbStor == nil {
+			return nil, oops.Errorf("thumb storage type %s not found", s.storCfg.ThumbType)
+		}
+		thumbPath := path.Join(storDirPath, strings.Split(fileName, ".")[0]+"_thumb"+path.Ext(fileName))
+		var err error
+		thumbDetail, err = thumbStor.Save(ctx, compressedFile, thumbPath)
+		if err != nil {
+			return nil, oops.Wrapf(err, "failed to save thumb file to storage %s", s.storCfg.ThumbType)
+		}
+	}
+	return &shared.StorageInfo{
+		Original: originalDetail,
+		Regular:  regularDetail,
+		Thumb:    thumbDetail,
+	}, nil
 }

@@ -17,7 +17,6 @@ type ArtworkCreation struct {
 }
 
 type ArtworkArtistCreation struct {
-	ID       string
 	Name     string
 	UID      string
 	Username string

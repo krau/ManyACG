@@ -62,11 +62,12 @@ var tagCharsReplacer = strings.NewReplacer(
 	" ", "_",
 )
 
-func ArtworkHTMLCaption(meta *metautil.MetaData, artwork *entity.Artwork) string {
-	caption := fmt.Sprintf("<a href=\"%s\"><b>%s</b></a> / <b>%s</b>", artwork.SourceURL, html.EscapeString(artwork.Title), html.EscapeString(artwork.Artist.Name))
-	if artwork.Description != "" {
-		desc := artwork.Description
-		if len(artwork.Description) > 500 {
+
+func ArtworkHTMLCaption(meta *metautil.MetaData, artwork entity.ArtworkLike) string {
+	caption := fmt.Sprintf("<a href=\"%s\"><b>%s</b></a> / <b>%s</b>", artwork.GetSourceURL(), html.EscapeString(artwork.GetTitle()), html.EscapeString(artwork.GetArtistName()))
+	if artwork.GetDescription() != "" {
+		desc := artwork.GetDescription()
+		if len(desc) > 500 {
 			var n, i int
 			for i = range desc {
 				if n >= 500 {
@@ -79,11 +80,7 @@ func ArtworkHTMLCaption(meta *metautil.MetaData, artwork *entity.Artwork) string
 		caption += fmt.Sprintf("\n<blockquote expandable=true>%s</blockquote>", html.EscapeString(desc))
 	}
 	tags := ""
-	oriTags := make([]string, 0, len(artwork.Tags))
-	for _, tag := range artwork.Tags {
-		oriTags = append(oriTags, tag.Name)
-	}
-	for _, tag := range oriTags {
+	for _, tag := range artwork.GetTags() {
 		if len(tags)+len(tag) > 200 {
 			break
 		}
