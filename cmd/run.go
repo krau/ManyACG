@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/krau/ManyACG/internal/common/version"
+	_ "github.com/krau/ManyACG/internal/infra"
 	"github.com/krau/ManyACG/internal/infra/config/runtimecfg"
 	"github.com/krau/ManyACG/internal/infra/database"
 	"github.com/krau/ManyACG/internal/infra/search"

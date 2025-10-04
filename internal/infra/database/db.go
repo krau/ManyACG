@@ -7,10 +7,12 @@ import (
 	"github.com/krau/ManyACG/internal/infra/config/runtimecfg"
 	"github.com/krau/ManyACG/internal/model/entity"
 	"github.com/krau/ManyACG/internal/repo"
+	"github.com/krau/ManyACG/internal/shared"
 	"github.com/krau/ManyACG/pkg/log"
 	_ "github.com/ncruces/go-sqlite3/embed"
 	"github.com/ncruces/go-sqlite3/gormlite"
 
+	"gorm.io/datatypes"
 	"gorm.io/driver/mysql"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -141,6 +143,22 @@ func initDB(ctx context.Context, okCh chan struct{}) {
 	}
 	if err := sqlDB.PingContext(ctx); err != nil {
 		log.Fatal("failed to ping database", "err", err)
+	}
+
+	admins := runtimecfg.Get().Telegram.Admins
+	for _, adminID := range admins {
+		var count int64
+		err = db.Model(&entity.Admin{}).Where("telegram_id = ?", adminID).Count(&count).Error
+		if err != nil {
+			log.Error("failed to check admin", "err", err)
+		}
+		if count == 0 {
+			err = db.Create(&entity.Admin{TelegramID: adminID, Permissions: datatypes.NewJSONSlice([]shared.Permission{shared.PermissionSudo})}).Error
+			if err != nil {
+				log.Fatal("failed to create admin", "err", err)
+			}
+			log.Info("Created admin user", "user_id", adminID)
+		}
 	}
 	defaultDB = &DB{db: db}
 	log.Info("Database initialized")

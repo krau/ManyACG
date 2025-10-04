@@ -21,11 +21,16 @@ func (d *DB) CreateArtwork(ctx context.Context, artwork *entity.Artwork) (*objec
 }
 
 func (d *DB) GetArtworkByID(ctx context.Context, id objectuuid.ObjectUUID) (*entity.Artwork, error) {
-	aw, err := gorm.G[entity.Artwork](d.db).Preload(clause.Associations, nil).Where("id = ?", id).First(ctx)
+	var artwork entity.Artwork
+	err := d.db.WithContext(ctx).Model(&entity.Artwork{}).
+		Preload("Tags.Alias").
+		Preload(clause.Associations).
+		Where("id = ?", id).
+		First(&artwork).Error
 	if err != nil {
 		return nil, err
 	}
-	return &aw, nil
+	return &artwork, nil
 }
 
 func (d *DB) GetArtworksByIDs(ctx context.Context, ids []objectuuid.ObjectUUID) ([]*entity.Artwork, error) {
@@ -34,6 +39,7 @@ func (d *DB) GetArtworksByIDs(ctx context.Context, ids []objectuuid.ObjectUUID) 
 	}
 	var artworks []*entity.Artwork
 	err := d.db.WithContext(ctx).Model(&entity.Artwork{}).
+		Preload("Tags.Alias").
 		Preload(clause.Associations).
 		Where("id IN ?", ids).
 		Find(&artworks).Error
@@ -44,21 +50,24 @@ func (d *DB) GetArtworksByIDs(ctx context.Context, ids []objectuuid.ObjectUUID) 
 }
 
 func (d *DB) GetArtworkByURL(ctx context.Context, url string) (*entity.Artwork, error) {
-	aw, err := gorm.G[entity.Artwork](d.db).Where("source_url = ?", url).First(ctx)
+	var artwork entity.Artwork
+	err := d.db.WithContext(ctx).Model(&entity.Artwork{}).
+		Preload("Tags.Alias").
+		Preload(clause.Associations).
+		Where("source_url = ?", url).
+		First(&artwork).Error
 	if err != nil {
 		return nil, err
 	}
-	return &aw, nil
+	return &artwork, nil
 }
 
 func (d *DB) QueryArtworks(ctx context.Context, que query.ArtworksDB) ([]*entity.Artwork, error) {
 	var artworks []*entity.Artwork
 
 	query := d.db.WithContext(ctx).Model(&entity.Artwork{}).
-		Preload("Artist").
-		Preload("Tags").
 		Preload("Tags.Alias").
-		Preload("Pictures")
+		Preload(clause.Associations)
 
 	if que.R18 != shared.R18TypeAll {
 		query = query.Where("r18 = ?", que.R18 == shared.R18TypeR18)

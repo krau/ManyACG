@@ -9,6 +9,7 @@ import (
 	"github.com/krau/ManyACG/service"
 	"github.com/mymmrac/telego"
 	"github.com/mymmrac/telego/telegohandler"
+	"github.com/mymmrac/telego/telegoutil"
 	"github.com/samber/oops"
 )
 
@@ -24,13 +25,7 @@ func DumpArtworkInfo(ctx *telegohandler.Context, message telego.Message) error {
 		// utils.ReplyMessage(ctx, ctx.Bot(), message, "你没有权限执行此操作")
 		return oops.Errorf("user %d is not admin but try to use /dump", message.From.ID)
 	}
-	helpText := fmt.Sprintf(`
-[管理员] <b>使用 /dump 命令回复一条包含作品链接的消息, 将获取作品信息并以JSON格式回复</b>
-	
-命令语法: %s
-
-若不提供参数, 默认获取所有信息
-			`, html.EscapeString("/dump [tags] [artist] [pictures]")) // [TODO] implement this
+	helpText := "[管理员] <b>使用 /dump 命令回复一条包含作品链接的消息, 将获取作品信息并以JSON格式回复</b>"
 	if message.ReplyToMessage == nil {
 		utils.ReplyMessageWithHTML(ctx, message, helpText)
 		return nil
@@ -50,8 +45,12 @@ func DumpArtworkInfo(ctx *telegohandler.Context, message telego.Message) error {
 		utils.ReplyMessageWithHTML(ctx, message, fmt.Sprintf("序列化作品信息失败\n<code>%s</code>", html.EscapeString(err.Error())))
 		return nil
 	}
-	if _, err := utils.ReplyMessageWithHTML(ctx, message, "<pre>"+html.EscapeString(string(artworkJSON))+"</pre>"); err != nil {
-		utils.ReplyMessageWithHTML(ctx, message, fmt.Sprintf("回复消息失败\n<code>%s</code>", html.EscapeString(err.Error())))
+	// if _, err := utils.ReplyMessageWithHTML(ctx, message, "<pre>"+html.EscapeString(string(artworkJSON))+"</pre>"); err != nil {
+	// 	utils.ReplyMessageWithHTML(ctx, message, fmt.Sprintf("回复消息失败\n<code>%s</code>", html.EscapeString(err.Error())))
+	// }
+	_, err = ctx.Bot().SendDocument(ctx, telegoutil.Document(message.Chat.ChatID(), telegoutil.FileFromBytes(artworkJSON, fmt.Sprintf("artwork_%s.json", artwork.ID.String()))))
+	if err != nil {
+		return oops.Errorf("send artwork json document failed: %w", err)
 	}
 	return nil
 }
