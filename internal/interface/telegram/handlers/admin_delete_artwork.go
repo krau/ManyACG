@@ -80,11 +80,7 @@ func DeleteArtwork(ctx *telegohandler.Context, message telego.Message) error {
 	pictureIndex--
 
 	picture := artwork.Pictures[pictureIndex]
-	// pictureID, err := primitive.ObjectIDFromHex(picture.ID)
-	// if err != nil {
-	// 	utils.ReplyMessage(ctx, ctx.Bot(), message, fmt.Sprintf("删除失败, 无效的ID\nerror: %s", err))
-	// 	return nil
-	// }
+
 	if err := serv.DeletePictureByID(ctx, picture.ID); err != nil { // [TODO] wip
 		utils.ReplyMessage(ctx, message, fmt.Sprintf("删除失败\nerror: %s", err))
 		return nil
@@ -122,10 +118,6 @@ func DeleteArtworkCallbackQuery(ctx *telegohandler.Context, query telego.Callbac
 		return nil
 	}
 
-	// if err := service.DeleteArtworkByID(ctx, artworkID); err != nil {
-	// 	ctx.Bot().AnswerCallbackQuery(ctx, telegoutil.CallbackQuery(query.ID).WithText("从数据库中删除失败: "+err.Error()).WithCacheTime(60).WithShowAlert())
-	// 	return nil
-	// }
 	if err := serv.DeleteArtworkByID(ctx, artworkID); err != nil {
 		ctx.Bot().AnswerCallbackQuery(ctx, telegoutil.CallbackQuery(query.ID).WithText("从数据库中删除失败: "+err.Error()).WithCacheTime(60).WithShowAlert())
 		return nil

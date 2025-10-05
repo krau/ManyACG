@@ -15,15 +15,9 @@ import (
 
 func DumpArtworkInfo(ctx *telegohandler.Context, message telego.Message) error {
 	serv := service.FromContext(ctx)
-	userAdmin, err := serv.GetAdminByTelegramID(ctx, message.From.ID)
+	_, err := serv.GetAdminByTelegramID(ctx, message.From.ID)
 	if err != nil {
-		// log.Errorf("获取管理员信息失败: %s", err)
-		return err
-		// telegoutil.ReplyMessage(ctx, ctx.Bot(), message, "获取管理员信息失败")
-	}
-	if userAdmin == nil {
-		// utils.ReplyMessage(ctx, ctx.Bot(), message, "你没有权限执行此操作")
-		return oops.Errorf("user %d is not admin but try to use /dump", message.From.ID)
+		return oops.Errorf("get admin by telegram id %d failed: %w", message.From.ID, err)
 	}
 	helpText := "[管理员] <b>使用 /dump 命令回复一条包含作品链接的消息, 将获取作品信息并以JSON格式回复</b>"
 	if message.ReplyToMessage == nil {
@@ -45,9 +39,6 @@ func DumpArtworkInfo(ctx *telegohandler.Context, message telego.Message) error {
 		utils.ReplyMessageWithHTML(ctx, message, fmt.Sprintf("序列化作品信息失败\n<code>%s</code>", html.EscapeString(err.Error())))
 		return nil
 	}
-	// if _, err := utils.ReplyMessageWithHTML(ctx, message, "<pre>"+html.EscapeString(string(artworkJSON))+"</pre>"); err != nil {
-	// 	utils.ReplyMessageWithHTML(ctx, message, fmt.Sprintf("回复消息失败\n<code>%s</code>", html.EscapeString(err.Error())))
-	// }
 	_, err = ctx.Bot().SendDocument(ctx, telegoutil.Document(message.Chat.ChatID(), telegoutil.FileFromBytes(artworkJSON, fmt.Sprintf("artwork_%s.json", artwork.ID.String()))))
 	if err != nil {
 		return oops.Errorf("send artwork json document failed: %w", err)

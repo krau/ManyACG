@@ -18,7 +18,8 @@ import (
 func GetArtworkInfo(ctx *telegohandler.Context, message telego.Message) error {
 	serv := service.FromContext(ctx)
 	hasPermission := utils.CheckPermissionInGroup(ctx, serv, message, shared.PermissionGetArtworkInfo)
-	sourceURL := utils.FindSourceURLInMessage(serv, &message)
+	// sourceURL := utils.FindSourceURLInMessage(serv, &message)
+	sourceURL := ctx.Value("source_url").(string)
 	ogch := utils.GetMssageOriginChannel(&message)
 	meta := metautil.FromContext(ctx)
 	if ogch != nil && (ogch.Chat.ID == meta.ChannelChatID.ID || strings.EqualFold(ogch.Chat.Username, strings.TrimPrefix(meta.ChannelChatID.Username, "@"))) {

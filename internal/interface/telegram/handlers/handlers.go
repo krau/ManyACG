@@ -1,8 +1,6 @@
 package handlers
 
 import (
-	"context"
-
 	"github.com/krau/ManyACG/internal/interface/telegram/handlers/filter"
 	"github.com/krau/ManyACG/internal/interface/telegram/handlers/utils"
 	"github.com/krau/ManyACG/internal/interface/telegram/metautil"
@@ -67,14 +65,19 @@ func (m HandlerManager) Register(hg *telegohandler.HandlerGroup) {
 	hg.HandleCallbackQuery(DeleteArtworkCallbackQuery, telegohandler.CallbackDataPrefix("delete_artwork"))
 
 	hg.HandleInlineQuery(InlineQuery)
-	hg.HandleMessage(GetArtworkInfo, func(ctx context.Context, update telego.Update) bool {
-		message := update.Message
-		if message == nil {
-			return false
+	hg.Use(func(ctx *telegohandler.Context, update telego.Update) error {
+		msg := update.Message
+		if msg == nil {
+			return ctx.Err()
 		}
 		if update.Message.ViaBot != nil && update.Message.ViaBot.Username == m.BotUsername {
-			return false
+			return ctx.Err()
 		}
-		return utils.FindSourceURLInMessage(m.Service, update.Message) != ""
+		if url := utils.FindSourceURLInMessage(m.Service, update.Message); url != "" {
+			ctx = ctx.WithValue("source_url", url)
+			return ctx.Next(update)
+		}
+		return ctx.Err()
 	})
+	hg.HandleMessage(GetArtworkInfo)
 }

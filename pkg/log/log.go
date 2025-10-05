@@ -19,13 +19,14 @@ type Logger interface {
 }
 
 type Config struct {
-	Level      Level
-	LogFile    string
-	FileLevel  Level
-	MaxSize    int
-	MaxBackups int
-	MaxAge     int
-	Compress   bool
+	Level        Level
+	LogFile      string
+	FileLevel    Level
+	MaxSize      int
+	MaxBackups   int
+	MaxAge       int
+	Compress     bool
+	CallerOffset int
 }
 
 type Level uint
@@ -56,6 +57,9 @@ func (c *Config) ApplyDefaults() {
 	}
 	if c.MaxAge == 0 {
 		c.MaxAge = 14
+	}
+	if c.CallerOffset == 0 {
+		c.CallerOffset = 2
 	}
 }
 

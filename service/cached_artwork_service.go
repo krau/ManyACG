@@ -17,7 +17,7 @@ func (s *Service) DeleteCachedArtworkByURL(ctx context.Context, sourceURL string
 }
 
 func (s *Service) GetOrFetchCachedArtwork(ctx context.Context, sourceURL string) (*entity.CachedArtwork, error) {
-	return nil, nil
+	panic("not impl")
 }
 
 func (s *Service) UpdateCachedArtworkStatusByURL(ctx context.Context, sourceURL string, status shared.ArtworkStatus) error {

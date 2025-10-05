@@ -251,5 +251,5 @@ type SendArtworkInfoOption struct {
 
 func SendArtworkInfo(ctx *telegohandler.Context, opts SendArtworkInfoOption) error {
 	// Implementation here
-	return nil
+	panic("not implemented")
 }

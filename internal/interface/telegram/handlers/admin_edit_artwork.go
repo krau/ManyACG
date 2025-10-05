@@ -294,7 +294,7 @@ func RefreshArtwork(ctx *telegohandler.Context, message telego.Message) error {
 			MessageID:    picture.TelegramInfo.Data().MessageID,
 			MediaGroupID: picture.TelegramInfo.Data().MediaGroupID,
 		}
-		if err := serv.UpdatePictureTelegramInfo(ctx, picture, newInfo); err != nil {
+		if err := serv.UpdatePictureTelegramInfo(ctx, picture.ID, newInfo); err != nil {
 			utils.ReplyMessage(ctx, message, "刷新作品信息失败: "+err.Error())
 			return nil
 		}

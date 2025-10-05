@@ -29,7 +29,6 @@ func toZapLevel(l Level) zapcore.Level {
 }
 
 func ZapLog(cfg Config) Logger {
-	cfg.ApplyDefaults()
 	consoleLevel := toZapLevel(cfg.Level)
 	fileLevel := toZapLevel(cfg.FileLevel)
 	consoleEncoder := zapcore.NewConsoleEncoder(zap.NewDevelopmentEncoderConfig())
@@ -49,7 +48,7 @@ func ZapLog(cfg Config) Logger {
 		zapcore.NewCore(fileEncoder, fileWriter, fileLevel),
 	)
 
-	logger := zap.New(core, zap.AddCaller(), zap.AddCallerSkip(1))
+	logger := zap.New(core, zap.AddCaller(), zap.AddCallerSkip(cfg.CallerOffset))
 	return &zapLogger{logger: logger}
 }
 

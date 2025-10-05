@@ -76,14 +76,6 @@ func BenchmarkSanitizeFileName(b *testing.B) {
 	}
 }
 
-func BenchmarkEscapeHTML(b *testing.B) {
-	text := strings.Repeat(`This is a <test> & it should be escaped`, 100)
-
-	for i := 0; i < b.N; i++ {
-		EscapeHTML(text)
-	}
-}
-
 func TestGenerateRandomString(t *testing.T) {
 	charsets := []string{
 		"abcdefghijklmnopqrstuvwxyz",

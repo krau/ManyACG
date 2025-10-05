@@ -1,9 +1,9 @@
 package strutil
 
 import (
-	"html"
 	"regexp"
 	"strings"
+	"unicode"
 
 	"github.com/duke-git/lancet/v2/strutil"
 	"github.com/duke-git/lancet/v2/validator"
@@ -36,11 +36,20 @@ func SanitizeFileName(fileName string) string {
 		if r < 0x20 || r == 0x7F {
 			return '_'
 		}
+		if unicode.IsControl(r) || unicode.IsSpace(r) {
+			return '_'
+		}
 		if validator.IsPrintable(string(r)) {
 			return r
 		}
 		return '_'
 	}, fname)
+
+	re := regexp.MustCompile(`_+`)
+	fname = re.ReplaceAllString(fname, "_")
+
+	fname = strings.Trim(fname, "_ ")
+
 	return fname
 }
 
@@ -48,8 +57,4 @@ var markdownRe = regexp.MustCompile("([" + regexp.QuoteMeta(`\_*[]()~`+"`"+`>#+-
 
 func EscapeMarkdown(text string) string {
 	return markdownRe.ReplaceAllString(text, "\\$1")
-}
-
-func EscapeHTML(text string) string {
-	return html.EscapeString(text)
 }

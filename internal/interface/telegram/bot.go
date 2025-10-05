@@ -185,7 +185,10 @@ func (app *BotApp) Run(ctx context.Context, serv *service.Service) {
 	}()
 
 	if !runtimecfg.Get().App.Debug {
-		botHandler.Use(telegohandler.PanicRecovery())
+		botHandler.Use(telegohandler.PanicRecoveryHandler(func(recovered any) error {
+			log.Errorf("Panic recovered: %v", recovered)
+			return nil
+		}))
 	}
 	botHandler.Use(messageLogger)
 
