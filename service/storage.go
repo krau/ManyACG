@@ -7,15 +7,35 @@ import (
 	"path"
 	"path/filepath"
 	"strings"
+	"time"
 
-	"github.com/krau/ManyACG/internal/infra/storage"
 	"github.com/krau/ManyACG/internal/pkg/imgtool"
 	"github.com/krau/ManyACG/internal/shared"
+	"github.com/krau/ManyACG/pkg/osutil"
 	"github.com/samber/oops"
 )
 
-func (s *Service) Storage(storageType shared.StorageType) storage.Storage {
-	return s.storages[storageType]
+func (s *Service) StorageGetFile(ctx context.Context, detail shared.StorageDetail) (io.ReadSeekCloser, error) {
+	if stor, ok := s.storages[detail.Type]; ok {
+		rc, err := stor.GetFile(ctx, detail)
+		if err != nil {
+			return nil, oops.Wrapf(err, "get file from storage %s failed", detail.Type)
+		}
+		defer rc.Close()
+		// 读取到临时文件, 避免频繁从远程存储获取文件
+		cacheFile, err := osutil.NewCacheFile(filepath.Join(s.storCfg.CacheDir, "storage", detail.Hash()), time.Duration(s.storCfg.CacheTTL)*time.Second)
+		if err != nil {
+			return nil, oops.Wrapf(err, "create cache file failed")
+		}
+		// 写入缓存文件
+		if _, err := io.Copy(cacheFile, rc); err != nil {
+			cacheFile.Remove()
+			return nil, oops.Wrapf(err, "write cache file failed")
+		}
+		cacheFile.Seek(0, io.SeekStart)
+		return cacheFile, nil
+	}
+	return nil, oops.Errorf("storage type %s not found", detail.Type)
 }
 
 func (s *Service) StorageDelete(ctx context.Context, detail shared.StorageDetail) error {
@@ -63,7 +83,7 @@ func (s *Service) StorageSaveAllSize(ctx context.Context, file *os.File, storDir
 		}
 	}
 	file.Seek(0, io.SeekStart)
-	compressedFile, err := imgtool.CompressImage(file.Name(), filepath.Join(s.storCfg.CacheDir, "compress", fileName), s.storCfg.RegularFormat, s.storCfg.RegularLength)
+	compressedFile, err := imgtool.Compress(file.Name(), filepath.Join(s.storCfg.CacheDir, "compress", fileName), s.storCfg.RegularFormat, s.storCfg.RegularLength)
 	if err != nil {
 		return nil, oops.Wrapf(err, "failed to compress image for regular storage %s", s.storCfg.RegularType)
 	}
@@ -82,7 +102,7 @@ func (s *Service) StorageSaveAllSize(ctx context.Context, file *os.File, storDir
 		}
 	}
 	file.Seek(0, io.SeekStart)
-	compressedFile, err = imgtool.CompressImage(file.Name(), filepath.Join(s.storCfg.CacheDir, "compress", fileName), s.storCfg.ThumbFormat, s.storCfg.ThumbLength)
+	compressedFile, err = imgtool.Compress(file.Name(), filepath.Join(s.storCfg.CacheDir, "compress", fileName), s.storCfg.ThumbFormat, s.storCfg.ThumbLength)
 	if err != nil {
 		return nil, oops.Wrapf(err, "failed to compress image for thumb storage %s", s.storCfg.ThumbType)
 	}

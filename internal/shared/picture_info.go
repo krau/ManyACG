@@ -1,5 +1,11 @@
 package shared
 
+import (
+	"fmt"
+
+	"github.com/krau/ManyACG/pkg/strutil"
+)
+
 // type PictureInfo struct {
 // 	Index     uint
 // 	Thumbnail string
@@ -33,4 +39,8 @@ type StorageInfo struct {
 type StorageDetail struct {
 	Type StorageType `json:"type"`
 	Path string      `json:"path"`
+}
+
+func (s StorageDetail) Hash() string {
+	return strutil.MD5Hash(fmt.Sprintf("%s:%s", s.Type, s.Path))
 }

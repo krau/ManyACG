@@ -33,7 +33,11 @@ func initDefaultClient() {
 }
 
 func getCachePath(url string) string {
-	return filepath.Join(runtimecfg.Get().Storage.CacheDir, "req", strutil.MD5Hash(url))
+	ext, err := strutil.GetFileExtFromURL(url)
+	if err != nil {
+		ext = ""
+	}
+	return filepath.Join(runtimecfg.Get().Storage.CacheDir, "req", strutil.MD5Hash(url)+ext)
 }
 
 // DownloadWithCache downloads a file with caching. If the file is already cached, it returns the cached file.
@@ -51,7 +55,7 @@ func DownloadWithCache(ctx context.Context, url string, client *req.Client) (
 
 	cachePath := getCachePath(url)
 	if file, err := os.Open(cachePath); err == nil {
-		return file, nil, nil
+		return file, func() {}, nil
 	}
 
 	lock, _ := cacheLocks.LoadOrStore(url, &sync.Mutex{})
@@ -76,9 +80,10 @@ func DownloadWithCache(ctx context.Context, url string, client *req.Client) (
 	if err != nil {
 		return nil, nil, err
 	}
-	return file, func() {
+	clean := func() {
 		go osutil.RmFileAfter(cachePath, time.Duration(runtimecfg.Get().Storage.CacheTTL)*time.Second)
-	}, nil
+	}
+	return file, clean, nil
 }
 
 func GetBodyReader(ctx context.Context, url string, client *req.Client) (io.ReadCloser, error) {

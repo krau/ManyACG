@@ -8,6 +8,7 @@ import (
 	"github.com/krau/ManyACG/internal/infra/source"
 	"github.com/krau/ManyACG/internal/model/dto"
 	"github.com/krau/ManyACG/internal/shared"
+	"github.com/samber/oops"
 
 	"github.com/imroc/req/v3"
 )
@@ -53,19 +54,18 @@ func (p *Pixiv) FetchNewArtworks(ctx context.Context, limit int) ([]*dto.Fetched
 }
 
 func (p *Pixiv) GetArtworkInfo(ctx context.Context, sourceURL string) (*dto.FetchedArtwork, error) {
-	// ajaxResp, err := reqAjaxResp(sourceURL)
-	// if err != nil {
-	// 	return nil, err
-	// }
-	// if ajaxResp.Err {
-	// 	return nil, errors.New(ajaxResp.Message)
-	// }
-	// return ajaxResp.ToArtwork()
-	panic("not implemented")
+	ajaxResp, err := reqAjaxResp(ctx, sourceURL, p.reqClient)
+	if err != nil {
+		return nil, err
+	}
+	if ajaxResp.Err {
+		return nil, oops.Wrapf(err, "pixiv ajax response error: %s", ajaxResp.Message)
+	}
+	return ajaxResp.ToArtwork(ctx, p.reqClient, p.cfg.Proxy)
 }
 
 func (p *Pixiv) MatchesSourceURL(text string) (string, bool) {
-	pid := GetPid(text)
+	pid := getPid(text)
 	if pid == "" {
 		return "", false
 	}

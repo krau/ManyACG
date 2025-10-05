@@ -1,17 +1,31 @@
 package pixiv
 
 import (
-	"encoding/json"
+	"context"
+
+	"github.com/goccy/go-json"
+	"github.com/imroc/req/v3"
+	"github.com/samber/oops"
+
+	"github.com/krau/ManyACG/pkg/reutil"
 )
 
-func GetPid(url string) string {
-	matchUrl := pixivSourceURLRegexp.FindString(url)
-	return numberRegexp.FindString(matchUrl)
+func getPid(url string) string {
+	matchUrl := sourceReg.FindString(url)
+	id, ok := reutil.GetLatestNumberFromString(matchUrl)
+	if !ok {
+		return ""
+	}
+	return id
 }
 
-func reqAjaxResp(sourceURL string) (*PixivAjaxResp, error) {
-	ajaxURL := "https://www.pixiv.net/ajax/illust/" + GetPid(sourceURL)
-	resp, err := reqClient.R().Get(ajaxURL)
+func reqAjaxResp(ctx context.Context, sourceURL string, client *req.Client) (*PixivAjaxResp, error) {
+	id := getPid(sourceURL)
+	if id == "" {
+		return nil, oops.New("invalid pixiv URL, cannot find artwork ID")
+	}
+	ajaxURL := "https://www.pixiv.net/ajax/illust/" + id
+	resp, err := client.R().SetContext(ctx).Get(ajaxURL)
 	if err != nil {
 		return nil, err
 	}
@@ -23,9 +37,9 @@ func reqAjaxResp(sourceURL string) (*PixivAjaxResp, error) {
 	return &pixivAjaxResp, nil
 }
 
-func reqIllustPages(sourceURL string) (*PixivIllustPages, error) {
-	ajaxURL := "https://www.pixiv.net/ajax/illust/" + GetPid(sourceURL) + "/pages?lang=zh"
-	resp, err := reqClient.R().Get(ajaxURL)
+func reqIllustPages(ctx context.Context, sourceURL string, client *req.Client) (*PixivIllustPages, error) {
+	ajaxURL := "https://www.pixiv.net/ajax/illust/" + getPid(sourceURL) + "/pages?lang=zh"
+	resp, err := client.R().SetContext(ctx).Get(ajaxURL)
 	if err != nil {
 		return nil, err
 	}
@@ -50,7 +64,6 @@ func reqIllustPages(sourceURL string) (*PixivIllustPages, error) {
 // 	if err != nil {
 // 		return err
 // 	}
-
 
 // 	for i, item := range pixivRss.Channel.Items {
 // 		if i >= limit {

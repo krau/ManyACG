@@ -22,6 +22,9 @@ type Webdav struct {
 }
 
 func init() {
+	if !config.Get().Storage.Webdav.Enable {
+		return
+	}
 	storage.Register(shared.StorageTypeWebdav, func() storage.Storage {
 		return &Webdav{
 			cfg:      config.Get().Storage.Webdav,
@@ -49,43 +52,15 @@ func (w *Webdav) Save(ctx context.Context, r io.Reader, storagePath string) (*sh
 	if err := w.client.WriteStream(storagePath, r, os.ModePerm); err != nil {
 		return nil, ErrFailedWrite
 	}
-
-	// cachePath := filepath.Join(config.Get().Storage.CacheDir, filepath.Base(storagePath))
-	// go osutil.MkCache(cachePath, fileBytes, time.Duration(config.Get().Storage.CacheTTL)*time.Second)
-
 	return &shared.StorageDetail{
 		Type: shared.StorageTypeWebdav,
 		Path: storagePath,
 	}, nil
 }
 
-func (w *Webdav) GetFile(ctx context.Context, detail shared.StorageDetail) ([]byte, error) {
-	// cachePath := filepath.Join(config.Get().Storage.CacheDir, path.Base(detail.Path))
-	// data, err := os.ReadFile(cachePath)
-	// if err == nil {
-	// 	return data, nil
-	// }
-	data, err := w.client.Read(detail.Path)
-	if err != nil {
-		return nil, ErrReadFile
-	}
-	// go osutil.MkCache(cachePath, data, time.Duration(config.Get().Storage.CacheTTL)*time.Second)
-	return data, nil
+func (w *Webdav) GetFile(ctx context.Context, detail shared.StorageDetail) (io.ReadCloser, error) {
+	return w.client.ReadStream(detail.Path)
 }
-
-// func (w *Webdav) GetFileStream(ctx context.Context, detail *shared.StorageDetail) (io.ReadCloser, error) {
-// 	cachePath := filepath.Join(config.Get().Storage.CacheDir, path.Base(detail.Path))
-// 	file, err := os.Open(cachePath)
-// 	if err == nil {
-// 		return file, nil
-// 	}
-// 	steam, err := Client.ReadStream(detail.Path)
-// 	if err != nil {
-// 		common.Logger.Errorf("failed to read file: %s", err)
-// 		return nil, ErrReadFile
-// 	}
-// 	return steam, nil
-// }
 
 func (w *Webdav) Delete(ctx context.Context, detail shared.StorageDetail) error {
 	return w.client.Remove(detail.Path)

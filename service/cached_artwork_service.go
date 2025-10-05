@@ -17,7 +17,49 @@ func (s *Service) DeleteCachedArtworkByURL(ctx context.Context, sourceURL string
 }
 
 func (s *Service) GetOrFetchCachedArtwork(ctx context.Context, sourceURL string) (*entity.CachedArtwork, error) {
-	panic("not impl")
+	cached, err := s.repos.CachedArtwork().GetCachedArtworkByURL(ctx, sourceURL)
+	if err == nil {
+		return cached, nil
+	}
+	fetched, err := s.FetchArtworkInfo(ctx, sourceURL)
+	if err != nil {
+		return nil, err
+	}
+	pics := make([]*entity.CachedPicture, len(fetched.Pictures))
+	for i, pic := range fetched.Pictures {
+		pics[i] = &entity.CachedPicture{
+			Index:     pic.Index,
+			Thumbnail: pic.Thumbnail,
+			Original:  pic.Original,
+			Width:     pic.Width,
+			Height:    pic.Height,
+		}
+	}
+	ent := &entity.CachedArtwork{
+		SourceURL: sourceURL,
+		Status:    shared.ArtworkStatusCached,
+		Artwork: datatypes.NewJSONType(&entity.CachedArtworkData{
+			Title:       fetched.Title,
+			Description: fetched.Description,
+			R18:         fetched.R18,
+			Tags:        fetched.Tags,
+			SourceURL:   sourceURL,
+			SourceType:  fetched.SourceType,
+			Artist: &entity.CachedArtist{
+				Name:     fetched.Artist.Name,
+				UID:      fetched.Artist.UID,
+				Type:     fetched.Artist.Type,
+				Username: fetched.Artist.Username,
+			},
+			Pictures: pics,
+			Version:  1,
+		}),
+	}
+	created, err := s.repos.CachedArtwork().CreateCachedArtwork(ctx, ent)
+	if err != nil {
+		return nil, err
+	}
+	return created, nil
 }
 
 func (s *Service) UpdateCachedArtworkStatusByURL(ctx context.Context, sourceURL string, status shared.ArtworkStatus) error {

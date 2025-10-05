@@ -19,7 +19,7 @@ func TestCompressImageForTelegramByVIPS(t *testing.T) {
 			if err != nil {
 				t.Fatalf("failed to read input file: %v", err)
 			}
-			result, err := CompressImageForTelegram(data)
+			result, err := CompressForTelegram(data)
 			if err != nil {
 				t.Fatalf("CompressImageForTelegramByVIPS() error = %v", err)
 			}
@@ -46,7 +46,7 @@ func TestCompressImageByVIPS(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			file, err := CompressImage(tt.input, tt.output, tt.format, tt.maxEdgeLength)
+			file, err := Compress(tt.input, tt.output, tt.format, tt.maxEdgeLength)
 			if err != nil {
 				t.Fatalf("CompressImageByVIPS() error = %v", err)
 			}

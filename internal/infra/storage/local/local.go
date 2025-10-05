@@ -19,6 +19,9 @@ type Local struct {
 }
 
 func init() {
+	if !config.Get().Storage.Local.Enable {
+		return
+	}
 	storage.Register(shared.StorageTypeLocal, func() storage.Storage {
 		return &Local{
 			basePath: strings.TrimSuffix(config.Get().Storage.Local.Path, "/"),
@@ -48,8 +51,8 @@ func (l *Local) Save(ctx context.Context, r io.Reader, storagePath string) (*sha
 	}, nil
 }
 
-func (l *Local) GetFile(ctx context.Context, detail shared.StorageDetail) ([]byte, error) {
-	return os.ReadFile(detail.Path)
+func (l *Local) GetFile(ctx context.Context, detail shared.StorageDetail) (io.ReadCloser, error) {
+	return os.Open(detail.Path)
 }
 
 func (l *Local) Delete(ctx context.Context, detail shared.StorageDetail) error {

@@ -1,8 +1,10 @@
 package utils
 
 import (
+	"bufio"
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"os"
 
@@ -14,6 +16,7 @@ import (
 	"github.com/krau/ManyACG/internal/model/entity"
 	"github.com/krau/ManyACG/internal/pkg/imgtool"
 	"github.com/krau/ManyACG/internal/shared"
+	"github.com/krau/ManyACG/internal/shared/errs"
 	"github.com/krau/ManyACG/pkg/log"
 	"github.com/krau/ManyACG/pkg/strutil"
 	"github.com/krau/ManyACG/service"
@@ -211,13 +214,22 @@ func ArtworkInputMediaPhotos(ctx context.Context,
 						return nil, oops.Wrapf(err, "failed to read file: %s", picture.GetOriginal())
 					}
 				} else {
-					fileBytes, err = serv.Storage(picture.GetStorageInfo().Original.Type).GetFile(ctx, *picture.GetStorageInfo().Original)
+					rc, err := serv.StorageGetFile(ctx, *picture.GetStorageInfo().Original)
 					if err != nil {
 						return nil, oops.Wrapf(err, "failed to get file: %s", picture.GetOriginal())
 					}
+					defer rc.Close()
+					var buf bytes.Buffer
+					writer := bufio.NewWriter(&buf)
+					_, err = writer.ReadFrom(rc)
+					if err != nil {
+						return nil, oops.Wrapf(err, "failed to read file: %s", picture.GetOriginal())
+					}
+					writer.Flush()
+					fileBytes = buf.Bytes()
 				}
 			}
-			fileBytes, err = imgtool.CompressImageForTelegram(fileBytes)
+			fileBytes, err = imgtool.CompressForTelegram(fileBytes)
 			if err != nil {
 				return nil, oops.Wrapf(err, "failed to compress image: %s", picture.GetOriginal())
 			}
@@ -234,22 +246,226 @@ func ArtworkInputMediaPhotos(ctx context.Context,
 	return inputMediaPhotos, nil
 }
 
-func GetPicturePreviewInputFile(ctx context.Context, picture entity.PictureLike) (telego.InputFile, error) {
-	panic("not implemented")
+func GetPicturePhotoInputFile(ctx context.Context, serv *service.Service, picture entity.PictureLike) (telego.InputFile, error) {
+	if id := picture.GetTelegramInfo().PhotoFileID; id != "" {
+		return telegoutil.FileFromID(id), nil
+	}
+	orgStorDetail := picture.GetStorageInfo().Original
+	if orgStorDetail != nil {
+		rsc, err := serv.StorageGetFile(ctx, *picture.GetStorageInfo().Original)
+		if err != nil {
+			return telego.InputFile{}, oops.Wrapf(err, "failed to get file from storage")
+		}
+		defer rsc.Close()
+		// 将 rsc(ReadSeekCloser) 读取到内存中
+		data := new(bytes.Buffer)
+		_, err = data.ReadFrom(rsc)
+		if err != nil {
+			return telego.InputFile{}, oops.Wrapf(err, "failed to read file from storage")
+		}
+		compressed, err := imgtool.CompressForTelegram(data.Bytes())
+		if err != nil {
+			return telego.InputFile{}, oops.Wrapf(err, "failed to compress image")
+		}
+
+		return telegoutil.File(telegoutil.NameBytes(compressed, fmt.Sprintf("%s%s", strutil.MD5Hash(picture.GetOriginal()), ".jpg"))), nil
+	}
+	file, clean, err := httpclient.DownloadWithCache(ctx, picture.GetOriginal(), nil)
+	if err != nil {
+		return telego.InputFile{}, oops.Wrapf(err, "failed to download file: %s", picture.GetOriginal())
+	}
+	defer file.Close()
+	defer clean()
+	fileBytes, err := os.ReadFile(file.Name())
+	if err != nil {
+		return telego.InputFile{}, oops.Wrapf(err, "failed to read file: %s", picture.GetOriginal())
+	}
+	compressed, err := imgtool.CompressForTelegram(fileBytes)
+	if err != nil {
+		return telego.InputFile{}, oops.Wrapf(err, "failed to compress image")
+	}
+	return telegoutil.File(telegoutil.NameBytes(compressed, fmt.Sprintf("%s%s", strutil.MD5Hash(picture.GetOriginal()), ".jpg"))), nil
 }
 
-type SendArtworkInfoOption struct {
-	ChatID        *telego.ChatID
-	SourceURL     string
-	AppendCaption string
-	Verify        bool
-	HasPermission bool
-	IgnoreDeleted bool
-	ReplyParams   *telego.ReplyParameters
-	SendFull      bool
+type SendArtworkInfoOptions struct {
+	AppendCaption   string
+	ReplyParameters *telego.ReplyParameters
+	HasPermission   bool
 }
 
-func SendArtworkInfo(ctx *telegohandler.Context, opts SendArtworkInfoOption) error {
-	// Implementation here
-	panic("not implemented")
+type CreateArtworkInfoReplyMarkupOptions struct {
+	CreatedArtwork bool
+	HasPermission  bool
+}
+
+func CreateArtworkInfoReplyMarkup(ctx context.Context, meta *metautil.MetaData, serv *service.Service, artwork entity.ArtworkLike, controls *CreateArtworkInfoReplyMarkupOptions) (telego.ReplyMarkup, error) {
+	if controls == nil {
+		controls = &CreateArtworkInfoReplyMarkupOptions{}
+	}
+	if controls.CreatedArtwork {
+		created, ok := artwork.(*entity.Artwork)
+		if !ok {
+			return nil, oops.New("artwork is not of type *entity.Artwork")
+		}
+		base := GetPostedArtworkInlineKeyboardButton(created, meta)
+		if controls.HasPermission {
+			return telegoutil.InlineKeyboard(
+				base,
+				telegoutil.InlineKeyboardRow(
+					telegoutil.InlineKeyboardButton("更改R18").
+						WithCallbackData(fmt.Sprintf("edit_artwork r18 %s %s", created.ID.Hex(), map[bool]string{true: "0", false: "1"}[created.R18])),
+					telegoutil.InlineKeyboardButton("删除").
+						WithCallbackData(fmt.Sprintf("delete_artwork %s", created.ID.Hex())),
+				),
+			), nil
+		}
+		return telegoutil.InlineKeyboard(base), nil
+	}
+	cbId, err := serv.CreateStringData(ctx, artwork.GetSourceURL())
+	if err != nil {
+		return nil, oops.Wrapf(err, "failed to create callback data")
+	}
+	previewKeyboard := []telego.InlineKeyboardButton{}
+	if len(artwork.GetPictures()) > 1 {
+		previewKeyboard = append(previewKeyboard, telegoutil.InlineKeyboardButton(fmt.Sprintf("删除这张(%d)", 1)).WithCallbackData(fmt.Sprintf("artwork_preview %s delete 0 0", cbId)))
+		previewKeyboard = append(previewKeyboard, telegoutil.InlineKeyboardButton("下一张").WithCallbackData(fmt.Sprintf("artwork_preview %s preview 1 0", cbId)))
+	}
+	return telegoutil.InlineKeyboard(
+		[]telego.InlineKeyboardButton{
+			telegoutil.InlineKeyboardButton("发布").WithCallbackData(fmt.Sprintf("post_artwork %s", cbId)),
+			telegoutil.InlineKeyboardButton("发布(反转R18)").WithCallbackData(fmt.Sprintf("post_artwork_r18 %s", cbId)),
+		},
+		[]telego.InlineKeyboardButton{
+			telegoutil.InlineKeyboardButton("查重").WithCallbackData(fmt.Sprintf("search_picture %s", cbId)),
+			telegoutil.InlineKeyboardButton("预览发布").WithURL(meta.BotDeepLink("info", cbId)),
+		},
+		previewKeyboard,
+	), nil
+
+}
+
+// SendArtworkInfo 将作品信息附带操作按钮发送到指定聊天, 用于提供给管理员发布或修改作品
+//
+// 需要区分已发布的作品, 已标记为删除的作品, 和未发布的作品
+func SendArtworkInfo(ctx *telegohandler.Context, meta *metautil.MetaData, serv *service.Service, sourceUrl string, chatID telego.ChatID, opts *SendArtworkInfoOptions) error {
+	sourceUrl = serv.FindSourceURL(sourceUrl)
+	if sourceUrl == "" {
+		return oops.New("no valid source url found")
+	}
+	var artwork entity.ArtworkLike
+	created := false
+	if awent, err := serv.GetArtworkByURL(ctx, sourceUrl); err == nil {
+		artwork = awent
+		created = true
+	} else if !errors.Is(err, errs.ErrRecordNotFound) {
+		return oops.Wrapf(err, "failed to get artwork by url: %s", sourceUrl)
+	}
+	var deleted *entity.DeletedRecord
+	if !created {
+		if rec, err := serv.GetDeletedByURL(ctx, sourceUrl); err == nil {
+			deleted = rec
+		}
+		cached, err := serv.GetOrFetchCachedArtwork(ctx, sourceUrl)
+		if err != nil {
+			return oops.Wrapf(err, "failed to get or fetch cached artwork by url: %s", sourceUrl)
+		}
+		artwork = cached
+		// 再次检查是否已经发布, 主要解决某些源作品多个图片不同url时的问题
+		if awent, err := serv.GetArtworkByURL(ctx, cached.SourceURL); err == nil {
+			artwork = awent
+			created = true
+		}
+	}
+	if artwork == nil {
+		return oops.New("no artwork found")
+	}
+	caption := ArtworkHTMLCaption(meta, artwork)
+	caption += fmt.Sprintf("\n<i>该作品共有%d张图片</i>", len(artwork.GetPictures()))
+	if deleted != nil {
+		caption += fmt.Sprintf("\n<i>这是一个在 %s 被标记为删除的作品, 如果发布会取消删除</i>", deleted.DeletedAt.Format("2006-01-02 15:04:05"))
+	}
+	if opts != nil && opts.AppendCaption != "" {
+		caption += "\n" + opts.AppendCaption
+	}
+	replyMarkup, err := CreateArtworkInfoReplyMarkup(ctx, meta, serv, artwork, &CreateArtworkInfoReplyMarkupOptions{
+		CreatedArtwork: created,
+		HasPermission:  opts != nil && opts.HasPermission,
+	})
+	if err != nil {
+		return oops.Wrapf(err, "failed to create artwork info reply markup")
+	}
+	inputFile, err := GetPicturePhotoInputFile(ctx, serv, artwork.GetPictures()[0])
+	if err != nil {
+		return oops.Wrapf(err, "failed to get picture preview input file")
+	}
+	photo := telegoutil.Photo(chatID, inputFile).
+		WithCaption(caption).WithReplyMarkup(replyMarkup).WithParseMode(telego.ModeHTML)
+	if opts != nil && opts.ReplyParameters != nil {
+		photo = photo.WithReplyParameters(opts.ReplyParameters)
+	}
+	if artwork.GetR18() {
+		photo = photo.WithHasSpoiler()
+	}
+	_, err = ctx.Bot().SendPhoto(ctx, photo)
+	if err != nil {
+		return oops.Wrapf(err, "failed to send artwork info photo")
+	}
+	// [TODO] update artwork telegram info here
+	// [TODO] lazy load input file and update preview
+	return nil
+}
+
+type InputFileCloser struct {
+	telego.InputFile
+	CloseFunc func() error
+}
+
+func (i *InputFileCloser) Close() error {
+	if i.CloseFunc != nil {
+		return i.CloseFunc()
+	}
+	return nil
+}
+
+func GetPictureDocumentInputFile(ctx context.Context, serv *service.Service, picture entity.PictureLike) (*InputFileCloser, error) {
+	if id := picture.GetTelegramInfo().DocumentFileID; id != "" {
+		return &InputFileCloser{telegoutil.FileFromID(id), func() error { return nil }}, nil
+	}
+	orgStorDetail := picture.GetStorageInfo().Original
+	if orgStorDetail != nil {
+		rsc, err := serv.StorageGetFile(ctx, *picture.GetStorageInfo().Original)
+		if err != nil {
+			return nil, oops.Wrapf(err, "failed to get file from storage")
+		}
+		ext, err := strutil.GetFileExtFromURL(picture.GetOriginal())
+		if err != nil {
+			mtype, err := mimetype.DetectReader(rsc)
+			if mtype == nil {
+				return nil, oops.New("failed to detect mime type")
+			}
+			ext = mtype.Extension()
+			if err != nil {
+				return nil, oops.Wrapf(err, "failed to detect mime type")
+			}
+			rsc.Seek(0, 0)
+		}
+		return &InputFileCloser{
+			telegoutil.File(telegoutil.NameReader(rsc, fmt.Sprintf("%s%s", strutil.MD5Hash(picture.GetOriginal()), ext))),
+			func() error {
+				return rsc.Close()
+			},
+		}, nil
+	}
+	file, clean, err := httpclient.DownloadWithCache(ctx, picture.GetOriginal(), nil)
+	if err != nil {
+		return nil, oops.Wrapf(err, "failed to download file: %s", picture.GetOriginal())
+	}
+	defer clean()
+	return &InputFileCloser{
+		telegoutil.File(file),
+		func() error {
+			defer clean()
+			return file.Close()
+		},
+	}, nil
 }

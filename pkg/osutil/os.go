@@ -92,13 +92,49 @@ func RmFileAfter(path string, td time.Duration) {
 	})
 }
 
+type CacheFile struct {
+	*os.File
+	td time.Duration
+}
+
+func (c *CacheFile) Close() error {
+	err := c.File.Close()
+	if err != nil {
+		return err
+	}
+	go RmFileAfter(c.File.Name(), c.td)
+	return nil
+}
+
+func (c *CacheFile) Remove() error {
+	err := c.File.Close()
+	if err != nil {
+		return err
+	}
+	return os.Remove(c.File.Name())
+}
+
+func NewCacheFile(path string, td time.Duration) (*CacheFile, error) {
+	err := os.MkdirAll(filepath.Dir(path), os.ModePerm)
+	if err != nil {
+		return nil, err
+	}
+	f, err := os.Create(path)
+	if err != nil {
+		return nil, err
+	}
+	return &CacheFile{
+		File: f,
+		td:   td,
+	}, nil
+}
+
 func MkCache(path string, data []byte, td time.Duration) {
 	if err := MkFile(path, data); err != nil {
 		return
 	}
 	go RmFileAfter(path, td)
 }
-
 
 var fileNameReplacer = strings.NewReplacer(
 	" ", "_",

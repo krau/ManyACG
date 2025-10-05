@@ -5,12 +5,8 @@ import (
 	"errors"
 	"fmt"
 	"html"
-	"os"
-	"path"
 	"strconv"
 
-	"github.com/gabriel-vasile/mimetype"
-	"github.com/krau/ManyACG/internal/common/httpclient"
 	"github.com/krau/ManyACG/internal/interface/telegram/handlers/utils"
 	"github.com/krau/ManyACG/internal/interface/telegram/metautil"
 	"github.com/krau/ManyACG/internal/model/entity"
@@ -18,12 +14,10 @@ import (
 	"github.com/krau/ManyACG/internal/pkg/imgtool"
 	"github.com/krau/ManyACG/internal/shared/errs"
 	"github.com/krau/ManyACG/pkg/log"
-	"github.com/krau/ManyACG/pkg/strutil"
 	"github.com/krau/ManyACG/service"
 	"github.com/mymmrac/telego"
 	"github.com/mymmrac/telego/telegohandler"
 	"github.com/mymmrac/telego/telegoutil"
-	"github.com/samber/oops"
 )
 
 func GetPictureFile(ctx *telegohandler.Context, message telego.Message) error {
@@ -143,57 +137,12 @@ func getArtworkFiles(ctx *telegohandler.Context, serv *service.Service,
 	meta *metautil.MetaData,
 	message telego.Message, artwork entity.ArtworkLike) {
 	for i, picture := range artwork.GetPictures() {
-		buildDocument := func() (*telego.SendDocumentParams, error) {
-			var file telego.InputFile
-			alreadyCached := picture.GetTelegramInfo().DocumentFileID != ""
-			if alreadyCached {
-				file = telegoutil.FileFromID(picture.GetTelegramInfo().DocumentFileID)
-			} else if picture.GetStorageInfo().Original != nil {
-				// data, err := storage.GetFile(ctx, picture.StorageInfo.Original)
-				data, err := serv.Storage(picture.GetStorageInfo().Original.Type).GetFile(ctx, *picture.GetStorageInfo().Original)
-				if err != nil {
-					file, clean, err := httpclient.DownloadWithCache(ctx, picture.GetOriginal(), nil)
-					if err != nil {
-						log.Errorf("获取文件失败: %s", err)
-						utils.ReplyMessage(ctx, message, fmt.Sprintf("获取第 %d 张图片失败", i+1))
-						return nil, err
-					}
-					defer file.Close()
-					defer clean()
-					data, err = os.ReadFile(file.Name())
-					if err != nil {
-						log.Errorf("读取文件失败: %s", err)
-						utils.ReplyMessage(ctx, message, fmt.Sprintf("获取第 %d 张图片失败", i+1))
-						return nil, err
-					}
-				}
-				ext, _ := strutil.GetFileExtFromURL(picture.GetOriginal())
-				if ext == "" {
-					mtype := mimetype.Detect(data)
-					if mtype == nil {
-						return nil, oops.New("failed to detect mime type")
-					}
-					ext = mtype.Extension()
-				}
-				file = telegoutil.File(telegoutil.NameReader(bytes.NewReader(data), fmt.Sprintf("%s%s", strutil.MD5Hash(picture.GetOriginal()), ext)))
-			} else {
-				f, clean, err := httpclient.DownloadWithCache(ctx, picture.GetOriginal(), nil)
-				if err != nil {
-					log.Errorf("获取文件失败: %s", err)
-					utils.ReplyMessage(ctx, message, fmt.Sprintf("获取第 %d 张图片失败", i+1))
-					return nil, err
-				}
-				defer f.Close()
-				defer clean()
-				data, err := os.ReadFile(f.Name())
-				if err != nil {
-					log.Errorf("读取文件失败: %s", err)
-					utils.ReplyMessage(ctx, message, fmt.Sprintf("获取第 %d 张图片失败", i+1))
-					return nil, err
-				}
-				file = telegoutil.File(telegoutil.NameReader(bytes.NewReader(data), path.Base(f.Name())))
+		buildDocument := func() (*telego.SendDocumentParams, func() error, error) {
+			file, err := utils.GetPictureDocumentInputFile(ctx, serv, picture)
+			if err != nil {
+				return nil, nil, err
 			}
-			document := telegoutil.Document(message.Chat.ChatID(), file).
+			document := telegoutil.Document(message.Chat.ChatID(), file.InputFile).
 				WithReplyParameters(&telego.ReplyParameters{
 					MessageID: message.MessageID,
 				}).WithCaption(artwork.GetTitle() + "_" + strconv.Itoa(i+1)).WithDisableContentTypeDetection()
@@ -206,13 +155,14 @@ func getArtworkFiles(ctx *telegohandler.Context, serv *service.Service,
 					telegoutil.InlineKeyboardButton("详情").WithURL(artwork.GetSourceURL()),
 				}))
 			}
-			return document, nil
+			return document, file.Close, nil
 		}
 
-		document, err := buildDocument()
+		document, close, err := buildDocument()
 		if err != nil {
 			break
 		}
+		defer close()
 		documentMessage, err := ctx.Bot().SendDocument(ctx, document)
 		if err != nil {
 			log.Errorf("发送文件失败: %s", err)

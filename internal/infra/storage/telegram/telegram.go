@@ -1,6 +1,7 @@
 package telegram
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -25,6 +26,9 @@ type TelegramStorage struct {
 
 func init() {
 	storageCfg := config.Get().Storage.Telegram
+	if !storageCfg.Enable {
+		return
+	}
 	storageType := shared.StorageTypeTelegram
 	storage.Register(storageType, func() storage.Storage {
 		return &TelegramStorage{
@@ -95,15 +99,11 @@ func (t *TelegramStorage) Save(ctx context.Context, r io.Reader, _ string) (*sha
 	}, nil
 }
 
-func (t *TelegramStorage) GetFile(ctx context.Context, detail shared.StorageDetail) ([]byte, error) {
+func (t *TelegramStorage) GetFile(ctx context.Context, detail shared.StorageDetail) (io.ReadCloser, error) {
 	var file fileMessage
 	if err := json.Unmarshal([]byte(detail.Path), &file); err != nil {
 		return nil, err
 	}
-	// cachePath := filepath.Join(config.Get().Storage.CacheDir, strutil.MD5Hash(file.FileID))
-	// if data, err := os.ReadFile(cachePath); err == nil {
-		// return data, nil
-	// }
 	tgFile, err := t.bot.GetFile(ctx, &telego.GetFileParams{
 		FileID: file.FileID,
 	})
@@ -114,8 +114,7 @@ func (t *TelegramStorage) GetFile(ctx context.Context, detail shared.StorageDeta
 	if err != nil {
 		return nil, err
 	}
-	// go osutil.MkCache(cachePath, data, time.Duration(config.Get().Storage.CacheTTL)*time.Second)
-	return data, nil
+	return io.NopCloser(bytes.NewReader(data)), nil
 }
 
 func (t *TelegramStorage) Delete(ctx context.Context, detail shared.StorageDetail) error {

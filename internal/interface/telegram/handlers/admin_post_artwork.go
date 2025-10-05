@@ -340,7 +340,7 @@ func ArtworkPreview(ctx *telegohandler.Context, query telego.CallbackQuery) erro
 				)
 			}
 		}
-		inputFile, err := utils.GetPicturePreviewInputFile(ctx, cachedArtwork.Pictures[currentPictureIndex])
+		inputFile, err := utils.GetPicturePhotoInputFile(ctx, serv, cachedArtwork.Pictures[currentPictureIndex])
 		if err != nil {
 			log.Errorf("获取预览图片失败: %s", err)
 			ctx.Bot().AnswerCallbackQuery(ctx, &telego.AnswerCallbackQueryParams{
@@ -377,7 +377,7 @@ func ArtworkPreview(ctx *telegohandler.Context, query telego.CallbackQuery) erro
 		return nil
 	}
 
-	inputFile, err := utils.GetPicturePreviewInputFile(ctx, cachedArtwork.Pictures[pictureIndex])
+	inputFile, err := utils.GetPicturePhotoInputFile(ctx, serv, cachedArtwork.Pictures[pictureIndex])
 	if err != nil {
 		log.Errorf("获取预览图片失败: %s", err)
 		ctx.Bot().AnswerCallbackQuery(ctx, &telego.AnswerCallbackQueryParams{

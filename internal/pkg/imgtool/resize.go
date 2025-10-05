@@ -17,7 +17,7 @@ var (
 	nativeFormat    = map[string]struct{}{"jpeg": {}, "jpg": {}, "png": {}, "webp": {}, "avif": {}}
 )
 
-func Init() {
+func init() {
 	avif.InitEncoder()
 	avif.InitDecoder()
 	switch runtime.GOOS {
@@ -34,7 +34,7 @@ func Init() {
 	}
 }
 
-func GetImageSize(img image.Image) (int, int, error) {
+func GetSize(img image.Image) (int, int, error) {
 	if img == nil {
 		return 0, 0, fmt.Errorf("nil image")
 	}
@@ -45,7 +45,7 @@ func GetImageSize(img image.Image) (int, int, error) {
 	return bounds.Dx(), bounds.Dy(), nil
 }
 
-func CompressImage(inputPath, outputPath, format string, maxEdgeLength int) (*os.File, error) {
+func Compress(inputPath, outputPath, format string, maxEdgeLength int) (*os.File, error) {
 	if _, ok := vipsFormat[format]; ok {
 		fmt.Printf("Using vips to compress image: %s , %s , %s\n", inputPath, outputPath, format)
 		err := compressImageVIPS(inputPath, outputPath, format, maxEdgeLength)
@@ -73,7 +73,7 @@ func CompressImage(inputPath, outputPath, format string, maxEdgeLength int) (*os
 	return nil, fmt.Errorf("unsupported image format: %s", format)
 }
 
-func CompressImageForTelegram(input []byte) ([]byte, error) {
+func CompressForTelegram(input []byte) ([]byte, error) {
 	if _, ok := vipsFormat["jpeg"]; ok {
 		return compressImageForTelegramByVIPS(input)
 	}

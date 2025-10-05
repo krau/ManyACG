@@ -26,9 +26,11 @@ type DeletedRecord interface {
 	CheckDeletedByURL(ctx context.Context, url string) bool
 	CreateDeletedRecord(ctx context.Context, record *entity.DeletedRecord) error
 	DeleteDeletedByURL(ctx context.Context, url string) error
+	GetDeletedByURL(ctx context.Context, url string) (*entity.DeletedRecord, error)
 }
 
 type CachedArtwork interface {
+	CreateCachedArtwork(ctx context.Context, cachedArt *entity.CachedArtwork) (*entity.CachedArtwork, error)
 	ResetPostingCachedArtworkStatus(ctx context.Context) error
 	DeleteCachedArtworkByID(ctx context.Context, id objectuuid.ObjectUUID) error
 	GetCachedArtworkByID(ctx context.Context, id objectuuid.ObjectUUID) (*entity.CachedArtwork, error)
