@@ -19,6 +19,7 @@ type Logger interface {
 }
 
 type Config struct {
+	Type         string // charm, zap
 	Level        Level
 	LogFile      string
 	FileLevel    Level
@@ -40,11 +41,14 @@ const (
 )
 
 func (c *Config) ApplyDefaults() {
+	if c.Type == "" {
+		c.Type = "charm"
+	}
 	if c.Level == 0 {
 		c.Level = LevelDebug
 	}
 	if c.FileLevel == 0 {
-		c.FileLevel = LevelError
+		c.FileLevel = LevelInfo
 	}
 	if c.LogFile == "" {
 		c.LogFile = "logs/app.log"
@@ -81,7 +85,14 @@ func Default() Logger {
 
 func New(cfg Config) Logger {
 	cfg.ApplyDefaults()
-	return CharmLog(cfg)
+	switch cfg.Type {
+	case "zap":
+		return ZapLog(cfg)
+	case "charm":
+		return CharmLog(cfg)
+	default:
+		return CharmLog(cfg)
+	}
 }
 
 func SetDefault(logger Logger) {

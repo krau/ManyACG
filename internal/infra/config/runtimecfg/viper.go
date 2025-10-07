@@ -83,8 +83,7 @@ func loadConfig() Config {
 	viper.SetDefault("fetcher.max_concurrent", 5)
 	viper.SetDefault("fetcher.limit", 50)
 
-	viper.SetDefault("log.level", "TRACE")
-	viper.SetDefault("log.file_path", "logs/ManyACG.log")
+	viper.SetDefault("log.file_path", "logs/manyacg.log")
 	viper.SetDefault("log.backup_num", 7)
 
 	viper.SetDefault("source.pixiv.enable", true)

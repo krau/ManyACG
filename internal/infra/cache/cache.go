@@ -67,25 +67,23 @@ func initCache(ctx context.Context) {
 	}
 }
 
-func Set(ctx context.Context, key string, value any) error {
+func getDefault(ctx context.Context) *cache.Cache[any] {
 	once.Do(func() {
 		initCache(ctx)
 	})
-	return defaultCache.Set(ctx, key, value, store.WithExpiration(time.Duration(runtimecfg.Get().Cache.DefaultTTL)*time.Second))
+	return defaultCache
+}
+
+func Set(ctx context.Context, key string, value any) error {
+	return getDefault(ctx).Set(ctx, key, value, store.WithExpiration(time.Duration(runtimecfg.Get().Cache.DefaultTTL)*time.Second))
 }
 
 func SetWithTTL(ctx context.Context, key string, value any, ttl time.Duration) error {
-	once.Do(func() {
-		initCache(ctx)
-	})
-	return defaultCache.Set(ctx, key, value, store.WithExpiration(ttl))
+	return getDefault(ctx).Set(ctx, key, value, store.WithExpiration(ttl))
 }
 
 func Get[T any](ctx context.Context, key string) (T, error) {
-	once.Do(func() {
-		initCache(ctx)
-	})
-	got, err := defaultCache.Get(ctx, key)
+	got, err := getDefault(ctx).Get(ctx, key)
 	if err != nil {
 		return *new(T), err
 	}
@@ -98,10 +96,7 @@ func Get[T any](ctx context.Context, key string) (T, error) {
 
 // GetWithTTL returns the object stored in cache and its corresponding TTL
 func GetWithTTL[T any](ctx context.Context, key string) (T, time.Duration, error) {
-	once.Do(func() {
-		initCache(ctx)
-	})
-	got, ttl, err := defaultCache.GetWithTTL(ctx, key)
+	got, ttl, err := getDefault(ctx).GetWithTTL(ctx, key)
 	if err != nil {
 		return *new(T), 0, err
 	}
@@ -113,5 +108,5 @@ func GetWithTTL[T any](ctx context.Context, key string) (T, time.Duration, error
 }
 
 func Delete(ctx context.Context, key string) error {
-	return defaultCache.Delete(ctx, key)
+	return getDefault(ctx).Delete(ctx, key)
 }

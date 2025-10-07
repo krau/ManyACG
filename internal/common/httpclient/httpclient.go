@@ -11,6 +11,7 @@ import (
 
 	"github.com/imroc/req/v3"
 	"github.com/krau/ManyACG/internal/infra/config/runtimecfg"
+	"github.com/krau/ManyACG/pkg/log"
 	"github.com/krau/ManyACG/pkg/osutil"
 	"github.com/krau/ManyACG/pkg/strutil"
 )
@@ -64,7 +65,7 @@ func DownloadWithCache(ctx context.Context, url string, client *req.Client) (
 	if file, err := os.Open(cachePath); err == nil {
 		return file, func() {}, nil
 	}
-
+	log.Debug("downloading", "url", url, "to", cachePath)
 	resp, err := client.R().SetContext(ctx).Get(url)
 	if err != nil {
 		return nil, nil, err

@@ -38,6 +38,10 @@ Kawaii is All You Need! ᕕ(◠ڼ◠)ᕗ
 
 func Run() {
 	fmt.Printf(banner, version.BuildTime, version.Version, version.Commit[:7])
+	log.SetDefault(log.New(log.Config{
+		LogFile: runtimecfg.Get().Log.FilePath,
+		MaxBackups: int(runtimecfg.Get().Log.BackupNum),
+	}))
 
 	if runtimecfg.Get().App.Debug {
 		go func() {
