@@ -2,8 +2,6 @@ package service
 
 import (
 	"context"
-
-	"github.com/krau/ManyACG/internal/infra/database"
 )
 
 func (s *Service) Cleanup(ctx context.Context) error {
@@ -15,5 +13,5 @@ func (s *Service) Cleanup(ctx context.Context) error {
 	// 	return fmt.Errorf("failed to cleanup: %v", errs)
 	// }
 	// return nil
-	return database.Default().ResetPostingCachedArtworkStatus(ctx)
+	return s.repos.CachedArtwork().ResetPostingCachedArtworkStatus(ctx)
 }

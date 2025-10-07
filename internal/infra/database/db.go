@@ -6,7 +6,6 @@ import (
 
 	"github.com/krau/ManyACG/internal/infra/config/runtimecfg"
 	"github.com/krau/ManyACG/internal/model/entity"
-	"github.com/krau/ManyACG/internal/repo"
 	"github.com/krau/ManyACG/internal/shared"
 	"github.com/krau/ManyACG/pkg/log"
 	_ "github.com/ncruces/go-sqlite3/embed"
@@ -16,6 +15,7 @@ import (
 	"gorm.io/driver/mysql"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
+	"gorm.io/gorm/logger"
 )
 
 var (
@@ -28,64 +28,18 @@ type DB struct {
 	db *gorm.DB
 }
 
-// APIKey implements repo.Repositories.
-func (d *DB) APIKey() repo.APIKey {
-	return d
-}
-
-// Admin implements repo.Repositories.
-func (d *DB) Admin() repo.Admin {
-	return d
-}
-
-// Artist implements repo.Repositories.
-func (d *DB) Artist() repo.Artist {
-	return d
-}
-
-// Artwork implements repo.Repositories.
-func (d *DB) Artwork() repo.Artwork {
-	return d
-}
-
-// CachedArtwork implements repo.Repositories.
-func (d *DB) CachedArtwork() repo.CachedArtwork {
-	return d
-}
-
-// DeletedRecord implements repo.Repositories.
-func (d *DB) DeletedRecord() repo.DeletedRecord {
-	return d
-}
-
-// Picture implements repo.Repositories.
-func (d *DB) Picture() repo.Picture {
-	return d
-}
-
-// Tag implements repo.Repositories.
-func (d *DB) Tag() repo.Tag {
-	return d
-}
-
-// Transaction implements repo.Repositories.
-func (d *DB) Transaction(ctx context.Context, fn func(repos repo.Repositories) error) error {
-	return d.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
-		return fn(&DB{db: tx})
-	})
-}
-
 func Default() *DB {
 	if defaultDB == nil {
-		initOnce.Do(func() {
-			okCh := make(chan struct{})
-			initDB(context.Background(), okCh)
-			select {
-			case <-context.Background().Done():
-				log.Fatal("Database initialization canceled")
-			case <-okCh:
-			}
-		})
+		// initOnce.Do(func() {
+		// 	okCh := make(chan struct{})
+		// 	initDB(context.Background(), okCh)
+		// 	select {
+		// 	case <-context.Background().Done():
+		// 		log.Fatal("Database initialization canceled")
+		// 	case <-okCh:
+		// 	}
+		// })
+		log.Fatal("database not initialized, please call Init() first")
 	}
 	return defaultDB
 }
@@ -109,13 +63,19 @@ func initDB(ctx context.Context, okCh chan struct{}) {
 
 	var db *gorm.DB
 	var err error
+	gcfg := &gorm.Config{
+		Logger:             logger.Default.LogMode(logger.Silent),
+		TranslateError:     true,
+		PrepareStmt:        true,
+		PrepareStmtMaxSize: 2333,
+	}
 	switch dbType {
 	case "sqlite", "sqlite3":
-		db, err = gorm.Open(gormlite.Open(dsn))
+		db, err = gorm.Open(gormlite.Open(dsn), gcfg)
 	case "pgsql", "postgres", "postgresql":
-		db, err = gorm.Open(postgres.Open(dsn))
+		db, err = gorm.Open(postgres.Open(dsn), gcfg)
 	case "mysql":
-		db, err = gorm.Open(mysql.Open(dsn))
+		db, err = gorm.Open(mysql.Open(dsn), gcfg)
 	default:
 		log.Fatal("unsupported database type", "type", dbType)
 	}

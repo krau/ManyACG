@@ -53,17 +53,17 @@ func DownloadWithCache(ctx context.Context, url string, client *req.Client) (
 		client = defaultClient
 	}
 
+	lock, _ := cacheLocks.LoadOrStore(url, &sync.Mutex{})
+	lock.(*sync.Mutex).Lock()
+	defer func() {
+		cacheLocks.Delete(url)
+		lock.(*sync.Mutex).Unlock()
+	}()
+
 	cachePath := getCachePath(url)
 	if file, err := os.Open(cachePath); err == nil {
 		return file, func() {}, nil
 	}
-
-	lock, _ := cacheLocks.LoadOrStore(url, &sync.Mutex{})
-	lock.(*sync.Mutex).Lock()
-	defer func() {
-		lock.(*sync.Mutex).Unlock()
-		cacheLocks.Delete(url)
-	}()
 
 	resp, err := client.R().SetContext(ctx).Get(url)
 	if err != nil {

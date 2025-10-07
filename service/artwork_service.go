@@ -11,6 +11,7 @@ import (
 	"github.com/krau/ManyACG/internal/model/entity"
 	"github.com/krau/ManyACG/internal/model/query"
 	"github.com/krau/ManyACG/internal/repo"
+	"github.com/krau/ManyACG/internal/shared"
 	"github.com/krau/ManyACG/internal/shared/errs"
 	"github.com/krau/ManyACG/pkg/objectuuid"
 	"gorm.io/datatypes"
@@ -56,9 +57,9 @@ func (s *Service) CreateArtwork(ctx context.Context, cmd *command.ArtworkCreatio
 			artistID = *res
 		}
 		// 创建 tags
-		tagEnts := make([]*entity.Tag, len(cmd.Tags))
+		tagEnts := make([]*entity.Tag, 0, len(cmd.Tags))
 		tagsStr := slice.Unique(cmd.Tags)
-		for i, tag := range tagsStr {
+		for _, tag := range tagsStr {
 			tagEnt, err := repos.Tag().GetTagByNameWithAlias(ctx, tag)
 			if err != nil && !errors.Is(err, errs.ErrRecordNotFound) {
 				return err
@@ -67,7 +68,7 @@ func (s *Service) CreateArtwork(ctx context.Context, cmd *command.ArtworkCreatio
 				if tagEnt.Alias == nil {
 					tagEnt.Alias = []entity.TagAlias{}
 				}
-				tagEnts[i] = tagEnt
+				tagEnts = append(tagEnts, tagEnt)
 				continue
 			}
 			tagEnt = &entity.Tag{
@@ -78,7 +79,7 @@ func (s *Service) CreateArtwork(ctx context.Context, cmd *command.ArtworkCreatio
 			if err != nil {
 				return err
 			}
-			tagEnts[i] = res
+			tagEnts = append(tagEnts, res)
 		}
 		// 创建 artwork
 		awEnt := &entity.Artwork{
@@ -90,9 +91,9 @@ func (s *Service) CreateArtwork(ctx context.Context, cmd *command.ArtworkCreatio
 			ArtistID:    artistID,
 			Tags:        tagEnts,
 		}
-		pics := make([]*entity.Picture, len(cmd.Pictures))
-		for i, pic := range cmd.Pictures {
-			pics[i] = &entity.Picture{
+		pics := make([]*entity.Picture, 0, len(cmd.Pictures))
+		for _, pic := range cmd.Pictures {
+			pics = append(pics, &entity.Picture{
 				Index:        pic.Index,
 				ArtworkID:    awEnt.ID,
 				Thumbnail:    pic.Thumbnail,
@@ -103,10 +104,22 @@ func (s *Service) CreateArtwork(ctx context.Context, cmd *command.ArtworkCreatio
 				ThumbHash:    pic.ThumbHash,
 				TelegramInfo: datatypes.NewJSONType(*pic.TelegramInfo),
 				StorageInfo:  datatypes.NewJSONType(*pic.StorageInfo),
-			}
+			})
 		}
 		awEnt.Pictures = pics
 		_, err = repos.Artwork().CreateArtwork(ctx, awEnt)
+		if err != nil {
+			return err
+		}
+		// update cached artwork status
+		cached, err := repos.CachedArtwork().GetCachedArtworkByURL(ctx, cmd.SourceURL)
+		if err != nil && !errors.Is(err, errs.ErrRecordNotFound) {
+			return err
+		}
+		if cached != nil {
+			cached.Status = shared.ArtworkStatusPosted
+			_, err = repos.CachedArtwork().SaveCachedArtwork(ctx, cached)
+		}
 		return err
 	})
 	if err != nil {

@@ -100,11 +100,21 @@ func PostArtworkCallbackQuery(ctx *telegohandler.Context, query telego.CallbackQ
 				// log.Warnf("更新缓存作品状态失败: %s", err)
 				log.Error("failed to update cached artwork status", "err", err)
 			}
+			return nil
 		}
-		return nil
+		awEnt, err := serv.GetArtworkByURL(ctx, sourceURL)
+		if err != nil {
+			return oops.Wrapf(err, "failed to get created artwork by url")
+		}
+		_, err = ctx.Bot().EditMessageCaption(ctx, &telego.EditMessageCaptionParams{
+			ChatID:      telegoutil.ID(query.Message.GetChat().ID),
+			MessageID:   query.Message.GetMessageID(),
+			Caption:     fmt.Sprintf("发布成功: %s / %s\n%s", awEnt.Title, awEnt.GetSourceURL(), time.Now().Format("2006-01-02 15:04:05")),
+			ReplyMarkup: telegoutil.InlineKeyboard(utils.GetPostedArtworkInlineKeyboardButton(awEnt, meta)),
+		})
+		return err
 	}
 	return nil
-
 	// [TODO] implement non-channel posting
 }
 
