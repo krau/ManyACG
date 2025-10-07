@@ -41,7 +41,6 @@ func PostArtworkCallbackQuery(ctx *telegohandler.Context, query telego.CallbackQ
 		})
 		return nil
 	}
-	log.Infof("posting artwork: %s", sourceURL)
 
 	cachedArtwork, err := serv.GetOrFetchCachedArtwork(ctx, sourceURL)
 	if err != nil {
@@ -65,7 +64,10 @@ func PostArtworkCallbackQuery(ctx *telegohandler.Context, query telego.CallbackQ
 
 	if err := serv.UpdateCachedArtworkStatusByURL(ctx, sourceURL, shared.ArtworkStatusPosting); err != nil {
 		log.Errorf("更新缓存作品状态失败: %s", err)
+		return oops.Wrapf(err, "failed to update cached artwork status")
 	}
+	log.Infof("posting artwork: %s", sourceURL)
+
 	artwork := cachedArtwork.Artwork.Data()
 	ctx.Bot().EditMessageCaption(ctx, &telego.EditMessageCaptionParams{
 		ChatID:      telegoutil.ID(query.Message.GetChat().ID),
@@ -87,7 +89,7 @@ func PostArtworkCallbackQuery(ctx *telegohandler.Context, query telego.CallbackQ
 	}
 	meta := metautil.FromContext(ctx)
 	if meta.ChannelAvailable() {
-		if err := utils.PostAndCreateArtwork(ctx, serv, artwork, query.Message.GetChat().ID, query.Message.GetMessageID()); err != nil {
+		if err := utils.PostAndCreateArtwork(ctx, serv, artwork, query.Message.GetChat().ChatID(), meta.ChannelChatID(), query.Message.GetMessageID()); err != nil {
 			log.Errorf("failed to post and create artwork: %s", err)
 			ctx.Bot().EditMessageCaption(ctx, &telego.EditMessageCaptionParams{
 				ChatID:    telegoutil.ID(query.Message.GetChat().ID),
@@ -156,7 +158,7 @@ func PostArtworkCommand(ctx *telegohandler.Context, message telego.Message) erro
 
 	meta := metautil.FromContext(ctx)
 	if meta.ChannelAvailable() {
-		if err := utils.PostAndCreateArtwork(ctx, serv, artwork, message.Chat.ID, message.MessageID); err != nil {
+		if err := utils.PostAndCreateArtwork(ctx, serv, artwork, message.GetChat().ChatID(), meta.ChannelChatID(), message.MessageID); err != nil {
 			utils.ReplyMessage(ctx, message, "发布失败: "+err.Error())
 			return nil
 		}

@@ -11,12 +11,18 @@ import (
 
 func (d *DB) GetArtistByID(ctx context.Context, id objectuuid.ObjectUUID) (*entity.Artist, error) {
 	artist, err := gorm.G[entity.Artist](d.db).Where("id = ?", id).First(ctx)
-	return &artist, err
+	if err != nil {
+		return nil, err
+	}
+	return &artist, nil
 }
 
 func (d *DB) GetArtistByUID(ctx context.Context, uid string, source shared.SourceType) (*entity.Artist, error) {
-	artist, err := gorm.G[entity.Artist](d.db).Where("uid = ? AND source = ?", uid, source).First(ctx)
-	return &artist, err
+	artist, err := gorm.G[entity.Artist](d.db).Where("uid = ? AND type = ?", uid, source).First(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return &artist, nil
 }
 
 func (d *DB) UpdateArtist(ctx context.Context, patch *entity.Artist) error {

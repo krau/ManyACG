@@ -128,7 +128,7 @@ func SetArtworkTags(ctx *telegohandler.Context, message telego.Message) error {
 	if msgId := artwork.Pictures[0].TelegramInfo.Data().MessageID; msgId != 0 {
 		channelMeta := metautil.FromContext(ctx)
 		ctx.Bot().EditMessageCaption(ctx, &telego.EditMessageCaptionParams{
-			ChatID:    channelMeta.ChannelChatID,
+			ChatID:    channelMeta.ChannelChatID(),
 			MessageID: msgId,
 			Caption:   utils.ArtworkHTMLCaption(channelMeta, artwork),
 			ParseMode: telego.ModeHTML,
@@ -250,7 +250,7 @@ func EditArtworkTitle(ctx *telegohandler.Context, message telego.Message) error 
 	if msgId := artwork.Pictures[0].TelegramInfo.Data().MessageID; msgId != 0 {
 		meta := metautil.FromContext(ctx)
 		ctx.Bot().EditMessageCaption(ctx, &telego.EditMessageCaptionParams{
-			ChatID:    meta.ChannelChatID,
+			ChatID:    meta.ChannelChatID(),
 			MessageID: msgId,
 			Caption:   utils.ArtworkHTMLCaption(meta, artwork),
 			ParseMode: telego.ModeHTML,
@@ -330,7 +330,7 @@ func ReCaptionArtwork(ctx *telegohandler.Context, message telego.Message) error 
 	}
 	meta := metautil.FromContext(ctx)
 	ctx.Bot().EditMessageCaption(ctx, &telego.EditMessageCaptionParams{
-		ChatID:    meta.ChannelChatID,
+		ChatID:    meta.ChannelChatID(),
 		MessageID: artwork.Pictures[0].TelegramInfo.Data().MessageID,
 		Caption:   utils.ArtworkHTMLCaption(meta, artwork),
 		ParseMode: telego.ModeHTML,

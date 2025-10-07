@@ -5,6 +5,7 @@ import (
 	"image"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"runtime"
 
 	"github.com/gen2brain/avif"
@@ -46,6 +47,9 @@ func GetSize(img image.Image) (int, int, error) {
 }
 
 func Compress(inputPath, outputPath, format string, maxEdgeLength int) (*os.File, error) {
+	if err := os.MkdirAll(filepath.Dir(outputPath), os.ModePerm); err != nil {
+		return nil, err
+	}
 	if _, ok := vipsFormat[format]; ok {
 		fmt.Printf("Using vips to compress image: %s , %s , %s\n", inputPath, outputPath, format)
 		err := compressImageVIPS(inputPath, outputPath, format, maxEdgeLength)

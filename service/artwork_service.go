@@ -27,8 +27,8 @@ func (s *Service) CreateArtwork(ctx context.Context, cmd *command.ArtworkCreatio
 	if s.repos.DeletedRecord().CheckDeletedByURL(ctx, cmd.SourceURL) {
 		return nil, errs.ErrArtworkDeleted
 	}
-	// 创建 artist
 	err = s.repos.Transaction(ctx, func(repos repo.Repositories) error {
+		// 创建 artist
 		atsEnt, err := repos.Artist().GetArtistByUID(ctx, cmd.Artist.UID, cmd.SourceType)
 		if err != nil && !errors.Is(err, errs.ErrRecordNotFound) {
 			return err
@@ -58,23 +58,27 @@ func (s *Service) CreateArtwork(ctx context.Context, cmd *command.ArtworkCreatio
 		// 创建 tags
 		tagEnts := make([]*entity.Tag, len(cmd.Tags))
 		tagsStr := slice.Unique(cmd.Tags)
-		for _, tag := range tagsStr {
-			tagEnt, err := s.GetTagByNameWithAlias(ctx, tag)
+		for i, tag := range tagsStr {
+			tagEnt, err := repos.Tag().GetTagByNameWithAlias(ctx, tag)
 			if err != nil && !errors.Is(err, errs.ErrRecordNotFound) {
 				return err
 			}
 			if tagEnt != nil {
-				tagEnts = append(tagEnts, tagEnt)
+				if tagEnt.Alias == nil {
+					tagEnt.Alias = []entity.TagAlias{}
+				}
+				tagEnts[i] = tagEnt
 				continue
 			}
 			tagEnt = &entity.Tag{
-				Name: tag,
+				Name:  tag,
+				Alias: []entity.TagAlias{},
 			}
 			res, err := repos.Tag().CreateTag(ctx, tagEnt)
 			if err != nil {
 				return err
 			}
-			tagEnts = append(tagEnts, res)
+			tagEnts[i] = res
 		}
 		// 创建 artwork
 		awEnt := &entity.Artwork{
@@ -102,7 +106,7 @@ func (s *Service) CreateArtwork(ctx context.Context, cmd *command.ArtworkCreatio
 			}
 		}
 		awEnt.Pictures = pics
-		_, err = s.repos.Artwork().CreateArtwork(ctx, awEnt)
+		_, err = repos.Artwork().CreateArtwork(ctx, awEnt)
 		return err
 	})
 	if err != nil {
@@ -138,7 +142,7 @@ func (s *Service) UpdateArtworkTagsByURL(ctx context.Context, sourceURL string, 
 	return s.repos.Transaction(ctx, func(repos repo.Repositories) error {
 		tagEnts := make([]*entity.Tag, 0, len(uniTags))
 		for _, tag := range uniTags {
-			tagEnt, err := s.GetTagByNameWithAlias(ctx, tag)
+			tagEnt, err := repos.Tag().GetTagByNameWithAlias(ctx, tag)
 			if err != nil && !errors.Is(err, errs.ErrRecordNotFound) {
 				return err
 			}

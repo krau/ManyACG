@@ -20,7 +20,10 @@ func (d *DB) CreateCachedArtwork(ctx context.Context, data *entity.CachedArtwork
 
 func (d *DB) GetCachedArtworkByURL(ctx context.Context, sourceUrl string) (*entity.CachedArtwork, error) {
 	res, err := gorm.G[entity.CachedArtwork](d.db).Where("source_url = ?", sourceUrl).First(ctx)
-	return &res, err
+	if err != nil {
+		return nil, err
+	}
+	return &res, nil
 }
 
 func (d *DB) UpdateCachedArtworkStatusByURL(ctx context.Context, sourceUrl string, status shared.ArtworkStatus) error {
@@ -63,10 +66,9 @@ func (d *DB) ResetPostingCachedArtworkStatus(ctx context.Context) error {
 
 // GetCachedArtworkByID implements repo.CachedArtwork.
 func (d *DB) GetCachedArtworkByID(ctx context.Context, id objectuuid.ObjectUUID) (*entity.CachedArtwork, error) {
-	panic("unimplemented")
-}
-
-// UpdateCachedArtworkStatusByID implements repo.CachedArtwork.
-func (d *DB) UpdateCachedArtworkStatusByID(ctx context.Context, id objectuuid.ObjectUUID, status shared.ArtworkStatus) (*entity.CachedArtwork, error) {
-	panic("unimplemented")
+	res, err := gorm.G[entity.CachedArtwork](d.db).Where("id = ?", id).First(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return &res, nil
 }

@@ -19,7 +19,7 @@ func CommandToMe(ctx context.Context, update telego.Update) bool {
 		if botUsername == "" {
 			return true
 		}
-		return strings.TrimPrefix(botUsername, "@") == meta.BotUsername
+		return strings.TrimPrefix(botUsername, "@") == meta.BotUsername()
 	}
 	return true
 }

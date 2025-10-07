@@ -9,6 +9,7 @@ import (
 
 type Tag interface {
 	GetTagByName(ctx context.Context, name string) (*entity.Tag, error)
+	GetTagByNameWithAlias(ctx context.Context, name string) (*entity.Tag, error)
 	GetAliasTagByName(ctx context.Context, name string) (*entity.TagAlias, error)
 	GetTagByID(ctx context.Context, id objectuuid.ObjectUUID) (*entity.Tag, error)
 	CreateTag(ctx context.Context, tag *entity.Tag) (*entity.Tag, error)

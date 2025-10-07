@@ -13,19 +13,7 @@ import (
 )
 
 func (s *Service) GetTagByNameWithAlias(ctx context.Context, name string) (*entity.Tag, error) {
-	tag, err := s.repos.Tag().GetTagByName(ctx, name)
-	if err == nil {
-		return tag, nil
-	}
-	alias, err := s.repos.Tag().GetAliasTagByName(ctx, name)
-	if err != nil {
-		return nil, err
-	}
-	tag, err = s.repos.Tag().GetTagByID(ctx, alias.TagID)
-	if err != nil {
-		return nil, err
-	}
-	return tag, nil
+	return s.repos.Tag().GetTagByNameWithAlias(ctx, name)
 }
 
 // func GetRandomTags(ctx context.Context, limit int) ([]string, error) {
@@ -247,7 +235,7 @@ func (s *Service) AddTagAlias(ctx context.Context, tagID objectuuid.ObjectUUID, 
 					return err
 				}
 			}
-		
+
 			if err := repos.Tag().MigrateTagAlias(ctx, aliasTag.ID, tag.ID); err != nil {
 				return err
 			}

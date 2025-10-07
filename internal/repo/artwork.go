@@ -5,7 +5,6 @@ import (
 
 	"github.com/krau/ManyACG/internal/model/entity"
 	"github.com/krau/ManyACG/internal/model/query"
-	"github.com/krau/ManyACG/internal/shared"
 	"github.com/krau/ManyACG/pkg/objectuuid"
 )
 
@@ -25,6 +24,7 @@ type Artwork interface {
 type DeletedRecord interface {
 	CheckDeletedByURL(ctx context.Context, url string) bool
 	CreateDeletedRecord(ctx context.Context, record *entity.DeletedRecord) error
+	// 删除不存在的记录不应返回错误.
 	DeleteDeletedByURL(ctx context.Context, url string) error
 	GetDeletedByURL(ctx context.Context, url string) (*entity.DeletedRecord, error)
 }
@@ -35,5 +35,5 @@ type CachedArtwork interface {
 	DeleteCachedArtworkByID(ctx context.Context, id objectuuid.ObjectUUID) error
 	GetCachedArtworkByID(ctx context.Context, id objectuuid.ObjectUUID) (*entity.CachedArtwork, error)
 	GetCachedArtworkByURL(ctx context.Context, url string) (*entity.CachedArtwork, error)
-	UpdateCachedArtworkStatusByID(ctx context.Context, id objectuuid.ObjectUUID, status shared.ArtworkStatus) (*entity.CachedArtwork, error)
+	SaveCachedArtwork(ctx context.Context, artwork *entity.CachedArtwork) (*entity.CachedArtwork, error)
 }

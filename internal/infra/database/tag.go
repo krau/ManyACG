@@ -2,6 +2,7 @@ package database
 
 import (
 	"context"
+	"errors"
 
 	"github.com/krau/ManyACG/internal/model/entity"
 	"github.com/krau/ManyACG/pkg/objectuuid"
@@ -22,13 +23,13 @@ func (d *DB) GetTagByName(ctx context.Context, name string) (*entity.Tag, error)
 func (d *DB) GetAliasTagByName(ctx context.Context, name string) (*entity.TagAlias, error) {
 	alias, err := gorm.G[entity.TagAlias](d.db).
 		Where("alias = ?", name).
-		Preload("Tag", nil).
 		First(ctx)
 	if err != nil {
 		return nil, err
 	}
 	return &alias, nil
 }
+
 
 func (d *DB) GetTagByID(ctx context.Context, id objectuuid.ObjectUUID) (*entity.Tag, error) {
 	tag, err := gorm.G[entity.Tag](d.db).
@@ -40,6 +41,34 @@ func (d *DB) GetTagByID(ctx context.Context, id objectuuid.ObjectUUID) (*entity.
 	}
 	return &tag, nil
 }
+
+func (d *DB) GetTagByNameWithAlias(ctx context.Context, name string) (*entity.Tag, error) {
+	tag, err := gorm.G[entity.Tag](d.db).
+		Where("name = ?", name).
+		Preload("Alias", nil).
+		First(ctx)
+	if err == nil {
+		return &tag, nil
+	}
+	if !errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil, err
+	}
+	alias, err := gorm.G[entity.TagAlias](d.db).
+		Where("alias = ?", name).
+		First(ctx)
+	if err != nil {
+		return nil, err
+	}
+	tag, err = gorm.G[entity.Tag](d.db).
+		Where("id = ?", alias.TagID).
+		Preload("Alias", nil).
+		First(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return &tag, nil
+}
+
 
 func (d *DB) CreateTag(ctx context.Context, tag *entity.Tag) (*entity.Tag, error) {
 	result := gorm.WithResult()

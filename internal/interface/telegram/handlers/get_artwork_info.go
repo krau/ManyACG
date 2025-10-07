@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"fmt"
 	"strings"
 
 	"github.com/krau/ManyACG/internal/interface/telegram/handlers/utils"
@@ -21,23 +20,23 @@ func GetArtworkInfo(ctx *telegohandler.Context, message telego.Message) error {
 	ogch := utils.GetMssageOriginChannel(&message)
 	chatID := message.Chat.ChatID()
 	meta := metautil.FromContext(ctx)
-	if ogch != nil && (ogch.Chat.ID == meta.ChannelChatID.ID ||
-		strings.EqualFold(ogch.Chat.Username, strings.TrimPrefix(meta.ChannelChatID.Username, "@"))) {
+	if ogch != nil && (ogch.Chat.ID == meta.ChannelChatID().ID ||
+		strings.EqualFold(ogch.Chat.Username, strings.TrimPrefix(meta.ChannelChatID().Username, "@"))) {
 		// handle the posted artwork in our channel
 		// time.Sleep(3 * time.Second)
-		artwork, err := serv.GetArtworkByURL(ctx, sourceURL)
-		if err != nil {
-			log.Errorf("failed to get posted artwork: %s", err)
-			return nil
-		}
-		ctx.Bot().SendMessage(ctx, telegoutil.Message(
-			chatID,
-			fmt.Sprintf("%s\n点击下方按钮在私聊中获取原图文件", sourceURL),
-		).WithReplyParameters(&telego.ReplyParameters{
-			MessageID: message.MessageID,
-		}).WithReplyMarkup(telegoutil.InlineKeyboard(
-			utils.GetPostedArtworkInlineKeyboardButton(artwork, meta),
-		)))
+		// artwork, err := serv.GetArtworkByURL(ctx, sourceURL)
+		// if err != nil {
+		// 	log.Errorf("failed to get posted artwork: %s", err)
+		// 	return nil
+		// }
+		// ctx.Bot().SendMessage(ctx, telegoutil.Message(
+		// 	chatID,
+		// 	fmt.Sprintf("%s\n点击下方按钮在私聊中获取原图文件", sourceURL),
+		// ).WithReplyParameters(&telego.ReplyParameters{
+		// 	MessageID: message.MessageID,
+		// }).WithReplyMarkup(telegoutil.InlineKeyboard(
+		// 	utils.GetPostedArtworkInlineKeyboardButton(artwork, meta),
+		// )))
 		return nil
 	}
 	var waitMessageID int

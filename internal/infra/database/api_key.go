@@ -19,6 +19,9 @@ func (d *DB) CreateApiKey(ctx context.Context, apiKey *entity.ApiKey) (*objectuu
 
 func (d *DB) GetApiKeyByKey(ctx context.Context, key string) (*entity.ApiKey, error) {
 	res, err := gorm.G[entity.ApiKey](d.db).Where("key = ?", key).First(ctx)
+	if err != nil {
+		return nil, err
+	}
 	return &res, err
 }
 

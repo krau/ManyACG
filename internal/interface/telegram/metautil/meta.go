@@ -9,9 +9,17 @@ import (
 )
 
 type MetaData struct {
-	ChannelChatID    telego.ChatID
-	BotUsername      string
+	channelChatID    telego.ChatID
+	botUsername      string
 	channelAvailable bool
+}
+
+func (m *MetaData) ChannelChatID() telego.ChatID {
+	return m.channelChatID
+}
+
+func (m *MetaData) BotUsername() string {
+	return m.botUsername
 }
 
 func (m *MetaData) ChannelAvailable() bool {
@@ -24,8 +32,8 @@ var contextKey = MetaDataCtxKey{}
 
 func NewMetaData(channelChatID telego.ChatID, botUsername string) *MetaData {
 	return &MetaData{
-		ChannelChatID:    channelChatID,
-		BotUsername:      botUsername,
+		channelChatID:    channelChatID,
+		botUsername:      botUsername,
 		channelAvailable: channelChatID.ID != 0 || channelChatID.Username != "",
 	}
 }
@@ -42,12 +50,12 @@ func WithContext(ctx context.Context, meta *MetaData) context.Context {
 }
 
 func (m *MetaData) BotDeepLink(cmd string, params ...string) string {
-	return fmt.Sprintf("https://t.me/%s/?start=%s_%s", m.BotUsername, cmd, strings.Join(params, "_"))
+	return fmt.Sprintf("https://t.me/%s/?start=%s_%s", m.botUsername, cmd, strings.Join(params, "_"))
 }
 
 func (m *MetaData) ChannelMessageURL(messageID int) string {
-	if m.ChannelChatID.Username != "" {
-		return fmt.Sprintf("https://t.me/%s/%d", strings.TrimPrefix(m.ChannelChatID.String(), "@"), messageID)
+	if m.channelChatID.Username != "" {
+		return fmt.Sprintf("https://t.me/%s/%d", strings.TrimPrefix(m.channelChatID.String(), "@"), messageID)
 	}
-	return fmt.Sprintf("https://t.me/c/%s/%d", strings.TrimPrefix(m.ChannelChatID.String(), "-100"), messageID)
+	return fmt.Sprintf("https://t.me/c/%s/%d", strings.TrimPrefix(m.channelChatID.String(), "-100"), messageID)
 }

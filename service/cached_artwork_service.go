@@ -67,7 +67,8 @@ func (s *Service) UpdateCachedArtworkStatusByURL(ctx context.Context, sourceURL 
 	if err != nil {
 		return err
 	}
-	_, err = s.repos.CachedArtwork().UpdateCachedArtworkStatusByID(ctx, cachedArt.ID, status)
+	cachedArt.Status = status
+	_, err = s.repos.CachedArtwork().SaveCachedArtwork(ctx, cachedArt)
 	return err
 }
 

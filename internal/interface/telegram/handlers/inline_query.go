@@ -69,7 +69,7 @@ func InlineQuery(ctx *telegohandler.Context, inlineQuery telego.InlineQuery) err
 		ctx.Bot().AnswerInlineQuery(ctx, telegoutil.InlineQuery(inlineQuery.ID, telegoutil.ResultArticle(objectuuid.New().Hex(), "未找到相关图片", telegoutil.TextMessage(fmt.Sprintf(`
 未找到相关图片 (搜索: %s)
 
-<b>在任意聊天框中输入 @%s [关键词参数] 来查找相关图片</b>`, html.EscapeString(queryText), html.EscapeString(meta.BotUsername))).WithParseMode(telego.ModeHTML))))
+<b>在任意聊天框中输入 @%s [关键词参数] 来查找相关图片</b>`, html.EscapeString(queryText), html.EscapeString(meta.BotUsername()))).WithParseMode(telego.ModeHTML))))
 		return nil
 	}
 	results := make([]telego.InlineQueryResult, 0, len(artworks))

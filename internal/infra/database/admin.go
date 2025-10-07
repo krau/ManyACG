@@ -11,6 +11,9 @@ import (
 
 func (d *DB) GetAdminByTelegramID(ctx context.Context, telegramID int64) (*entity.Admin, error) {
 	res, err := gorm.G[entity.Admin](d.db).Where("telegram_id = ?", telegramID).First(ctx)
+	if err != nil {
+		return nil, err
+	}
 	return &res, err
 }
 

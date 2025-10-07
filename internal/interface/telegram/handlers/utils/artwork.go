@@ -30,7 +30,7 @@ func PostAndCreateArtwork(
 	ctx *telegohandler.Context,
 	serv *service.Service,
 	artwork *entity.CachedArtworkData,
-	fromChatID int64, messageID int,
+	fromChatID telego.ChatID, toChatID telego.ChatID, messageID int,
 ) error {
 	awInDb, err := serv.GetArtworkByURL(ctx, artwork.SourceURL)
 	if err == nil {
@@ -39,7 +39,7 @@ func PostAndCreateArtwork(
 	if serv.CheckDeletedByURL(ctx, artwork.SourceURL) {
 		return oops.Errorf("artwork is marked as deleted: %s", artwork.SourceURL)
 	}
-	showProgress := fromChatID != 0 && messageID != 0
+	showProgress := (fromChatID.ID != 0 || fromChatID.Username != "") && messageID != 0
 	if showProgress {
 		// // clear previous inline buttons
 		// defer ctx.Bot().EditMessageReplyMarkup(ctx, &telego.EditMessageReplyMarkupParams{
@@ -48,7 +48,7 @@ func PostAndCreateArtwork(
 		// 	ReplyMarkup: nil,
 		// })
 		ctx.Bot().EditMessageReplyMarkup(ctx, telegoutil.EditMessageReplyMarkup(
-			telegoutil.ID(fromChatID),
+			fromChatID,
 			messageID,
 			telegoutil.InlineKeyboard([]telego.InlineKeyboardButton{
 				telegoutil.InlineKeyboardButton("正在存储图片...").WithCallbackData("noop"),
@@ -73,7 +73,7 @@ func PostAndCreateArtwork(
 			ext = mtype.Extension()
 		}
 		filename := fmt.Sprintf("%s%s", strutil.MD5Hash(pic.Original), ext)
-		info, err := serv.StorageSaveAllSize(ctx, file, fmt.Sprint("/%s/%s", artwork.SourceType, artwork.Artist.UID), filename)
+		info, err := serv.StorageSaveAllSize(ctx, file, fmt.Sprintf("/%s/%s", artwork.SourceType, artwork.Artist.UID), filename)
 		if err != nil {
 			return oops.Wrapf(err, "failed to save picture %d", i)
 		}
@@ -81,14 +81,14 @@ func PostAndCreateArtwork(
 	}
 	if showProgress {
 		ctx.Bot().EditMessageReplyMarkup(ctx, telegoutil.EditMessageReplyMarkup(
-			telegoutil.ID(fromChatID),
+			fromChatID,
 			messageID,
 			telegoutil.InlineKeyboard([]telego.InlineKeyboardButton{
 				telegoutil.InlineKeyboardButton("正在发布到频道...").WithCallbackData("noop"),
 			}),
 		))
 	}
-	msgs, err := SendArtworkMediaGroup(ctx, telegoutil.ID(fromChatID), artwork)
+	msgs, err := SendArtworkMediaGroup(ctx, toChatID, artwork)
 	if err != nil {
 		return oops.Wrapf(err, "failed to send artwork media group")
 	}

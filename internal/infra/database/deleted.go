@@ -2,6 +2,7 @@ package database
 
 import (
 	"context"
+	"errors"
 
 	"github.com/krau/ManyACG/internal/model/entity"
 	"gorm.io/gorm"
@@ -9,7 +10,10 @@ import (
 
 func (d *DB) GetDeletedByURL(ctx context.Context, sourceURL string) (*entity.DeletedRecord, error) {
 	res, err := gorm.G[entity.DeletedRecord](d.db).Where("source_url = ?", sourceURL).First(ctx)
-	return &res, err
+	if err != nil {
+		return nil, err
+	}
+	return &res, nil
 }
 
 func (d *DB) CheckDeletedByURL(ctx context.Context, sourceURL string) bool {
@@ -31,11 +35,14 @@ func (d *DB) CreateDeletedRecord(ctx context.Context, deleted *entity.DeletedRec
 
 func (d *DB) DeleteDeletedByURL(ctx context.Context, sourceURL string) error {
 	n, err := gorm.G[entity.DeletedRecord](d.db).Where("source_url = ?", sourceURL).Delete(ctx)
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil
+	}
 	if err != nil {
 		return err
 	}
 	if n == 0 {
-		return gorm.ErrRecordNotFound
+		return nil
 	}
 	return nil
 }

@@ -193,10 +193,7 @@ func (app *BotApp) Run(ctx context.Context, serv *service.Service) {
 	botHandler.Use(messageLogger)
 
 	baseGroup := botHandler.BaseGroup()
-	handlers.New(&metautil.MetaData{
-		ChannelChatID: app.channelChatID,
-		BotUsername:   app.botUsername,
-	}, serv).Register(baseGroup)
+	handlers.New(metautil.NewMetaData(app.channelChatID, app.botUsername), serv).Register(baseGroup)
 	if err := botHandler.Start(); err != nil {
 		log.Fatalf("Error when starting bot handler: %s", err)
 	}

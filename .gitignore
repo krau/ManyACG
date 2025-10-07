@@ -9,4 +9,7 @@ tmp/
 *.mmdb
 dist/
 *.db
+*.db-shm
+*.db-wal
 *.log
+imgcache/

@@ -24,6 +24,9 @@ func (t *Tag) BeforeCreate(tx *gorm.DB) (err error) {
 	if t.ID == objectuuid.Nil {
 		t.ID = objectuuid.New()
 	}
+	if t.Alias == nil {
+		t.Alias = []TagAlias{}
+	}
 	return nil
 }
 

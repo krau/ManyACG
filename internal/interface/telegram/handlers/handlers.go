@@ -70,7 +70,7 @@ func (m HandlerManager) Register(hg *telegohandler.HandlerGroup) {
 		if msg == nil {
 			return ctx.Err()
 		}
-		if update.Message.ViaBot != nil && update.Message.ViaBot.Username == m.BotUsername {
+		if update.Message.ViaBot != nil && update.Message.ViaBot.Username == m.BotUsername() {
 			return ctx.Err()
 		}
 		if url := utils.FindSourceURLInMessage(m.Service, update.Message); url != "" {

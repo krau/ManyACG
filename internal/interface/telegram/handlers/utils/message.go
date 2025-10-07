@@ -116,7 +116,7 @@ func GetMssageOriginChannel(message *telego.Message) *telego.MessageOriginChanne
 
 func GetPostedArtworkInlineKeyboardButton(artwork *entity.Artwork, meta *metautil.MetaData) []telego.InlineKeyboardButton {
 	detailsURL := runtimecfg.Get().API.SiteURL + "/artwork/" + artwork.ID.Hex() // [TODO] refactor this
-	hasValidTelegramInfo := meta.ChannelChatID.ID != 0 || meta.ChannelChatID.Username != ""
+	hasValidTelegramInfo := meta.ChannelChatID().ID != 0 || meta.ChannelChatID().Username != ""
 	if hasValidTelegramInfo && artwork.Pictures[0].TelegramInfo.Data().MessageID != 0 {
 		detailsURL = meta.ChannelMessageURL(artwork.Pictures[0].TelegramInfo.Data().MessageID)
 	}
