@@ -21,6 +21,7 @@ type ArtworksFilter struct {
 type ArtworksDB struct {
 	ArtworksFilter
 	Paginate
+	Random bool // 随机排序, 默认按 created_at 降序
 }
 
 // 需要其他设施

@@ -11,6 +11,7 @@ import (
 type MetaData struct {
 	channelChatID    telego.ChatID
 	botUsername      string
+	siteUrl          string
 	channelAvailable bool
 }
 
@@ -26,16 +27,32 @@ func (m *MetaData) ChannelAvailable() bool {
 	return m.channelAvailable
 }
 
+func (m *MetaData) SiteURL() string {
+	return m.siteUrl
+}
+
 type MetaDataCtxKey struct{}
 
 var contextKey = MetaDataCtxKey{}
 
-func NewMetaData(channelChatID telego.ChatID, botUsername string) *MetaData {
-	return &MetaData{
+type Option func(*MetaData)
+
+func WithSiteURL(url string) Option {
+	return func(m *MetaData) {
+		m.siteUrl = strings.TrimRight(url, "/")
+	}
+}
+
+func NewMetaData(channelChatID telego.ChatID, botUsername string, opts ...Option) *MetaData {
+	meta := &MetaData{
 		channelChatID:    channelChatID,
 		botUsername:      botUsername,
 		channelAvailable: channelChatID.ID != 0 || channelChatID.Username != "",
 	}
+	for _, opt := range opts {
+		opt(meta)
+	}
+	return meta
 }
 
 func FromContext(ctx context.Context) *MetaData {

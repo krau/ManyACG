@@ -5,7 +5,6 @@ import (
 	"html"
 	"strings"
 
-	"github.com/krau/ManyACG/internal/infra/config/runtimecfg"
 	"github.com/krau/ManyACG/internal/interface/telegram/metautil"
 	"github.com/krau/ManyACG/internal/model/entity"
 	"github.com/krau/ManyACG/pkg/objectuuid"
@@ -115,7 +114,12 @@ func GetMssageOriginChannel(message *telego.Message) *telego.MessageOriginChanne
 }
 
 func GetPostedArtworkInlineKeyboardButton(artwork *entity.Artwork, meta *metautil.MetaData) []telego.InlineKeyboardButton {
-	detailsURL := runtimecfg.Get().API.SiteURL + "/artwork/" + artwork.ID.Hex() // [TODO] refactor this
+	var detailsURL string
+	if meta.SiteURL() != "" {
+		detailsURL = fmt.Sprintf("%s/artwork/%s", meta.SiteURL(), artwork.ID.Hex())
+	} else {
+		detailsURL = artwork.SourceURL
+	}
 	hasValidTelegramInfo := meta.ChannelChatID().ID != 0 || meta.ChannelChatID().Username != ""
 	if hasValidTelegramInfo && artwork.Pictures[0].TelegramInfo.Data().MessageID != 0 {
 		detailsURL = meta.ChannelMessageURL(artwork.Pictures[0].TelegramInfo.Data().MessageID)
@@ -131,9 +135,5 @@ func GetMessagePhotoFile(ctx *telegohandler.Context, message *telego.Message) ([
 }
 
 func SendPictureFileByID(ctx *telegohandler.Context, meta *metautil.MetaData, id objectuuid.ObjectUUID) (telego.Message, error) {
-	panic("unimplemented")
-}
-
-func GetPostedPictureInlineKeyboardButton(artwork *entity.Artwork, picIndex uint, meta *metautil.MetaData) []telego.InlineKeyboardButton {
 	panic("unimplemented")
 }

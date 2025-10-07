@@ -83,7 +83,7 @@ func InlineQuery(ctx *telegohandler.Context, inlineQuery telego.InlineQuery) err
 			ResultCachedPhoto(objectuuid.New().Hex(),
 				picture.TelegramInfo.Data().PhotoFileID).
 			WithCaption(fmt.Sprintf("<a href=\"%s\">%s</a>", artwork.SourceURL, html.EscapeString(artwork.Title))).
-			WithParseMode(telego.ModeHTML).WithReplyMarkup(telegoutil.InlineKeyboard(utils.GetPostedPictureInlineKeyboardButton(artwork, uint(pictureIndex), meta)))
+			WithParseMode(telego.ModeHTML).WithReplyMarkup(telegoutil.InlineKeyboard(utils.GetPostedArtworkInlineKeyboardButton(artwork, meta)))
 		results = append(results, result)
 	}
 	if err := ctx.Bot().AnswerInlineQuery(ctx, &telego.AnswerInlineQueryParams{

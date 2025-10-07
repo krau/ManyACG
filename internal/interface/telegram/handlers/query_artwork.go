@@ -1,86 +1,88 @@
 package handlers
 
-// import (
-// 	"bytes"
-// 	"context"
-// 	"errors"
-// 	"fmt"
-// 	"math/rand"
-// 	"strconv"
-// 	"strings"
+import (
+	"errors"
+	"fmt"
+	"html"
+	"math/rand"
+	"strings"
 
-// 	"github.com/duke-git/lancet/v2/slice"
-// 	"github.com/krau/ManyACG/_telegram/utils"
-// 	"github.com/krau/ManyACG/adapter"
-// 	"github.com/krau/ManyACG/common"
-// 	"github.com/krau/ManyACG/config"
-// 	"github.com/krau/ManyACG/internal/model/entity"
-// 	"github.com/krau/ManyACG/internal/model/query"
-// 	"github.com/krau/ManyACG/internal/pkg/imgtool"
-// 	"github.com/krau/ManyACG/internal/shared"
-// 	"github.com/krau/ManyACG/pkg/objectuuid"
-// 	"github.com/krau/ManyACG/types"
-// 	"github.com/mymmrac/telego"
-// 	"github.com/mymmrac/telego/telegohandler"
-// 	"github.com/mymmrac/telego/telegoutil"
-// 	"go.mongodb.org/mongo-driver/bson/primitive"
-// 	"go.mongodb.org/mongo-driver/mongo"
-// )
+	"github.com/krau/ManyACG/internal/interface/telegram/handlers/utils"
+	"github.com/krau/ManyACG/internal/interface/telegram/metautil"
+	"github.com/krau/ManyACG/internal/model/query"
+	"github.com/krau/ManyACG/internal/shared"
+	"github.com/krau/ManyACG/internal/shared/errs"
+	"github.com/krau/ManyACG/pkg/strutil"
+	"github.com/krau/ManyACG/service"
+	"github.com/mymmrac/telego"
+	"github.com/mymmrac/telego/telegohandler"
+	"github.com/mymmrac/telego/telegoutil"
+	"github.com/samber/oops"
+)
 
-// func RandomPicture(ctx *telegohandler.Context, message telego.Message) error {
-// 	cmd, _, args := telegoutil.ParseCommand(message.Text)
-// 	argText := strings.ReplaceAll(strings.Join(args, " "), "\\", "")
-// 	textArray := common.ParseStringTo2DArray(argText, "|", " ")
-// 	r18 := cmd == "setu"
-// 	r18Type := types.R18TypeNone
-// 	if r18 {
-// 		r18Type = types.R18TypeOnly
-// 	}
-// 	artwork, err := service.QueryArtworksByTexts(ctx, textArray, r18Type, 1, adapter.OnlyLoadPicture())
-// 	if err != nil {
-// 		common.Logger.Errorf("获取图片失败: %s", err)
-// 		text := "获取图片失败"
-// 		if errors.Is(err, mongo.ErrNoDocuments) {
-// 			text = "未找到图片"
-// 		}
-// 		utils.ReplyMessage(ctx, ctx.Bot(), message, text)
-// 		return nil
-// 	}
-// 	if len(artwork) == 0 {
-// 		utils.ReplyMessage(ctx, ctx.Bot(), message, "未找到图片")
-// 		return nil
-// 	}
-// 	pictures := artwork[0].Pictures
-// 	picture := pictures[rand.Intn(len(pictures))]
-// 	var file telego.InputFile
-// 	if picture.TelegramInfo.PhotoFileID != "" {
-// 		file = telegoutil.FileFromID(picture.TelegramInfo.PhotoFileID)
-// 	} else {
-// 		photoURL := fmt.Sprintf("%s/?url=%s&w=2560&h=2560&we&output=jpg", config.Cfg.WSRVURL, picture.Original)
-// 		file = telegoutil.FileFromURL(photoURL)
-// 	}
-// 	caption := fmt.Sprintf("[%s](%s)", common.EscapeMarkdown(artwork[0].Title), artwork[0].SourceURL)
-// 	photo := telegoutil.Photo(message.Chat.ChatID(), file).
-// 		WithReplyParameters(&telego.ReplyParameters{
-// 			MessageID: message.MessageID,
-// 		}).WithCaption(caption).WithParseMode(telego.ModeMarkdownV2).WithReplyMarkup(
-// 		telegoutil.InlineKeyboard(utils.GetPostedPictureInlineKeyboardButton(artwork[0], 0, ChannelChatID, BotUsername)),
-// 	)
-// 	if artwork[0].R18 {
-// 		photo.WithHasSpoiler()
-// 	}
-// 	photoMessage, err := ctx.Bot().SendPhoto(ctx, photo)
-// 	if err != nil {
-// 		utils.ReplyMessage(ctx, ctx.Bot(), message, "发送图片失败: "+err.Error())
-// 	}
-// 	if photoMessage != nil {
-// 		picture.TelegramInfo.PhotoFileID = photoMessage.Photo[len(photoMessage.Photo)-1].FileID
-// 		if service.UpdatePictureTelegramInfo(ctx, picture, picture.TelegramInfo) != nil {
-// 			common.Logger.Warnf("更新图片信息失败: %s", err)
-// 		}
-// 	}
-// 	return nil
-// }
+func RandomPicture(ctx *telegohandler.Context, message telego.Message) error {
+	cmd, _, args := telegoutil.ParseCommand(message.Text)
+	argText := strings.ReplaceAll(strings.Join(args, " "), "\\", "")
+	textArray := strutil.ParseTo2DArray(argText, "|", " ")
+	r18 := cmd == "setu"
+	r18Type := shared.R18TypeNone
+	if r18 {
+		r18Type = shared.R18TypeR18
+	}
+	serv := service.FromContext(ctx)
+	artwork, err := serv.QueryArtworks(ctx, query.ArtworksDB{
+		ArtworksFilter: query.ArtworksFilter{
+			R18:      r18Type,
+			Keywords: textArray,
+		},
+		Paginate: query.Paginate{
+			Offset: 0,
+			Limit:  1,
+		},
+		Random: true,
+	})
+	if err != nil {
+		if errors.Is(err, errs.ErrRecordNotFound) {
+			utils.ReplyMessage(ctx, message, "未找到相关图片")
+			return nil
+		}
+		utils.ReplyMessage(ctx, message, "查询图片失败")
+		return oops.Wrapf(err, "failed to query artworks for random picture")
+	}
+	if len(artwork) == 0 {
+		utils.ReplyMessage(ctx, message, "未找到相关图片")
+		return nil
+	}
+	pictures := artwork[0].Pictures
+	picIndex := rand.Intn(len(pictures))
+	picture := pictures[picIndex]
+	file, err := utils.GetPicturePhotoInputFile(ctx, serv, picture)
+	if err != nil {
+		utils.ReplyMessage(ctx, message, "获取图片失败")
+		return oops.Wrapf(err, "failed to get picture input file")
+	}
+	aw := artwork[0]
+	photo := telegoutil.
+		Photo(message.Chat.ChatID(), file).
+		WithCaption(fmt.Sprintf("<a href=\"%s\">%s</a>", aw.SourceURL, html.EscapeString(aw.Title))).
+		WithParseMode(telego.ModeHTML).
+		WithReplyParameters(&telego.ReplyParameters{
+			MessageID: message.MessageID,
+		}).
+		WithReplyMarkup(telegoutil.InlineKeyboard(utils.GetPostedArtworkInlineKeyboardButton(aw, metautil.FromContext(ctx))))
+	if aw.R18 {
+		photo.WithHasSpoiler()
+	}
+	photoMessage, err := ctx.Bot().SendPhoto(ctx, photo)
+	if err != nil {
+		utils.ReplyMessage(ctx, message, "发送图片失败")
+		return oops.Wrapf(err, "failed to send photo message")
+	}
+	if photoMessage != nil {
+		// [TODO] update picture telegram info
+	}
+	return nil
+}
 
 // func HybridSearchArtworks(ctx *telegohandler.Context, message telego.Message) error {
 // 	if common.MeilisearchClient == nil {

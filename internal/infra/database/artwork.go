@@ -2,6 +2,8 @@ package database
 
 import (
 	"context"
+	"math/rand"
+	"strings"
 
 	"github.com/krau/ManyACG/internal/model/entity"
 	"github.com/krau/ManyACG/internal/model/query"
@@ -63,8 +65,6 @@ func (d *DB) GetArtworkByURL(ctx context.Context, url string) (*entity.Artwork, 
 }
 
 func (d *DB) QueryArtworks(ctx context.Context, que query.ArtworksDB) ([]*entity.Artwork, error) {
-	var artworks []*entity.Artwork
-
 	query := d.db.WithContext(ctx).Model(&entity.Artwork{}).
 		Preload("Tags.Alias").
 		Preload(clause.Associations)
@@ -75,25 +75,88 @@ func (d *DB) QueryArtworks(ctx context.Context, que query.ArtworksDB) ([]*entity
 	if que.ArtistID != objectuuid.Nil {
 		query = query.Where("artist_id = ?", que.ArtistID)
 	}
-	// [[or1,or2],[or3,or4]] means (or1 OR or2) AND (or3 OR or4)
+
+	// 标签 IDs 筛选
 	if len(que.Tags) > 0 {
 		for _, orTags := range que.Tags {
 			if len(orTags) == 0 {
 				continue
 			}
-			subQuery := query.Table("artwork_tags").
+			subQuery := d.db.Table("artwork_tags").
 				Select("DISTINCT artwork_id").
 				Where("tag_id IN ?", orTags)
 			query = query.Where("id IN (?)", subQuery)
 		}
+	} else if len(que.Keywords) > 0 {
+		// 关键词 LIKE 筛选
+		for _, orKeywords := range que.Keywords {
+			if len(orKeywords) == 0 {
+				continue
+			}
+
+			subQuery := d.db.Table("artworks AS a").
+				Select("DISTINCT a.id").
+				Joins("LEFT JOIN artists AS ar ON a.artist_id = ar.id").
+				Joins("LEFT JOIN artwork_tags AS at ON a.id = at.artwork_id").
+				Joins("LEFT JOIN tags AS t ON at.tag_id = t.id").
+				Joins("LEFT JOIN tag_aliases AS ta ON t.id = ta.tag_id")
+
+			var orExpr []string
+			var orArgs []any
+			for _, kw := range orKeywords {
+				like := "%" + strings.ReplaceAll(strings.ReplaceAll(kw, "%", "\\%"), "_", "\\_") + "%"
+				orExpr = append(orExpr, "(a.title LIKE ? OR a.description LIKE ? OR ar.name LIKE ? OR t.name LIKE ? OR ta.alias LIKE ?)")
+				orArgs = append(orArgs, like, like, like, like, like)
+			}
+
+			subQuery = subQuery.Where(strings.Join(orExpr, " OR "), orArgs...)
+			query = query.Where("id IN (?)", subQuery)
+		}
 	}
+
 	if que.Limit > 0 {
 		query = query.Limit(que.Limit)
 	}
-	if que.Offset > 0 {
-		query = query.Offset(que.Offset)
+
+	if !que.Random {
+		if que.Offset > 0 {
+			query = query.Offset(que.Offset)
+		}
+		var artworks []*entity.Artwork
+		err := query.Order("created_at DESC").Find(&artworks).Error
+		if err != nil {
+			return nil, err
+		}
+		return artworks, nil
 	}
-	err := query.Order("created_at DESC").Find(&artworks).Error
+
+	var total int64
+	countQuery := query.Session(&gorm.Session{})
+	err := countQuery.Count(&total).Error
+	if err != nil {
+		return nil, err
+	}
+	if total == 0 {
+		return nil, gorm.ErrRecordNotFound
+	}
+	var artworks []*entity.Artwork
+	if int64(que.Limit) >= total {
+		err := query.Find(&artworks).Error
+		if err != nil {
+			return nil, err
+		}
+		return artworks, nil
+	}
+	if total < 1000 {
+		err = query.Order("RANDOM()").Limit(que.Limit).Find(&artworks).Error
+		if err != nil {
+			return nil, err
+		}
+		return artworks, nil
+	}
+	maxOffset := total - int64(que.Limit)
+	randOffset := rand.Int63n(maxOffset + 1)
+	err = query.Offset(int(randOffset)).Find(&artworks).Error
 	if err != nil {
 		return nil, err
 	}
