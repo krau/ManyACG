@@ -57,3 +57,7 @@ func Default() Tagger {
 	})
 	return defaultTagger
 }
+
+func Enabled() bool {
+	return runtimecfg.Get().Tagging.Enable
+}
