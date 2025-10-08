@@ -120,6 +120,7 @@ func initDB(ctx context.Context, okCh chan struct{}) {
 			log.Info("Created admin user", "user_id", adminID)
 		}
 	}
+
 	defaultDB = &DB{db: db}
 	log.Info("Database initialized")
 

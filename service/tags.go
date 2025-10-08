@@ -90,8 +90,35 @@ func (s *Service) AddTagAlias(ctx context.Context, tagID objectuuid.ObjectUUID, 
 				}
 			}
 
-			if err := repos.Tag().MigrateTagAlias(ctx, aliasTag.ID, tag.ID); err != nil {
+			affectedArtworks, err := repos.Tag().MigrateTagAlias(ctx, aliasTag.ID, tagID)
+			if err != nil {
 				return err
+			}
+			if len(affectedArtworks) == 0 {
+				continue
+			}
+			arts, err := repos.Artwork().GetArtworksByIDs(ctx, affectedArtworks)
+			if err != nil {
+				return err
+			}
+			for _, art := range arts {
+				newTags := make([]*entity.Tag, 0, len(art.Tags)+1)
+				exists := false
+				for _, t := range art.Tags {
+					if t.ID == aliasTag.ID {
+						continue
+					}
+					if t.ID == tag.ID {
+						exists = true
+					}
+					newTags = append(newTags, t)
+				}
+				if !exists {
+					newTags = append(newTags, &entity.Tag{ID: tag.ID, Name: tag.Name})
+				}
+				if err := repos.Artwork().UpdateArtworkTags(ctx, art.ID, newTags); err != nil {
+					return err
+				}
 			}
 		}
 		return nil

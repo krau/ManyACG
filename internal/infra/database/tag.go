@@ -100,11 +100,25 @@ func (d *DB) DeleteTagByID(ctx context.Context, id objectuuid.ObjectUUID) error 
 
 // MigrateTagAlias 迁移别名标签到目标标签，并删除别名标签
 //
-// 把 aliasTagID 对应的标签从 artwork_tags 中删除, 然后把 artwork_tags 中 tag_id 为 aliasTagID 的记录的 tag_id 更新为 targetTagID,
-// 最后删除 tag 表中 id 为 aliasTagID 的记录
-func (d *DB) MigrateTagAlias(ctx context.Context, aliasTagID, targetTagID objectuuid.ObjectUUID) error {
-	return d.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
-		// 迁移 aliasTagID 的作品引用到 targetTagID（去重）
+// 返回受影响的 artwork ids
+func (d *DB) MigrateTagAlias(ctx context.Context, aliasTagID, targetTagID objectuuid.ObjectUUID) ([]objectuuid.ObjectUUID, error) {
+	var affected []objectuuid.ObjectUUID
+
+	err := d.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		// 所有拥有 aliasTagID 的 artwork_id, 即受影响的 artworks
+		rows, err := tx.Raw(`SELECT DISTINCT artwork_id FROM artwork_tags WHERE tag_id = ?`, aliasTagID).Rows()
+		if err != nil {
+			return fmt.Errorf("select affected artworks: %w", err)
+		}
+		defer rows.Close()
+		for rows.Next() {
+			var aid objectuuid.ObjectUUID
+			if err := rows.Scan(&aid); err != nil {
+				return fmt.Errorf("scan artwork id: %w", err)
+			}
+			affected = append(affected, aid)
+		}
+
 		if err := tx.Exec(`
 			INSERT INTO artwork_tags (artwork_id, tag_id)
 			SELECT artwork_id, ?
@@ -117,12 +131,10 @@ func (d *DB) MigrateTagAlias(ctx context.Context, aliasTagID, targetTagID object
 			return fmt.Errorf("insert new tag references: %w", err)
 		}
 
-		// 删除 aliasTagID 的旧关联
 		if err := tx.Exec(`DELETE FROM artwork_tags WHERE tag_id = ?`, aliasTagID).Error; err != nil {
 			return fmt.Errorf("delete old tag references: %w", err)
 		}
 
-		// 删除 tag 表中 aliasTagID 的记录
 		res := tx.Where("id = ?", aliasTagID).Delete(&entity.Tag{})
 		if res.Error != nil {
 			return fmt.Errorf("delete alias tag: %w", res.Error)
@@ -130,6 +142,44 @@ func (d *DB) MigrateTagAlias(ctx context.Context, aliasTagID, targetTagID object
 		if res.RowsAffected == 0 {
 			return gorm.ErrRecordNotFound
 		}
+
 		return nil
 	})
+	if err != nil {
+		return nil, err
+	}
+
+	return affected, nil
 }
+
+// func (d *DB) MigrateTagAlias(ctx context.Context, aliasTagID, targetTagID objectuuid.ObjectUUID) error {
+// 	return d.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+// 		// 迁移 aliasTagID 的作品引用到 targetTagID（去重）
+// 		if err := tx.Exec(`
+// 			INSERT INTO artwork_tags (artwork_id, tag_id)
+// 			SELECT artwork_id, ?
+// 			FROM artwork_tags
+// 			WHERE tag_id = ?
+// 			AND artwork_id NOT IN (
+// 				SELECT artwork_id FROM artwork_tags WHERE tag_id = ?
+// 			)
+// 		`, targetTagID, aliasTagID, targetTagID).Error; err != nil {
+// 			return fmt.Errorf("insert new tag references: %w", err)
+// 		}
+
+// 		// 删除 aliasTagID 的旧关联
+// 		if err := tx.Exec(`DELETE FROM artwork_tags WHERE tag_id = ?`, aliasTagID).Error; err != nil {
+// 			return fmt.Errorf("delete old tag references: %w", err)
+// 		}
+
+// 		// 删除 tag 表中 aliasTagID 的记录
+// 		res := tx.Where("id = ?", aliasTagID).Delete(&entity.Tag{})
+// 		if res.Error != nil {
+// 			return fmt.Errorf("delete alias tag: %w", res.Error)
+// 		}
+// 		if res.RowsAffected == 0 {
+// 			return gorm.ErrRecordNotFound
+// 		}
+// 		return nil
+// 	})
+// }

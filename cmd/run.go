@@ -14,11 +14,14 @@ import (
 	_ "github.com/krau/ManyACG/internal/infra"
 	"github.com/krau/ManyACG/internal/infra/config/runtimecfg"
 	"github.com/krau/ManyACG/internal/infra/database"
+	"github.com/krau/ManyACG/internal/infra/eventbus"
 	"github.com/krau/ManyACG/internal/infra/search"
 	"github.com/krau/ManyACG/internal/infra/source"
 	"github.com/krau/ManyACG/internal/infra/storage"
 	"github.com/krau/ManyACG/internal/infra/tagging"
 	"github.com/krau/ManyACG/internal/interface/telegram"
+	"github.com/krau/ManyACG/internal/model/entity"
+	"github.com/krau/ManyACG/internal/repo"
 	"github.com/krau/ManyACG/pkg/log"
 	"github.com/krau/ManyACG/service"
 )
@@ -56,13 +59,53 @@ func Run() {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 	log.Info("Starting...")
-	database.Init(ctx)
+
 	source.InitAll()
 	if err := storage.InitAll(ctx); err != nil {
 		log.Fatal(err)
 	}
+
 	database.Init(ctx)
-	serv := service.NewService(database.Default(), search.Default(ctx), tagging.Default(), storage.Storages(), source.Sources(), runtimecfg.Get().Storage)
+	dbRepo := database.Default()
+
+	artworkBus := eventbus.New[*entity.Artwork]()
+
+	artworkBus.Subscribe(repo.EventTypeArtworkCreate, func(payload *entity.Artwork) {
+		log.Infof("Artwork created: %+v", payload)
+	}, func(payload *entity.Artwork) bool {
+		return payload != nil
+	})
+	artworkBus.Subscribe(repo.EventTypeArtworkUpdate, func(payload *entity.Artwork) {
+		log.Infof("Artwork updated: %+v", payload)
+	}, func(payload *entity.Artwork) bool {
+		return payload != nil
+	})
+	artworkBus.Subscribe(repo.EventTypeArtworkDelete, func(payload *entity.Artwork) {
+		log.Infof("Artwork deleted: %+v", payload)
+	}, func(payload *entity.Artwork) bool {
+		return payload != nil
+	})
+
+	repos := &repo.WithArtworkEventImpl{
+		Tx:          dbRepo,
+		AdminRepo:   dbRepo,
+		ApiKeyRepo:  dbRepo,
+		ArtistRepo:  dbRepo,
+		TagRepo:     dbRepo,
+		PictureRepo: dbRepo,
+		DeletedRepo: dbRepo,
+		CachedRepo:  dbRepo,
+		ArtworkRepo: repo.NewArtworkWithEvent(dbRepo, artworkBus),
+		ArtworkBus:  artworkBus,
+	}
+
+	serv := service.NewService(
+		repos,
+		search.Default(ctx),
+		tagging.Default(),
+		storage.Storages(),
+		source.Sources(),
+		runtimecfg.Get().Storage)
 	service.SetDefault(serv)
 	botapp, err := telegram.Init(ctx, serv)
 	if err != nil {
