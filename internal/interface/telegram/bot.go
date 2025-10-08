@@ -75,14 +75,12 @@ func Init(ctx context.Context, serv *service.Service) (*BotApp, error) {
 	botUsername := me.Username
 
 	go func() {
-
+		// set bot commands
 		bot.SetMyCommands(ctx, &telego.SetMyCommandsParams{
 			Commands: CommonCommands,
 			Scope:    &telego.BotCommandScopeDefault{Type: telego.ScopeTypeDefault},
 		})
-
 		allCommands := append(CommonCommands, AdminCommands...)
-
 		adminUserIDs, err := serv.GetAdminUserIDs(ctx)
 		if err != nil {
 			log.Warnf("Error when getting admin user IDs: %s", err)
@@ -127,9 +125,7 @@ func Init(ctx context.Context, serv *service.Service) (*BotApp, error) {
 					},
 				})
 			}
-
 		}
-
 		adminGroupIDs, err := serv.GetAdminGroupIDs(ctx)
 		if err != nil {
 			log.Warnf("Error when getting admin group IDs: %s", err)

@@ -16,6 +16,10 @@ func (s *Service) GetTagByNameWithAlias(ctx context.Context, name string) (*enti
 	return s.repos.Tag().GetTagByNameWithAlias(ctx, name)
 }
 
+func (s *Service) GetTagByName(ctx context.Context, name string) (*entity.Tag, error) {
+	return s.repos.Tag().GetTagByName(ctx, name)
+}
+
 // func GetRandomTags(ctx context.Context, limit int) ([]string, error) {
 // 	tags, err := dao.GetRandomTags(ctx, limit)
 // 	if err != nil {

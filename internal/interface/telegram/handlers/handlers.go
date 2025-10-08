@@ -46,7 +46,7 @@ func (m HandlerManager) Register(hg *telegohandler.HandlerGroup) {
 	mg.HandleMessage(EditArtworkTitle, telegohandler.CommandEqual("title"))
 	mg.HandleMessage(PostArtworkCommand, telegohandler.CommandEqual("post"))
 	mg.HandleMessage(RefreshArtwork, telegohandler.CommandEqual("refresh"))
-	// mg.HandleMessage(AddTagAlias, telegohandler.CommandEqual("tagalias"))
+	mg.HandleMessage(AddTagAlias, telegohandler.CommandEqual("tagalias"))
 	mg.HandleMessage(DumpArtworkInfo, telegohandler.CommandEqual("dump"))
 	mg.HandleMessage(ReCaptionArtwork, telegohandler.CommandEqual("recaption"))
 	// mg.HandleMessage(AutoTaggingArtwork, telegohandler.CommandEqual("autotag"))

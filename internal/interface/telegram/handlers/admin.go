@@ -3,6 +3,7 @@ package handlers
 import (
 	"fmt"
 	"html"
+	"slices"
 	"strconv"
 
 	"github.com/krau/ManyACG/internal/interface/telegram/handlers/utils"
@@ -48,6 +49,10 @@ func SetAdmin(ctx *telegohandler.Context, message telego.Message) error {
 			userID = message.ReplyToMessage.From.ID
 		}
 	}
+	if userID == message.From.ID {
+		utils.ReplyMessage(ctx, message, "不能修改自己的权限")
+		return nil
+	}
 
 	inputPermissions := make([]shared.Permission, 0, len(args)-1)
 	unsupportedPermissions := make([]string, 0)
@@ -71,24 +76,16 @@ func SetAdmin(ctx *telegohandler.Context, message telego.Message) error {
 		utils.ReplyMessage(ctx, message, "操作成功")
 		return nil
 	}
+	if userID <= -1000000000000 && slices.Contains(inputPermissions, shared.PermissionSudo) {
+		utils.ReplyMessage(ctx, message, "不能赋予群组超级管理员权限")
+		return nil
+	}
 
 	if len(unsupportedPermissions) > 0 {
 		utils.ReplyMessageWithHTML(ctx, message, html.EscapeString(fmt.Sprintf("权限不存在: %v\n支持的权限:\n", unsupportedPermissions))+supportedPermissionsText)
 		return nil
 	}
 
-	isAdmin, err := serv.IsAdminByTgID(ctx, userID)
-	if err != nil {
-		utils.ReplyMessage(ctx, message, "检查管理员状态失败: "+err.Error())
-		return oops.Wrapf(err, "check admin status failed")
-	}
-	if !isAdmin {
-		if err := serv.CreateAdmin(ctx, userID, inputPermissions); err != nil {
-			utils.ReplyMessage(ctx, message, "创建管理员失败: "+err.Error())
-			return oops.Wrapf(err, "create admin failed")
-		}
-		return nil
-	}
 	if err := serv.CreateOrUpdateAdmin(ctx, userID, inputPermissions); err != nil {
 		utils.ReplyMessage(ctx, message, "更新管理员权限失败: "+err.Error())
 		return oops.Wrapf(err, "update admin permissions failed")
@@ -97,37 +94,28 @@ func SetAdmin(ctx *telegohandler.Context, message telego.Message) error {
 	return nil
 }
 
-// func AddTagAlias(ctx *telegohandler.Context, message telego.Message) error {
-// 	if !service.CheckAdminPermissionByTgID(ctx, message.From.ID, shared.PermissionSudo) {
-// 		utils.ReplyMessage(ctx, ctx.Bot(), message, "你没有权限添加标签别名")
-// 		return nil
-// 	}
-// 	_, _, args := utils.ParseCommandBy(message.Text, " ", "\"")
-// 	if len(args) < 2 {
-// 		utils.ReplyMessage(ctx, ctx.Bot(), message, "请提供原标签名和需要添加的别名")
-// 		return nil
-// 	}
-// 	tagName := args[0]
-// 	tagAliases := args[1:]
-// 	tag, err := service.GetTagByName(ctx, tagName)
-// 	if err != nil {
-// 		utils.ReplyMessage(ctx, ctx.Bot(), message, "获取标签失败: "+err.Error())
-// 		return nil
-// 	}
-// 	if _, err := service.AddTagAliasByID(ctx, tag.ID, tagAliases...); err != nil {
-// 		utils.ReplyMessage(ctx, ctx.Bot(), message, "添加标签别名失败: "+err.Error())
-// 		return nil
-// 	}
-// 	utils.ReplyMessage(ctx, ctx.Bot(), message, "添加标签别名成功")
-// 	return nil
-// }
-
-// func AutoTagAllArtwork(ctx *telegohandler.Context, message telego.Message) error {
-// 	if !service.CheckAdminPermissionByTgID(ctx, message.From.ID, shared.PermissionSudo) {
-// 		utils.ReplyMessage(ctx, ctx.Bot(), message, "你没有权限")
-// 		return nil
-// 	}
-// 	go service.PredictAllArtworkTagsAndUpdate(ctx, ctx.Bot(), &message)
-// 	utils.ReplyMessage(ctx, ctx.Bot(), message, "开始处理了")
-// 	return nil
-// }
+func AddTagAlias(ctx *telegohandler.Context, message telego.Message) error {
+	serv := service.FromContext(ctx)
+	if !serv.CheckAdminPermissionByTgID(ctx, message.From.ID, shared.PermissionSudo) {
+		utils.ReplyMessage(ctx, message, "你没有权限添加标签别名")
+		return nil
+	}
+	_, _, args := utils.ParseCommandBy(message.Text, " ", "\"")
+	if len(args) < 2 {
+		utils.ReplyMessage(ctx, message, "请提供原标签名和需要添加的别名")
+		return nil
+	}
+	tagName := args[0]
+	tagAliases := args[1:]
+	tag, err := serv.GetTagByName(ctx, tagName)
+	if err != nil {
+		utils.ReplyMessage(ctx, message, "获取标签失败: "+err.Error())
+		return nil
+	}
+	if _, err := serv.AddTagAlias(ctx, tag.ID, tagAliases); err != nil {
+		utils.ReplyMessage(ctx, message, "添加标签别名失败: "+err.Error())
+		return nil
+	}
+	utils.ReplyMessage(ctx, message, "添加标签别名成功")
+	return nil
+}

@@ -94,6 +94,12 @@ func getArtworkFiles(ctx *telegohandler.Context,
 	meta *metautil.MetaData,
 	message telego.Message,
 	artwork entity.ArtworkLike) error {
+	msg, err := utils.ReplyMessage(ctx, message, "正在发送文件, 请稍等...")
+	if err == nil {
+		defer func() {
+			ctx.Bot().DeleteMessage(ctx, telegoutil.Delete(msg.Chat.ChatID(), msg.MessageID))
+		}()
+	}
 	var errs []error
 	for i, picture := range artwork.GetPictures() {
 		err := func() error {

@@ -6,6 +6,7 @@ import (
 	"github.com/krau/ManyACG/internal/model/entity"
 	"github.com/krau/ManyACG/internal/shared"
 	"github.com/krau/ManyACG/pkg/objectuuid"
+	"gorm.io/datatypes"
 	"gorm.io/gorm"
 )
 
@@ -46,5 +47,5 @@ func (d *DB) ListAdmins(ctx context.Context) ([]entity.Admin, error) {
 }
 
 func (d *DB) UpdateAdminPermissions(ctx context.Context, id objectuuid.ObjectUUID, permissions []shared.Permission) error {
-	return d.db.WithContext(ctx).Model(&entity.Admin{}).Where("id = ?", id).Update("permissions", permissions).Error
+	return d.db.WithContext(ctx).Model(&entity.Admin{}).Where("id = ?", id).Update("permissions", datatypes.NewJSONSlice(permissions)).Error
 }

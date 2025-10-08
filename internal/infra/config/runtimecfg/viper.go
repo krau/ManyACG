@@ -73,11 +73,17 @@ func loadConfig() Config {
 		"storage.cache_dir": "./imgcache",
 		"storage.cache_ttl": 86400,
 
+		"telegram.api_url":             "https://api.telegram.org",
 		"telegram.retry.max_attempts":  5,
 		"telegram.retry.exponent_base": 2.0,
 		"telegram.retry.start_delay":   3,
 		"telegram.retry.max_delay":     300,
-		"telegram.api_url":             "https://api.telegram.org",
+
+		"storage.telegram.api_url":             "https://api.telegram.org",
+		"storage.telegram.retry.max_attempts":  5,
+		"storage.telegram.retry.exponent_base": 2.0,
+		"storage.telegram.retry.start_delay":   3,
+		"storage.telegram.retry.max_delay":     300,
 	}
 
 	for key, value := range defaults {

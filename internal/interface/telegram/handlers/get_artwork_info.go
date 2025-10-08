@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/krau/ManyACG/internal/interface/telegram/handlers/utils"
 	"github.com/krau/ManyACG/internal/interface/telegram/metautil"
@@ -20,7 +21,7 @@ func GetArtworkInfo(ctx *telegohandler.Context, message telego.Message) error {
 	ogch := utils.GetMssageOriginChannel(&message)
 	chatID := message.Chat.ChatID()
 	meta := metautil.FromContext(ctx)
-	if ogch != nil && metautil.ChatIDEqual(ogch.Chat.ChatID(), meta.ChannelChatID()) {
+	if ogch != nil && (ogch.Chat.ID == meta.ChannelChatID().ID || strings.EqualFold(ogch.Chat.Username, strings.TrimPrefix(meta.ChannelChatID().Username, "@"))) {
 		// handle the posted artwork in our channel
 		artwork, err := serv.GetArtworkByURL(ctx, sourceURL)
 		if err != nil {
