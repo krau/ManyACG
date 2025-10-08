@@ -28,11 +28,11 @@ func (s *Service) GetOrFetchCachedArtwork(ctx context.Context, sourceURL string)
 	pics := make([]*entity.CachedPicture, len(fetched.Pictures))
 	for i, pic := range fetched.Pictures {
 		pics[i] = &entity.CachedPicture{
-			Index:     pic.Index,
-			Thumbnail: pic.Thumbnail,
-			Original:  pic.Original,
-			Width:     pic.Width,
-			Height:    pic.Height,
+			OrderIndex: pic.Index,
+			Thumbnail:  pic.Thumbnail,
+			Original:   pic.Original,
+			Width:      pic.Width,
+			Height:     pic.Height,
 		}
 	}
 	ent := &entity.CachedArtwork{
@@ -89,7 +89,7 @@ func (s *Service) UpdateCachedArtwork(ctx context.Context, data *entity.CachedAr
 func (s *Service) HideCachedArtworkPicture(ctx context.Context, cachedArt *entity.CachedArtwork, picIndex int) error {
 	data := cachedArt.Artwork.Data()
 	for _, pic := range data.Pictures {
-		if pic.Index == uint(picIndex) {
+		if pic.OrderIndex == uint(picIndex) {
 			pic.Hidden = true
 		}
 	}

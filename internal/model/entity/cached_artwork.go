@@ -82,12 +82,12 @@ type CachedArtist struct {
 }
 
 type CachedPicture struct {
-	ID        string `json:"id"`
-	ArtworkID string `json:"artwork_id"`
-	Index     uint   `json:"index"`
-	Thumbnail string `json:"thumbnail"`
-	Original  string `json:"original"`
-	Hidden    bool   `json:"hidden"` // 设为 true 时不发布到 Artwork 中, 但仍在其他接口中返回
+	ID         string `json:"id"`
+	ArtworkID  string `json:"artwork_id"`
+	OrderIndex uint   `json:"index"`
+	Thumbnail  string `json:"thumbnail"`
+	Original   string `json:"original"`
+	Hidden     bool   `json:"hidden"` // 设为 true 时不发布到 Artwork 中, 但仍在其他接口中返回
 
 	Width     uint   `json:"width"`
 	Height    uint   `json:"height"`
@@ -105,7 +105,7 @@ func (c *CachedPicture) IsHide() bool {
 
 // GetIndex implements PictureLike.
 func (c *CachedPicture) GetIndex() uint {
-	return c.Index
+	return c.OrderIndex
 }
 
 // GetOriginal implements PictureLike.

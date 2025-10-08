@@ -15,10 +15,6 @@ import (
 
 func GetArtworkInfo(ctx *telegohandler.Context, message telego.Message) error {
 	serv := service.FromContext(ctx)
-	hasPermission := utils.CheckPermissionInGroup(ctx, serv, message, shared.PermissionGetArtworkInfo)
-	if !hasPermission {
-		return nil
-	}
 	sourceURL := ctx.Value("source_url").(string)
 	ogch := utils.GetMssageOriginChannel(&message)
 	chatID := message.Chat.ChatID()
@@ -38,6 +34,10 @@ func GetArtworkInfo(ctx *telegohandler.Context, message telego.Message) error {
 		}).WithReplyMarkup(telegoutil.InlineKeyboard(
 			utils.GetPostedArtworkInlineKeyboardButton(artwork, meta),
 		)))
+		return nil
+	}
+	hasPermission := utils.CheckPermissionInGroup(ctx, serv, message, shared.PermissionGetArtworkInfo)
+	if !hasPermission {
 		return nil
 	}
 	err := utils.SendArtworkInfo(ctx, meta, serv, sourceURL, chatID, utils.SendArtworkInfoOptions{

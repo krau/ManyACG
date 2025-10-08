@@ -13,3 +13,4 @@ dist/
 *.db-wal
 *.log
 imgcache/
+test.json

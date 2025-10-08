@@ -149,7 +149,7 @@ func PostAndCreateArtwork(
 			pics := make([]command.ArtworkPictureCreation, len(artwork.Pictures))
 			for i, pic := range artwork.Pictures {
 				pics[i] = command.ArtworkPictureCreation{
-					Index:        pic.Index,
+					Index:        pic.OrderIndex,
 					Thumbnail:    pic.Thumbnail,
 					Original:     pic.Original,
 					Width:        pic.Width,
