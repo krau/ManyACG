@@ -14,6 +14,16 @@ type SearcherMock struct {
 	repo repo.Artwork
 }
 
+// AddDocuments implements search.Searcher.
+func (m *SearcherMock) AddDocuments(ctx context.Context, docs []*dto.ArtworkSearchDocument) error {
+	return nil
+}
+
+// DeleteDocuments implements search.Searcher.
+func (m *SearcherMock) DeleteDocuments(ctx context.Context, ids []string) error {
+	return nil
+}
+
 func NewSearcher(awRepo repo.Artwork) *SearcherMock {
 	return &SearcherMock{
 		repo: awRepo,

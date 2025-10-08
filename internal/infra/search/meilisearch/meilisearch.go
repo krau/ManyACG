@@ -19,6 +19,18 @@ type SearcherMeilisearch struct {
 	cfg    runtimecfg.MeiliSearchConfig
 }
 
+// AddDocuments implements search.Searcher.
+func (m *SearcherMeilisearch) AddDocuments(ctx context.Context, docs []*dto.ArtworkSearchDocument) error {
+	_, err := m.client.AddDocumentsWithContext(ctx, docs, "id")
+	return err
+}
+
+// DeleteDocuments implements search.Searcher.
+func (m *SearcherMeilisearch) DeleteDocuments(ctx context.Context, ids []string) error {
+	_, err := m.client.DeleteDocumentsWithContext(ctx, ids)
+	return err
+}
+
 func NewSearcher(ctx context.Context, cfg runtimecfg.MeiliSearchConfig) (*SearcherMeilisearch, error) {
 	if err := cfg.Valid(); err != nil {
 		return nil, err

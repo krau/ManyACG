@@ -3,6 +3,7 @@ package entity
 import (
 	"time"
 
+	"github.com/duke-git/lancet/v2/slice"
 	"github.com/krau/ManyACG/internal/shared"
 	"github.com/krau/ManyACG/pkg/objectuuid"
 	"gorm.io/gorm"
@@ -61,6 +62,17 @@ func (a *Artwork) GetTags() []string {
 		tags = append(tags, tag.Name)
 	}
 	return tags
+}
+
+func (a *Artwork) GetTagsWithAlias() []string {
+	tags := make([]string, 0)
+	for _, tag := range a.Tags {
+		tags = append(tags, tag.Name)
+		for _, alias := range tag.Alias {
+			tags = append(tags, alias.Alias)
+		}
+	}
+	return slice.Unique(tags)
 }
 
 // GetTitle implements ArtworkLike.

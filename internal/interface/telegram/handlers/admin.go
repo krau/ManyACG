@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"fmt"
-	"html"
 	"slices"
 	"strconv"
 
@@ -54,19 +53,6 @@ func SetAdmin(ctx *telegohandler.Context, message telego.Message) error {
 		return nil
 	}
 
-	inputPermissions := make([]shared.Permission, 0, len(args)-1)
-	unsupportedPermissions := make([]string, 0)
-	for i, arg := range args[1:] {
-		for _, p := range shared.PermissionValues() {
-			if p.String() == arg {
-				inputPermissions = append(inputPermissions, p)
-				break
-			}
-		}
-		if inputPermissions[i] == "" {
-			unsupportedPermissions = append(unsupportedPermissions, arg)
-		}
-	}
 	deladmin := cmd == "deladmin"
 	if deladmin {
 		if err := serv.DeleteAdminByTgID(ctx, userID); err != nil {
@@ -76,13 +62,23 @@ func SetAdmin(ctx *telegohandler.Context, message telego.Message) error {
 		utils.ReplyMessage(ctx, message, "操作成功")
 		return nil
 	}
-	if userID <= -1000000000000 && slices.Contains(inputPermissions, shared.PermissionSudo) {
-		utils.ReplyMessage(ctx, message, "不能赋予群组超级管理员权限")
+	inputPermissions := make([]shared.Permission, 0)
+	for _, arg := range args {
+		for _, p := range shared.PermissionValues() {
+			if p.String() == arg {
+				inputPermissions = append(inputPermissions, p)
+				break
+			}
+		}
+	}
+	if len(inputPermissions) == 0 {
+		utils.ReplyMessageWithHTML(ctx, message,
+			fmt.Sprintf("请指定权限, 以空格分隔, 支持的权限:\n%s", supportedPermissionsText),
+		)
 		return nil
 	}
-
-	if len(unsupportedPermissions) > 0 {
-		utils.ReplyMessageWithHTML(ctx, message, html.EscapeString(fmt.Sprintf("权限不存在: %v\n支持的权限:\n", unsupportedPermissions))+supportedPermissionsText)
+	if userID <= -1000000000000 && slices.Contains(inputPermissions, shared.PermissionSudo) {
+		utils.ReplyMessage(ctx, message, "不能赋予群组超级管理员权限")
 		return nil
 	}
 

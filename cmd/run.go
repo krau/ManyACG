@@ -20,6 +20,7 @@ import (
 	"github.com/krau/ManyACG/internal/infra/storage"
 	"github.com/krau/ManyACG/internal/infra/tagging"
 	"github.com/krau/ManyACG/internal/interface/telegram"
+	"github.com/krau/ManyACG/internal/model/dto"
 	"github.com/krau/ManyACG/internal/model/entity"
 	"github.com/krau/ManyACG/internal/repo"
 	"github.com/krau/ManyACG/pkg/log"
@@ -70,21 +71,54 @@ func Run() {
 
 	artworkBus := eventbus.New[*entity.Artwork]()
 
-	artworkBus.Subscribe(repo.EventTypeArtworkCreate, func(payload *entity.Artwork) {
-		log.Infof("Artwork created: %+v", payload)
-	}, func(payload *entity.Artwork) bool {
-		return payload != nil
-	})
-	artworkBus.Subscribe(repo.EventTypeArtworkUpdate, func(payload *entity.Artwork) {
-		log.Infof("Artwork updated: %+v", payload)
-	}, func(payload *entity.Artwork) bool {
-		return payload != nil
-	})
-	artworkBus.Subscribe(repo.EventTypeArtworkDelete, func(payload *entity.Artwork) {
-		log.Infof("Artwork deleted: %+v", payload)
-	}, func(payload *entity.Artwork) bool {
-		return payload != nil
-	})
+	searcher := search.Default(ctx)
+	if search.Enabled() {
+		artworkBus.Subscribe(repo.EventTypeArtworkCreate, func(payload *entity.Artwork) {
+			if err := searcher.AddDocuments(ctx, []*dto.ArtworkSearchDocument{
+				{
+					ID:          payload.ID.Hex(),
+					Title:       payload.Title,
+					Artist:      fmt.Sprintf("%s %s", payload.Artist.Name, payload.Artist.Username),
+					Tags:        payload.GetTagsWithAlias(),
+					R18:         payload.R18,
+					Description: payload.Description,
+				},
+			}); err != nil {
+				log.Error("searcher add document failed", "err", err, "artwork_id", payload.ID)
+				return
+			}
+			log.Info("searcher added document", "artwork_id", payload.ID)
+		}, func(payload *entity.Artwork) bool {
+			return payload != nil
+		})
+		artworkBus.Subscribe(repo.EventTypeArtworkUpdate, func(payload *entity.Artwork) {
+			if err := searcher.AddDocuments(ctx, []*dto.ArtworkSearchDocument{
+				{
+					ID:          payload.ID.Hex(),
+					Title:       payload.Title,
+					Artist:      fmt.Sprintf("%s %s", payload.Artist.Name, payload.Artist.Username),
+					Tags:        payload.GetTagsWithAlias(),
+					R18:         payload.R18,
+					Description: payload.Description,
+				},
+			}); err != nil {
+				log.Error("searcher update document failed", "err", err, "artwork_id", payload.ID)
+				return
+			}
+			log.Info("searcher updated document", "artwork_id", payload.ID)
+		}, func(payload *entity.Artwork) bool {
+			return payload != nil
+		})
+		artworkBus.Subscribe(repo.EventTypeArtworkDelete, func(payload *entity.Artwork) {
+			if err := searcher.DeleteDocuments(ctx, []string{payload.ID.Hex()}); err != nil {
+				log.Error("searcher delete document failed", "err", err, "artwork_id", payload.ID)
+				return
+			}
+			log.Info("searcher deleted document", "artwork_id", payload.ID)
+		}, func(payload *entity.Artwork) bool {
+			return payload != nil
+		})
+	}
 
 	repos := &repo.WithArtworkEventImpl{
 		Tx:          dbRepo,

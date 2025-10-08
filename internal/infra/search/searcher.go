@@ -17,6 +17,8 @@ import (
 type Searcher interface {
 	SearchArtworks(ctx context.Context, que *query.ArtworkSearch) (*dto.ArtworkSearchResult, error)
 	FindSimilarArtworks(ctx context.Context, que *query.ArtworkSimilar) (*dto.ArtworkSearchResult, error)
+	AddDocuments(ctx context.Context, docs []*dto.ArtworkSearchDocument) error
+	DeleteDocuments(ctx context.Context, ids []string) error
 }
 
 var (
@@ -53,6 +55,16 @@ func Enabled() bool {
 }
 
 type noopSearcher struct{}
+
+// AddDocuments implements Searcher.
+func (s *noopSearcher) AddDocuments(ctx context.Context, docs []*dto.ArtworkSearchDocument) error {
+	return ErrNotEnabled
+}
+
+// DeleteDocuments implements Searcher.
+func (s *noopSearcher) DeleteDocuments(ctx context.Context, ids []string) error {
+	return ErrNotEnabled
+}
 
 func (s *noopSearcher) SearchArtworks(ctx context.Context, que *query.ArtworkSearch) (*dto.ArtworkSearchResult, error) {
 	return nil, ErrNotEnabled
