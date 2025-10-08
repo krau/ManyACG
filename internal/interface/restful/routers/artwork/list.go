@@ -8,7 +8,7 @@ import (
 	"github.com/krau/ManyACG/api/restful/utils"
 	"github.com/krau/ManyACG/common"
 	"github.com/krau/ManyACG/errs"
-	"github.com/krau/ManyACG/service"
+	"github.com/krau/ManyACG/internal/service"
 	"github.com/krau/ManyACG/storage"
 	"github.com/krau/ManyACG/types"
 

@@ -3,8 +3,8 @@ package utils
 import (
 	"context"
 
+	"github.com/krau/ManyACG/internal/service"
 	"github.com/krau/ManyACG/internal/shared"
-	"github.com/krau/ManyACG/service"
 	"github.com/mymmrac/telego"
 )
 

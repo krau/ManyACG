@@ -8,8 +8,8 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/krau/ManyACG/api/restful/middleware"
 	"github.com/krau/ManyACG/api/restful/utils"
+	"github.com/krau/ManyACG/internal/service"
 	"github.com/krau/ManyACG/internal/shared"
-	"github.com/krau/ManyACG/service"
 	"github.com/krau/ManyACG/types"
 )
 

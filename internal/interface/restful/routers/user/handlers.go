@@ -8,7 +8,7 @@ import (
 	"github.com/krau/ManyACG/common"
 	"github.com/krau/ManyACG/types"
 
-	"github.com/krau/ManyACG/service"
+	"github.com/krau/ManyACG/internal/service"
 
 	jwt "github.com/appleboy/gin-jwt/v2"
 	"github.com/gin-gonic/gin"

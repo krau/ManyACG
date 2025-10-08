@@ -10,7 +10,7 @@ import (
 	"github.com/krau/ManyACG/config"
 	"github.com/krau/ManyACG/pkg/objectuuid"
 
-	"github.com/krau/ManyACG/service"
+	"github.com/krau/ManyACG/internal/service"
 
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/mongo"

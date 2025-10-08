@@ -7,7 +7,7 @@ import (
 
 	"github.com/krau/ManyACG/api/restful/utils"
 	"github.com/krau/ManyACG/common"
-	"github.com/krau/ManyACG/service"
+	"github.com/krau/ManyACG/internal/service"
 	"github.com/krau/ManyACG/types"
 
 	jwt "github.com/appleboy/gin-jwt/v2"

@@ -9,7 +9,7 @@ import (
 	"github.com/krau/ManyACG/common"
 	"github.com/krau/ManyACG/config"
 
-	"github.com/krau/ManyACG/service"
+	"github.com/krau/ManyACG/internal/service"
 	"github.com/krau/ManyACG/types"
 
 	"github.com/duke-git/lancet/v2/random"

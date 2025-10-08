@@ -7,7 +7,7 @@ import (
 
 	"github.com/krau/ManyACG/internal/interface/telegram/metautil"
 	"github.com/krau/ManyACG/internal/model/entity"
-	"github.com/krau/ManyACG/service"
+	"github.com/krau/ManyACG/internal/service"
 	"github.com/mymmrac/telego"
 	"github.com/mymmrac/telego/telegohandler"
 	"github.com/mymmrac/telego/telegoutil"

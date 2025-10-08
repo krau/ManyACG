@@ -10,8 +10,8 @@ import (
 	"github.com/krau/ManyACG/internal/interface/telegram/metautil"
 	"github.com/krau/ManyACG/internal/model/query"
 	"github.com/krau/ManyACG/internal/pkg/imgtool"
+	"github.com/krau/ManyACG/internal/service"
 	"github.com/krau/ManyACG/pkg/log"
-	"github.com/krau/ManyACG/service"
 	"github.com/mymmrac/telego"
 	"github.com/mymmrac/telego/telegohandler"
 	"github.com/mymmrac/telego/telegoutil"
@@ -31,7 +31,7 @@ import (
 // 	"github.com/krau/ManyACG/common/imgtool"
 // 	"github.com/krau/ManyACG/config"
 
-// 	"github.com/krau/ManyACG/service"
+// 	"github.com/krau/ManyACG/internal/service"
 // 	"github.com/krau/ManyACG/telegram/utils"
 
 // 	"github.com/mymmrac/telego"

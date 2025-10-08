@@ -9,11 +9,11 @@ import (
 	"github.com/krau/ManyACG/internal/interface/telegram/handlers/utils"
 	"github.com/krau/ManyACG/internal/interface/telegram/metautil"
 	"github.com/krau/ManyACG/internal/model/query"
+	"github.com/krau/ManyACG/internal/service"
 	"github.com/krau/ManyACG/internal/shared"
 	"github.com/krau/ManyACG/pkg/log"
 	"github.com/krau/ManyACG/pkg/objectuuid"
 	"github.com/krau/ManyACG/pkg/strutil"
-	"github.com/krau/ManyACG/service"
 	"github.com/samber/oops"
 
 	"github.com/mymmrac/telego"

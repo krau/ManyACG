@@ -7,8 +7,8 @@ import (
 	"github.com/krau/ManyACG/internal/infra/config/runtimecfg"
 	"github.com/krau/ManyACG/internal/interface/telegram/handlers"
 	"github.com/krau/ManyACG/internal/interface/telegram/metautil"
+	"github.com/krau/ManyACG/internal/service"
 	"github.com/krau/ManyACG/pkg/log"
-	"github.com/krau/ManyACG/service"
 	"github.com/samber/oops"
 
 	"github.com/mymmrac/telego"

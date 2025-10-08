@@ -23,8 +23,8 @@ import (
 	"github.com/krau/ManyACG/internal/model/dto"
 	"github.com/krau/ManyACG/internal/model/entity"
 	"github.com/krau/ManyACG/internal/repo"
+	"github.com/krau/ManyACG/internal/service"
 	"github.com/krau/ManyACG/pkg/log"
-	"github.com/krau/ManyACG/service"
 )
 
 const banner = `

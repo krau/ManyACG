@@ -7,7 +7,7 @@ import (
 	"github.com/krau/ManyACG/common"
 	"github.com/krau/ManyACG/types"
 
-	"github.com/krau/ManyACG/service"
+	"github.com/krau/ManyACG/internal/service"
 
 	"github.com/gin-gonic/gin"
 )

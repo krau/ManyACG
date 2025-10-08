@@ -16,7 +16,7 @@ import (
 	"github.com/krau/ManyACG/config"
 	"github.com/oschwald/geoip2-golang"
 
-	"github.com/krau/ManyACG/service"
+	"github.com/krau/ManyACG/internal/service"
 	"github.com/krau/ManyACG/types"
 )
 

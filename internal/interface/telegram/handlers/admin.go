@@ -6,8 +6,8 @@ import (
 	"strconv"
 
 	"github.com/krau/ManyACG/internal/interface/telegram/handlers/utils"
+	"github.com/krau/ManyACG/internal/service"
 	"github.com/krau/ManyACG/internal/shared"
-	"github.com/krau/ManyACG/service"
 	"github.com/mymmrac/telego"
 	"github.com/mymmrac/telego/telegohandler"
 	"github.com/mymmrac/telego/telegoutil"
