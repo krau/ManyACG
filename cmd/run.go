@@ -17,6 +17,7 @@ import (
 	"github.com/krau/ManyACG/internal/infra/search"
 	"github.com/krau/ManyACG/internal/infra/source"
 	"github.com/krau/ManyACG/internal/infra/storage"
+	"github.com/krau/ManyACG/internal/infra/tagging"
 	"github.com/krau/ManyACG/internal/interface/telegram"
 	"github.com/krau/ManyACG/pkg/log"
 	"github.com/krau/ManyACG/service"
@@ -39,7 +40,7 @@ Kawaii is All You Need! ᕕ(◠ڼ◠)ᕗ
 func Run() {
 	fmt.Printf(banner, version.BuildTime, version.Version, version.Commit[:7])
 	log.SetDefault(log.New(log.Config{
-		LogFile: runtimecfg.Get().Log.FilePath,
+		LogFile:    runtimecfg.Get().Log.FilePath,
 		MaxBackups: int(runtimecfg.Get().Log.BackupNum),
 	}))
 
@@ -61,7 +62,8 @@ func Run() {
 		log.Fatal(err)
 	}
 	database.Init(ctx)
-	serv := service.NewService(database.Default(), search.Default(), storage.Storages(), source.Sources(), runtimecfg.Get().Storage)
+	serv := service.NewService(database.Default(), search.Default(ctx), tagging.Default(), storage.Storages(), source.Sources(), runtimecfg.Get().Storage)
+	service.SetDefault(serv)
 	botapp, err := telegram.Init(ctx, serv)
 	if err != nil {
 		log.Fatal(err)

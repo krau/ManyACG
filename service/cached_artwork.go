@@ -1,112 +1,99 @@
 package service
 
-// func CreateCachedArtwork(ctx context.Context, artwork *types.Artwork, status types.ArtworkStatus) error {
-// 	// _, err := dao.CreateCachedArtwork(ctx, artwork, status)
-// 	// return err
-// 	data := &entity.CachedArtworkData{
-// 		ID:          artwork.ID,
-// 		Title:       artwork.Title,
-// 		Description: artwork.Description,
-// 		SourceType:  shared.SourceType(artwork.SourceType),
-// 		SourceURL:   artwork.SourceURL,
-// 		R18:         artwork.R18,
-// 		Artist: &entity.CachedArtist{
-// 			Name:     artwork.Artist.Name,
-// 			UID:      artwork.Artist.UID,
-// 			Type:     shared.SourceType(artwork.Artist.Type),
-// 			Username: artwork.Artist.Username,
-// 			ID:       artwork.Artist.ID,
-// 		},
-// 		Tags: artwork.Tags,
-// 		Pictures: func() []*entity.CachedPicture {
-// 			pictures := make([]*entity.CachedPicture, len(artwork.Pictures))
-// 			for i, pic := range artwork.Pictures {
-// 				pictures[i] = &entity.CachedPicture{
-// 					ID:        pic.ID,
-// 					ArtworkID: pic.ArtworkID,
-// 					Index:     pic.Index,
-// 					Thumbnail: pic.Thumbnail,
-// 					Original:  pic.Original,
-// 					Width:     pic.Width,
-// 					Height:    pic.Height,
-// 					Phash:     pic.Hash,
-// 					ThumbHash: pic.ThumbHash,
-// 				}
-// 			}
-// 			return pictures
-// 		}(),
-// 	}
-// 	cacheModel := &entity.CachedArtwork{
-// 		SourceURL: artwork.SourceURL,
-// 		Artwork:   datatypes.NewJSONType(data),
-// 		Status:    shared.ArtworkStatus(status),
-// 	}
-// 	if _, err := database.Default().CreateCachedArtwork(ctx, cacheModel); err != nil {
-// 		return err
-// 	}
-// 	return nil
-// }
+import (
+	"context"
 
-// func GetCachedArtworkByURL(ctx context.Context, sourceURL string) (*types.CachedArtworksModel, error) {
-// 	cachedArtwork, err := dao.GetCachedArtworkByURL(ctx, sourceURL)
-// 	if err != nil {
-// 		return nil, err
-// 	}
-// 	return cachedArtwork, nil
-// 	// cachedArtwork, err := database.Default().GetCachedArtworkByURL(ctx, sourceURL)
-// 	// if err != nil {
-// 	// 	return nil, err
-// 	// }
-// 	// return cachedArtwork, nil
-// }
+	"github.com/krau/ManyACG/internal/model/entity"
+	"github.com/krau/ManyACG/internal/shared"
+	"gorm.io/datatypes"
+)
 
-// func UpdateCachedArtworkStatusByURL(ctx context.Context, sourceURL string, status types.ArtworkStatus) error {
-// 	_, err := dao.UpdateCachedArtworkStatusByURL(ctx, sourceURL, status)
-// 	return err
-// }
+func (s *Service) DeleteCachedArtworkByURL(ctx context.Context, sourceURL string) error {
+	cachedArt, err := s.repos.CachedArtwork().GetCachedArtworkByURL(ctx, sourceURL)
+	if err != nil {
+		return err
+	}
+	return s.repos.CachedArtwork().DeleteCachedArtworkByID(ctx, cachedArt.ID)
+}
 
-// func UpdateCachedArtwork(ctx context.Context, artwork *types.CachedArtworksModel) error {
-// 	_, err := dao.UpdateCachedArtwork(ctx, artwork)
-// 	return err
-// }
+func (s *Service) GetOrFetchCachedArtwork(ctx context.Context, sourceURL string) (*entity.CachedArtwork, error) {
+	cached, err := s.repos.CachedArtwork().GetCachedArtworkByURL(ctx, sourceURL)
+	if err == nil {
+		return cached, nil
+	}
+	fetched, err := s.FetchArtworkInfo(ctx, sourceURL)
+	if err != nil {
+		return nil, err
+	}
+	pics := make([]*entity.CachedPicture, len(fetched.Pictures))
+	for i, pic := range fetched.Pictures {
+		pics[i] = &entity.CachedPicture{
+			OrderIndex: pic.Index,
+			Thumbnail:  pic.Thumbnail,
+			Original:   pic.Original,
+			Width:      pic.Width,
+			Height:     pic.Height,
+		}
+	}
+	ent := &entity.CachedArtwork{
+		SourceURL: sourceURL,
+		Status:    shared.ArtworkStatusCached,
+		Artwork: datatypes.NewJSONType(&entity.CachedArtworkData{
+			Title:       fetched.Title,
+			Description: fetched.Description,
+			R18:         fetched.R18,
+			Tags:        fetched.Tags,
+			SourceURL:   sourceURL,
+			SourceType:  fetched.SourceType,
+			Artist: &entity.CachedArtist{
+				Name:     fetched.Artist.Name,
+				UID:      fetched.Artist.UID,
+				Type:     fetched.Artist.Type,
+				Username: fetched.Artist.Username,
+			},
+			Pictures: pics,
+			Version:  1,
+		}),
+	}
+	created, err := s.repos.CachedArtwork().CreateCachedArtwork(ctx, ent)
+	if err != nil {
+		return nil, err
+	}
+	return created, nil
+}
 
-// GetCachedArtworkByURLWithCache get cached artwork by sourceURL, if not exist, fetch from source and cache it
-// func GetCachedArtworkByURLWithCache(ctx context.Context, sourceURL string) (*types.CachedArtworksModel, error) {
-// 	cachedArtwork, err := dao.GetCachedArtworkByURL(ctx, sourceURL)
-// 	if err != nil {
-// 		artwork, err := sources.GetArtworkInfo(sourceURL)
-// 		if err != nil {
-// 			return nil, err
-// 		}
-// 		err = CreateCachedArtwork(ctx, artwork, types.ArtworkStatusCached)
-// 		if err != nil {
-// 			return nil, err
-// 		}
-// 		cachedArtwork, err = dao.GetCachedArtworkByURL(ctx, artwork.SourceURL)
-// 		if err != nil {
-// 			return nil, err
-// 		}
-// 	}
-// 	return cachedArtwork, nil
-// }
+func (s *Service) UpdateCachedArtworkStatusByURL(ctx context.Context, sourceURL string, status shared.ArtworkStatus) error {
+	cachedArt, err := s.repos.CachedArtwork().GetCachedArtworkByURL(ctx, sourceURL)
+	if err != nil {
+		return err
+	}
+	cachedArt.Status = status
+	_, err = s.repos.CachedArtwork().SaveCachedArtwork(ctx, cachedArt)
+	return err
+}
 
-// func DeleteCachedArtworkByURL(ctx context.Context, sourceURL string) error {
-// 	_, err := dao.DeleteCachedArtworkByURL(ctx, sourceURL)
-// 	return err
-// }
+func (s *Service) GetCachedArtworkByURL(ctx context.Context, sourceURL string) (*entity.CachedArtwork, error) {
+	return s.repos.CachedArtwork().GetCachedArtworkByURL(ctx, sourceURL)
+}
 
-// func DeleteCachedArtworkPicture(ctx context.Context, cachedArtwork *types.CachedArtworksModel, pictureIndex int) error {
-// 	if pictureIndex < 0 || pictureIndex > len(cachedArtwork.Artwork.Pictures) {
-// 		return errs.ErrIndexOOB
-// 	}
-// 	cachedArtwork.Artwork.Pictures = append(cachedArtwork.Artwork.Pictures[:pictureIndex], cachedArtwork.Artwork.Pictures[pictureIndex+1:]...)
-// 	for i := pictureIndex; i < len(cachedArtwork.Artwork.Pictures); i++ {
-// 		cachedArtwork.Artwork.Pictures[i].Index = uint(i)
-// 	}
-// 	err := UpdateCachedArtwork(ctx, cachedArtwork)
-// 	if err != nil {
-// 		return err
-// 	}
-// 	return nil
-// }
+func (s *Service) UpdateCachedArtwork(ctx context.Context, data *entity.CachedArtworkData) error {
+	cachedArt, err := s.repos.CachedArtwork().GetCachedArtworkByURL(ctx, data.SourceURL)
+	if err != nil {
+		return err
+	}
+	cachedArt.Artwork = datatypes.NewJSONType(data)
+	_, err = s.repos.CachedArtwork().SaveCachedArtwork(ctx, cachedArt)
+	return err
+}
 
+func (s *Service) HideCachedArtworkPicture(ctx context.Context, cachedArt *entity.CachedArtwork, picIndex int) error {
+	data := cachedArt.Artwork.Data()
+	for _, pic := range data.Pictures {
+		if pic.OrderIndex == uint(picIndex) {
+			pic.Hidden = true
+		}
+	}
+	cachedArt.Artwork = datatypes.NewJSONType(data)
+	_, err := s.repos.CachedArtwork().SaveCachedArtwork(ctx, cachedArt)
+	return err
+}

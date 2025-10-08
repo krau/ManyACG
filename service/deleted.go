@@ -1,25 +1,20 @@
 package service
 
-// func DeleteDeletedByURL(ctx context.Context, sourceURL string) error {
-// 	// _, err := dao.DeleteDeletedByURL(ctx, sourceURL)
-// 	// if err != nil {
-// 	// 	return err
-// 	// }
-// 	// return nil
-// 	return database.Default().CancelDeletedByURL(ctx, sourceURL)
-// }
+import (
+	"context"
 
-// func CheckDeletedByURL(ctx context.Context, sourceURL string) bool {
-// 	// return dao.CheckDeletedByURL(ctx, sourceURL)
-// 	return database.Default().CheckDeletedByURL(ctx, sourceURL)
-// }
+	"github.com/krau/ManyACG/internal/model/entity"
+)
 
-// func GetDeletedByURL(ctx context.Context, sourceURL string) (*entity.DeletedRecord, error) {
-// 	// return dao.GetDeletedByURL(ctx, sourceURL)
-// 	deleted, err := database.Default().GetDeletedByURL(ctx, sourceURL)
-// 	if err != nil {
-// 		return nil, err
-// 	}
-// 	return deleted, nil
-// }
+func (s *Service) CheckDeletedByURL(ctx context.Context, sourceURL string) bool {
+	return s.repos.DeletedRecord().CheckDeletedByURL(ctx, sourceURL)
+}
 
+func (s *Service) CancelDeletedByURL(ctx context.Context, sourceURL string) error {
+	return s.repos.DeletedRecord().DeleteDeletedByURL(ctx, sourceURL)
+}
+
+
+func (s *Service) GetDeletedByURL(ctx context.Context, sourceURL string) (*entity.DeletedRecord, error) {
+	return s.repos.DeletedRecord().GetDeletedByURL(ctx, sourceURL)
+}

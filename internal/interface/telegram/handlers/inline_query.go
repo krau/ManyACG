@@ -14,6 +14,7 @@ import (
 	"github.com/krau/ManyACG/pkg/objectuuid"
 	"github.com/krau/ManyACG/pkg/strutil"
 	"github.com/krau/ManyACG/service"
+	"github.com/samber/oops"
 
 	"github.com/mymmrac/telego"
 	"github.com/mymmrac/telego/telegohandler"
@@ -53,7 +54,7 @@ func InlineQuery(ctx *telegohandler.Context, inlineQuery telego.InlineQuery) err
 			Results:       results,
 			CacheTime:     10,
 		}); err != nil {
-			log.Errorf("响应Inline查询失败: %s", err)
+			return oops.Wrapf(err, "failed to answer inline query")
 		}
 		return nil
 	}
@@ -96,7 +97,7 @@ func InlineQuery(ctx *telegohandler.Context, inlineQuery telego.InlineQuery) err
 		Results:       results,
 		CacheTime:     1,
 	}); err != nil {
-		log.Errorf("响应Inline查询失败: %s", err)
+		return oops.Wrapf(err, "failed to answer inline query")
 	}
 	return nil
 }

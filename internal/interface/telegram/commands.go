@@ -10,7 +10,7 @@ var (
 		},
 		{
 			Command:     "files",
-			Description: "获取作品所有原图文件",
+			Description: "获取作品原图文件",
 		},
 		{
 			Command:     "setu",
@@ -29,14 +29,6 @@ var (
 			Description: "获取作品图片和信息",
 		},
 		{
-			Command:     "hash",
-			Description: "计算图片信息",
-		},
-		{
-			Command:     "stats",
-			Description: "统计数据",
-		},
-		{
 			Command:     "help",
 			Description: "食用指南",
 		},
@@ -52,8 +44,12 @@ var (
 
 	AdminCommands = []telego.BotCommand{
 		{
-			Command:     "set_admin",
-			Description: "设置管理员",
+			Command:     "addadmin",
+			Description: "添加管理员",
+		},
+		{
+			Command:     "deladmin",
+			Description: "删除管理员",
 		},
 		{
 			Command:     "delete",
@@ -61,7 +57,7 @@ var (
 		},
 		{
 			Command:     "r18",
-			Description: "设置作品 R18",
+			Description: "更改作品 R18",
 		},
 		{
 			Command:     "title",
@@ -73,7 +69,7 @@ var (
 		},
 		{
 			Command:     "autotag",
-			Description: "自动添加作品标签(AI)",
+			Description: "自动添加作品标签",
 		},
 		{
 			Command:     "addtags",
@@ -98,6 +94,10 @@ var (
 		{
 			Command:     "recaption",
 			Description: "重新生成作品描述 <url>",
+		},
+		{
+			Command:     "dump",
+			Description: "导出作品信息 <url>",
 		},
 	}
 )

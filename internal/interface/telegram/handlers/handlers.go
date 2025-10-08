@@ -35,8 +35,8 @@ func (m HandlerManager) Register(hg *telegohandler.HandlerGroup) {
 	mg.HandleMessage(Help, telegohandler.CommandEqual("help"))
 	mg.HandleMessage(SearchPicture, telegohandler.CommandEqual("search"))
 	mg.HandleMessage(GetArtworkInfoCommand, telegohandler.CommandEqual("info"))
-	// mg.HandleMessage(HybridSearchArtworks, telegohandler.CommandEqual("hybrid"))
-	// mg.HandleMessage(SearchSimilarArtworks, telegohandler.CommandEqual("similar"))
+	mg.HandleMessage(HybridSearchArtworks, telegohandler.CommandEqual("hybrid"))
+	mg.HandleMessage(SearchSimilarArtworks, telegohandler.CommandEqual("similar"))
 
 	// Admin commands
 	mg.HandleMessage(SetAdmin, telegohandler.Or(telegohandler.CommandEqual("addadmin"), telegohandler.CommandEqual("deladmin")))
@@ -49,7 +49,7 @@ func (m HandlerManager) Register(hg *telegohandler.HandlerGroup) {
 	mg.HandleMessage(AddTagAlias, telegohandler.CommandEqual("tagalias"))
 	mg.HandleMessage(DumpArtworkInfo, telegohandler.CommandEqual("dump"))
 	mg.HandleMessage(ReCaptionArtwork, telegohandler.CommandEqual("recaption"))
-	// mg.HandleMessage(AutoTaggingArtwork, telegohandler.CommandEqual("autotag"))
+	mg.HandleMessage(AutoTaggingArtwork, telegohandler.CommandEqual("autotag"))
 
 	hg.HandleCallbackQuery(PostArtworkCallbackQuery, telegohandler.CallbackDataContains("post_artwork"))
 	hg.HandleCallbackQuery(SearchPictureCallbackQuery, telegohandler.CallbackDataPrefix("search_picture"))

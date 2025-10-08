@@ -8,6 +8,7 @@ import (
 	"github.com/krau/ManyACG/internal/infra/search"
 	"github.com/krau/ManyACG/internal/infra/source"
 	"github.com/krau/ManyACG/internal/infra/storage"
+	"github.com/krau/ManyACG/internal/infra/tagging"
 	"github.com/krau/ManyACG/internal/repo"
 	"github.com/krau/ManyACG/internal/shared"
 	"github.com/krau/ManyACG/pkg/log"
@@ -16,9 +17,10 @@ import (
 type Service struct {
 	repos    repo.Repositories
 	searcher search.Searcher
+	tagger   tagging.Tagger
 	storages map[shared.StorageType]storage.Storage
-	sources  map[shared.SourceType]source.ArtworkSource
 	storCfg  runtimecfg.StorageConfig
+	sources  map[shared.SourceType]source.ArtworkSource
 }
 
 type Option func(*Service)
@@ -26,6 +28,7 @@ type Option func(*Service)
 func NewService(
 	repos repo.Repositories,
 	searcher search.Searcher,
+	tagger tagging.Tagger,
 	storageMap map[shared.StorageType]storage.Storage,
 	sourceMap map[shared.SourceType]source.ArtworkSource,
 	storCfg runtimecfg.StorageConfig,
@@ -33,6 +36,7 @@ func NewService(
 ) *Service {
 	s := &Service{
 		repos:    repos,
+		tagger:   tagger,
 		searcher: searcher,
 		storages: storageMap,
 		sources:  sourceMap,
@@ -70,7 +74,6 @@ func FromContext(ctx context.Context) *Service {
 	if serv, ok := ctx.Value(contextKey).(*Service); ok {
 		return serv
 	}
-
 	return Default()
 }
 

@@ -1,14 +1,19 @@
 package handlers
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"html"
 	"math/rand"
+	"strconv"
 	"strings"
 
+	"github.com/duke-git/lancet/v2/slice"
+	"github.com/krau/ManyACG/internal/infra/config/runtimecfg"
 	"github.com/krau/ManyACG/internal/interface/telegram/handlers/utils"
 	"github.com/krau/ManyACG/internal/interface/telegram/metautil"
+	"github.com/krau/ManyACG/internal/model/entity"
 	"github.com/krau/ManyACG/internal/model/query"
 	"github.com/krau/ManyACG/internal/shared"
 	"github.com/krau/ManyACG/internal/shared/errs"
@@ -89,202 +94,176 @@ func RandomPicture(ctx *telegohandler.Context, message telego.Message) error {
 	return nil
 }
 
-// func HybridSearchArtworks(ctx *telegohandler.Context, message telego.Message) error {
-// 	if common.MeilisearchClient == nil {
-// 		utils.ReplyMessage(ctx, ctx.Bot(), message, "未启用混合搜索功能")
-// 		return nil
-// 	}
-// 	_, _, args := telegoutil.ParseCommand(message.Text)
-// 	if len(args) == 0 {
-// 		helpText := fmt.Sprintf(`
-// <b>使用 /hybrid 命令并提供查询参数, 将使用混合搜索引擎搜索相关图片</b>
+func HybridSearchArtworks(ctx *telegohandler.Context, message telego.Message) error {
+	serv := service.FromContext(ctx)
+	_, _, args := telegoutil.ParseCommand(message.Text)
+	if len(args) == 0 {
+		helpText := `
+<b>使用 /hybrid 命令并提供查询参数, 将使用混合搜索引擎搜索相关图片</b>
 
-// 命令语法: %s
+命令语法: /hybrid <搜索内容> [语义比例]
 
-// 语义比例为0-1的浮点数, 应位于参数列表最后, 越大越趋向于基于语义搜索, 若不提供, 使用默认值0.8
+语义比例为0-1的浮点数, 应位于参数列表最后, 越大越趋向于基于语义搜索, 若不提供, 使用默认值0.8
 
-// <i>Tips: 该命令将基于文本语义进行搜索, 而非关键词匹配</i>
-// `, common.EscapeHTML("/hybrid <搜索内容> [语义比例]"))
-// 		utils.ReplyMessageWithHTML(ctx, ctx.Bot(), message, helpText)
-// 		return nil
-// 	}
-// 	var hybridSemanticRatio float64
-// 	var queryText string
-// 	hybridSemanticRatio, err := strconv.ParseFloat(args[len(args)-1], 64)
-// 	if err != nil {
-// 		hybridSemanticRatio = 0.8
-// 		queryText = strings.Join(args, " ")
-// 	} else {
-// 		if hybridSemanticRatio < 0 || hybridSemanticRatio > 1 {
-// 			utils.ReplyMessage(ctx, ctx.Bot(), message, "参数错误: 语义比例应为0-1的浮点数")
-// 			return nil
-// 		}
-// 		queryText = strings.Join(args[:len(args)-1], " ")
-// 	}
-// 	artworks, err := service.SearchArtworks(ctx, &query.ArtworkSearch{
-// 		//  queryText, hybridSemanticRatio, 0, 50, types.R18TypeAll
-// 		Query:               queryText,
-// 		Hybrid:              true,
-// 		HybridSemanticRatio: hybridSemanticRatio,
-// 		Paginate: query.Paginate{
-// 			Offset: 0,
-// 			Limit:  50,
-// 		},
-// 		R18: shared.R18TypeAll,
-// 	})
-// 	if err != nil {
-// 		common.Logger.Errorf("搜索失败: %s", err)
-// 		utils.ReplyMessage(ctx, ctx.Bot(), message, "搜索失败, 请联系管理员检查搜索引擎设置与状态")
-// 		return nil
-// 	}
-// 	if len(artworks) == 0 {
-// 		utils.ReplyMessage(ctx, ctx.Bot(), message, "未找到相关图片")
-// 		return nil
-// 	}
+<i>Tips: 该命令将基于文本语义进行搜索, 而非关键词匹配</i>
+`
+		utils.ReplyMessageWithHTML(ctx, message, helpText)
+		return nil
+	}
+	var hybridSemanticRatio float64
+	var queryText string
+	hybridSemanticRatio, err := strconv.ParseFloat(args[len(args)-1], 64)
+	if err != nil {
+		hybridSemanticRatio = 0.8
+		queryText = strings.Join(args, " ")
+	} else {
+		if hybridSemanticRatio < 0 || hybridSemanticRatio > 1 {
+			utils.ReplyMessage(ctx, message, "参数错误: 语义比例应为0-1的小数")
+			return nil
+		}
+		queryText = strings.Join(args[:len(args)-1], " ")
+	}
+	artworks, err := serv.SearchArtworks(ctx, &query.ArtworkSearch{
+		//  queryText, hybridSemanticRatio, 0, 50, types.R18TypeAll
+		Query:               queryText,
+		Hybrid:              true,
+		HybridSemanticRatio: hybridSemanticRatio,
+		Paginate: query.Paginate{
+			Offset: 0,
+			Limit:  50,
+		},
+		R18: shared.R18TypeAll,
+	})
+	if err != nil {
+		if errors.Is(err, errs.ErrSearchEngineNotEnabled) {
+			utils.ReplyMessage(ctx, message, "搜索引擎未启用")
+			return nil
+		}
+		utils.ReplyMessage(ctx, message, "搜索失败")
+		return oops.Wrapf(err, "failed to search artworks")
+	}
+	if len(artworks) == 0 {
+		utils.ReplyMessage(ctx, message, "未找到相关图片")
+		return nil
+	}
 
-// 	if len(artworks) > 10 {
-// 		artworks = slice.Shuffle(artworks)[:10]
-// 	}
-// 	handleSendResultArtworks(ctx, artworks, message, ctx.Bot())
-// 	return nil
-// }
+	if len(artworks) > 10 {
+		artworks = slice.Shuffle(artworks)[:10]
+	}
+	return handleSendResultArtworks(ctx, artworks, message, ctx.Bot())
+}
 
-// func SearchSimilarArtworks(ctx *telegohandler.Context, message telego.Message) error {
-// 	if common.MeilisearchClient == nil {
-// 		utils.ReplyMessage(ctx, ctx.Bot(), message, "搜索引擎不可用")
-// 		return nil
-// 	}
-// 	if message.ReplyToMessage == nil {
-// 		helpText := `
-// <b>使用 /similar 命令回复一条包含图片或作品链接的消息, 将搜索与该图片相关的作品</b>
+func SearchSimilarArtworks(ctx *telegohandler.Context, message telego.Message) error {
+	if message.ReplyToMessage == nil {
+		helpText := `
+<b>使用 /similar 命令回复一条包含图片或作品链接的消息, 将搜索与该图片相关的作品</b>
 
-// 命令语法: /similar [偏移量] [限制数量]
+命令语法: /similar [偏移量] [限制数量]
 
-// 若回复的消息中未找到支持的链接, 将尝试识别图片内容并搜索相关作品
-// `
-// 		utils.ReplyMessageWithHTML(ctx, ctx.Bot(), message, helpText)
-// 		return nil
-// 	}
-// 	var sourceURL string
-// 	sourceURL = utils.FindSourceURLForMessage(message.ReplyToMessage)
-// 	if sourceURL == "" {
-// 		if message.ReplyToMessage.Photo == nil && message.ReplyToMessage.Document == nil {
-// 			utils.ReplyMessage(ctx, ctx.Bot(), message, "回复的消息中未找到支持的链接")
-// 			return nil
-// 		}
-// 		var err error
-// 		var file []byte
-// 		sourceURL, file, err = handleGetSourceURLFromPicture(ctx, message)
-// 		if err != nil {
-// 			common.Logger.Warnf("获取图片链接失败: %s", err)
-// 			if file == nil || common.TaggerClient == nil {
-// 				utils.ReplyMessage(ctx, ctx.Bot(), message, "回复的消息中未找到支持的链接或图片")
-// 				return nil
-// 			}
-// 			result, err := common.TaggerClient.Predict(ctx, file)
-// 			if err != nil || len(result.PredictedTags) == 0 {
-// 				common.Logger.Errorf("图片识别失败: %s", err)
-// 				utils.ReplyMessage(ctx, ctx.Bot(), message, "图片识别失败")
-// 				return nil
-// 			}
-// 			queryText := strings.Join(result.PredictedTags, ",")
-// 			artworks, err := service.SearchArtworks(ctx, &query.ArtworkSearch{
-// 				// queryText, 0.8, 0, 10, types.R18TypeAll
-// 				Query:  queryText,
-// 				Hybrid: true,
-// 				Paginate: query.Paginate{
-// 					Offset: 0,
-// 					Limit:  10,
-// 				},
-// 				R18: shared.R18TypeAll,
-// 			})
-// 			if err != nil || len(artworks) == 0 {
-// 				common.Logger.Errorf("搜索失败: %s", err)
-// 				utils.ReplyMessage(ctx, ctx.Bot(), message, "搜索失败")
-// 				return nil
-// 			}
-// 			handleSendResultArtworks(ctx, artworks, message, ctx.Bot())
-// 			return nil
-// 		}
-// 	}
-// 	if sourceURL == "" {
-// 		return nil
-// 	}
-// 	artwork, err := service.GetArtworkByURL(ctx, sourceURL)
-// 	if err != nil || artwork == nil {
-// 		common.Logger.Errorf("获取作品信息失败: %s", err)
-// 		utils.ReplyMessage(ctx, ctx.Bot(), message, "获取作品信息失败")
-// 		return nil
-// 	}
-// 	_, _, args := telegoutil.ParseCommand(message.Text)
-// 	offset := 0
-// 	limit := 50
-// 	if len(args) > 0 {
-// 		offset, err = strconv.Atoi(args[0])
-// 		if err != nil || offset < 0 {
-// 			utils.ReplyMessage(ctx, ctx.Bot(), message, "参数错误: 偏移量应为非负整数")
-// 			return nil
-// 		}
-// 	}
-// 	if len(args) > 1 {
-// 		limit, err = strconv.Atoi(args[1])
-// 		if err != nil || limit < 1 || limit > 100 {
-// 			utils.ReplyMessage(ctx, ctx.Bot(), message, "参数错误: 限制数量应为1-10的整数")
-// 			return nil
-// 		}
-// 	}
-// 	awId, err := objectuuid.FromObjectIDHex(artwork.ID)
-// 	if err != nil {
-// 		common.Logger.Errorf("转换ArtworkID失败: %s", err)
-// 		utils.ReplyMessage(ctx, ctx.Bot(), message, "内部错误")
-// 		return nil
-// 	}
-// 	artworks, err := service.FindSimilarArtworks(ctx, &query.ArtworkSimilar{
-// 		ArtworkID: awId,
-// 		R18:       shared.R18TypeAll,
-// 		Paginate: query.Paginate{
-// 			Offset: offset,
-// 			Limit:  limit,
-// 		},
-// 	})
-// 	if err != nil {
-// 		common.Logger.Errorf("搜索失败: %s", err)
-// 		utils.ReplyMessage(ctx, ctx.Bot(), message, "搜索失败")
-// 		return nil
-// 	}
-// 	if len(artworks) == 0 {
-// 		utils.ReplyMessage(ctx, ctx.Bot(), message, "未找到相似的作品")
-// 		return nil
-// 	}
-// 	if len(artworks) > 10 {
-// 		artworks = slice.Shuffle(artworks)[:10]
-// 	}
-// 	inputMedias := make([]telego.InputMedia, 0, len(artworks))
-// 	for _, artwork := range artworks {
-// 		picture := artwork.Pictures[0]
-// 		var file telego.InputFile
-// 		if picture.TelegramInfo.Data().PhotoFileID != "" {
-// 			file = telegoutil.FileFromID(picture.TelegramInfo.Data().PhotoFileID)
-// 		} else {
-// 			photoURL := fmt.Sprintf("%s/?url=%s&w=2560&h=2560&we&output=jpg", config.Cfg.WSRVURL, picture.Original)
-// 			file = telegoutil.FileFromURL(photoURL)
-// 		}
-// 		caption := fmt.Sprintf("<a href=\"%s\">%s</a>", artwork.SourceURL, common.EscapeHTML(artwork.Title))
-// 		inputMedias = append(inputMedias, telegoutil.MediaPhoto(file).WithCaption(caption).WithParseMode(telego.ModeHTML))
-// 	}
-// 	mediaGroup := telegoutil.MediaGroup(message.Chat.ChatID(), inputMedias...).WithReplyParameters(&telego.ReplyParameters{
-// 		MessageID: message.MessageID,
-// 		ChatID:    message.Chat.ChatID(),
-// 	})
-// 	_, err = ctx.Bot().SendMediaGroup(ctx, mediaGroup)
-// 	if err != nil {
-// 		common.Logger.Errorf("发送图片失败: %s", err)
-// 	}
-// 	return nil
-// }
+若回复的消息中未找到支持的链接, 将尝试识别图片内容并搜索相关作品
+`
+		utils.ReplyMessageWithHTML(ctx, message, helpText)
+		return nil
+	}
+	serv := service.FromContext(ctx)
+	// var sourceURL string
+	sourceURL := utils.FindSourceURLInMessage(serv, message.ReplyToMessage)
+	if sourceURL == "" {
+		utils.ReplyMessage(ctx, message, "回复的消息中未找到支持的链接")
+		// [TODO] implement image recognition and search
+		// if message.ReplyToMessage.Photo == nil && message.ReplyToMessage.Document == nil {
+		// 	utils.ReplyMessage(ctx, message, "回复的消息中未找到支持的链接")
+		// 	return nil
+		// }
+		// var err error
+		// var file []byte
+		// sourceURL, file, err = handleGetSourceURLFromPicture(ctx, serv, message)
+		// if err != nil {
+		// 	log.Warnf("failed to get source url from picture: %s", err)
+		// 	// if file == nil || common.TaggerClient == nil {
+		// 	// 	utils.ReplyMessage(ctx, message, "回复的消息中未找到支持的链接或图片")
+		// 	// 	return nil
+		// 	// }
+		// 	// result, err := common.TaggerClient.Predict(ctx, file)
+		// 	// if err != nil || len(result.PredictedTags) == 0 {
+		// 	// 	common.Logger.Errorf("图片识别失败: %s", err)
+		// 	// 	utils.ReplyMessage(ctx, ctx.Bot(), message, "图片识别失败")
+		// 	// 	return nil
+		// 	// }
+		// 	// queryText := strings.Join(result.PredictedTags, ",")
+		// 	// artworks, err := service.SearchArtworks(ctx, &query.ArtworkSearch{
+		// 	// 	// queryText, 0.8, 0, 10, types.R18TypeAll
+		// 	// 	Query:  queryText,
+		// 	// 	Hybrid: true,
+		// 	// 	Paginate: query.Paginate{
+		// 	// 		Offset: 0,
+		// 	// 		Limit:  10,
+		// 	// 	},
+		// 	// 	R18: shared.R18TypeAll,
+		// 	// })
+		// 	// if err != nil || len(artworks) == 0 {
+		// 	// 	common.Logger.Errorf("搜索失败: %s", err)
+		// 	// 	utils.ReplyMessage(ctx, ctx.Bot(), message, "搜索失败")
+		// 	// 	return nil
+		// 	// }
+		// 	// handleSendResultArtworks(ctx, artworks, message, ctx.Bot())
+		// 	// return nil
+		// 	return err
+		// }
+	}
+	// if sourceURL == "" {
+	// 	return nil
+	// }
+	artwork, err := serv.GetArtworkByURL(ctx, sourceURL)
+	if err != nil {
+		utils.ReplyMessage(ctx, message, "获取作品信息失败")
+		return oops.Wrapf(err, "failed to get artwork by url")
+	}
+	_, _, args := telegoutil.ParseCommand(message.Text)
+	offset := 0
+	limit := 50
+	if len(args) > 0 {
+		offset, err = strconv.Atoi(args[0])
+		if err != nil || offset < 0 {
+			utils.ReplyMessage(ctx, message, "参数错误: 偏移量应为非负整数")
+			return nil
+		}
+	}
+	if len(args) > 1 {
+		limit, err = strconv.Atoi(args[1])
+		if err != nil || limit < 1 || limit > 100 {
+			utils.ReplyMessage(ctx, message, "参数错误: 限制数量应为1-10的整数")
+			return nil
+		}
+	}
+	artworks, err := serv.FindSimilarArtworks(ctx, &query.ArtworkSimilar{
+		ArtworkID: artwork.ID,
+		R18:       shared.R18TypeAll,
+		Paginate: query.Paginate{
+			Offset: offset,
+			Limit:  limit,
+		},
+	})
+	if err != nil {
+		if errors.Is(err, errs.ErrSearchEngineNotEnabled) {
+			utils.ReplyMessage(ctx, message, "搜索引擎未启用")
+			return nil
+		}
+		utils.ReplyMessage(ctx, message, "搜索失败")
+		return oops.Wrapf(err, "failed to find similar artworks")
+	}
+	if len(artworks) == 0 {
+		utils.ReplyMessage(ctx, message, "未找到相似的作品")
+		return nil
+	}
+	if len(artworks) > 10 {
+		artworks = slice.Shuffle(artworks)[:10]
+	}
+	return handleSendResultArtworks(ctx, artworks, message, ctx.Bot())
+}
 
-// func handleGetSourceURLFromPicture(ctx *telegohandler.Context, message telego.Message) (string, []byte, error) {
-// 	file, err := utils.GetMessagePhotoFile(ctx, ctx.Bot(), message.ReplyToMessage)
+// func handleGetSourceURLFromPicture(ctx *telegohandler.Context, serv *service.Service, message telego.Message) (string, []byte, error) {
+// 	file, err := utils.GetMessagePhotoFile(ctx, message.ReplyToMessage)
 // 	if err != nil {
 // 		return "", nil, err
 // 	}
@@ -292,45 +271,34 @@ func RandomPicture(ctx *telegohandler.Context, message telego.Message) error {
 // 	if err != nil {
 // 		return "", file, err
 // 	}
-// 	pictures, err := service.GetPicturesByHashHammingDistance(ctx, hash, 10)
+// 	pictures, err := serv.QueryPicturesByPhash(ctx, query.PicturesPhash{Input: hash, Distance: 10, Limit: 1})
 // 	if err != nil {
 // 		return "", file, err
 // 	}
 // 	if len(pictures) == 0 {
 // 		return "", file, errors.New("not found similar pictures by hash")
 // 	}
-// 	picture := pictures[0]
-// 	artworkID, err := primitive.ObjectIDFromHex(picture.ArtworkID)
-// 	if err != nil {
-// 		return "", file, err
-// 	}
-// 	artwork, err := service.GetArtworkByID(ctx, artworkID)
-// 	if err != nil {
-// 		return "", file, err
-// 	}
-// 	return artwork.SourceURL, file, nil
+// 	return pictures[0].Artwork.SourceURL, file, nil
 // }
 
-// func handleSendResultArtworks(ctx context.Context, artworks []*entity.Artwork, message telego.Message, bot *telego.Bot) {
-// 	inputMedias := make([]telego.InputMedia, 0, len(artworks))
-// 	for _, artwork := range artworks {
-// 		picture := artwork.Pictures[0]
-// 		var file telego.InputFile
-// 		if picture.TelegramInfo.Data().PhotoFileID != "" {
-// 			file = telegoutil.FileFromID(picture.TelegramInfo.Data().PhotoFileID)
-// 		} else {
-// 			photoURL := fmt.Sprintf("%s/?url=%s&w=2560&h=2560&we&output=jpg", config.Cfg.WSRVURL, picture.Original)
-// 			file = telegoutil.FileFromURL(photoURL)
-// 		}
-// 		caption := fmt.Sprintf("<a href=\"%s\">%s</a>", artwork.SourceURL, common.EscapeHTML(artwork.Title))
-// 		inputMedias = append(inputMedias, telegoutil.MediaPhoto(file).WithCaption(caption).WithParseMode(telego.ModeHTML))
-// 	}
-// 	mediaGroup := telegoutil.MediaGroup(message.Chat.ChatID(), inputMedias...).WithReplyParameters(&telego.ReplyParameters{
-// 		MessageID: message.MessageID,
-// 		ChatID:    message.Chat.ChatID(),
-// 	})
-// 	_, err := bot.SendMediaGroup(ctx, mediaGroup)
-// 	if err != nil {
-// 		common.Logger.Errorf("发送图片失败: %s", err)
-// 	}
-// }
+func handleSendResultArtworks(ctx context.Context, artworks []*entity.Artwork, message telego.Message, bot *telego.Bot) error {
+	inputMedias := make([]telego.InputMedia, 0, len(artworks))
+	for _, artwork := range artworks {
+		picture := artwork.Pictures[0]
+		var file telego.InputFile
+		if picture.TelegramInfo.Data().PhotoFileID != "" {
+			file = telegoutil.FileFromID(picture.TelegramInfo.Data().PhotoFileID)
+		} else {
+			photoURL := fmt.Sprintf("%s/?url=%s&w=2560&h=2560&we&output=jpg", runtimecfg.Get().Wsrv.URL, picture.Original)
+			file = telegoutil.FileFromURL(photoURL)
+		}
+		caption := fmt.Sprintf("<a href=\"%s\">%s</a>", artwork.SourceURL, html.EscapeString(artwork.Title))
+		inputMedias = append(inputMedias, telegoutil.MediaPhoto(file).WithCaption(caption).WithParseMode(telego.ModeHTML))
+	}
+	mediaGroup := telegoutil.MediaGroup(message.Chat.ChatID(), inputMedias...).WithReplyParameters(&telego.ReplyParameters{
+		MessageID: message.MessageID,
+		ChatID:    message.Chat.ChatID(),
+	})
+	_, err := bot.SendMediaGroup(ctx, mediaGroup)
+	return err
+}

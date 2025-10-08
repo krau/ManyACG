@@ -30,7 +30,7 @@ type Config struct {
 	// infrastructures config
 	Cache    CacheConfig    `toml:"cache" mapstructure:"cache" json:"cache" yaml:"cache"`
 	Search   SearchConfig   `toml:"search" mapstructure:"search" json:"search" yaml:"search"`
-	Tagging  TaggingConfig  `toml:"tagger" mapstructure:"tagger" json:"tagger" yaml:"tagger"`
+	Tagging  TaggingConfig  `toml:"tagging" mapstructure:"tagging" json:"tagging" yaml:"tagging"`
 	Database databaseConfig `toml:"database" mapstructure:"database" json:"database" yaml:"database"`
 	Source   SourceConfig   `toml:"source" mapstructure:"source" json:"source" yaml:"source"`
 	Storage  StorageConfig  `toml:"storage" mapstructure:"storage" json:"storage" yaml:"storage"`
