@@ -114,13 +114,13 @@ type Picture struct {
 	ArtworkID MongoUUID `gorm:"type:uuid;index" json:"artwork_id"`
 	Artwork   *Artwork  `gorm:"foreignKey:ArtworkID;references:ID;constraint:OnDelete:CASCADE" json:"-"`
 
-	Index     uint   `gorm:"not null;default:0;index:idx_picture_artwork_index,priority:1" json:"index"` // order within artwork
-	Thumbnail string `gorm:"type:text" json:"thumbnail"`
-	Original  string `gorm:"type:text;index" json:"original"`
-	Width     uint   `json:"width"`
-	Height    uint   `json:"height"`
-	Phash     string `gorm:"type:varchar(18);index" json:"phash"` // phash
-	ThumbHash string `gorm:"type:varchar(28)" json:"thumb_hash"`  // thumbhash
+	OrderIndex uint   `gorm:"column:order_index;not null;default:0;index:idx_picture_artwork_index,priority:1" json:"index"`
+	Thumbnail  string `gorm:"type:text" json:"thumbnail"`
+	Original   string `gorm:"type:text;index" json:"original"`
+	Width      uint   `json:"width"`
+	Height     uint   `json:"height"`
+	Phash      string `gorm:"type:varchar(18);index" json:"phash"` // phash
+	ThumbHash  string `gorm:"type:varchar(28)" json:"thumb_hash"`  // thumbhash
 
 	TelegramInfo datatypes.JSONType[TelegramInfo] `gorm:"type:json" json:"telegram_info"` // original TelegramInfo struct as JSON
 	StorageInfo  datatypes.JSONType[StorageInfo]  `gorm:"type:json" json:"storage_info"`  // StorageInfo as JSON
@@ -176,7 +176,7 @@ type CachedArtist struct {
 type CachedPicture struct {
 	ID        string `json:"id"`
 	ArtworkID string `json:"artwork_id"`
-	Index     uint   `json:"index"`
+	OrderIndex     uint   `json:"index"`
 	Thumbnail string `json:"thumbnail"`
 	Original  string `json:"original"`
 	Hidden    bool   `json:"hidden"` // don't post when true
@@ -185,6 +185,9 @@ type CachedPicture struct {
 	Height    uint   `json:"height"`
 	Phash     string `json:"phash"`      // phash
 	ThumbHash string `json:"thumb_hash"` // thumbhash
+
+	StorageInfo  StorageInfo  `json:"storage_info"`
+	TelegramInfo TelegramInfo `json:"telegram_info"`
 }
 
 type TelegramInfo struct {

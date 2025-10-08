@@ -217,15 +217,15 @@ func migratePictures(ctx context.Context, collection *mongo.Collection, db *gorm
 			return err
 		}
 		picture := &Picture{
-			ID:        FromObjectID(pictureModel.ID),
-			ArtworkID: FromObjectID(pictureModel.ArtworkID),
-			Index:     pictureModel.Index,
-			Thumbnail: pictureModel.Thumbnail,
-			Original:  pictureModel.Original,
-			Width:     pictureModel.Width,
-			Height:    pictureModel.Height,
-			Phash:     pictureModel.Hash,
-			ThumbHash: pictureModel.ThumbHash,
+			ID:         FromObjectID(pictureModel.ID),
+			ArtworkID:  FromObjectID(pictureModel.ArtworkID),
+			OrderIndex: pictureModel.Index,
+			Thumbnail:  pictureModel.Thumbnail,
+			Original:   pictureModel.Original,
+			Width:      pictureModel.Width,
+			Height:     pictureModel.Height,
+			Phash:      pictureModel.Hash,
+			ThumbHash:  pictureModel.ThumbHash,
 			TelegramInfo: datatypes.NewJSONType(TelegramInfo{
 				PhotoFileID:    pictureModel.TelegramInfo.PhotoFileID,
 				DocumentFileID: pictureModel.TelegramInfo.DocumentFileID,
@@ -345,16 +345,27 @@ func migrateCachedArtworks(ctx context.Context, collection *mongo.Collection, db
 				pics := make([]*CachedPicture, len(cachedModel.Artwork.Pictures))
 				for i, pic := range cachedModel.Artwork.Pictures {
 					pics[i] = &CachedPicture{
-						ID:        pic.ID,
-						ArtworkID: pic.ArtworkID,
-						Index:     pic.Index,
-						Thumbnail: pic.Thumbnail,
-						Original:  pic.Original,
-						Hidden:    false,
-						Width:     pic.Width,
-						Height:    pic.Height,
-						Phash:     pic.Hash,
-						ThumbHash: pic.ThumbHash,
+						ID:         pic.ID,
+						ArtworkID:  pic.ArtworkID,
+						OrderIndex: pic.Index,
+						Thumbnail:  pic.Thumbnail,
+						Original:   pic.Original,
+						Hidden:     false,
+						Width:      pic.Width,
+						Height:     pic.Height,
+						Phash:      pic.Hash,
+						ThumbHash:  pic.ThumbHash,
+						TelegramInfo: func() TelegramInfo {
+							if pic.TelegramInfo == nil {
+								return TelegramInfo{}
+							}
+							return TelegramInfo{
+								PhotoFileID:    pic.TelegramInfo.PhotoFileID,
+								DocumentFileID: pic.TelegramInfo.DocumentFileID,
+								MessageID:      pic.TelegramInfo.MessageID,
+								MediaGroupID:   pic.TelegramInfo.MediaGroupID,
+							}
+						}(),
 					}
 				}
 				return pics
