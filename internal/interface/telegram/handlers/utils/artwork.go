@@ -323,7 +323,7 @@ type CreateArtworkInfoReplyMarkupOptions struct {
 	HasPermission  bool
 }
 
-func CreateArtworkInfoReplyMarkup(ctx context.Context, meta *metautil.MetaData, serv *service.Service, artwork entity.ArtworkLike, controls *CreateArtworkInfoReplyMarkupOptions) (telego.ReplyMarkup, error) {
+func CreateArtworkInfoReplyMarkup(ctx context.Context, meta *metautil.MetaData, serv *service.Service, artwork entity.ArtworkLike, controls *CreateArtworkInfoReplyMarkupOptions) (*telego.InlineKeyboardMarkup, error) {
 	if controls == nil {
 		controls = &CreateArtworkInfoReplyMarkupOptions{}
 	}
@@ -377,10 +377,15 @@ func SendArtworkInfo(ctx *telegohandler.Context,
 	serv *service.Service,
 	sourceUrl string,
 	chatID telego.ChatID,
-	opts *SendArtworkInfoOptions) error {
+	opts SendArtworkInfoOptions) error {
 	sourceUrl = serv.FindSourceURL(sourceUrl)
 	if sourceUrl == "" {
 		return oops.New("no valid source url found")
+	}
+
+	waitMsg, err := ctx.Bot().SendMessage(ctx, telegoutil.Message(chatID, "正在获取作品信息...").WithReplyParameters(opts.ReplyParameters))
+	if err != nil {
+		return oops.Wrapf(err, "failed to send wait message")
 	}
 	var artwork entity.ArtworkLike
 	created := false
@@ -414,12 +419,12 @@ func SendArtworkInfo(ctx *telegohandler.Context,
 	if deleted != nil {
 		caption += fmt.Sprintf("\n<i>这是一个在 %s 被标记为删除的作品, 如果发布会取消删除</i>", deleted.DeletedAt.Format("2006-01-02 15:04:05"))
 	}
-	if opts != nil && opts.AppendCaption != "" {
+	if opts.AppendCaption != "" {
 		caption += "\n" + opts.AppendCaption
 	}
 	replyMarkup, err := CreateArtworkInfoReplyMarkup(ctx, meta, serv, artwork, &CreateArtworkInfoReplyMarkupOptions{
 		CreatedArtwork: created,
-		HasPermission:  opts != nil && opts.HasPermission,
+		HasPermission:  opts.HasPermission,
 	})
 	if err != nil {
 		return oops.Wrapf(err, "failed to create artwork info reply markup")
@@ -428,19 +433,35 @@ func SendArtworkInfo(ctx *telegohandler.Context,
 	if err != nil {
 		return oops.Wrapf(err, "failed to get picture preview input file")
 	}
-	photo := telegoutil.Photo(chatID, inputFile).
-		WithCaption(caption).WithReplyMarkup(replyMarkup).WithParseMode(telego.ModeHTML)
-	if opts != nil && opts.ReplyParameters != nil {
-		photo = photo.WithReplyParameters(opts.ReplyParameters)
-	}
+	photo := telegoutil.MediaPhoto(inputFile).
+		WithCaption(caption).WithParseMode(telego.ModeHTML)
 	if artwork.GetR18() {
 		photo = photo.WithHasSpoiler()
 	}
-	_, err = ctx.Bot().SendPhoto(ctx, photo)
+	editReq := telegoutil.EditMessageMedia(chatID, waitMsg.MessageID, photo).WithReplyMarkup(replyMarkup)
+	msg, err := ctx.Bot().EditMessageMedia(ctx, editReq)
 	if err != nil {
 		return oops.Wrapf(err, "failed to send artwork info photo")
 	}
-	// [TODO] update artwork telegram info here
+	if msg != nil && msg.Photo != nil {
+		fileId := msg.Photo[len(msg.Photo)-1].FileID
+		pic := artwork.GetPictures()[0]
+		switch p := pic.(type) {
+		case *entity.Picture:
+			tginfo := p.GetTelegramInfo()
+			tginfo.PhotoFileID = fileId
+			return serv.UpdatePictureTelegramInfo(ctx, p.ID, &tginfo)
+		case *entity.CachedPicture:
+			cachedArtwork, ok := artwork.(*entity.CachedArtworkData)
+			if ok && p.Original == cachedArtwork.Pictures[0].Original {
+				tginfo := p.GetTelegramInfo()
+				tginfo.PhotoFileID = fileId
+				p.TelegramInfo = tginfo
+				cachedArtwork.Pictures[0].TelegramInfo = tginfo
+				return serv.UpdateCachedArtwork(ctx, cachedArtwork)
+			}
+		}
+	}
 	// [TODO] lazy load input file and update preview
 	return nil
 }

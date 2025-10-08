@@ -1,7 +1,7 @@
 package handlers
 
 import (
-	"strings"
+	"fmt"
 
 	"github.com/krau/ManyACG/internal/interface/telegram/handlers/utils"
 	"github.com/krau/ManyACG/internal/interface/telegram/metautil"
@@ -16,56 +16,37 @@ import (
 func GetArtworkInfo(ctx *telegohandler.Context, message telego.Message) error {
 	serv := service.FromContext(ctx)
 	hasPermission := utils.CheckPermissionInGroup(ctx, serv, message, shared.PermissionGetArtworkInfo)
+	if !hasPermission {
+		return nil
+	}
 	sourceURL := ctx.Value("source_url").(string)
 	ogch := utils.GetMssageOriginChannel(&message)
 	chatID := message.Chat.ChatID()
 	meta := metautil.FromContext(ctx)
-	if ogch != nil && (ogch.Chat.ID == meta.ChannelChatID().ID ||
-		strings.EqualFold(ogch.Chat.Username, strings.TrimPrefix(meta.ChannelChatID().Username, "@"))) {
+	if ogch != nil && metautil.ChatIDEqual(ogch.Chat.ChatID(), meta.ChannelChatID()) {
 		// handle the posted artwork in our channel
-		// time.Sleep(3 * time.Second)
-		// artwork, err := serv.GetArtworkByURL(ctx, sourceURL)
-		// if err != nil {
-		// 	log.Errorf("failed to get posted artwork: %s", err)
-		// 	return nil
-		// }
-		// ctx.Bot().SendMessage(ctx, telegoutil.Message(
-		// 	chatID,
-		// 	fmt.Sprintf("%s\n点击下方按钮在私聊中获取原图文件", sourceURL),
-		// ).WithReplyParameters(&telego.ReplyParameters{
-		// 	MessageID: message.MessageID,
-		// }).WithReplyMarkup(telegoutil.InlineKeyboard(
-		// 	utils.GetPostedArtworkInlineKeyboardButton(artwork, meta),
-		// )))
+		artwork, err := serv.GetArtworkByURL(ctx, sourceURL)
+		if err != nil {
+			log.Errorf("failed to get posted artwork: %s", err)
+			return nil
+		}
+		ctx.Bot().SendMessage(ctx, telegoutil.Message(
+			chatID,
+			fmt.Sprintf("%s\n点击下方按钮在私聊中获取原图文件", sourceURL),
+		).WithReplyParameters(&telego.ReplyParameters{
+			MessageID: message.MessageID,
+		}).WithReplyMarkup(telegoutil.InlineKeyboard(
+			utils.GetPostedArtworkInlineKeyboardButton(artwork, meta),
+		)))
 		return nil
 	}
-	var waitMessageID int
-
-	if hasPermission {
-		go func() {
-			msg, err := utils.ReplyMessage(ctx, message, "正在获取作品信息...")
-			if err != nil {
-				log.Warnf("发送消息失败: %s", err)
-				return
-			}
-			waitMessageID = msg.MessageID
-		}()
-	}
-	defer func() {
-		if waitMessageID != 0 {
-			ctx.Bot().DeleteMessage(ctx, telegoutil.Delete(chatID, waitMessageID))
-		}
-	}()
-
-	err := utils.SendArtworkInfo(ctx, meta, serv, sourceURL, chatID, &utils.SendArtworkInfoOptions{
+	err := utils.SendArtworkInfo(ctx, meta, serv, sourceURL, chatID, utils.SendArtworkInfoOptions{
 		HasPermission:   hasPermission,
 		ReplyParameters: &telego.ReplyParameters{MessageID: message.MessageID},
 	})
 	if err != nil {
 		log.Errorf("send artwork info failed: %s", err)
-		if hasPermission {
-			utils.ReplyMessage(ctx, message, err.Error())
-		}
+		utils.ReplyMessage(ctx, message, err.Error())
 	}
 	return nil
 }

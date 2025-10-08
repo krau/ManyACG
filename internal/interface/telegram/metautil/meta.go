@@ -76,3 +76,8 @@ func (m *MetaData) ChannelMessageURL(messageID int) string {
 	}
 	return fmt.Sprintf("https://t.me/c/%s/%d", strings.TrimPrefix(m.channelChatID.String(), "-100"), messageID)
 }
+
+
+func ChatIDEqual(a, b telego.ChatID) bool {
+	return a.ID != 0 && b.ID != 0 && a.ID == b.ID || a.Username != "" && b.Username != "" && strings.EqualFold(a.Username, b.Username)
+}
