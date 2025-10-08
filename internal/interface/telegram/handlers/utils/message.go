@@ -7,7 +7,6 @@ import (
 
 	"github.com/krau/ManyACG/internal/interface/telegram/metautil"
 	"github.com/krau/ManyACG/internal/model/entity"
-	"github.com/krau/ManyACG/pkg/objectuuid"
 	"github.com/krau/ManyACG/service"
 	"github.com/mymmrac/telego"
 	"github.com/mymmrac/telego/telegohandler"
@@ -131,9 +130,5 @@ func GetPostedArtworkInlineKeyboardButton(artwork *entity.Artwork, meta *metauti
 }
 
 func GetMessagePhotoFile(ctx *telegohandler.Context, message *telego.Message) ([]byte, error) {
-	panic("unimplemented")
-}
-
-func SendPictureFileByID(ctx *telegohandler.Context, meta *metautil.MetaData, id objectuuid.ObjectUUID) (telego.Message, error) {
 	panic("unimplemented")
 }

@@ -4,12 +4,14 @@ import (
 	"context"
 
 	"github.com/krau/ManyACG/internal/model/dto"
+	"github.com/krau/ManyACG/internal/model/entity"
 )
 
 type ArtworkSource interface {
 	GetArtworkInfo(ctx context.Context, sourceUrl string) (*dto.FetchedArtwork, error)
 	MatchesSourceURL(sourceUrl string) (string, bool)
 	FetchNewArtworks(ctx context.Context, limit int) ([]*dto.FetchedArtwork, error)
+	PrettyFileName(artwork entity.ArtworkLike, picture entity.PictureLike) string
 }
 
 // func GetArtworkInfo(ctx context.Context, sourceURL string) (*dto.FetchedArtwork, error) {

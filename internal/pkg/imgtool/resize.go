@@ -3,6 +3,7 @@ package imgtool
 import (
 	"fmt"
 	"image"
+	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -44,6 +45,14 @@ func GetSize(img image.Image) (int, int, error) {
 		return 0, 0, fmt.Errorf("empty image")
 	}
 	return bounds.Dx(), bounds.Dy(), nil
+}
+
+func GetSizeFromReader(r io.Reader) (int, int, error) {
+	img, _, err := image.Decode(r)
+	if err != nil {
+		return 0, 0, fmt.Errorf("failed to decode image: %w", err)
+	}
+	return GetSize(img)
 }
 
 func Compress(inputPath, outputPath, format string, maxEdgeLength int) (*os.File, error) {

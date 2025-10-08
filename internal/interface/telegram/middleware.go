@@ -12,9 +12,9 @@ func messageLogger(ctx *telegohandler.Context, update telego.Update) error {
 		user := update.Message.From
 		senderChat := update.Message.SenderChat
 		if senderChat != nil {
-			log.Debugf("[%s](%d) [%s](%s)", chat.Title, chat.ID, senderChat.Title, senderChat.Username)
+			log.Debug("received message", "chat_title", chat.Title, "chat_id", chat.ID, "sender", senderChat.Title, "sender_username", senderChat.Username)
 		} else {
-			log.Debugf("[%s](%d) [%s](%d)", chat.Title, chat.ID, user.FirstName+user.LastName, user.ID)
+			log.Debug("received message", "chat_title", chat.Title, "chat_id", chat.ID, "sender", user.FirstName+user.LastName, "sender_username", user.ID)
 		}
 	}
 	return ctx.Next(update)

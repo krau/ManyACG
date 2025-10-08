@@ -88,6 +88,11 @@ type CachedPicture struct {
 	TelegramInfo shared.TelegramInfo `json:"telegram_info"`
 }
 
+// GetIndex implements PictureLike.
+func (c *CachedPicture) GetIndex() uint {
+	return c.Index
+}
+
 // GetOriginal implements PictureLike.
 func (c *CachedPicture) GetOriginal() string {
 	return c.Original

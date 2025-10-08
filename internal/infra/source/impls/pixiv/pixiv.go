@@ -2,12 +2,15 @@ package pixiv
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 
 	config "github.com/krau/ManyACG/internal/infra/config/runtimecfg"
 	"github.com/krau/ManyACG/internal/infra/source"
 	"github.com/krau/ManyACG/internal/model/dto"
+	"github.com/krau/ManyACG/internal/model/entity"
 	"github.com/krau/ManyACG/internal/shared"
+	"github.com/krau/ManyACG/pkg/strutil"
 	"github.com/samber/oops"
 
 	"github.com/imroc/req/v3"
@@ -72,13 +75,11 @@ func (p *Pixiv) MatchesSourceURL(text string) (string, bool) {
 	return "https://www.pixiv.net/artworks/" + pid, true
 }
 
-// func (p *Pixiv) GetFileName(artwork *types.Artwork, picture *types.Picture) string {
-// 	return artwork.Title + "_" + path.Base(picture.Original)
-// }
-
-// func (p *Pixiv) Config() *config.SourceCommonConfig {
-// 	return &config.SourceCommonConfig{
-// 		Enable:   config.Get().Source.Pixiv.Enable,
-// 		Intervel: config.Get().Source.Pixiv.Intervel,
-// 	}
-// }
+func (p *Pixiv) PrettyFileName(artwork entity.ArtworkLike, picture entity.PictureLike) string {
+	pid := getPid(artwork.GetSourceURL())
+	ext, _ := strutil.GetFileExtFromURL(picture.GetOriginal())
+	if pid != "" {
+		return fmt.Sprintf("pixiv_%s_%d%s", pid, picture.GetIndex(), ext)
+	}
+	return fmt.Sprintf("pixiv_%s%s", strutil.MD5Hash(picture.GetOriginal()), ext)
+}

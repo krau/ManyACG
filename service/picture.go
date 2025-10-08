@@ -1,14 +1,5 @@
 package service
 
-import (
-	"context"
-
-	"github.com/duke-git/lancet/v2/slice"
-	"github.com/krau/ManyACG/internal/model/entity"
-	"github.com/krau/ManyACG/internal/repo"
-	"github.com/krau/ManyACG/pkg/objectuuid"
-)
-
 // Deprecated: MessageID 现在可能为 0
 // func GetPictureByMessageID(ctx context.Context, messageID int) (*types.Picture, error) {
 // 	pictureModel, err := dao.GetPictureByMessageID(ctx, messageID)
@@ -141,32 +132,32 @@ import (
 // 删除单张图片, 如果删除后对应的 artwork 中没有图片, 则也删除 artwork
 //
 // 删除后对 artwork 的 pictures 的 index 进行重整
-func (s *Service) DeletePictureByID(ctx context.Context, id objectuuid.ObjectUUID) error {
-	toDelete, err := s.repos.Picture().GetPictureByID(ctx, id)
-	if err != nil {
-		return err
-	}
-	artwork, err := s.repos.Artwork().GetArtworkByID(ctx, toDelete.ArtworkID)
-	if err != nil {
-		return err
-	}
-	err = s.repos.Transaction(ctx, func(repos repo.Repositories) error {
-		if len(artwork.Pictures) == 1 {
-			return repos.Artwork().DeleteArtworkByID(ctx, artwork.ID)
-		}
-		if err := repos.Picture().DeletePictureByID(ctx, id); err != nil {
-			return err
-		}
-		newPictures := slice.Filter(artwork.Pictures, func(index int, item *entity.Picture) bool {
-			return item.ID != toDelete.ID
-		})
-		if err := repos.Artwork().UpdateArtworkPictures(ctx, artwork.ID, newPictures); err != nil {
-			return err
-		}
-		return repos.Artwork().ReorderArtworkPicturesByID(ctx, artwork.ID)
-	})
-	return err
-}
+// func (s *Service) DeletePictureByID(ctx context.Context, id objectuuid.ObjectUUID) error {
+// 	toDelete, err := s.repos.Picture().GetPictureByID(ctx, id)
+// 	if err != nil {
+// 		return err
+// 	}
+// 	artwork, err := s.repos.Artwork().GetArtworkByID(ctx, toDelete.ArtworkID)
+// 	if err != nil {
+// 		return err
+// 	}
+// 	err = s.repos.Transaction(ctx, func(repos repo.Repositories) error {
+// 		if len(artwork.Pictures) == 1 {
+// 			return repos.Artwork().DeleteArtworkByID(ctx, artwork.ID)
+// 		}
+// 		if err := repos.Picture().DeletePictureByID(ctx, id); err != nil {
+// 			return err
+// 		}
+// 		newPictures := slice.Filter(artwork.Pictures, func(index int, item *entity.Picture) bool {
+// 			return item.ID != toDelete.ID
+// 		})
+// 		if err := repos.Artwork().UpdateArtworkPictures(ctx, artwork.ID, newPictures); err != nil {
+// 			return err
+// 		}
+// 		return repos.Artwork().ReorderArtworkPicturesByID(ctx, artwork.ID)
+// 	})
+// 	return err
+// }
 
 // func GetPicturesByHashHammingDistance(ctx context.Context, hash string, distance int) ([]*types.Picture, error) {
 // 	if hash == "" {

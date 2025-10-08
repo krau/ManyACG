@@ -18,6 +18,7 @@ import (
 	"github.com/mymmrac/telego"
 	"github.com/mymmrac/telego/telegohandler"
 	"github.com/mymmrac/telego/telegoutil"
+	"github.com/samber/oops"
 )
 
 func GetPictureFile(ctx *telegohandler.Context, message telego.Message) error {
@@ -29,9 +30,6 @@ func GetPictureFile(ctx *telegohandler.Context, message telego.Message) error {
 		sourceURL = serv.FindSourceURL(message.Text)
 	}
 	meta := metautil.FromContext(ctx)
-
-	cmd, _, args := telegoutil.ParseCommand(message.Text)
-	multiple := cmd == "files"
 	if sourceURL == "" {
 		getPictureByHash := func() *entity.Picture {
 			if message.ReplyToMessage == nil {
@@ -65,124 +63,106 @@ func GetPictureFile(ctx *telegohandler.Context, message telego.Message) error {
 			utils.ReplyMessageWithHTML(ctx, message, helpText)
 			return nil
 		}
-		if !multiple {
-			_, err := utils.SendPictureFileByID(ctx, meta, picture.ID)
-			if err != nil {
-				utils.ReplyMessage(ctx, message, "文件发送失败: "+err.Error())
-				return nil
-			}
-		} else {
-			artwork, err := serv.GetArtworkByID(ctx, picture.ArtworkID)
-			if err != nil {
-				utils.ReplyMessage(ctx, message, "获取作品信息失败")
-				return nil
-			}
-			getArtworkFiles(ctx, serv, meta, message, artwork)
+
+		artwork, err := serv.GetArtworkByID(ctx, picture.ArtworkID)
+		if err != nil {
+			utils.ReplyMessage(ctx, message, "获取作品信息失败")
+			return nil
 		}
-		return nil
+		return getArtworkFiles(ctx, serv, meta, message, artwork)
 	}
 
 	artwork, err := serv.GetArtworkByURL(ctx, sourceURL)
 	if err != nil && !errors.Is(err, errs.ErrRecordNotFound) {
-		log.Errorf("获取作品信息失败: %s", err)
 		utils.ReplyMessage(ctx, message, "获取作品信息失败")
-		return nil
+		return oops.Wrapf(err, "failed to get artwork by url: %s", sourceURL)
 	}
-	if multiple {
-		if artwork == nil {
-			artwork, err := serv.GetOrFetchCachedArtwork(ctx, sourceURL)
-			if err != nil {
-				log.Errorf("获取作品信息失败: %s", err)
-				utils.ReplyMessage(ctx, message, "获取作品信息失败")
-				return nil
-			}
-			getArtworkFiles(ctx, serv, meta, message, artwork)
-			return nil
-		}
-		getArtworkFiles(ctx, serv, meta, message, artwork)
-		return nil
-	}
+
 	if artwork == nil {
-		utils.ReplyMessage(ctx, message, "未找到作品信息")
-		return nil
-	}
-	var index int
-	if len(args) != 0 {
-		index, err = strconv.Atoi(args[0])
-		if err != nil || index <= 0 {
-			utils.ReplyMessage(ctx, message, "请输入正确的作品序号, 从 1 开始")
-			return nil
+		artwork, err := serv.GetOrFetchCachedArtwork(ctx, sourceURL)
+		if err != nil {
+			utils.ReplyMessage(ctx, message, "获取作品信息失败")
+			return oops.Wrapf(err, "failed to get artwork by url: %s", sourceURL)
 		}
-		index--
+		return getArtworkFiles(ctx, serv, meta, message, artwork)
 	}
-	if index > len(artwork.Pictures) {
-		utils.ReplyMessage(ctx, message, "这个作品没有这么多图片")
-		return nil
-	}
-	picture := artwork.Pictures[index]
-	_, err = utils.SendPictureFileByID(ctx, meta, picture.ID)
-	if err != nil {
-		if errors.Is(err, errs.ErrRecordNotFound) {
-			utils.ReplyMessage(ctx, message, "这张图片未在数据库中呢")
-			return nil
-		}
-		log.Errorf("发送文件失败: %s", err)
-		utils.ReplyMessage(ctx, message, "发送文件失败, 去找管理员反馈吧~")
-		return nil
-	}
-	return nil
+	return getArtworkFiles(ctx, serv, meta, message, artwork)
 }
 
-func getArtworkFiles(ctx *telegohandler.Context, serv *service.Service,
+func getArtworkFiles(ctx *telegohandler.Context,
+	serv *service.Service,
 	meta *metautil.MetaData,
-	message telego.Message, artwork entity.ArtworkLike) {
+	message telego.Message,
+	artwork entity.ArtworkLike) error {
+	var errs []error
 	for i, picture := range artwork.GetPictures() {
-		buildDocument := func() (*telego.SendDocumentParams, func() error, error) {
-			file, err := utils.GetPictureDocumentInputFile(ctx, serv, picture)
+		err := func() error {
+			buildDocument := func() (*telego.SendDocumentParams, func() error, error) {
+				file, err := utils.GetPictureDocumentInputFile(ctx, serv, artwork, picture)
+				if err != nil {
+					return nil, nil, oops.Wrapf(err, "failed to get picture document input file")
+				}
+				document := telegoutil.Document(message.Chat.ChatID(), file.InputFile).
+					WithReplyParameters(&telego.ReplyParameters{
+						MessageID: message.MessageID,
+					}).WithCaption(artwork.GetTitle() + "_" + strconv.Itoa(i+1)).WithDisableContentTypeDetection()
+				if meta.ChannelAvailable() && picture.GetTelegramInfo().MessageID != 0 {
+					document.WithReplyMarkup(telegoutil.InlineKeyboard([]telego.InlineKeyboardButton{
+						telegoutil.InlineKeyboardButton("详情").WithURL(meta.ChannelMessageURL(picture.GetTelegramInfo().MessageID)),
+					}))
+				} else {
+					document.WithReplyMarkup(telegoutil.InlineKeyboard([]telego.InlineKeyboardButton{
+						telegoutil.InlineKeyboardButton("详情").WithURL(artwork.GetSourceURL()),
+					}))
+				}
+				return document, file.Close, nil
+			}
+
+			document, close, err := buildDocument()
 			if err != nil {
-				return nil, nil, err
+				return oops.Wrapf(err, "failed to build document")
 			}
-			document := telegoutil.Document(message.Chat.ChatID(), file.InputFile).
-				WithReplyParameters(&telego.ReplyParameters{
+			defer close()
+			documentMessage, err := ctx.Bot().SendDocument(ctx, document)
+			if err != nil {
+				ctx.Bot().SendMessage(ctx, telegoutil.Messagef(
+					message.Chat.ChatID(),
+					"发送第 %d 张图片时失败",
+					i+1,
+				).WithReplyParameters(&telego.ReplyParameters{
 					MessageID: message.MessageID,
-				}).WithCaption(artwork.GetTitle() + "_" + strconv.Itoa(i+1)).WithDisableContentTypeDetection()
-			if meta.ChannelAvailable() && picture.GetTelegramInfo().MessageID != 0 {
-				document.WithReplyMarkup(telegoutil.InlineKeyboard([]telego.InlineKeyboardButton{
-					telegoutil.InlineKeyboardButton("详情").WithURL(meta.ChannelMessageURL(picture.GetTelegramInfo().MessageID)),
 				}))
-			} else {
-				document.WithReplyMarkup(telegoutil.InlineKeyboard([]telego.InlineKeyboardButton{
-					telegoutil.InlineKeyboardButton("详情").WithURL(artwork.GetSourceURL()),
-				}))
+				return oops.Wrapf(err, "failed to send document")
 			}
-			return document, file.Close, nil
-		}
-
-		document, close, err := buildDocument()
+			if documentMessage != nil && documentMessage.Document != nil {
+				switch pic := picture.(type) {
+				case *entity.Picture:
+					tginfo := pic.GetTelegramInfo()
+					tginfo.DocumentFileID = documentMessage.Document.FileID
+					return serv.UpdatePictureTelegramInfo(ctx, pic.ID, &tginfo)
+				case *entity.CachedPicture:
+					cached, err := serv.GetCachedArtworkByURL(ctx, artwork.GetSourceURL())
+					if err != nil {
+						return oops.Wrapf(err, "failed to get cached artwork by url: %s", artwork.GetSourceURL())
+					}
+					data := cached.Artwork.Data()
+					for _, p := range data.Pictures {
+						if p.Original == pic.GetOriginal() {
+							tginfo := pic.GetTelegramInfo()
+							tginfo.DocumentFileID = documentMessage.Document.FileID
+							p.TelegramInfo = tginfo
+							return serv.UpdateCachedArtwork(ctx, data)
+						}
+					}
+				default:
+					log.Warnf("unknown picture type: %T", pic)
+				}
+			}
+			return nil
+		}()
 		if err != nil {
-			break
+			errs = append(errs, oops.Wrapf(err, "failed to send picture %d file", i+1))
 		}
-		defer close()
-		documentMessage, err := ctx.Bot().SendDocument(ctx, document)
-		if err != nil {
-			log.Errorf("发送文件失败: %s", err)
-			ctx.Bot().SendMessage(ctx, telegoutil.Messagef(
-				message.Chat.ChatID(),
-				"发送第 %d 张图片时失败",
-				i+1,
-			).WithReplyParameters(&telego.ReplyParameters{
-				MessageID: message.MessageID,
-			}))
-			break
-		}
-		if documentMessage != nil {
-			// picture.TelegramInfo.DocumentFileID = documentMessage.Document.FileID
-			// if err := serv.UpdatePictureTelegramInfo(ctx, picture, picture.TelegramInfo); err != nil {
-			// 	log.Warnf("更新图片信息失败: %s", err)
-			// }
-			// [TODO] wip
-		}
-		// break
-
 	}
+	return oops.Join(errs...)
 }

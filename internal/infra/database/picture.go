@@ -9,6 +9,7 @@ import (
 	"github.com/krau/ManyACG/internal/model/query"
 	"github.com/krau/ManyACG/internal/shared"
 	"github.com/krau/ManyACG/pkg/objectuuid"
+	"gorm.io/datatypes"
 	"gorm.io/gorm"
 )
 
@@ -85,7 +86,15 @@ func (d *DB) QueryPicturesByPhash(ctx context.Context, que query.PicturesPhash) 
 	return result, nil
 }
 
-// UpdatePictureTelegramInfoByID implements repo.Picture.
 func (d *DB) UpdatePictureTelegramInfoByID(ctx context.Context, id objectuuid.ObjectUUID, tgInfo *shared.TelegramInfo) (*entity.Picture, error) {
-	panic("unimplemented")
+	pic, err := d.GetPictureByID(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	pic.TelegramInfo = datatypes.NewJSONType(*tgInfo)
+	err = d.db.WithContext(ctx).Save(pic).Error
+	if err != nil {
+		return nil, err
+	}
+	return pic, nil
 }

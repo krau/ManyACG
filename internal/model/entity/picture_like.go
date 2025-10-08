@@ -3,6 +3,7 @@ package entity
 import "github.com/krau/ManyACG/internal/shared"
 
 type PictureLike interface {
+	GetIndex() uint
 	GetTelegramInfo() shared.TelegramInfo
 	GetOriginal() string
 	GetThumbnail() string

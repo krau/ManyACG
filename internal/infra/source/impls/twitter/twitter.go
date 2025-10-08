@@ -8,12 +8,18 @@ import (
 	"github.com/krau/ManyACG/internal/infra/config/runtimecfg"
 	"github.com/krau/ManyACG/internal/infra/source"
 	"github.com/krau/ManyACG/internal/model/dto"
+	"github.com/krau/ManyACG/internal/model/entity"
 	"github.com/krau/ManyACG/internal/shared"
 )
 
 type Twitter struct {
 	cfg       runtimecfg.SourceTwitterConfig
 	reqClient *req.Client
+}
+
+// PrettyFileName implements source.ArtworkSource.
+func (t *Twitter) PrettyFileName(artwork entity.ArtworkLike, picture entity.PictureLike) string {
+	panic("unimplemented")
 }
 
 func init() {

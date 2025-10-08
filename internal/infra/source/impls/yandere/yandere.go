@@ -7,6 +7,7 @@ import (
 	"github.com/krau/ManyACG/internal/infra/config/runtimecfg"
 	"github.com/krau/ManyACG/internal/infra/source"
 	"github.com/krau/ManyACG/internal/model/dto"
+	"github.com/krau/ManyACG/internal/model/entity"
 	"github.com/krau/ManyACG/internal/shared"
 )
 
@@ -14,6 +15,8 @@ type Yandere struct {
 	cfg       runtimecfg.SourceYandereConfig
 	reqClient *req.Client
 }
+
+
 
 func init() {
 	source.Register(shared.SourceTypeYandere, func() source.ArtworkSource {
@@ -104,3 +107,8 @@ func (y *Yandere) MatchesSourceURL(text string) (string, bool) {
 // 		Intervel: -1,
 // 	}
 // }
+
+// PrettyFileName implements source.ArtworkSource.
+func (y *Yandere) PrettyFileName(artwork entity.ArtworkLike, picture entity.PictureLike) string {
+	panic("unimplemented")
+}

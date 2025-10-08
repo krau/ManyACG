@@ -89,5 +89,6 @@ func (s *Service) UpdateCachedArtwork(ctx context.Context, data *entity.CachedAr
 		return err
 	}
 	cachedArt.Artwork = datatypes.NewJSONType(data)
-	panic("not implemented")
+	_, err = s.repos.CachedArtwork().SaveCachedArtwork(ctx, cachedArt)
+	return err
 }

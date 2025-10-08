@@ -6,10 +6,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"image"
 	"os"
 
 	"github.com/gabriel-vasile/mimetype"
-	"github.com/google/uuid"
 	"github.com/krau/ManyACG/internal/common/httpclient"
 	"github.com/krau/ManyACG/internal/interface/telegram/metautil"
 	"github.com/krau/ManyACG/internal/model/command"
@@ -41,12 +41,6 @@ func PostAndCreateArtwork(
 	}
 	showProgress := (fromChatID.ID != 0 || fromChatID.Username != "") && messageID != 0
 	if showProgress {
-		// // clear previous inline buttons
-		// defer ctx.Bot().EditMessageReplyMarkup(ctx, &telego.EditMessageReplyMarkupParams{
-		// 	ChatID:      telegoutil.ID(fromChatID),
-		// 	MessageID:   messageID,
-		// 	ReplyMarkup: nil,
-		// })
 		ctx.Bot().EditMessageReplyMarkup(ctx, telegoutil.EditMessageReplyMarkup(
 			fromChatID,
 			messageID,
@@ -61,23 +55,56 @@ func PostAndCreateArtwork(
 		if err != nil {
 			return oops.Wrapf(err, "failed to download picture %d", i)
 		}
-		defer file.Close()
-		defer clean()
-		var ext string
-		ext, err = strutil.GetFileExtFromURL(pic.Original)
-		if err != nil {
-			mtype, err := mimetype.DetectFile(file.Name())
+		err = func() error {
+			defer file.Close()
+			defer clean()
+			img, _, err := image.Decode(file)
 			if err != nil {
-				return oops.Wrapf(err, "failed to detect mime type for picture %d", i)
+				return oops.Wrapf(err, "failed to decode picture %d", i)
 			}
-			ext = mtype.Extension()
-		}
-		filename := fmt.Sprintf("%s%s", strutil.MD5Hash(pic.Original), ext)
-		info, err := serv.StorageSaveAllSize(ctx, file, fmt.Sprintf("/%s/%s", artwork.SourceType, artwork.Artist.UID), filename)
+			if pic.Phash == "" {
+				phash, err := imgtool.GetImagePhash(img)
+				if err != nil {
+					return oops.Wrapf(err, "failed to get phash of picture %d", i)
+				}
+				pic.Phash = phash
+			}
+			if pic.Width == 0 || pic.Height == 0 {
+				w, h, err := imgtool.GetSize(img)
+				if err != nil {
+					return oops.Wrapf(err, "failed to get size of picture %d", i)
+				}
+				pic.Width = uint(w)
+				pic.Height = uint(h)
+			}
+			if pic.ThumbHash == "" {
+				thumbHash, err := imgtool.GetImageThumbHash(img)
+				if err != nil {
+					return oops.Wrapf(err, "failed to get thumb hash of picture %d", i)
+				}
+				pic.ThumbHash = thumbHash
+			}
+			file.Seek(0, 0)
+			var ext string
+			ext, err = strutil.GetFileExtFromURL(pic.Original)
+			if err != nil {
+				mtype, err := mimetype.DetectFile(file.Name())
+				if err != nil {
+					return oops.Wrapf(err, "failed to detect mime type for picture %d", i)
+				}
+				ext = mtype.Extension()
+			}
+			filename := fmt.Sprintf("%s%s", strutil.MD5Hash(pic.Original), ext)
+			info, err := serv.StorageSaveAllSize(ctx, file, fmt.Sprintf("/%s/%s", artwork.SourceType, artwork.Artist.UID), filename)
+			if err != nil {
+				return oops.Wrapf(err, "failed to save picture %d", i)
+			}
+			artwork.Pictures[i].StorageInfo = *info
+			return nil
+		}()
 		if err != nil {
-			return oops.Wrapf(err, "failed to save picture %d", i)
+			return err
 		}
-		artwork.Pictures[i].StorageInfo = *info
 	}
 	if showProgress {
 		ctx.Bot().EditMessageReplyMarkup(ctx, telegoutil.EditMessageReplyMarkup(
@@ -96,15 +123,13 @@ func PostAndCreateArtwork(
 		return oops.New("no messages sent")
 	}
 	for i := range artwork.Pictures {
+		// 只将信息临时保存到内存中, 以便后续传递到 CreateArtwork, 不更新 CachedArtwork
 		tginfo := shared.TelegramInfo{
 			MessageID:    msgs[i].MessageID,
 			MediaGroupID: msgs[i].MediaGroupID,
 		}
-		if photo := msgs[i].Photo; len(photo) > 0 {
-			tginfo.PhotoFileID = photo[len(photo)-1].FileID
-		}
-		if doc := msgs[i].Document; doc != nil {
-			tginfo.DocumentFileID = doc.FileID
+		if photoSize := msgs[i].Photo; len(photoSize) > 0 {
+			tginfo.PhotoFileID = photoSize[len(photoSize)-1].FileID
 		}
 		artwork.Pictures[i].TelegramInfo = tginfo
 	}
@@ -147,8 +172,9 @@ func PostAndCreateArtwork(
 
 func SendArtworkMediaGroup(ctx *telegohandler.Context, chatID telego.ChatID, artwork entity.ArtworkLike) ([]telego.Message, error) {
 	pics := artwork.GetPictures()
+	caption := ArtworkHTMLCaption(metautil.FromContext(ctx), artwork)
 	if len(pics) <= 10 {
-		inputs, err := ArtworkInputMediaPhotos(ctx, service.FromContext(ctx), artwork, ArtworkHTMLCaption(metautil.FromContext(ctx), artwork), 0, len(pics))
+		inputs, err := ArtworkInputMediaPhotos(ctx, service.FromContext(ctx), artwork, caption, 0, len(pics))
 		if err != nil {
 			return nil, oops.Wrapf(err, "failed to create input media photos")
 		}
@@ -158,7 +184,6 @@ func SendArtworkMediaGroup(ctx *telegohandler.Context, chatID telego.ChatID, art
 			inputs...,
 		))
 	}
-	caption := ArtworkHTMLCaption(metautil.FromContext(ctx), artwork)
 	messages := make([]telego.Message, len(pics))
 	for i := 0; i < len(pics); i += 10 {
 		end := i + 10
@@ -233,7 +258,7 @@ func ArtworkInputMediaPhotos(ctx context.Context,
 			if err != nil {
 				return nil, oops.Wrapf(err, "failed to compress image: %s", picture.GetOriginal())
 			}
-			photo = telegoutil.MediaPhoto(telegoutil.File(telegoutil.NameReader(bytes.NewReader(fileBytes), uuid.New().String())))
+			photo = telegoutil.MediaPhoto(telegoutil.File(telegoutil.NameReader(bytes.NewReader(fileBytes), serv.PrettyFileName(artwork, picture))))
 		}
 		if i == 0 {
 			photo = photo.WithCaption(caption).WithParseMode(telego.ModeHTML)
@@ -347,7 +372,12 @@ func CreateArtworkInfoReplyMarkup(ctx context.Context, meta *metautil.MetaData, 
 // SendArtworkInfo 将作品信息附带操作按钮发送到指定聊天, 用于提供给管理员发布或修改作品
 //
 // 需要区分已发布的作品, 已标记为删除的作品, 和未发布的作品
-func SendArtworkInfo(ctx *telegohandler.Context, meta *metautil.MetaData, serv *service.Service, sourceUrl string, chatID telego.ChatID, opts *SendArtworkInfoOptions) error {
+func SendArtworkInfo(ctx *telegohandler.Context,
+	meta *metautil.MetaData,
+	serv *service.Service,
+	sourceUrl string,
+	chatID telego.ChatID,
+	opts *SendArtworkInfoOptions) error {
 	sourceUrl = serv.FindSourceURL(sourceUrl)
 	if sourceUrl == "" {
 		return oops.New("no valid source url found")
@@ -427,7 +457,7 @@ func (i *InputFileCloser) Close() error {
 	return nil
 }
 
-func GetPictureDocumentInputFile(ctx context.Context, serv *service.Service, picture entity.PictureLike) (*InputFileCloser, error) {
+func GetPictureDocumentInputFile(ctx context.Context, serv *service.Service, artwork entity.ArtworkLike, picture entity.PictureLike) (*InputFileCloser, error) {
 	if id := picture.GetTelegramInfo().DocumentFileID; id != "" {
 		return &InputFileCloser{telegoutil.FileFromID(id), func() error { return nil }}, nil
 	}
@@ -437,20 +467,8 @@ func GetPictureDocumentInputFile(ctx context.Context, serv *service.Service, pic
 		if err != nil {
 			return nil, oops.Wrapf(err, "failed to get file from storage")
 		}
-		ext, err := strutil.GetFileExtFromURL(picture.GetOriginal())
-		if err != nil {
-			mtype, err := mimetype.DetectReader(rsc)
-			if mtype == nil {
-				return nil, oops.New("failed to detect mime type")
-			}
-			ext = mtype.Extension()
-			if err != nil {
-				return nil, oops.Wrapf(err, "failed to detect mime type")
-			}
-			rsc.Seek(0, 0)
-		}
 		return &InputFileCloser{
-			telegoutil.File(telegoutil.NameReader(rsc, fmt.Sprintf("%s%s", strutil.MD5Hash(picture.GetOriginal()), ext))),
+			telegoutil.File(telegoutil.NameReader(rsc, serv.PrettyFileName(artwork, picture))),
 			func() error {
 				return rsc.Close()
 			},

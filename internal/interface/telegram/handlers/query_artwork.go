@@ -79,7 +79,12 @@ func RandomPicture(ctx *telegohandler.Context, message telego.Message) error {
 		return oops.Wrapf(err, "failed to send photo message")
 	}
 	if photoMessage != nil {
-		// [TODO] update picture telegram info
+		fileId := photoMessage.Photo[len(photoMessage.Photo)-1].FileID
+		tginfo := picture.TelegramInfo.Data()
+		tginfo.PhotoFileID = fileId
+		if err := serv.UpdatePictureTelegramInfo(ctx, picture.ID, &tginfo); err != nil {
+			return oops.Wrapf(err, "failed to update picture telegram info")
+		}
 	}
 	return nil
 }
