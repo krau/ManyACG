@@ -48,7 +48,7 @@ func SearchPicture(ctx *telegohandler.Context, message telego.Message) error {
 		utils.ReplyMessageWithHTML(ctx, message, helpText)
 		return nil
 	}
-	msg, err := utils.ReplyMessage(ctx, message, "少女祈祷中...") //lint:ignore SA4006, 我用了 msg 啊哥们...
+	msg, err := utils.ReplyMessage(ctx, message, "少女祈祷中...")
 	if err != nil {
 		return oops.Wrapf(err, "reply message failed")
 	}

@@ -11,6 +11,7 @@ import (
 	"github.com/mymmrac/telego"
 	"github.com/mymmrac/telego/telegohandler"
 	"github.com/mymmrac/telego/telegoutil"
+	"github.com/samber/oops"
 )
 
 func GetArtworkInfo(ctx *telegohandler.Context, message telego.Message) error {
@@ -52,31 +53,46 @@ func GetArtworkInfo(ctx *telegohandler.Context, message telego.Message) error {
 }
 
 func GetArtworkInfoCommand(ctx *telegohandler.Context, message telego.Message) error {
-	// 	serv := service.FromContext(ctx)
-	// 	sourceURL := utils.FindSourceURLInMessage(serv, &message)
-	// 	if sourceURL == "" {
-	// 		sourceURL = utils.FindSourceURLInMessage(serv, message.ReplyToMessage)
-	// 	}
-	// 	if sourceURL == "" {
-	// 		helpText := `
-	// <b>使用 /info 命令并在参数中提供作品链接, 或使用该命令回复一条包含支持的链接的消息, 将获取作品信息并发送全部图片</b>
+	serv := service.FromContext(ctx)
+	sourceURL := utils.FindSourceURLInMessage(serv, &message)
+	if sourceURL == "" {
+		sourceURL = utils.FindSourceURLInMessage(serv, message.ReplyToMessage)
+	}
+	if sourceURL == "" {
+		helpText := `
+	<b>使用 /info 命令并在参数中提供作品链接, 或使用该命令回复一条包含支持的链接的消息, 将获取作品信息并发送全部图片</b>
 
-	// 命令语法: /info [作品链接]
-	// `
-	// 		utils.ReplyMessageWithHTML(ctx, message, helpText)
-	// 		return nil
-	// 	}
-	// 	chatID := message.Chat.ChatID()
-
-	//	if err := utils.SendArtworkInfo(ctx, utils.SendArtworkInfoOption{
-	//		SendFull:  true,
-	//		ChatID:    &chatID,
-	//		SourceURL: sourceURL,
-	//	}); err != nil {
-	//
-	//		utils.ReplyMessage(ctx, message, err.Error())
-	//	}
-	//
-	// return nil
-	panic("not implemented")
+	命令语法: /info [作品链接]
+	`
+		utils.ReplyMessageWithHTML(ctx, message, helpText)
+		return nil
+	}
+	artwork, err := serv.GetOrFetchCachedArtwork(ctx, sourceURL)
+	if err != nil {
+		utils.ReplyMessage(ctx, message, "获取作品信息失败")
+		return oops.Wrapf(err, "get or fetch cached artwork failed: %s", sourceURL)
+	}
+	msgs, err := utils.SendArtworkMediaGroup(ctx, message.Chat.ChatID(), artwork)
+	if err != nil {
+		utils.ReplyMessage(ctx, message, "发送作品图片时出现错误")
+		return oops.Wrapf(err, "send artwork media group failed: %s", artwork.SourceURL)
+	}
+	if len(msgs) != len(artwork.GetPictures()) {
+		log.Warnf("sent media group count mismatch: sent %d, expected %d", len(msgs), len(artwork.GetPictures()))
+		return nil
+	}
+	data := artwork.Artwork.Data()
+	for i, msg := range msgs {
+		if len(msg.Photo) == 0 {
+			continue
+		}
+		pic := data.Pictures[i]
+		tginfo := pic.TelegramInfo
+		tginfo.PhotoFileID = msg.Photo[len(msg.Photo)-1].FileID
+		pic.TelegramInfo = tginfo
+	}
+	if err := serv.UpdateCachedArtwork(ctx, data); err != nil {
+		return oops.Wrapf(err, "update cached artwork failed: %s", artwork.SourceURL)
+	}
+	return nil
 }

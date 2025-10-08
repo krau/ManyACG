@@ -33,14 +33,18 @@ func InlineQuery(ctx *telegohandler.Context, inlineQuery telego.InlineQuery) err
 		pics := artwork.Artwork.Data().Pictures
 		results := make([]telego.InlineQueryResult, 0, min(len(pics), 48))
 		caption := utils.ArtworkHTMLCaption(meta, artwork)
+		wsrvUrl := runtimecfg.Get().Wsrv.URL
 		for _, picture := range pics {
 			if picture.TelegramInfo.PhotoFileID != "" {
 				result := telegoutil.ResultCachedPhoto(objectuuid.New().Hex(), picture.TelegramInfo.PhotoFileID).WithCaption(caption).WithParseMode(telego.ModeHTML)
 				results = append(results, result)
 				continue
 			}
+			if wsrvUrl == "" {
+				continue
+			}
 			result := telegoutil.ResultPhoto(objectuuid.New().Hex(),
-				fmt.Sprintf("%s/?url=%s&w=2560&h=2560&we&output=jpg", runtimecfg.Get().WSRVURL,
+				fmt.Sprintf("%s/?url=%s&w=2560&h=2560&we&output=jpg", wsrvUrl,
 					picture.Original), picture.Thumbnail).WithCaption(caption).WithParseMode(telego.ModeHTML)
 			results = append(results, result)
 		}
@@ -63,6 +67,7 @@ func InlineQuery(ctx *telegohandler.Context, inlineQuery telego.InlineQuery) err
 			Limit:  48,
 			Offset: 0,
 		},
+		Random: true,
 	})
 	if err != nil || len(artworks) == 0 {
 		log.Errorf("获取图片失败: %s", err)

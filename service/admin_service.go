@@ -25,17 +25,8 @@ func (s *Service) IsAdminByTgID(ctx context.Context, tgid int64) (bool, error) {
 	return admin != nil, nil
 }
 
-func (s *Service) CreateAdmin(ctx context.Context, userID int64, permissions []shared.Permission, grant int64, super bool) error {
-	// _, err := dao.CreateAdmin(
-	// 	ctx, &types.AdminModel{
-	// 		UserID:      userID,
-	// 		Permissions: permissions,
-	// 		GrantBy:     grant,
-	// 		SuperAdmin:  super,
-	// 	},
-	// )
-	// return err
-	exist, err := s.repos.Admin().GetAdminByTelegramID(ctx, userID)
+func (s *Service) CreateAdmin(ctx context.Context, tgID int64, permissions []shared.Permission) error {
+	exist, err := s.repos.Admin().GetAdminByTelegramID(ctx, tgID)
 	if err != nil && !errors.Is(err, errs.ErrRecordNotFound) {
 		return err
 	}
@@ -43,7 +34,7 @@ func (s *Service) CreateAdmin(ctx context.Context, userID int64, permissions []s
 		return nil
 	}
 	_, err = s.repos.Admin().CreateAdmin(ctx, &entity.Admin{
-		TelegramID:  userID,
+		TelegramID:  tgID,
 		Permissions: permissions,
 	})
 	return err
@@ -113,7 +104,7 @@ func (s *Service) CheckAdminPermissionByTgID(ctx context.Context, userID int64, 
 	return true
 }
 
-func (s *Service) CreateOrUpdateAdmin(ctx context.Context, tgid int64, permissions []shared.Permission, grant int64, super bool) error {
+func (s *Service) CreateOrUpdateAdmin(ctx context.Context, tgid int64, permissions []shared.Permission) error {
 	// admin, err := dao.GetAdminByUserID(ctx, userID)
 	// if err != nil {
 	// 	if errors.Is(err, mongo.ErrNoDocuments) {
@@ -193,9 +184,12 @@ func (s *Service) GetAdminGroupIDs(ctx context.Context) ([]int64, error) {
 	return groupIDs, nil
 }
 
-
 // some simple wrappers
 
 func (s *Service) GetAdminByTelegramID(ctx context.Context, tgid int64) (*entity.Admin, error) {
 	return s.repos.Admin().GetAdminByTelegramID(ctx, tgid)
+}
+
+func (s *Service) DeleteAdminByTgID(ctx context.Context, tgid int64) error {
+	return s.repos.Admin().DeleteAdminByTelegramID(ctx, tgid)
 }

@@ -15,15 +15,14 @@ type Config struct {
 		DSN    string `toml:"dsn" mapstructure:"dsn" json:"dsn" yaml:"dsn"`
 	} `toml:"migrate" mapstructure:"migrate" json:"migrate" yaml:"migrate"`
 
-	App     AppConfig `toml:"app" mapstructure:"app" json:"app" yaml:"app"`
-	WSRVURL string    `toml:"wsrv_url" mapstructure:"wsrv_url" json:"wsrv_url" yaml:"wsrv_url"`
-	Web     struct {
+	App  AppConfig  `toml:"app" mapstructure:"app" json:"app" yaml:"app"`
+	Wsrv WsrvConfig `toml:"wsrv" mapstructure:"wsrv" json:"wsrv" yaml:"wsrv"`
+	Web  struct {
 		Enable  bool   `toml:"enable" mapstructure:"enable" json:"enable" yaml:"enable"`
 		Address string `toml:"address" mapstructure:"address" json:"address" yaml:"address"`
 	} `toml:"web" mapstructure:"web" json:"web" yaml:"web"`
 	API        apiConfig        `toml:"api" mapstructure:"api" json:"api" yaml:"api"`
 	Auth       authConfig       `toml:"auth" mapstructure:"auth" json:"auth" yaml:"auth"`
-	Fetcher    fetcherConfig    `toml:"fetcher" mapstructure:"fetcher" json:"fetcher" yaml:"fetcher"`
 	Log        logConfig        `toml:"log" mapstructure:"log" json:"log" yaml:"log"`
 	Telegram   TelegramConfig   `toml:"telegram" mapstructure:"telegram" json:"telegram" yaml:"telegram"`
 	HttpClient HttpClientConfig `toml:"http_client" mapstructure:"http_client" json:"http_client" yaml:"http_client"`
@@ -38,12 +37,12 @@ type Config struct {
 }
 
 type AppConfig struct {
+	// Something globally used in app
 	Debug bool `toml:"debug" mapstructure:"debug" json:"debug" yaml:"debug"`
 }
 
-type fetcherConfig struct {
-	MaxConcurrent int `toml:"max_concurrent" mapstructure:"max_concurrent" json:"max_concurrent" yaml:"max_concurrent"`
-	Limit         int `toml:"limit" mapstructure:"limit" json:"limit" yaml:"limit"`
+type WsrvConfig struct {
+	URL string `toml:"url" mapstructure:"url" json:"url" yaml:"url"`
 }
 
 var (
@@ -68,64 +67,79 @@ func loadConfig() Config {
 	viper.AutomaticEnv()
 	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
 
-	viper.SetDefault("wsrv_url", "https://wsrv.nl")
+	defaults := map[string]any{
+		"wsrv.url": "https://wsrv.nl",
 
-	viper.SetDefault("api.address", "0.0.0.0:39080")
-	viper.SetDefault("api.site_name", "ManyACG")
-	viper.SetDefault("api.site_title", "ManyACG - ACG Picture Collection")
-	viper.SetDefault("api.site_description", "Many illustrations and pictures of ACG")
-	viper.SetDefault("api.allowed_origins", []string{"*"})
-	viper.SetDefault("api.realm", "ManyACG")
-	viper.SetDefault("api.token_expire", 86400*14)
-	viper.SetDefault("api.refresh_token_expire", 86400*30)
-	viper.SetDefault("api.geoip_db", "geoip.mmdb")
+		"storage.cache_dir": "./imgcache",
+		"storage.cache_ttl": 86400,
 
-	viper.SetDefault("fetcher.max_concurrent", 5)
-	viper.SetDefault("fetcher.limit", 50)
+		"telegram.retry.max_attempts":  5,
+		"telegram.retry.exponent_base": 2.0,
+		"telegram.retry.start_delay":   3,
+		"telegram.retry.max_delay":     300,
+		"telegram.api_url":             "https://api.telegram.org",
+	}
 
-	viper.SetDefault("log.file_path", "logs/manyacg.log")
-	viper.SetDefault("log.backup_num", 7)
+	for key, value := range defaults {
+		viper.SetDefault(key, value)
+	}
 
-	viper.SetDefault("source.pixiv.enable", true)
-	viper.SetDefault("source.twitter.enable", true)
-	viper.SetDefault("source.bilibili.enable", true)
-	viper.SetDefault("source.danbooru.enable", true)
-	viper.SetDefault("source.kemono.enable", true)
-	viper.SetDefault("source.kemono.worker", 5)
-	viper.SetDefault("source.yandere.enable", true)
-	viper.SetDefault("source.nhentai.enable", true)
-	viper.SetDefault("source.pixiv.intervel", 60)
-	viper.SetDefault("source.pixiv.sleep", 1)
-	viper.SetDefault("source.twitter.fx_twitter_domain", "fxtwitter.com")
-	viper.SetDefault("source.twitter.sleep", 1)
-	viper.SetDefault("source.twitter.intervel", 60)
+	// viper.SetDefault("api.address", "0.0.0.0:39080")
+	// viper.SetDefault("api.site_name", "ManyACG")
+	// viper.SetDefault("api.site_title", "ManyACG - ACG Picture Collection")
+	// viper.SetDefault("api.site_description", "Many illustrations and pictures of ACG")
+	// viper.SetDefault("api.allowed_origins", []string{"*"})
+	// viper.SetDefault("api.realm", "ManyACG")
+	// viper.SetDefault("api.token_expire", 86400*14)
+	// viper.SetDefault("api.refresh_token_expire", 86400*30)
+	// viper.SetDefault("api.geoip_db", "geoip.mmdb")
 
-	viper.SetDefault("storage.cache_dir", "./cache")
-	viper.SetDefault("storage.cache_ttl", 86400)
-	viper.SetDefault("storage.local.path", "./manyacg")
-	viper.SetDefault("storage.alist.token_expire", 86400)
-	viper.SetDefault("storage.regular_format", "webp")
-	viper.SetDefault("storage.thumb_format", "webp")
-	viper.SetDefault("storage.telegram.api_url", "https://api.telegram.org")
+	// viper.SetDefault("fetcher.max_concurrent", 5)
+	// viper.SetDefault("fetcher.limit", 50)
 
-	viper.SetDefault("telegram.sleep", 3)
-	viper.SetDefault("telegram.api_url", "https://api.telegram.org")
-	viper.SetDefault("telegram.retry.max_attempts", 5)
-	viper.SetDefault("telegram.retry.exponent_base", 2.0)
-	viper.SetDefault("telegram.retry.start_delay", 3)
-	viper.SetDefault("telegram.retry.max_delay", 300)
+	// viper.SetDefault("log.file_path", "logs/manyacg.log")
+	// viper.SetDefault("log.backup_num", 7)
 
-	viper.SetDefault("storage.telegram.api_url", "https://api.telegram.org")
-	viper.SetDefault("storage.telegram.retry.max_attempts", 5)
-	viper.SetDefault("storage.telegram.retry.exponent_base", 2.0)
-	viper.SetDefault("storage.telegram.retry.start_delay", 3)
-	viper.SetDefault("storage.telegram.retry.max_delay", 300)
+	// viper.SetDefault("source.pixiv.enable", true)
+	// viper.SetDefault("source.twitter.enable", true)
+	// viper.SetDefault("source.bilibili.enable", true)
+	// viper.SetDefault("source.danbooru.enable", true)
+	// viper.SetDefault("source.kemono.enable", true)
+	// viper.SetDefault("source.kemono.worker", 5)
+	// viper.SetDefault("source.yandere.enable", true)
+	// viper.SetDefault("source.nhentai.enable", true)
+	// viper.SetDefault("source.pixiv.intervel", 60)
+	// viper.SetDefault("source.pixiv.sleep", 1)
+	// viper.SetDefault("source.twitter.fx_twitter_domain", "fxtwitter.com")
+	// viper.SetDefault("source.twitter.sleep", 1)
+	// viper.SetDefault("source.twitter.intervel", 60)
 
-	viper.SetDefault("database.database", "manyacg")
-	viper.SetDefault("database.max_staleness", 120)
+	// viper.SetDefault("storage.cache_dir", "./cache")
+	// viper.SetDefault("storage.cache_ttl", 86400)
+	// viper.SetDefault("storage.local.path", "./manyacg")
+	// viper.SetDefault("storage.alist.token_expire", 86400)
+	// viper.SetDefault("storage.regular_format", "webp")
+	// viper.SetDefault("storage.thumb_format", "webp")
+	// viper.SetDefault("storage.telegram.api_url", "https://api.telegram.org")
 
-	viper.SetDefault("search.meilisearch.index", "manyacg")
-	viper.SetDefault("search.meilisearch.embedder", "default")
+	// viper.SetDefault("telegram.sleep", 3)
+	// viper.SetDefault("telegram.api_url", "https://api.telegram.org")
+	// viper.SetDefault("telegram.retry.max_attempts", 5)
+	// viper.SetDefault("telegram.retry.exponent_base", 2.0)
+	// viper.SetDefault("telegram.retry.start_delay", 3)
+	// viper.SetDefault("telegram.retry.max_delay", 300)
+
+	// viper.SetDefault("storage.telegram.api_url", "https://api.telegram.org")
+	// viper.SetDefault("storage.telegram.retry.max_attempts", 5)
+	// viper.SetDefault("storage.telegram.retry.exponent_base", 2.0)
+	// viper.SetDefault("storage.telegram.retry.start_delay", 3)
+	// viper.SetDefault("storage.telegram.retry.max_delay", 300)
+
+	// viper.SetDefault("database.database", "manyacg")
+	// viper.SetDefault("database.max_staleness", 120)
+
+	// viper.SetDefault("search.meilisearch.index", "manyacg")
+	// viper.SetDefault("search.meilisearch.embedder", "default")
 
 	if err := viper.ReadInConfig(); err != nil {
 		fmt.Printf("error when reading config: %s\n", err)

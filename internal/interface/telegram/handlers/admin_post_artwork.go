@@ -171,7 +171,17 @@ func PostArtworkCommand(ctx *telegohandler.Context, message telego.Message) erro
 			utils.ReplyMessage(ctx, message, "发布失败: "+err.Error())
 			return nil
 		}
-		return nil
+		awEnt, err := serv.GetArtworkByURL(ctx, sourceURL)
+		if err != nil {
+			return oops.Wrapf(err, "failed to get created artwork by url")
+		}
+		ctx.Bot().EditMessageText(ctx,
+			telegoutil.EditMessageText(msg.Chat.ChatID(),
+				message.MessageID,
+				fmt.Sprintf("发布成功: %s / %s", awEnt.Title, awEnt.GetSourceURL())).
+				WithReplyMarkup(
+					telegoutil.InlineKeyboard(utils.GetPostedArtworkInlineKeyboardButton(awEnt, meta)),
+				))
 	}
 	// [TODO] non-channel posting
 	// var err error
@@ -282,7 +292,7 @@ func PostArtworkCommand(ctx *telegohandler.Context, message telego.Message) erro
 // 		},
 // 	}
 
-// 	currentPictureIndexStr := queryDataSlice[4] 
+// 	currentPictureIndexStr := queryDataSlice[4]
 // 	// 此处为当前图片在 cachedArtwork.Pictures 中的 Index 字段, 从0开始
 // 	// 由于隐藏机制的存在, 呈递到界面的图片索引不一定连续
 // 	currentPictureIndex, err := strconv.Atoi(currentPictureIndexStr)
