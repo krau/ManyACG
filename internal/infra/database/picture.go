@@ -2,7 +2,6 @@ package database
 
 import (
 	"context"
-	"strings"
 
 	"github.com/corona10/goimagehash"
 	"github.com/krau/ManyACG/internal/model/entity"
@@ -48,7 +47,7 @@ func (d *DB) ReorderArtworkPicturesByID(ctx context.Context, artworkID objectuui
 
 func (d *DB) QueryPicturesByPhash(ctx context.Context, que query.PicturesPhash) ([]*entity.Picture, error) {
 	input := que.Input
-	inputHash, err := goimagehash.LoadImageHash(strings.NewReader(input))
+	inputHash, err := goimagehash.ImageHashFromString(input)
 	if err != nil {
 		return nil, err
 	}
@@ -68,7 +67,7 @@ func (d *DB) QueryPicturesByPhash(ctx context.Context, que query.PicturesPhash) 
 		if pic.Phash == "" {
 			continue
 		}
-		picHash, err := goimagehash.LoadImageHash(strings.NewReader(pic.Phash))
+		picHash, err := goimagehash.ImageHashFromString(pic.Phash)
 		if err != nil {
 			continue
 		}
@@ -77,6 +76,11 @@ func (d *DB) QueryPicturesByPhash(ctx context.Context, que query.PicturesPhash) 
 			continue
 		}
 		if distance <= que.Distance {
+			aw, err := d.GetArtworkByID(ctx, pic.ArtworkID)
+			if err != nil {
+				continue
+			}
+			pic.Artwork = aw
 			result = append(result, &pic)
 			if que.Limit > 0 && len(result) >= que.Limit {
 				break

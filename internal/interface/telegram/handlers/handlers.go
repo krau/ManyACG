@@ -33,10 +33,8 @@ func (m HandlerManager) Register(hg *telegohandler.HandlerGroup) {
 	mg.HandleMessage(GetPictureFile, telegohandler.Or(telegohandler.CommandEqual("file"), telegohandler.CommandEqual("files")))
 	mg.HandleMessage(RandomPicture, telegohandler.Or(telegohandler.CommandEqual("setu"), telegohandler.CommandEqual("random")))
 	mg.HandleMessage(Help, telegohandler.CommandEqual("help"))
-	// mg.HandleMessage(SearchPicture, telegohandler.CommandEqual("search"))
+	mg.HandleMessage(SearchPicture, telegohandler.CommandEqual("search"))
 	// mg.HandleMessage(GetArtworkInfoCommand, telegohandler.CommandEqual("info"))
-	// mg.HandleMessage(CalculatePicture, telegohandler.CommandEqual("hash"))
-	// mg.HandleMessage(GetStats, telegohandler.CommandEqual("stats"))
 	// mg.HandleMessage(HybridSearchArtworks, telegohandler.CommandEqual("hybrid"))
 	// mg.HandleMessage(SearchSimilarArtworks, telegohandler.CommandEqual("similar"))
 
@@ -52,15 +50,9 @@ func (m HandlerManager) Register(hg *telegohandler.HandlerGroup) {
 	mg.HandleMessage(DumpArtworkInfo, telegohandler.CommandEqual("dump"))
 	mg.HandleMessage(ReCaptionArtwork, telegohandler.CommandEqual("recaption"))
 	// mg.HandleMessage(AutoTaggingArtwork, telegohandler.CommandEqual("autotag"))
-	// mg.HandleMessage(ProcessPicturesHashAndSize, telegohandler.CommandEqual("process_pictures_hashsize"))
-	// for migration
-	// mg.HandleMessage(ProcessPicturesStorage, telegohandler.CommandEqual("process_pictures_storage"))
-	// mg.HandleMessage(FixTwitterArtists, telegohandler.CommandEqual("fix_twitter_artists"))
-	// mg.HandleMessage(AutoTagAllArtwork, telegohandler.CommandEqual("autotag_all"))
 
 	hg.HandleCallbackQuery(PostArtworkCallbackQuery, telegohandler.CallbackDataContains("post_artwork"))
-	// hg.HandleCallbackQuery(SearchPictureCallbackQuery, telegohandler.CallbackDataPrefix("search_picture"))
-	// hg.HandleCallbackQuery(ArtworkPreview, telegohandler.CallbackDataContains("awpv"))
+	hg.HandleCallbackQuery(SearchPictureCallbackQuery, telegohandler.CallbackDataPrefix("search_picture"))
 	hg.HandleCallbackQuery(EditArtworkR18, telegohandler.CallbackDataPrefix("edit_artwork r18"))
 	hg.HandleCallbackQuery(DeleteArtworkCallbackQuery, telegohandler.CallbackDataPrefix("delete_artwork"))
 

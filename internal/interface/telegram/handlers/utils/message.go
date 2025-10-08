@@ -11,6 +11,7 @@ import (
 	"github.com/mymmrac/telego"
 	"github.com/mymmrac/telego/telegohandler"
 	"github.com/mymmrac/telego/telegoutil"
+	"github.com/samber/oops"
 )
 
 func ReplyMessageWithHTML(ctx *telegohandler.Context, message telego.Message, text string) (*telego.Message, error) {
@@ -130,5 +131,25 @@ func GetPostedArtworkInlineKeyboardButton(artwork *entity.Artwork, meta *metauti
 }
 
 func GetMessagePhotoFile(ctx *telegohandler.Context, message *telego.Message) ([]byte, error) {
-	panic("unimplemented")
+	if len(message.Photo) == 0 {
+		return nil, oops.New("not a photo message")
+	}
+	size := message.Photo[len(message.Photo)-1]
+	tfile, err := ctx.Bot().GetFile(ctx, &telego.GetFileParams{FileID: size.FileID})
+	if err != nil {
+		return nil, oops.Wrapf(err, "get file info failed")
+	}
+	dlUrl := ctx.Bot().FileDownloadURL(tfile.FilePath)
+	// file, clean, err := httpclient.DownloadWithCache(ctx, dlUrl, nil)
+	// if err != nil {
+	// 	return nil, oops.Wrapf(err, "download file failed")
+	// }
+	// defer clean()
+	// defer file.Close()
+	// data, err := io.ReadAll(file)
+	// if err != nil {
+	// 	return nil, oops.Wrapf(err, "read file failed")
+	// }
+	// return data, nil
+	return telegoutil.DownloadFile(dlUrl)
 }
