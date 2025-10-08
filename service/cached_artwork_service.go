@@ -72,13 +72,6 @@ func (s *Service) UpdateCachedArtworkStatusByURL(ctx context.Context, sourceURL 
 	return err
 }
 
-func (s *Service) HideCachedArtworkPicture(ctx context.Context, cachedArt *entity.CachedArtwork, index int) error {
-	if index < 0 || index >= len(cachedArt.GetPictures()) {
-		return nil
-	}
-	panic("not implemented")
-}
-
 func (s *Service) GetCachedArtworkByURL(ctx context.Context, sourceURL string) (*entity.CachedArtwork, error) {
 	return s.repos.CachedArtwork().GetCachedArtworkByURL(ctx, sourceURL)
 }
@@ -90,5 +83,17 @@ func (s *Service) UpdateCachedArtwork(ctx context.Context, data *entity.CachedAr
 	}
 	cachedArt.Artwork = datatypes.NewJSONType(data)
 	_, err = s.repos.CachedArtwork().SaveCachedArtwork(ctx, cachedArt)
+	return err
+}
+
+func (s *Service) HideCachedArtworkPicture(ctx context.Context, cachedArt *entity.CachedArtwork, picIndex int) error {
+	data := cachedArt.Artwork.Data()
+	for _, pic := range data.Pictures {
+		if pic.Index == uint(picIndex) {
+			pic.Hidden = true
+		}
+	}
+	cachedArt.Artwork = datatypes.NewJSONType(data)
+	_, err := s.repos.CachedArtwork().SaveCachedArtwork(ctx, cachedArt)
 	return err
 }

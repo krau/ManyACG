@@ -94,7 +94,7 @@ func (s *Service) CreateArtwork(ctx context.Context, cmd *command.ArtworkCreatio
 		pics := make([]*entity.Picture, 0, len(cmd.Pictures))
 		for _, pic := range cmd.Pictures {
 			pics = append(pics, &entity.Picture{
-				Index:        pic.Index,
+				OrderIndex:   pic.Index,
 				ArtworkID:    awEnt.ID,
 				Thumbnail:    pic.Thumbnail,
 				Original:     pic.Original,

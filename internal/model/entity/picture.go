@@ -14,13 +14,13 @@ type Picture struct {
 	ArtworkID objectuuid.ObjectUUID `gorm:"type:uuid;index" json:"artwork_id"`
 	Artwork   *Artwork              `gorm:"foreignKey:ArtworkID;references:ID;constraint:OnDelete:CASCADE" json:"-"`
 
-	Index     uint   `gorm:"not null;default:0;index:idx_picture_artwork_index,priority:1" json:"index"` // order within artwork
-	Thumbnail string `gorm:"type:text" json:"thumbnail"`
-	Original  string `gorm:"type:text;index" json:"original"`
-	Width     uint   `json:"width"`
-	Height    uint   `json:"height"`
-	Phash     string `gorm:"type:varchar(32);index" json:"phash"` // phash
-	ThumbHash string `gorm:"type:varchar(32)" json:"thumb_hash"`  // thumbhash
+	OrderIndex uint   `gorm:"column:order_index;not null;default:0;index:idx_picture_artwork_index,priority:1" json:"index"`
+	Thumbnail  string `gorm:"type:text" json:"thumbnail"`
+	Original   string `gorm:"type:text;index" json:"original"`
+	Width      uint   `json:"width"`
+	Height     uint   `json:"height"`
+	Phash      string `gorm:"type:varchar(32);index" json:"phash"` // phash
+	ThumbHash  string `gorm:"type:varchar(32)" json:"thumb_hash"`  // thumbhash
 
 	TelegramInfo datatypes.JSONType[shared.TelegramInfo] `json:"telegram_info"`
 	StorageInfo  datatypes.JSONType[shared.StorageInfo]  `json:"storage_info"`
@@ -29,9 +29,14 @@ type Picture struct {
 	UpdatedAt time.Time `gorm:"autoUpdateTime" json:"updated_at"`
 }
 
+// IsHide implements PictureLike.
+func (p *Picture) IsHide() bool {
+	return false
+}
+
 // GetIndex implements PictureLike.
 func (p *Picture) GetIndex() uint {
-	return p.Index
+	return p.OrderIndex
 }
 
 // GetOriginal implements PictureLike.

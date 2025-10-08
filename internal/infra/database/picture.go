@@ -34,14 +34,14 @@ func (d *DB) DeletePictureByID(ctx context.Context, id objectuuid.ObjectUUID) er
 }
 
 func (d *DB) ReorderArtworkPicturesByID(ctx context.Context, artworkID objectuuid.ObjectUUID) error {
-	// 将 artwork 的 pictures 的 index 重设为连续的数字
+	// 将 artwork 的 pictures 的 order_index 重设为连续的数字, 从 0 开始
 	var pictures []entity.Picture
-	err := d.db.WithContext(ctx).Model(&entity.Picture{}).Where("artwork_id = ?", artworkID).Order("`index` ASC").Find(&pictures).Error
+	err := d.db.WithContext(ctx).Model(&entity.Picture{}).Where("artwork_id = ?", artworkID).Order("order_index ASC").Find(&pictures).Error
 	if err != nil {
 		return err
 	}
 	for i := range pictures {
-		pictures[i].Index = uint(i + 1)
+		pictures[i].OrderIndex = uint(i)
 	}
 	return d.db.WithContext(ctx).Save(&pictures).Error
 }

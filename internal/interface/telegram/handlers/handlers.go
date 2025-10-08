@@ -60,7 +60,7 @@ func (m HandlerManager) Register(hg *telegohandler.HandlerGroup) {
 
 	hg.HandleCallbackQuery(PostArtworkCallbackQuery, telegohandler.CallbackDataContains("post_artwork"))
 	// hg.HandleCallbackQuery(SearchPictureCallbackQuery, telegohandler.CallbackDataPrefix("search_picture"))
-	hg.HandleCallbackQuery(ArtworkPreview, telegohandler.CallbackDataContains("artwork_preview"))
+	// hg.HandleCallbackQuery(ArtworkPreview, telegohandler.CallbackDataContains("awpv"))
 	hg.HandleCallbackQuery(EditArtworkR18, telegohandler.CallbackDataPrefix("edit_artwork r18"))
 	hg.HandleCallbackQuery(DeleteArtworkCallbackQuery, telegohandler.CallbackDataPrefix("delete_artwork"))
 

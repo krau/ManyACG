@@ -39,7 +39,11 @@ func DumpArtworkInfo(ctx *telegohandler.Context, message telego.Message) error {
 		utils.ReplyMessageWithHTML(ctx, message, fmt.Sprintf("序列化作品信息失败\n<code>%s</code>", html.EscapeString(err.Error())))
 		return nil
 	}
-	_, err = ctx.Bot().SendDocument(ctx, telegoutil.Document(message.Chat.ChatID(), telegoutil.FileFromBytes(artworkJSON, fmt.Sprintf("artwork_%s.json", artwork.ID.String()))))
+	_, err = ctx.Bot().SendDocument(ctx, telegoutil.Document(message.Chat.ChatID(),
+		telegoutil.FileFromBytes(artworkJSON, fmt.Sprintf("artwork_%s.json", artwork.ID.String()))).
+		WithReplyParameters(&telego.ReplyParameters{
+			MessageID: message.MessageID,
+		}))
 	if err != nil {
 		return oops.Errorf("send artwork json document failed: %w", err)
 	}

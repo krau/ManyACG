@@ -33,6 +33,11 @@ type FetchedPicture struct {
 	Height uint `json:"height"`
 }
 
+// IsHide implements entity.PictureLike.
+func (f *FetchedPicture) IsHide() bool {
+	return false
+}
+
 // GetIndex implements entity.PictureLike.
 func (f *FetchedPicture) GetIndex() uint {
 	return f.Index

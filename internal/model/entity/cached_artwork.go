@@ -43,6 +43,16 @@ func (c *CachedArtworkData) GetPictures() []PictureLike {
 	return pictures
 }
 
+func (c *CachedArtworkData) GetViewablePictures() []*CachedPicture {
+	var pictures []*CachedPicture
+	for _, pic := range c.Pictures {
+		if !pic.Hidden {
+			pictures = append(pictures, pic)
+		}
+	}
+	return pictures
+}
+
 // GetSourceURL implements ArtworkLike.
 func (c *CachedArtworkData) GetSourceURL() string {
 	return c.SourceURL
@@ -77,7 +87,7 @@ type CachedPicture struct {
 	Index     uint   `json:"index"`
 	Thumbnail string `json:"thumbnail"`
 	Original  string `json:"original"`
-	Hidden    bool   `json:"hidden"` // don't post when true
+	Hidden    bool   `json:"hidden"` // 设为 true 时不发布到 Artwork 中, 但仍在其他接口中返回
 
 	Width     uint   `json:"width"`
 	Height    uint   `json:"height"`
@@ -86,6 +96,11 @@ type CachedPicture struct {
 
 	StorageInfo  shared.StorageInfo  `json:"storage_info"`
 	TelegramInfo shared.TelegramInfo `json:"telegram_info"`
+}
+
+// IsHide implements PictureLike.
+func (c *CachedPicture) IsHide() bool {
+	return c.Hidden
 }
 
 // GetIndex implements PictureLike.

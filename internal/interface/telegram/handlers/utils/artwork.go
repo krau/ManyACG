@@ -350,11 +350,6 @@ func CreateArtworkInfoReplyMarkup(ctx context.Context, meta *metautil.MetaData, 
 	if err != nil {
 		return nil, oops.Wrapf(err, "failed to create callback data")
 	}
-	previewKeyboard := []telego.InlineKeyboardButton{}
-	if len(artwork.GetPictures()) > 1 {
-		previewKeyboard = append(previewKeyboard, telegoutil.InlineKeyboardButton(fmt.Sprintf("删除这张(%d)", 1)).WithCallbackData(fmt.Sprintf("artwork_preview %s delete 0 0", cbId)))
-		previewKeyboard = append(previewKeyboard, telegoutil.InlineKeyboardButton("下一张").WithCallbackData(fmt.Sprintf("artwork_preview %s preview 1 0", cbId)))
-	}
 	return telegoutil.InlineKeyboard(
 		[]telego.InlineKeyboardButton{
 			telegoutil.InlineKeyboardButton("发布").WithCallbackData(fmt.Sprintf("post_artwork %s", cbId)),
@@ -362,9 +357,8 @@ func CreateArtworkInfoReplyMarkup(ctx context.Context, meta *metautil.MetaData, 
 		},
 		[]telego.InlineKeyboardButton{
 			telegoutil.InlineKeyboardButton("查重").WithCallbackData(fmt.Sprintf("search_picture %s", cbId)),
-			telegoutil.InlineKeyboardButton("预览发布").WithURL(meta.BotDeepLink("info", cbId)),
+			telegoutil.InlineKeyboardButton("预览").WithURL(meta.BotDeepLink("info", cbId)),
 		},
-		previewKeyboard,
 	), nil
 
 }

@@ -33,7 +33,6 @@ type CachedArtwork interface {
 	CreateCachedArtwork(ctx context.Context, cachedArt *entity.CachedArtwork) (*entity.CachedArtwork, error)
 	ResetPostingCachedArtworkStatus(ctx context.Context) error
 	DeleteCachedArtworkByID(ctx context.Context, id objectuuid.ObjectUUID) error
-	GetCachedArtworkByID(ctx context.Context, id objectuuid.ObjectUUID) (*entity.CachedArtwork, error)
 	GetCachedArtworkByURL(ctx context.Context, url string) (*entity.CachedArtwork, error)
 	SaveCachedArtwork(ctx context.Context, artwork *entity.CachedArtwork) (*entity.CachedArtwork, error)
 }

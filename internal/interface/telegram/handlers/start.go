@@ -93,31 +93,54 @@ func Start(ctx *telegohandler.Context, message telego.Message) error {
 				return oops.Wrapf(err, "failed to get string data by id: %s", dataID)
 			}
 			artwork, err := serv.GetArtworkByURL(ctx, sourceURL)
-			if err != nil {
-				utils.ReplyMessage(ctx, message, "获取作品信息失败")
-				return oops.Wrapf(err, "failed to get artwork by url: %s", sourceURL)
-			}
-			msgs, err := utils.SendArtworkMediaGroup(ctx, message.Chat.ChatID(), artwork)
-			if err != nil {
-				utils.ReplyMessage(ctx, message, "发送作品信息失败")
-				return oops.Wrapf(err, "failed to send artwork media group")
-			}
-			if len(msgs) == 0 {
-				log.Warn("no messages sent for artwork", "title", artwork.GetTitle(), "url", artwork.GetSourceURL())
+			if err == nil {
+				// 已经发布过了
+				msgs, err := utils.SendArtworkMediaGroup(ctx, message.Chat.ChatID(), artwork)
+				if err != nil {
+					utils.ReplyMessage(ctx, message, "发送作品信息失败")
+					return oops.Wrapf(err, "failed to send artwork media group")
+				}
+				if len(artwork.GetPictures()) != len(msgs) {
+					log.Warn("number of messages sent does not match number of pictures", "sent", len(msgs), "pictures", len(artwork.GetPictures()), "title", artwork.GetTitle(), "url", artwork.GetSourceURL())
+					return nil
+				}
+				for i, pic := range artwork.Pictures {
+					if photoSize := msgs[i].Photo; len(photoSize) > 0 {
+						tginfo := pic.GetTelegramInfo()
+						tginfo.PhotoFileID = photoSize[len(photoSize)-1].FileID
+						if err := serv.UpdatePictureTelegramInfo(ctx, pic.ID, &tginfo); err != nil {
+							log.Warn("failed to update picture telegram info", "err", err, "picture_id", pic.ID)
+						}
+					}
+				}
 				return nil
 			}
-			if len(artwork.GetPictures()) != len(msgs) {
-				log.Warn("number of messages sent does not match number of pictures", "sent", len(msgs), "pictures", len(artwork.GetPictures()), "title", artwork.GetTitle(), "url", artwork.GetSourceURL())
+			cached, err := serv.GetOrFetchCachedArtwork(ctx, sourceURL)
+			if err != nil {
+				utils.ReplyMessage(ctx, message, "获取作品信息失败")
+				return oops.Wrapf(err, "failed to get or fetch cached artwork by url: %s", sourceURL)
 			}
-			for i, pic := range artwork.Pictures {
+			msgs, err := utils.SendArtworkMediaGroup(ctx, message.Chat.ChatID(), cached)
+			if err != nil {
+				utils.ReplyMessage(ctx, message, "发送作品信息失败")
+				return oops.Wrapf(err, "failed to send cached artwork media group")
+			}
+			if len(msgs) != len(cached.GetPictures()) {
+				log.Warn("number of messages sent does not match number of pictures", "sent", len(msgs), "pictures", len(cached.GetPictures()), "title", cached.GetTitle(), "url", cached.GetSourceURL())
+				return nil
+			}
+			data := cached.Artwork.Data()
+			for i, pic := range data.Pictures {
 				if photoSize := msgs[i].Photo; len(photoSize) > 0 {
 					tginfo := pic.GetTelegramInfo()
 					tginfo.PhotoFileID = photoSize[len(photoSize)-1].FileID
-					if err := serv.UpdatePictureTelegramInfo(ctx, pic.ID, &tginfo); err != nil {
-						log.Warn("failed to update picture telegram info", "err", err, "picture_id", pic.ID)
-					}
+					pic.TelegramInfo = tginfo
 				}
 			}
+			if err := serv.UpdateCachedArtwork(ctx, data); err != nil {
+				return oops.Wrapf(err, "failed to update cached artwork after send media group")
+			}
+			return nil
 		}
 		return nil
 	}

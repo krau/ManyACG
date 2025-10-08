@@ -9,6 +9,8 @@ import (
 	"github.com/krau/ManyACG/internal/repo"
 	"github.com/krau/ManyACG/internal/shared"
 	"github.com/krau/ManyACG/pkg/objectuuid"
+	"github.com/samber/oops"
+	"gorm.io/datatypes"
 )
 
 func (s *Service) UpdatePictureTelegramInfo(ctx context.Context, id objectuuid.ObjectUUID, tgInfo *shared.TelegramInfo) error {
@@ -22,7 +24,7 @@ func (s *Service) QueryPicturesByPhash(ctx context.Context, que query.PicturesPh
 
 // 删除单张图片, 如果删除后对应的 artwork 中没有图片, 则也删除 artwork
 //
-// 删除后对 artwork 的 pictures 的 index 进行重整
+// 删除后对 artwork 的 pictures 的 index 进行重整, 并在 cached_artwork 中将对应的图片标记为隐藏
 func (s *Service) DeletePictureByID(ctx context.Context, id objectuuid.ObjectUUID) error {
 	toDelete, err := s.repos.Picture().GetPictureByID(ctx, id)
 	if err != nil {
@@ -37,15 +39,32 @@ func (s *Service) DeletePictureByID(ctx context.Context, id objectuuid.ObjectUUI
 			return repos.Artwork().DeleteArtworkByID(ctx, artwork.ID)
 		}
 		if err := repos.Picture().DeletePictureByID(ctx, id); err != nil {
-			return err
+			return oops.Wrapf(err, "failed to delete picture by id %s", id.String())
 		}
 		newPictures := slice.Filter(artwork.Pictures, func(index int, item *entity.Picture) bool {
 			return item.ID != toDelete.ID
 		})
 		if err := repos.Artwork().UpdateArtworkPictures(ctx, artwork.ID, newPictures); err != nil {
-			return err
+			return oops.Wrapf(err, "failed to update artwork pictures")
 		}
-		return repos.Artwork().ReorderArtworkPicturesByID(ctx, artwork.ID)
+		if err := repos.Artwork().ReorderArtworkPicturesByID(ctx, artwork.ID); err != nil {
+			return oops.Wrapf(err, "failed to reorder artwork pictures")
+		}
+		cached, err := repos.CachedArtwork().GetCachedArtworkByURL(ctx, artwork.SourceURL)
+		if err == nil {
+			data := cached.Artwork.Data()
+			for _, pic := range data.Pictures {
+				// 将对应的图片标记为隐藏
+				if pic.Original == toDelete.Original {
+					pic.Hidden = true
+				}
+			}
+			cached.Artwork = datatypes.NewJSONType(data)
+			if _, err := repos.CachedArtwork().SaveCachedArtwork(ctx, cached); err != nil {
+				return oops.Wrapf(err, "failed to save cached artwork")
+			}
+		}
+		return nil
 	})
 	return err
 }
