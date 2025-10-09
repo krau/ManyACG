@@ -5,6 +5,7 @@ import (
 	"html"
 	"strings"
 
+	"github.com/duke-git/lancet/v2/strutil"
 	"github.com/krau/ManyACG/internal/interface/telegram/metautil"
 	"github.com/krau/ManyACG/internal/model/entity"
 	"github.com/krau/ManyACG/internal/service"
@@ -35,19 +36,23 @@ func FindSourceURLInMessage(serv *service.Service, message *telego.Message) stri
 	if message == nil {
 		return ""
 	}
-	text := message.Text
-	text += message.Caption + " "
+	var sb strings.Builder
+	sb.WriteString(message.Text)
+	sb.WriteString(" ")
+	sb.WriteString(message.Caption)
 	for _, entity := range message.Entities {
 		if entity.Type == telego.EntityTypeTextLink {
-			text += entity.URL + " "
+			sb.WriteString(entity.URL)
+			sb.WriteString(" ")
 		}
 	}
 	for _, entity := range message.CaptionEntities {
 		if entity.Type == telego.EntityTypeTextLink {
-			text += entity.URL + " "
+			sb.WriteString(entity.URL)
+			sb.WriteString(" ")
 		}
 	}
-	return serv.FindSourceURL(text)
+	return serv.FindSourceURL(sb.String())
 }
 
 var tagCharsReplacer = strings.NewReplacer(
@@ -65,41 +70,34 @@ var tagCharsReplacer = strings.NewReplacer(
 )
 
 func ArtworkHTMLCaption(meta *metautil.MetaData, artwork shared.ArtworkLike) string {
-	caption := fmt.Sprintf("<a href=\"%s\"><b>%s</b></a> / <b>%s</b>", artwork.GetSourceURL(), html.EscapeString(artwork.GetTitle()), html.EscapeString(artwork.GetArtistName()))
-	if artwork.GetDescription() != "" {
-		desc := artwork.GetDescription()
-		if len(desc) > 500 {
-			var n, i int
-			for i = range desc {
-				if n >= 500 {
-					break
-				}
-				n++
-			}
-			desc = desc[:i] + "..."
-		}
-		caption += fmt.Sprintf("\n<blockquote expandable=true>%s</blockquote>", html.EscapeString(desc))
-	}
+	tmpl := "<a href='%s'><b>%s</b></a> / <b>%s</b>"
+	sourceUrl := artwork.GetSourceURL()
+	title := html.EscapeString(artwork.GetTitle())
+	artistName := html.EscapeString(artwork.GetArtistName())
+	description := html.EscapeString(strutil.Ellipsis(artwork.GetDescription(), 500))
+
 	tags := ""
 	for _, tag := range artwork.GetTags() {
 		if len(tags)+len(tag) > 200 {
 			break
 		}
 		tag = tagCharsReplacer.Replace(tag)
+		tag = strings.Trim(tag, "_")
 		tags += "#" + strings.TrimSpace(html.EscapeString(tag)) + " "
 	}
-	caption += fmt.Sprintf("\n<blockquote expandable=true>%s</blockquote>\n", tags)
-	// [TODO] implement channel signature
-	// posted := meta.ChannelChatID.Username != ""
-	// if posted {
-	// 	caption += html.EscapeString(meta.ChannelChatID.Username)
-	// }
-	// if  config.Cfg.API.SiteURL != "" {
-	// 	if posted {
-	// 		caption += " | "
-	// 	}
-	// 	caption += fmt.Sprintf("<a href=\"%s/artwork/%s\">在网站查看</a>", config.Cfg.API.SiteURL, artwork.ID)
-	// }
+
+	args := []any{sourceUrl, title, artistName}
+
+	if description != "" {
+		tmpl += "\n<blockquote expandable=true>%s</blockquote>"
+		args = append(args, description)
+	}
+	if tags != "" {
+		tmpl += "\n<blockquote expandable=true>%s</blockquote>"
+		args = append(args, tags)
+	}
+
+	caption := fmt.Sprintf(tmpl, args...)
 	return caption
 }
 

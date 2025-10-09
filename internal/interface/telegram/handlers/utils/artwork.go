@@ -22,7 +22,6 @@ import (
 	"github.com/samber/oops"
 )
 
-
 func SendArtworkMediaGroup(ctx *telegohandler.Context, chatID telego.ChatID, artwork shared.ArtworkLike) ([]telego.Message, error) {
 	pics := artwork.GetPictures()
 	caption := ArtworkHTMLCaption(metautil.FromContext(ctx), artwork)
@@ -299,13 +298,32 @@ func SendArtworkInfo(ctx *telegohandler.Context,
 			tginfo.PhotoFileID = fileId
 			return serv.UpdatePictureTelegramInfo(ctx, p.ID, &tginfo)
 		case *entity.CachedPicture:
-			cachedArtwork, ok := artwork.(*entity.CachedArtworkData)
-			if ok && p.Original == cachedArtwork.Pictures[0].Original {
-				tginfo := p.GetTelegramInfo()
-				tginfo.PhotoFileID = fileId
-				p.TelegramInfo = tginfo
-				cachedArtwork.Pictures[0].TelegramInfo = tginfo
-				return serv.UpdateCachedArtwork(ctx, cachedArtwork)
+			switch aw := artwork.(type) {
+			case *entity.CachedArtworkData:
+				for _, p := range aw.Pictures {
+					if p.GetOriginal() != pic.GetOriginal() {
+						continue
+					}
+					tginfo := p.GetTelegramInfo()
+					tginfo.PhotoFileID = fileId
+					p.TelegramInfo = tginfo
+					break
+				}
+				return serv.UpdateCachedArtwork(ctx, aw)
+			case *entity.CachedArtwork:
+				data := aw.Artwork.Data()
+				for _, p := range data.Pictures {
+					if p.GetOriginal() != pic.GetOriginal() {
+						continue
+					}
+					tginfo := p.GetTelegramInfo()
+					tginfo.PhotoFileID = fileId
+					p.TelegramInfo = tginfo
+					break
+				}
+				return serv.UpdateCachedArtwork(ctx, data)
+			default:
+				return oops.Errorf("unknown artwork type: %T", artwork)
 			}
 		}
 	}
