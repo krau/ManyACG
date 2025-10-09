@@ -6,7 +6,6 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
-	"path/filepath"
 	"syscall"
 	"time"
 
@@ -20,11 +19,12 @@ import (
 	"github.com/krau/ManyACG/internal/infra/storage"
 	"github.com/krau/ManyACG/internal/infra/tagging"
 	"github.com/krau/ManyACG/internal/interface/telegram"
+	"github.com/krau/ManyACG/internal/model/converter"
 	"github.com/krau/ManyACG/internal/model/dto"
-	"github.com/krau/ManyACG/internal/model/entity"
 	"github.com/krau/ManyACG/internal/repo"
 	"github.com/krau/ManyACG/internal/service"
 	"github.com/krau/ManyACG/pkg/log"
+	"github.com/krau/ManyACG/pkg/objectuuid"
 )
 
 const banner = `
@@ -69,68 +69,25 @@ func Run() {
 	database.Init(ctx)
 	dbRepo := database.Default()
 
-	artworkBus := eventbus.New[*entity.Artwork]()
+	var repos repo.Repositories
+	repos = dbRepo
 
-	searcher := search.Default(ctx)
 	if search.Enabled() {
-		artworkBus.Subscribe(repo.EventTypeArtworkCreate, func(payload *entity.Artwork) {
-			if err := searcher.AddDocuments(ctx, []*dto.ArtworkSearchDocument{
-				{
-					ID:          payload.ID.Hex(),
-					Title:       payload.Title,
-					Artist:      fmt.Sprintf("%s %s", payload.Artist.Name, payload.Artist.Username),
-					Tags:        payload.GetTagsWithAlias(),
-					R18:         payload.R18,
-					Description: payload.Description,
-				},
-			}); err != nil {
-				log.Error("searcher add document failed", "err", err, "artwork_id", payload.ID)
-				return
-			}
-			log.Info("searcher added document", "artwork_id", payload.ID)
-		}, func(payload *entity.Artwork) bool {
-			return payload != nil
-		})
-		artworkBus.Subscribe(repo.EventTypeArtworkUpdate, func(payload *entity.Artwork) {
-			if err := searcher.AddDocuments(ctx, []*dto.ArtworkSearchDocument{
-				{
-					ID:          payload.ID.Hex(),
-					Title:       payload.Title,
-					Artist:      fmt.Sprintf("%s %s", payload.Artist.Name, payload.Artist.Username),
-					Tags:        payload.GetTagsWithAlias(),
-					R18:         payload.R18,
-					Description: payload.Description,
-				},
-			}); err != nil {
-				log.Error("searcher update document failed", "err", err, "artwork_id", payload.ID)
-				return
-			}
-			log.Info("searcher updated document", "artwork_id", payload.ID)
-		}, func(payload *entity.Artwork) bool {
-			return payload != nil
-		})
-		artworkBus.Subscribe(repo.EventTypeArtworkDelete, func(payload *entity.Artwork) {
-			if err := searcher.DeleteDocuments(ctx, []string{payload.ID.Hex()}); err != nil {
-				log.Error("searcher delete document failed", "err", err, "artwork_id", payload.ID)
-				return
-			}
-			log.Info("searcher deleted document", "artwork_id", payload.ID)
-		}, func(payload *entity.Artwork) bool {
-			return payload != nil
-		})
-	}
-
-	repos := &repo.WithArtworkEventImpl{
-		Tx:          dbRepo,
-		AdminRepo:   dbRepo,
-		ApiKeyRepo:  dbRepo,
-		ArtistRepo:  dbRepo,
-		TagRepo:     dbRepo,
-		PictureRepo: dbRepo,
-		DeletedRepo: dbRepo,
-		CachedRepo:  dbRepo,
-		ArtworkRepo: repo.NewArtworkWithEvent(dbRepo, artworkBus),
-		ArtworkBus:  artworkBus,
+		artworkBus := eventbus.New[*dto.ArtworkEventItem]()
+		searcher := search.Default(ctx)
+		registerArtworkEventSearcherHandlers(ctx, artworkBus, searcher)
+		repos = &repo.WithArtworkEventImpl{
+			Tx:          dbRepo,
+			AdminRepo:   dbRepo,
+			ApiKeyRepo:  dbRepo,
+			ArtistRepo:  dbRepo,
+			TagRepo:     dbRepo,
+			PictureRepo: dbRepo,
+			DeletedRepo: dbRepo,
+			CachedRepo:  dbRepo,
+			ArtworkRepo: repo.NewArtworkWithEvent(dbRepo, artworkBus),
+			ArtworkBus:  artworkBus,
+		}
 	}
 
 	serv := service.NewService(
@@ -159,29 +116,67 @@ func Run() {
 	// cleanCacheDir(runtimecfg.Get())
 }
 
-func cleanCacheDir(cfg runtimecfg.Config) {
-	if cfg.Storage.CacheDir != "" && !cfg.App.Debug {
-		for _, path := range []string{"/", ".", "\\", ".."} {
-			if filepath.Clean(cfg.Storage.CacheDir) == path {
-				log.Error("Invalid cache dir: ", cfg.Storage.CacheDir)
-				return
-			}
-		}
-		currentDir, err := os.Getwd()
-		if err != nil {
-			log.Error(err)
-			return
-		}
-		cachePath := filepath.Join(currentDir, cfg.Storage.CacheDir)
-		cachePath, err = filepath.Abs(cachePath)
-		if err != nil {
-			log.Error(err)
-			return
-		}
-		log.Info("Removing cache dir: ", cachePath)
-		if err := os.RemoveAll(cachePath); err != nil {
-			log.Error(err)
-			return
-		}
+func registerArtworkEventSearcherHandlers(ctx context.Context, bus repo.EventBus[*dto.ArtworkEventItem], searcher search.Searcher) {
+	filter := func(payload *dto.ArtworkEventItem) bool {
+		return payload != nil && payload.ID != objectuuid.Nil
 	}
+	bus.Subscribe(repo.EventTypeArtworkCreate, func(payload *dto.ArtworkEventItem) {
+		doc := converter.DtoArtworkEventItemToSearchDocument(payload)
+		if doc == nil {
+			return
+		}
+		err := searcher.AddDocuments(ctx, []*dto.ArtworkSearchDocument{doc})
+		if err != nil {
+			log.Error(err)
+			return
+		}
+		log.Debug("indexed artwork", "id", payload.ID, "title", payload.Title)
+	}, filter)
+	bus.Subscribe(repo.EventTypeArtworkUpdate, func(payload *dto.ArtworkEventItem) {
+		doc := converter.DtoArtworkEventItemToSearchDocument(payload)
+		if doc == nil {
+			return
+		}
+		err := searcher.AddDocuments(ctx, []*dto.ArtworkSearchDocument{doc})
+		if err != nil {
+			log.Error(err)
+			return
+		}
+		log.Debug("re-indexed artwork", "id", payload.ID, "title", payload.Title)
+	}, filter)
+	bus.Subscribe(repo.EventTypeArtworkDelete, func(payload *dto.ArtworkEventItem) {
+		err := searcher.DeleteDocuments(ctx, []string{payload.ID.Hex()})
+		if err != nil {
+			log.Error(err)
+			return
+		}
+		log.Debug("deleted indexed artwork", "id", payload.ID, "title", payload.Title)
+	}, filter)
 }
+
+// func cleanCacheDir(cfg runtimecfg.Config) {
+// 	if cfg.Storage.CacheDir != "" && !cfg.App.Debug {
+// 		for _, path := range []string{"/", ".", "\\", ".."} {
+// 			if filepath.Clean(cfg.Storage.CacheDir) == path {
+// 				log.Error("Invalid cache dir: ", cfg.Storage.CacheDir)
+// 				return
+// 			}
+// 		}
+// 		currentDir, err := os.Getwd()
+// 		if err != nil {
+// 			log.Error(err)
+// 			return
+// 		}
+// 		cachePath := filepath.Join(currentDir, cfg.Storage.CacheDir)
+// 		cachePath, err = filepath.Abs(cachePath)
+// 		if err != nil {
+// 			log.Error(err)
+// 			return
+// 		}
+// 		log.Info("Removing cache dir: ", cachePath)
+// 		if err := os.RemoveAll(cachePath); err != nil {
+// 			log.Error(err)
+// 			return
+// 		}
+// 	}
+// }

@@ -8,7 +8,6 @@ import (
 	config "github.com/krau/ManyACG/internal/infra/config/runtimecfg"
 	"github.com/krau/ManyACG/internal/infra/source"
 	"github.com/krau/ManyACG/internal/model/dto"
-	"github.com/krau/ManyACG/internal/model/entity"
 	"github.com/krau/ManyACG/internal/shared"
 	"github.com/krau/ManyACG/pkg/strutil"
 	"github.com/samber/oops"
@@ -75,7 +74,7 @@ func (p *Pixiv) MatchesSourceURL(text string) (string, bool) {
 	return "https://www.pixiv.net/artworks/" + pid, true
 }
 
-func (p *Pixiv) PrettyFileName(artwork entity.ArtworkLike, picture entity.PictureLike) string {
+func (p *Pixiv) PrettyFileName(artwork shared.ArtworkLike, picture shared.PictureLike) string {
 	pid := getPid(artwork.GetSourceURL())
 	ext, _ := strutil.GetFileExtFromURL(picture.GetOriginal())
 	if pid != "" {

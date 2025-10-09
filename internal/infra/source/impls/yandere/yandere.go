@@ -7,7 +7,6 @@ import (
 	"github.com/krau/ManyACG/internal/infra/config/runtimecfg"
 	"github.com/krau/ManyACG/internal/infra/source"
 	"github.com/krau/ManyACG/internal/model/dto"
-	"github.com/krau/ManyACG/internal/model/entity"
 	"github.com/krau/ManyACG/internal/shared"
 )
 
@@ -109,6 +108,6 @@ func (y *Yandere) MatchesSourceURL(text string) (string, bool) {
 // }
 
 // PrettyFileName implements source.ArtworkSource.
-func (y *Yandere) PrettyFileName(artwork entity.ArtworkLike, picture entity.PictureLike) string {
+func (y *Yandere) PrettyFileName(artwork shared.ArtworkLike, picture shared.PictureLike) string {
 	panic("unimplemented")
 }

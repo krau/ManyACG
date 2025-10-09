@@ -13,6 +13,7 @@ import (
 	"github.com/krau/ManyACG/internal/model/query"
 	"github.com/krau/ManyACG/internal/pkg/imgtool"
 	"github.com/krau/ManyACG/internal/service"
+	"github.com/krau/ManyACG/internal/shared"
 	"github.com/krau/ManyACG/internal/shared/errs"
 	"github.com/krau/ManyACG/pkg/log"
 	"github.com/mymmrac/telego"
@@ -93,7 +94,7 @@ func getArtworkFiles(ctx *telegohandler.Context,
 	serv *service.Service,
 	meta *metautil.MetaData,
 	message telego.Message,
-	artwork entity.ArtworkLike) error {
+	artwork shared.ArtworkLike) error {
 	msg, err := utils.ReplyMessage(ctx, message, "正在发送文件, 请稍等...")
 	if err == nil {
 		defer func() {

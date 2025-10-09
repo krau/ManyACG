@@ -23,18 +23,16 @@ type Searcher interface {
 
 var (
 	defaultSearcher Searcher
-	enabled         bool
 	once            sync.Once
 	ErrNotEnabled   = errors.New("search engine is not enabled")
 )
 
 func initDefault(ctx context.Context) {
-	cfg := runtimecfg.Get().Search
-	enabled = cfg.Enable
-	if !enabled {
+	if !Enabled() {
 		defaultSearcher = &noopSearcher{}
 		return
 	}
+	cfg := runtimecfg.Get().Search
 	switch cfg.Engine {
 	case "meilisearch":
 		s, err := meilisearch.NewSearcher(ctx, cfg.MeiliSearch)
@@ -51,7 +49,7 @@ func initDefault(ctx context.Context) {
 }
 
 func Enabled() bool {
-	return enabled
+	return runtimecfg.Get().Search.Enable
 }
 
 type noopSearcher struct{}

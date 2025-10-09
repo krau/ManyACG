@@ -1,7 +1,6 @@
 package dto
 
 import (
-	"github.com/krau/ManyACG/internal/model/entity"
 	"github.com/krau/ManyACG/internal/shared"
 )
 
@@ -33,79 +32,79 @@ type FetchedPicture struct {
 	Height uint `json:"height"`
 }
 
-// IsHide implements entity.PictureLike.
+// IsHide implements shared.PictureLike.
 func (f *FetchedPicture) IsHide() bool {
 	return false
 }
 
-// GetIndex implements entity.PictureLike.
+// GetIndex implements shared.PictureLike.
 func (f *FetchedPicture) GetIndex() uint {
 	return f.Index
 }
 
-// GetArtistName implements entity.ArtworkLike.
+// GetArtistName implements shared.ArtworkLike.
 func (f *FetchedArtwork) GetArtistName() string {
 	return f.Artist.Name
 }
 
-// GetDescription implements entity.ArtworkLike.
+// GetDescription implements shared.ArtworkLike.
 func (f *FetchedArtwork) GetDescription() string {
 	return f.Description
 }
 
-// GetPictures implements entity.ArtworkLike.
-func (f *FetchedArtwork) GetPictures() []entity.PictureLike {
-	var pictures []entity.PictureLike
+// GetPictures implements shared.ArtworkLike.
+func (f *FetchedArtwork) GetPictures() []shared.PictureLike {
+	var pictures []shared.PictureLike
 	for _, pic := range f.Pictures {
 		pictures = append(pictures, pic)
 	}
 	return pictures
 }
 
-// GetR18 implements entity.ArtworkLike.
+// GetR18 implements shared.ArtworkLike.
 func (f *FetchedArtwork) GetR18() bool {
 	return f.R18
 }
 
-// GetSourceURL implements entity.ArtworkLike.
+// GetSourceURL implements shared.ArtworkLike.
 func (f *FetchedArtwork) GetSourceURL() string {
 	return f.SourceURL
 }
 
-// GetTags implements entity.ArtworkLike.
+// GetTags implements shared.ArtworkLike.
 func (f *FetchedArtwork) GetTags() []string {
 	return f.Tags
 }
 
-// GetTitle implements entity.ArtworkLike.
+// GetTitle implements shared.ArtworkLike.
 func (f *FetchedArtwork) GetTitle() string {
 	return f.Title
 }
 
-// GetOriginal implements entity.PictureLike.
+// GetOriginal implements shared.PictureLike.
 func (f *FetchedPicture) GetOriginal() string {
 	return f.Original
 }
 
-// GetSize implements entity.PictureLike.
+// GetSize implements shared.PictureLike.
 func (f *FetchedPicture) GetSize() (width uint, height uint) {
 	return f.Width, f.Height
 }
 
-// GetStorageInfo implements entity.PictureLike.
+// GetStorageInfo implements shared.PictureLike.
 func (f *FetchedPicture) GetStorageInfo() shared.StorageInfo {
 	return shared.StorageInfo{}
 }
 
-// GetTelegramInfo implements entity.PictureLike.
+// GetTelegramInfo implements shared.PictureLike.
 func (f *FetchedPicture) GetTelegramInfo() shared.TelegramInfo {
 	return shared.TelegramInfo{}
 }
 
-// GetThumbnail implements entity.PictureLike.
+// GetThumbnail implements shared.PictureLike.
 func (f *FetchedPicture) GetThumbnail() string {
 	return f.Thumbnail
 }
 
-var _ entity.ArtworkLike = (*FetchedArtwork)(nil)
-var _ entity.PictureLike = (*FetchedPicture)(nil)
+var _ shared.ArtworkLike = (*FetchedArtwork)(nil)
+var _ shared.PictureLike = (*FetchedPicture)(nil)

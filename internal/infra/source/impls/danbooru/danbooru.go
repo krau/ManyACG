@@ -8,7 +8,6 @@ import (
 	"github.com/krau/ManyACG/internal/infra/config/runtimecfg"
 	"github.com/krau/ManyACG/internal/infra/source"
 	"github.com/krau/ManyACG/internal/model/dto"
-	"github.com/krau/ManyACG/internal/model/entity"
 	"github.com/krau/ManyACG/internal/shared"
 )
 
@@ -18,7 +17,7 @@ type Danbooru struct {
 }
 
 // PrettyFileName implements source.ArtworkSource.
-func (d *Danbooru) PrettyFileName(artwork entity.ArtworkLike, picture entity.PictureLike) string {
+func (d *Danbooru) PrettyFileName(artwork shared.ArtworkLike, picture shared.PictureLike) string {
 	panic("unimplemented")
 }
 

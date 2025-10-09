@@ -23,7 +23,7 @@ import (
 )
 
 
-func SendArtworkMediaGroup(ctx *telegohandler.Context, chatID telego.ChatID, artwork entity.ArtworkLike) ([]telego.Message, error) {
+func SendArtworkMediaGroup(ctx *telegohandler.Context, chatID telego.ChatID, artwork shared.ArtworkLike) ([]telego.Message, error) {
 	pics := artwork.GetPictures()
 	caption := ArtworkHTMLCaption(metautil.FromContext(ctx), artwork)
 	if len(pics) <= 10 {
@@ -65,7 +65,7 @@ func SendArtworkMediaGroup(ctx *telegohandler.Context, chatID telego.ChatID, art
 
 func ArtworkInputMediaPhotos(ctx context.Context,
 	serv *service.Service,
-	artwork entity.ArtworkLike,
+	artwork shared.ArtworkLike,
 	caption string,
 	start, end int) ([]telego.InputMedia, error) {
 	inputMediaPhotos := make([]telego.InputMedia, end-start)
@@ -124,7 +124,7 @@ func ArtworkInputMediaPhotos(ctx context.Context,
 	return inputMediaPhotos, nil
 }
 
-func GetPicturePhotoInputFile(ctx context.Context, serv *service.Service, picture entity.PictureLike) (telego.InputFile, error) {
+func GetPicturePhotoInputFile(ctx context.Context, serv *service.Service, picture shared.PictureLike) (telego.InputFile, error) {
 	if id := picture.GetTelegramInfo().PhotoFileID; id != "" {
 		return telegoutil.FileFromID(id), nil
 	}
@@ -176,7 +176,7 @@ type CreateArtworkInfoReplyMarkupOptions struct {
 	HasPermission  bool
 }
 
-func CreateArtworkInfoReplyMarkup(ctx context.Context, meta *metautil.MetaData, serv *service.Service, artwork entity.ArtworkLike, controls *CreateArtworkInfoReplyMarkupOptions) (*telego.InlineKeyboardMarkup, error) {
+func CreateArtworkInfoReplyMarkup(ctx context.Context, meta *metautil.MetaData, serv *service.Service, artwork shared.ArtworkLike, controls *CreateArtworkInfoReplyMarkupOptions) (*telego.InlineKeyboardMarkup, error) {
 	if controls == nil {
 		controls = &CreateArtworkInfoReplyMarkupOptions{}
 	}
@@ -234,7 +234,7 @@ func SendArtworkInfo(ctx *telegohandler.Context,
 	if err != nil {
 		return oops.Wrapf(err, "failed to send wait message")
 	}
-	var artwork entity.ArtworkLike
+	var artwork shared.ArtworkLike
 	created := false
 	if awent, err := serv.GetArtworkByURL(ctx, sourceUrl); err == nil {
 		artwork = awent
@@ -325,7 +325,7 @@ func (i *InputFileCloser) Close() error {
 	return nil
 }
 
-func GetPictureDocumentInputFile(ctx context.Context, serv *service.Service, artwork entity.ArtworkLike, picture entity.PictureLike) (*InputFileCloser, error) {
+func GetPictureDocumentInputFile(ctx context.Context, serv *service.Service, artwork shared.ArtworkLike, picture shared.PictureLike) (*InputFileCloser, error) {
 	if id := picture.GetTelegramInfo().DocumentFileID; id != "" {
 		return &InputFileCloser{telegoutil.FileFromID(id), func() error { return nil }}, nil
 	}

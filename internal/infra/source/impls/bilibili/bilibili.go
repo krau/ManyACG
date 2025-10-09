@@ -6,7 +6,6 @@ import (
 	"github.com/krau/ManyACG/internal/infra/config/runtimecfg"
 	"github.com/krau/ManyACG/internal/infra/source"
 	"github.com/krau/ManyACG/internal/model/dto"
-	"github.com/krau/ManyACG/internal/model/entity"
 	"github.com/krau/ManyACG/internal/shared"
 
 	"github.com/imroc/req/v3"
@@ -18,7 +17,7 @@ type Bilibili struct {
 }
 
 // PrettyFileName implements source.ArtworkSource.
-func (b *Bilibili) PrettyFileName(artwork entity.ArtworkLike, picture entity.PictureLike) string {
+func (b *Bilibili) PrettyFileName(artwork shared.ArtworkLike, picture shared.PictureLike) string {
 	panic("unimplemented")
 }
 

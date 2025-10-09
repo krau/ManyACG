@@ -42,8 +42,8 @@ func (a *Artwork) GetDescription() string {
 }
 
 // GetPictures implements ArtworkLike.
-func (a *Artwork) GetPictures() []PictureLike {
-	var pictures []PictureLike
+func (a *Artwork) GetPictures() []shared.PictureLike {
+	var pictures []shared.PictureLike
 	for _, pic := range a.Pictures {
 		pictures = append(pictures, pic)
 	}

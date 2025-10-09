@@ -8,6 +8,7 @@ import (
 	"github.com/krau/ManyACG/internal/interface/telegram/metautil"
 	"github.com/krau/ManyACG/internal/model/entity"
 	"github.com/krau/ManyACG/internal/service"
+	"github.com/krau/ManyACG/internal/shared"
 	"github.com/mymmrac/telego"
 	"github.com/mymmrac/telego/telegohandler"
 	"github.com/mymmrac/telego/telegoutil"
@@ -63,7 +64,7 @@ var tagCharsReplacer = strings.NewReplacer(
 	" ", "_",
 )
 
-func ArtworkHTMLCaption(meta *metautil.MetaData, artwork entity.ArtworkLike) string {
+func ArtworkHTMLCaption(meta *metautil.MetaData, artwork shared.ArtworkLike) string {
 	caption := fmt.Sprintf("<a href=\"%s\"><b>%s</b></a> / <b>%s</b>", artwork.GetSourceURL(), html.EscapeString(artwork.GetTitle()), html.EscapeString(artwork.GetArtistName()))
 	if artwork.GetDescription() != "" {
 		desc := artwork.GetDescription()

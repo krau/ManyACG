@@ -7,7 +7,6 @@ import (
 	config "github.com/krau/ManyACG/internal/infra/config/runtimecfg"
 	"github.com/krau/ManyACG/internal/infra/source"
 	"github.com/krau/ManyACG/internal/model/dto"
-	"github.com/krau/ManyACG/internal/model/entity"
 	"github.com/krau/ManyACG/internal/shared"
 )
 
@@ -17,7 +16,7 @@ type Nhentai struct {
 }
 
 // PrettyFileName implements source.ArtworkSource.
-func (n *Nhentai) PrettyFileName(artwork entity.ArtworkLike, picture entity.PictureLike) string {
+func (n *Nhentai) PrettyFileName(artwork shared.ArtworkLike, picture shared.PictureLike) string {
 	panic("unimplemented")
 }
 

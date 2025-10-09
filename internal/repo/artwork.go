@@ -2,7 +2,10 @@ package repo
 
 import (
 	"context"
+	"sync"
 
+	"github.com/krau/ManyACG/internal/model/converter"
+	"github.com/krau/ManyACG/internal/model/dto"
 	"github.com/krau/ManyACG/internal/model/entity"
 	"github.com/krau/ManyACG/internal/model/query"
 	"github.com/krau/ManyACG/pkg/objectuuid"
@@ -23,8 +26,10 @@ type Artwork interface {
 
 type ArtworkWithEvent struct {
 	inner    Artwork
-	eventBus EventBus[*entity.Artwork]
+	eventBus EventBus[*dto.ArtworkEventItem]
 }
+
+var _ Artwork = (*ArtworkWithEvent)(nil)
 
 // CreateArtwork implements Artwork.
 func (a *ArtworkWithEvent) CreateArtwork(ctx context.Context, artwork *entity.Artwork) (*objectuuid.ObjectUUID, error) {
@@ -36,7 +41,7 @@ func (a *ArtworkWithEvent) CreateArtwork(ctx context.Context, artwork *entity.Ar
 	if err != nil {
 		return nil, err
 	}
-	a.eventBus.Publish(EventTypeArtworkCreate, ent)
+	a.eventBus.Publish(EventTypeArtworkCreate, converter.EntityArtworkToDtoEventItem(ent))
 	return id, nil
 }
 
@@ -49,7 +54,49 @@ func (a *ArtworkWithEvent) DeleteArtworkByID(ctx context.Context, id objectuuid.
 	if err := a.inner.DeleteArtworkByID(ctx, id); err != nil {
 		return err
 	}
-	a.eventBus.Publish(EventTypeArtworkDelete, ent)
+	a.eventBus.Publish(EventTypeArtworkDelete, converter.EntityArtworkToDtoEventItem(ent))
+	return nil
+}
+
+// UpdateArtworkByMap implements Artwork.
+func (a *ArtworkWithEvent) UpdateArtworkByMap(ctx context.Context, id objectuuid.ObjectUUID, patch map[string]any) error {
+	err := a.inner.UpdateArtworkByMap(ctx, id, patch)
+	if err != nil {
+		return err
+	}
+	ent, err := a.GetArtworkByID(ctx, id)
+	if err != nil {
+		return err
+	}
+	a.eventBus.Publish(EventTypeArtworkUpdate, converter.EntityArtworkToDtoEventItem(ent))
+	return nil
+}
+
+// UpdateArtworkPictures implements Artwork.
+func (a *ArtworkWithEvent) UpdateArtworkPictures(ctx context.Context, id objectuuid.ObjectUUID, pictures []*entity.Picture) error {
+	err := a.inner.UpdateArtworkPictures(ctx, id, pictures)
+	if err != nil {
+		return err
+	}
+	ent, err := a.GetArtworkByID(ctx, id)
+	if err != nil {
+		return err
+	}
+	a.eventBus.Publish(EventTypeArtworkUpdate, converter.EntityArtworkToDtoEventItem(ent))
+	return nil
+}
+
+// UpdateArtworkTags implements Artwork.
+func (a *ArtworkWithEvent) UpdateArtworkTags(ctx context.Context, id objectuuid.ObjectUUID, tags []*entity.Tag) error {
+	err := a.inner.UpdateArtworkTags(ctx, id, tags)
+	if err != nil {
+		return err
+	}
+	ent, err := a.GetArtworkByID(ctx, id)
+	if err != nil {
+		return err
+	}
+	a.eventBus.Publish(EventTypeArtworkUpdate, converter.EntityArtworkToDtoEventItem(ent))
 	return nil
 }
 
@@ -78,81 +125,25 @@ func (a *ArtworkWithEvent) ReorderArtworkPicturesByID(ctx context.Context, id ob
 	return a.inner.ReorderArtworkPicturesByID(ctx, id)
 }
 
-// UpdateArtworkByMap implements Artwork.
-func (a *ArtworkWithEvent) UpdateArtworkByMap(ctx context.Context, id objectuuid.ObjectUUID, patch map[string]any) error {
-	err := a.inner.UpdateArtworkByMap(ctx, id, patch)
-	if err != nil {
-		return err
-	}
-	ent, err := a.GetArtworkByID(ctx, id)
-	if err != nil {
-		return err
-	}
-	a.eventBus.Publish(EventTypeArtworkUpdate, ent)
-	return nil
-}
-
-// UpdateArtworkPictures implements Artwork.
-func (a *ArtworkWithEvent) UpdateArtworkPictures(ctx context.Context, id objectuuid.ObjectUUID, pictures []*entity.Picture) error {
-	err := a.inner.UpdateArtworkPictures(ctx, id, pictures)
-	if err != nil {
-		return err
-	}
-	ent, err := a.GetArtworkByID(ctx, id)
-	if err != nil {
-		return err
-	}
-	a.eventBus.Publish(EventTypeArtworkUpdate, ent)
-	return nil
-}
-
-// UpdateArtworkTags implements Artwork.
-func (a *ArtworkWithEvent) UpdateArtworkTags(ctx context.Context, id objectuuid.ObjectUUID, tags []*entity.Tag) error {
-	err := a.inner.UpdateArtworkTags(ctx, id, tags)
-	if err != nil {
-		return err
-	}
-	ent, err := a.GetArtworkByID(ctx, id)
-	if err != nil {
-		return err
-	}
-	a.eventBus.Publish(EventTypeArtworkUpdate, ent)
-	return nil
-}
-
-func NewArtworkWithEvent(inner Artwork, eventBus EventBus[*entity.Artwork]) *ArtworkWithEvent {
+func NewArtworkWithEvent(inner Artwork, eventBus EventBus[*dto.ArtworkEventItem]) *ArtworkWithEvent {
 	return &ArtworkWithEvent{
 		inner:    inner,
 		eventBus: eventBus,
 	}
 }
 
-var _ Artwork = (*ArtworkWithEvent)(nil)
-
 type artworkEventItem struct {
 	typ EventType
-	ent *entity.Artwork
-}
-
-type WithArtworkEventImpl struct {
-	Tx          Transactional
-	AdminRepo   Admin
-	ApiKeyRepo  APIKey
-	ArtistRepo  Artist
-	ArtworkRepo Artwork
-	TagRepo     Tag
-	PictureRepo Picture
-	DeletedRepo DeletedRecord
-	CachedRepo  CachedArtwork
-
-	ArtworkBus EventBus[*entity.Artwork]
+	ent *dto.ArtworkEventItem
 }
 
 // using in transaction, record events but not publish immediately
 type ArtworkWithRecorder struct {
 	inner    Artwork
-	recorder func(typ EventType, ent *entity.Artwork)
+	recorder func(typ EventType, item *dto.ArtworkEventItem)
 }
+
+var _ Artwork = (*ArtworkWithRecorder)(nil)
 
 func (a *ArtworkWithRecorder) CreateArtwork(ctx context.Context, artwork *entity.Artwork) (*objectuuid.ObjectUUID, error) {
 	id, err := a.inner.CreateArtwork(ctx, artwork)
@@ -164,7 +155,7 @@ func (a *ArtworkWithRecorder) CreateArtwork(ctx context.Context, artwork *entity
 		return nil, err
 	}
 	if a.recorder != nil {
-		a.recorder(EventTypeArtworkCreate, ent)
+		a.recorder(EventTypeArtworkCreate, converter.EntityArtworkToDtoEventItem(ent))
 	}
 	return id, nil
 }
@@ -178,26 +169,11 @@ func (a *ArtworkWithRecorder) DeleteArtworkByID(ctx context.Context, id objectuu
 		return err
 	}
 	if a.recorder != nil {
-		a.recorder(EventTypeArtworkDelete, ent)
+		a.recorder(EventTypeArtworkDelete, converter.EntityArtworkToDtoEventItem(ent))
 	}
 	return nil
 }
 
-func (a *ArtworkWithRecorder) GetArtworkByID(ctx context.Context, id objectuuid.ObjectUUID) (*entity.Artwork, error) {
-	return a.inner.GetArtworkByID(ctx, id)
-}
-func (a *ArtworkWithRecorder) GetArtworkByURL(ctx context.Context, url string) (*entity.Artwork, error) {
-	return a.inner.GetArtworkByURL(ctx, url)
-}
-func (a *ArtworkWithRecorder) GetArtworksByIDs(ctx context.Context, ids []objectuuid.ObjectUUID) ([]*entity.Artwork, error) {
-	return a.inner.GetArtworksByIDs(ctx, ids)
-}
-func (a *ArtworkWithRecorder) QueryArtworks(ctx context.Context, que query.ArtworksDB) ([]*entity.Artwork, error) {
-	return a.inner.QueryArtworks(ctx, que)
-}
-func (a *ArtworkWithRecorder) ReorderArtworkPicturesByID(ctx context.Context, id objectuuid.ObjectUUID) error {
-	return a.inner.ReorderArtworkPicturesByID(ctx, id)
-}
 func (a *ArtworkWithRecorder) UpdateArtworkByMap(ctx context.Context, id objectuuid.ObjectUUID, patch map[string]any) error {
 	if err := a.inner.UpdateArtworkByMap(ctx, id, patch); err != nil {
 		return err
@@ -207,10 +183,11 @@ func (a *ArtworkWithRecorder) UpdateArtworkByMap(ctx context.Context, id objectu
 		return err
 	}
 	if a.recorder != nil {
-		a.recorder(EventTypeArtworkUpdate, ent)
+		a.recorder(EventTypeArtworkUpdate, converter.EntityArtworkToDtoEventItem(ent))
 	}
 	return nil
 }
+
 func (a *ArtworkWithRecorder) UpdateArtworkPictures(ctx context.Context, id objectuuid.ObjectUUID, pictures []*entity.Picture) error {
 	if err := a.inner.UpdateArtworkPictures(ctx, id, pictures); err != nil {
 		return err
@@ -220,10 +197,11 @@ func (a *ArtworkWithRecorder) UpdateArtworkPictures(ctx context.Context, id obje
 		return err
 	}
 	if a.recorder != nil {
-		a.recorder(EventTypeArtworkUpdate, ent)
+		a.recorder(EventTypeArtworkUpdate, converter.EntityArtworkToDtoEventItem(ent))
 	}
 	return nil
 }
+
 func (a *ArtworkWithRecorder) UpdateArtworkTags(ctx context.Context, id objectuuid.ObjectUUID, tags []*entity.Tag) error {
 	if err := a.inner.UpdateArtworkTags(ctx, id, tags); err != nil {
 		return err
@@ -233,12 +211,44 @@ func (a *ArtworkWithRecorder) UpdateArtworkTags(ctx context.Context, id objectuu
 		return err
 	}
 	if a.recorder != nil {
-		a.recorder(EventTypeArtworkUpdate, ent)
+		a.recorder(EventTypeArtworkUpdate, converter.EntityArtworkToDtoEventItem(ent))
 	}
 	return nil
 }
 
-var _ Artwork = (*ArtworkWithRecorder)(nil)
+func (a *ArtworkWithRecorder) GetArtworkByID(ctx context.Context, id objectuuid.ObjectUUID) (*entity.Artwork, error) {
+	return a.inner.GetArtworkByID(ctx, id)
+}
+
+func (a *ArtworkWithRecorder) GetArtworkByURL(ctx context.Context, url string) (*entity.Artwork, error) {
+	return a.inner.GetArtworkByURL(ctx, url)
+}
+
+func (a *ArtworkWithRecorder) GetArtworksByIDs(ctx context.Context, ids []objectuuid.ObjectUUID) ([]*entity.Artwork, error) {
+	return a.inner.GetArtworksByIDs(ctx, ids)
+}
+
+func (a *ArtworkWithRecorder) QueryArtworks(ctx context.Context, que query.ArtworksDB) ([]*entity.Artwork, error) {
+	return a.inner.QueryArtworks(ctx, que)
+}
+
+func (a *ArtworkWithRecorder) ReorderArtworkPicturesByID(ctx context.Context, id objectuuid.ObjectUUID) error {
+	return a.inner.ReorderArtworkPicturesByID(ctx, id)
+}
+
+type WithArtworkEventImpl struct {
+	Tx          Transactional
+	AdminRepo   Admin
+	ApiKeyRepo  APIKey
+	ArtistRepo  Artist
+	ArtworkRepo Artwork
+	TagRepo     Tag
+	PictureRepo Picture
+	DeletedRepo DeletedRecord
+	CachedRepo  CachedArtwork
+
+	ArtworkBus EventBus[*dto.ArtworkEventItem]
+}
 
 // APIKey implements Repositories.
 func (r *WithArtworkEventImpl) APIKey() APIKey {
@@ -282,9 +292,17 @@ func (r *WithArtworkEventImpl) Tag() Tag {
 
 func (r *WithArtworkEventImpl) Transaction(ctx context.Context, fn func(repos Repositories) error) error {
 	var events []artworkEventItem
+	var eventsMu sync.Mutex
 	err := r.Tx.Transaction(ctx, func(txRepos Repositories) error {
-		rec := func(typ EventType, ent *entity.Artwork) {
-			events = append(events, artworkEventItem{typ: typ, ent: ent})
+		rec := func(typ EventType, item *dto.ArtworkEventItem) {
+			eventsMu.Lock()
+			if item != nil {
+				copied := *item
+				events = append(events, artworkEventItem{typ: typ, ent: &copied})
+			} else {
+				events = append(events, artworkEventItem{typ: typ, ent: nil})
+			}
+			eventsMu.Unlock()
 		}
 
 		txWrapper := &WithArtworkEventImpl{

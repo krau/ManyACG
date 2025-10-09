@@ -11,7 +11,6 @@ import (
 	config "github.com/krau/ManyACG/internal/infra/config/runtimecfg"
 	"github.com/krau/ManyACG/internal/infra/source"
 	"github.com/krau/ManyACG/internal/model/dto"
-	"github.com/krau/ManyACG/internal/model/entity"
 	"github.com/krau/ManyACG/internal/shared"
 )
 
@@ -21,7 +20,7 @@ type Kemono struct {
 }
 
 // PrettyFileName implements source.ArtworkSource.
-func (k *Kemono) PrettyFileName(artwork entity.ArtworkLike, picture entity.PictureLike) string {
+func (k *Kemono) PrettyFileName(artwork shared.ArtworkLike, picture shared.PictureLike) string {
 	panic("unimplemented")
 }
 

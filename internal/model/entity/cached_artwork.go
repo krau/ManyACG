@@ -35,8 +35,8 @@ func (c *CachedArtworkData) GetDescription() string {
 }
 
 // GetPictures implements ArtworkLike.
-func (c *CachedArtworkData) GetPictures() []PictureLike {
-	var pictures []PictureLike
+func (c *CachedArtworkData) GetPictures() []shared.PictureLike {
+	var pictures []shared.PictureLike
 	for _, pic := range c.Pictures {
 		pictures = append(pictures, pic)
 	}
@@ -152,7 +152,7 @@ func (c *CachedArtwork) GetDescription() string {
 }
 
 // GetPictures implements ArtworkLike.
-func (c *CachedArtwork) GetPictures() []PictureLike {
+func (c *CachedArtwork) GetPictures() []shared.PictureLike {
 	return c.Artwork.Data().GetPictures()
 }
 
