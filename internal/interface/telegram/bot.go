@@ -2,12 +2,15 @@ package telegram
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	"github.com/krau/ManyACG/internal/infra/config/runtimecfg"
 	"github.com/krau/ManyACG/internal/interface/telegram/handlers"
 	"github.com/krau/ManyACG/internal/interface/telegram/metautil"
 	"github.com/krau/ManyACG/internal/service"
+	"github.com/krau/ManyACG/internal/shared"
+	"github.com/krau/ManyACG/internal/shared/errs"
 	"github.com/krau/ManyACG/pkg/log"
 	"github.com/samber/oops"
 
@@ -73,6 +76,23 @@ func Init(ctx context.Context, serv *service.Service) (*BotApp, error) {
 		log.Fatalf("Error when getting bot info: %s", err)
 	}
 	botUsername := me.Username
+
+	admins := cfg.Admins
+	for _, adminID := range admins {
+		_, err := serv.GetAdminByTelegramID(ctx, adminID)
+		if err != nil && !errors.Is(err, errs.ErrRecordNotFound) {
+			log.Warnf("Error when getting admin %d: %s", adminID, err)
+			continue
+		}
+		if err == nil {
+			continue
+		}
+		err = serv.CreateAdmin(ctx, adminID, []shared.Permission{shared.PermissionSudo})
+		if err != nil {
+			log.Warnf("Error when creating admin %d: %s", adminID, err)
+			continue
+		}
+	}
 
 	go func() {
 		// set bot commands

@@ -98,6 +98,7 @@ func Run() {
 		source.Sources(),
 		runtimecfg.Get().Storage)
 	service.SetDefault(serv)
+
 	botapp, err := telegram.Init(ctx, serv)
 	if err != nil {
 		log.Fatal(err)
@@ -108,7 +109,7 @@ func Run() {
 
 	defer log.Info("Exited.")
 	<-ctx.Done()
-	cleanCtx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	cleanCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 	if err := serv.Cleanup(cleanCtx); err != nil {
 		log.Error(err)
