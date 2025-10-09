@@ -7,6 +7,7 @@ import (
 	"sync"
 
 	"github.com/krau/ManyACG/internal/shared"
+	"github.com/krau/ManyACG/pkg/log"
 )
 
 type Factory func() Storage
@@ -35,6 +36,7 @@ func InitAll(ctx context.Context) error {
 			return fmt.Errorf("failed to init storage %s: %w", storageType, err)
 		}
 		storages[storageType] = storage
+		log.Debug("Initialized storage", "type", storageType)
 	}
 	return nil
 }

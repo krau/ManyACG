@@ -22,6 +22,10 @@ func (b *Bilibili) PrettyFileName(artwork shared.ArtworkLike, picture shared.Pic
 }
 
 func init() {
+	cfg := runtimecfg.Get().Source.Bilibili
+	if cfg.Disable {
+		return
+	}
 	source.Register(shared.SourceTypeBilibili, func() source.ArtworkSource {
 		return &Bilibili{
 			cfg:       runtimecfg.Get().Source.Bilibili,

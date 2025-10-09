@@ -1,6 +1,7 @@
 package twitter
 
 import (
+	"context"
 	"encoding/json"
 	"regexp"
 
@@ -12,8 +13,8 @@ var (
 	reqClient              *req.Client
 )
 
-func reqApiResp(url string) (*FxTwitterApiResp, error) {
-	resp, err := reqClient.R().Get(url)
+func reqApiResp(ctx context.Context, url string) (*FxTwitterApiResp, error) {
+	resp, err := reqClient.R().SetContext(ctx).Get(url)
 	if err != nil {
 		return nil, ErrRequestFailed
 	}

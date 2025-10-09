@@ -22,6 +22,10 @@ func (d *Danbooru) PrettyFileName(artwork shared.ArtworkLike, picture shared.Pic
 }
 
 func init() {
+	cfg := runtimecfg.Get().Source.Danbooru
+	if cfg.Disable {
+		return
+	}
 	source.Register(shared.SourceTypeDanbooru, func() source.ArtworkSource {
 		return &Danbooru{
 			cfg:       runtimecfg.Get().Source.Danbooru,

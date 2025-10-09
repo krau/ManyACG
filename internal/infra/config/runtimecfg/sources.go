@@ -12,7 +12,7 @@ type SourceConfig struct {
 }
 
 type SourcePixivConfig struct {
-	Enable   bool           `toml:"enable" mapstructure:"enable" json:"enable" yaml:"enable"`
+	Disable  bool           `toml:"disable" mapstructure:"disable" json:"disable" yaml:"disable"`
 	Proxy    string         `toml:"proxy" mapstructure:"proxy" json:"proxy" yaml:"proxy"`
 	URLs     []string       `toml:"urls" mapstructure:"urls" json:"urls" yaml:"urls"`
 	Intervel int            `toml:"intervel" mapstructure:"intervel" json:"intervel" yaml:"intervel"`
@@ -21,7 +21,7 @@ type SourcePixivConfig struct {
 }
 
 type SourceTwitterConfig struct {
-	Enable          bool     `toml:"enable" mapstructure:"enable" json:"enable" yaml:"enable"`
+	Disable         bool     `toml:"disable" mapstructure:"disable" json:"disable" yaml:"disable"`
 	FxTwitterDomain string   `toml:"fx_twitter_domain" mapstructure:"fx_twitter_domain" json:"fx_twitter_domain" yaml:"fx_twitter_domain"`
 	Sleep           uint     `toml:"sleep" mapstructure:"sleep" json:"sleep" yaml:"sleep"`
 	Intervel        int      `toml:"intervel" mapstructure:"intervel" json:"intervel" yaml:"intervel"`
@@ -29,23 +29,21 @@ type SourceTwitterConfig struct {
 }
 
 type SourceBilibiliConfig struct {
-	Enable bool `toml:"enable" mapstructure:"enable" json:"enable" yaml:"enable"`
+	Disable bool `toml:"disable" mapstructure:"disable" json:"disable" yaml:"disable"`
 }
 
 type SourceDanbooruConfig struct {
-	Enable bool `toml:"enable" mapstructure:"enable" json:"enable" yaml:"enable"`
+	Disable bool `toml:"disable" mapstructure:"disable" json:"disable" yaml:"disable"`
 }
 
 type SourceKemonoConfig struct {
-	Enable  bool   `toml:"enable" mapstructure:"enable" json:"enable" yaml:"enable"`
-	Worker  int    `toml:"worker" mapstructure:"worker" json:"worker" yaml:"worker"`
-	Session string `toml:"session" mapstructure:"session" json:"session" yaml:"session"`
+	Disable bool `toml:"disable" mapstructure:"disable" json:"disable" yaml:"disable"`
 }
 
 type SourceYandereConfig struct {
-	Enable bool `toml:"enable" mapstructure:"enable" json:"enable" yaml:"enable"`
+	Disable bool `toml:"disable" mapstructure:"disable" json:"disable" yaml:"disable"`
 }
 
 type SourceNhentaiConfig struct {
-	Enable bool `toml:"enable" mapstructure:"enable" json:"enable" yaml:"enable"`
+	Disable bool `toml:"disable" mapstructure:"disable" json:"disable" yaml:"disable"`
 }

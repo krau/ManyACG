@@ -2,12 +2,14 @@ package nhentai
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/imroc/req/v3"
 	config "github.com/krau/ManyACG/internal/infra/config/runtimecfg"
 	"github.com/krau/ManyACG/internal/infra/source"
 	"github.com/krau/ManyACG/internal/model/dto"
 	"github.com/krau/ManyACG/internal/shared"
+	"github.com/krau/ManyACG/pkg/strutil"
 )
 
 type Nhentai struct {
@@ -15,12 +17,11 @@ type Nhentai struct {
 	reqClient *req.Client
 }
 
-// PrettyFileName implements source.ArtworkSource.
-func (n *Nhentai) PrettyFileName(artwork shared.ArtworkLike, picture shared.PictureLike) string {
-	panic("unimplemented")
-}
-
 func init() {
+	cfg := config.Get().Source.Nhentai
+	if cfg.Disable {
+		return
+	}
 	source.Register(shared.SourceTypeNhentai, func() source.ArtworkSource {
 		return &Nhentai{
 			cfg:       config.Get().Source.Nhentai,
@@ -34,13 +35,11 @@ func (n *Nhentai) FetchNewArtworks(ctx context.Context, limit int) ([]*dto.Fetch
 }
 
 func (n *Nhentai) GetArtworkInfo(ctx context.Context, sourceURL string) (*dto.FetchedArtwork, error) {
-	// galleryID := GetGalleryID(sourceURL)
-	// if galleryID == "" {
-	// 	return nil, ErrorInvalidNhentaiURL
-	// }
-	// common.Logger.Tracef("request artwork info: %s", sourceURLPrefix+galleryID)
-	// return n.crawlGallery(galleryID)
-	panic("not implemented")
+	galleryID := GetGalleryID(sourceURL)
+	if galleryID == "" {
+		return nil, ErrorInvalidNhentaiURL
+	}
+	return n.crawlGallery(ctx, galleryID)
 }
 
 func (n *Nhentai) MatchesSourceURL(text string) (string, bool) {
@@ -51,20 +50,12 @@ func (n *Nhentai) MatchesSourceURL(text string) (string, bool) {
 	return sourceURLPrefix + galleryID, true
 }
 
-// func (n *Nhentai) GetFileName(artwork *types.Artwork, picture *types.Picture) string {
-// 	galleryID := GetGalleryID(artwork.SourceURL)
-// 	if galleryID == "" {
-// 		galleryID = picture.ID
-// 	}
-// 	if galleryID == "" {
-// 		galleryID = common.MD5Hash(picture.Original)
-// 	}
-// 	return "nhentai_" + galleryID + "_" + strconv.Itoa(int(picture.Index)) + path.Ext(picture.Original)
-// }
-
-// func (n *Nhentai) Config() *config.SourceCommonConfig {
-// 	return &config.SourceCommonConfig{
-// 		Enable:   config.Get().Source.Nhentai.Enable,
-// 		Intervel: -1,
-// 	}
-// }
+// PrettyFileName implements source.ArtworkSource.
+func (n *Nhentai) PrettyFileName(artwork shared.ArtworkLike, picture shared.PictureLike) string {
+	galleryID := GetGalleryID(artwork.GetSourceURL())
+	ext, _ := strutil.GetFileExtFromURL(picture.GetOriginal())
+	if galleryID == "" {
+		return fmt.Sprintf("nhentai_%s%s", strutil.MD5Hash(picture.GetOriginal()), ext)
+	}
+	return fmt.Sprintf("nhentai_%s_%d%s", galleryID, picture.GetIndex(), ext)
+}

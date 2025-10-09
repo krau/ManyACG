@@ -2,7 +2,11 @@ package twitter
 
 import (
 	"context"
+	"fmt"
 	"net/url"
+	"path"
+	"strconv"
+	"strings"
 
 	"github.com/imroc/req/v3"
 	"github.com/krau/ManyACG/internal/infra/config/runtimecfg"
@@ -16,12 +20,11 @@ type Twitter struct {
 	reqClient *req.Client
 }
 
-// PrettyFileName implements source.ArtworkSource.
-func (t *Twitter) PrettyFileName(artwork shared.ArtworkLike, picture shared.PictureLike) string {
-	panic("unimplemented")
-}
-
 func init() {
+	cfg := runtimecfg.Get().Source.Twitter
+	if cfg.Disable {
+		return
+	}
 	source.Register(shared.SourceTypeTwitter, func() source.ArtworkSource {
 		return &Twitter{
 			cfg:       runtimecfg.Get().Source.Twitter,
@@ -48,17 +51,16 @@ func (t *Twitter) FetchNewArtworks(ctx context.Context, limit int) ([]*dto.Fetch
 }
 
 func (t *Twitter) GetArtworkInfo(ctx context.Context, sourceURL string) (*dto.FetchedArtwork, error) {
-	// tweetID := getTweetID(sourceURL)
-	// if tweetID == "" {
-	// 	return nil, ErrInvalidURL
-	// }
-	// fxTwitterApiURL := fmt.Sprintf("https://api.%s/_/status/%s", config.Get().Source.Twitter.FxTwitterDomain, tweetID)
-	// resp, err := reqApiResp(fxTwitterApiURL)
-	// if err != nil {
-	// 	return nil, err
-	// }
-	// return resp.ToArtwork()
-	panic("not implemented")
+	tweetID := getTweetID(sourceURL)
+	if tweetID == "" {
+		return nil, ErrInvalidURL
+	}
+	fxTwitterApiURL := fmt.Sprintf("https://api.%s/_/status/%s", t.cfg.FxTwitterDomain, tweetID)
+	resp, err := reqApiResp(ctx, fxTwitterApiURL)
+	if err != nil {
+		return nil, err
+	}
+	return resp.ToArtwork()
 }
 
 func (t *Twitter) MatchesSourceURL(text string) (string, bool) {
@@ -77,20 +79,13 @@ func (t *Twitter) MatchesSourceURL(text string) (string, bool) {
 	return commonUrl, true
 }
 
-// func (t *Twitter) GetFileName(artwork *types.Artwork, picture *types.Picture) string {
-// 	original := picture.Original
-// 	urlSplit := strings.Split(picture.Original, "?")
-// 	if len(urlSplit) > 1 {
-// 		original = strings.Join(urlSplit[:len(urlSplit)-1], "?")
-// 	}
-// 	tweetID := strings.Split(artwork.SourceURL, "/")[len(strings.Split(artwork.SourceURL, "/"))-1]
-// 	return tweetID + "_" + strconv.Itoa(int(picture.Index)) + path.Ext(original)
-// }
-
-// func (t *Twitter) Config() *config.SourceCommonConfig {
-// 	return &config.SourceCommonConfig{
-// 		Enable:   config.Get().Source.Twitter.Enable,
-// 		Intervel: config.Get().Source.Twitter.Intervel,
-// 	}
-
-// }
+// PrettyFileName implements source.ArtworkSource.
+func (t *Twitter) PrettyFileName(artwork shared.ArtworkLike, picture shared.PictureLike) string {
+	original := picture.GetOriginal()
+	urlSplit := strings.Split(original, "?")
+	if len(urlSplit) > 1 {
+		original = strings.Join(urlSplit[:len(urlSplit)-1], "?")
+	}
+	tweetID := strings.Split(artwork.GetSourceURL(), "/")[len(strings.Split(artwork.GetSourceURL(), "/"))-1]
+	return "twitter_" + tweetID + "_" + strconv.Itoa(int(picture.GetIndex())) + path.Ext(original)
+}

@@ -36,6 +36,7 @@ func (n *noopTagger) Predict(ctx context.Context, file io.Reader) (map[string]fl
 
 func Default() Tagger {
 	defaultOnce.Do(func() {
+		log.Debug("Initializing tagger")
 		cfg := runtimecfg.Get().Tagging
 		if !cfg.Enable {
 			defaultTagger = &noopTagger{}

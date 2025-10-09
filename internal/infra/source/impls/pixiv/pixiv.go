@@ -21,6 +21,10 @@ type Pixiv struct {
 }
 
 func init() {
+	cfg := config.Get().Source.Pixiv
+	if cfg.Disable {
+		return
+	}
 	source.Register(shared.SourceTypePixiv, func() source.ArtworkSource {
 		cfg := config.Get().Source.Pixiv
 		cookies := make([]*http.Cookie, 0)
