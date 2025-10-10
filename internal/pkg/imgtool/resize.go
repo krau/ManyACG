@@ -11,6 +11,7 @@ import (
 
 	"github.com/gen2brain/avif"
 	"github.com/krau/ManyACG/internal/infra/config/runtimecfg"
+	"github.com/krau/ManyACG/pkg/log"
 )
 
 var (
@@ -60,7 +61,7 @@ func Compress(inputPath, outputPath, format string, maxEdgeLength int) (*os.File
 		return nil, err
 	}
 	if _, ok := vipsFormat[format]; ok {
-		fmt.Printf("Using vips to compress image: %s , %s , %s\n", inputPath, outputPath, format)
+		log.Debug("compressing image", "method", "vips", "input", inputPath, "output", outputPath, "format", format)
 		err := compressImageVIPS(inputPath, outputPath, format, maxEdgeLength)
 		if err != nil {
 			return nil, fmt.Errorf("failed to compress image with vips: %w", err)
@@ -68,7 +69,7 @@ func Compress(inputPath, outputPath, format string, maxEdgeLength int) (*os.File
 		return os.Open(outputPath)
 	}
 	if ffmpegAvailable {
-		fmt.Printf("Using ffmpeg to compress image: %s , %s , %s\n", inputPath, outputPath, format)
+		log.Debug("compressing image", "method", "ffmpeg", "input", inputPath, "output", outputPath, "format", format)
 		err := compressImageByFFmpeg(inputPath, outputPath, maxEdgeLength)
 		if err != nil {
 			return nil, fmt.Errorf("failed to compress image with ffmpeg: %w", err)
@@ -76,7 +77,7 @@ func Compress(inputPath, outputPath, format string, maxEdgeLength int) (*os.File
 		return os.Open(outputPath)
 	}
 	if _, ok := nativeFormat[format]; ok {
-		fmt.Printf("Using native to compress image: %s , %s , %s\n", inputPath, outputPath, format)
+		log.Debug("compressing image", "method", "native", "input", inputPath, "output", outputPath, "format", format)
 		err := compressImageNative(inputPath, outputPath, format, maxEdgeLength)
 		if err != nil {
 			return nil, fmt.Errorf("failed to compress image with native: %w", err)

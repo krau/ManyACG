@@ -15,15 +15,16 @@ type Config struct {
 		DSN    string `toml:"dsn" mapstructure:"dsn" json:"dsn" yaml:"dsn"`
 	} `toml:"migrate" mapstructure:"migrate" json:"migrate" yaml:"migrate"`
 
-	App  AppConfig  `toml:"app" mapstructure:"app" json:"app" yaml:"app"`
-	Wsrv WsrvConfig `toml:"wsrv" mapstructure:"wsrv" json:"wsrv" yaml:"wsrv"`
-	Web  struct {
+	App AppConfig `toml:"app" mapstructure:"app" json:"app" yaml:"app"`
+	Web struct {
 		Enable  bool   `toml:"enable" mapstructure:"enable" json:"enable" yaml:"enable"`
 		Address string `toml:"address" mapstructure:"address" json:"address" yaml:"address"`
 	} `toml:"web" mapstructure:"web" json:"web" yaml:"web"`
-	API        apiConfig        `toml:"api" mapstructure:"api" json:"api" yaml:"api"`
-	Auth       authConfig       `toml:"auth" mapstructure:"auth" json:"auth" yaml:"auth"`
-	Log        logConfig        `toml:"log" mapstructure:"log" json:"log" yaml:"log"`
+	API  apiConfig  `toml:"api" mapstructure:"api" json:"api" yaml:"api"`
+	Auth authConfig `toml:"auth" mapstructure:"auth" json:"auth" yaml:"auth"`
+
+	// some common packages config
+	Log        LogConfig        `toml:"log" mapstructure:"log" json:"log" yaml:"log"`
 	HttpClient HttpClientConfig `toml:"http_client" mapstructure:"http_client" json:"http_client" yaml:"http_client"`
 
 	// infrastructures config
@@ -33,6 +34,7 @@ type Config struct {
 	Database databaseConfig `toml:"database" mapstructure:"database" json:"database" yaml:"database"`
 	Source   SourceConfig   `toml:"source" mapstructure:"source" json:"source" yaml:"source"`
 	Storage  StorageConfig  `toml:"storage" mapstructure:"storage" json:"storage" yaml:"storage"`
+	Wsrv     WsrvConfig     `toml:"wsrv" mapstructure:"wsrv" json:"wsrv" yaml:"wsrv"`
 
 	// interfaces
 	Telegram  TelegramConfig  `toml:"telegram" mapstructure:"telegram" json:"telegram" yaml:"telegram"`
@@ -93,6 +95,15 @@ func loadConfig() Config {
 		"storage.telegram.retry.exponent_base": 2.0,
 		"storage.telegram.retry.start_delay":   3,
 		"storage.telegram.retry.max_delay":     300,
+
+		"cache.type":                   "ristretto",
+		"cache.default_ttl":            60 * 60,
+		"cache.ristretto.num_counters": 1e5,
+		"cache.ristretto.max_cost":     1e6,
+		"cache.ristretto.buffer_items": 64,
+
+		"database.type": "sqlite",
+		"database.dsn":  "file:data/manyacg.db?_pragma=journal_mode(WAL)&_pragma=synchronous(NORMAL)&_pragma=busy_timeout(5000)&_txlock=deferred",
 	}
 
 	for key, value := range defaults {
