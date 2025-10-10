@@ -22,7 +22,10 @@ import (
 	"github.com/samber/oops"
 )
 
-func SendArtworkMediaGroup(ctx *telegohandler.Context, chatID telego.ChatID, artwork shared.ArtworkLike) ([]telego.Message, error) {
+func SendArtworkMediaGroup(ctx context.Context,
+	bot *telego.Bot,
+	chatID telego.ChatID,
+	artwork shared.ArtworkLike) ([]telego.Message, error) {
 	pics := artwork.GetPictures()
 	caption := ArtworkHTMLCaption(metautil.FromContext(ctx), artwork)
 	if len(pics) <= 10 {
@@ -31,7 +34,7 @@ func SendArtworkMediaGroup(ctx *telegohandler.Context, chatID telego.ChatID, art
 			return nil, oops.Wrapf(err, "failed to create input media photos")
 		}
 		// Send the media group
-		return ctx.Bot().SendMediaGroup(ctx, telegoutil.MediaGroup(
+		return bot.SendMediaGroup(ctx, telegoutil.MediaGroup(
 			chatID,
 			inputs...,
 		))
@@ -53,7 +56,7 @@ func SendArtworkMediaGroup(ctx *telegohandler.Context, chatID telego.ChatID, art
 				MessageID: messages[i-1].MessageID,
 			})
 		}
-		msgs, err := ctx.Bot().SendMediaGroup(ctx, mediaGroup)
+		msgs, err := bot.SendMediaGroup(ctx, mediaGroup)
 		if err != nil {
 			return nil, oops.Wrapf(err, "failed to send media group")
 		}

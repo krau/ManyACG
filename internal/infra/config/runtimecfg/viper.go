@@ -24,7 +24,6 @@ type Config struct {
 	API        apiConfig        `toml:"api" mapstructure:"api" json:"api" yaml:"api"`
 	Auth       authConfig       `toml:"auth" mapstructure:"auth" json:"auth" yaml:"auth"`
 	Log        logConfig        `toml:"log" mapstructure:"log" json:"log" yaml:"log"`
-	Telegram   TelegramConfig   `toml:"telegram" mapstructure:"telegram" json:"telegram" yaml:"telegram"`
 	HttpClient HttpClientConfig `toml:"http_client" mapstructure:"http_client" json:"http_client" yaml:"http_client"`
 
 	// infrastructures config
@@ -34,6 +33,16 @@ type Config struct {
 	Database databaseConfig `toml:"database" mapstructure:"database" json:"database" yaml:"database"`
 	Source   SourceConfig   `toml:"source" mapstructure:"source" json:"source" yaml:"source"`
 	Storage  StorageConfig  `toml:"storage" mapstructure:"storage" json:"storage" yaml:"storage"`
+
+	// interfaces
+	Telegram  TelegramConfig  `toml:"telegram" mapstructure:"telegram" json:"telegram" yaml:"telegram"`
+	Scheduler SchedulerConfig `toml:"scheduler" mapstructure:"scheduler" json:"scheduler" yaml:"scheduler"`
+}
+
+type SchedulerConfig struct {
+	Enable   bool `toml:"enable" mapstructure:"enable" json:"enable" yaml:"enable"`
+	Interval uint `toml:"interval" mapstructure:"interval" json:"interval" yaml:"interval"`
+	Limit    int  `toml:"limit" mapstructure:"limit" json:"limit" yaml:"limit"` // 0 or negative means no limit
 }
 
 type AppConfig struct {
@@ -154,11 +163,6 @@ func loadConfig() Config {
 	c := Config{}
 	if err := viper.Unmarshal(&c); err != nil {
 		fmt.Printf("error when unmarshal config: %s\n", err)
-		os.Exit(1)
-	}
-
-	if len(c.Telegram.Admins) == 0 {
-		fmt.Println("please set at least one admin in config file (telegram.admins)")
 		os.Exit(1)
 	}
 	return c

@@ -88,7 +88,7 @@ func PostArtworkCallbackQuery(ctx *telegohandler.Context, query telego.CallbackQ
 	}
 	meta := metautil.FromContext(ctx)
 	if meta.ChannelAvailable() {
-		if err := utils.PostAndCreateArtwork(ctx, serv, artwork, query.Message.GetChat().ChatID(), meta.ChannelChatID(), query.Message.GetMessageID()); err != nil {
+		if err := utils.PostAndCreateArtwork(ctx, ctx.Bot(), serv, artwork, query.Message.GetChat().ChatID(), meta.ChannelChatID(), query.Message.GetMessageID()); err != nil {
 			log.Errorf("failed to post and create artwork: %s", err)
 			ctx.Bot().EditMessageCaption(ctx, &telego.EditMessageCaptionParams{
 				ChatID:    telegoutil.ID(query.Message.GetChat().ID),
@@ -167,7 +167,7 @@ func PostArtworkCommand(ctx *telegohandler.Context, message telego.Message) erro
 
 	meta := metautil.FromContext(ctx)
 	if meta.ChannelAvailable() {
-		if err := utils.PostAndCreateArtwork(ctx, serv, artwork, message.GetChat().ChatID(), meta.ChannelChatID(), message.MessageID); err != nil {
+		if err := utils.PostAndCreateArtwork(ctx, ctx.Bot(), serv, artwork, message.GetChat().ChatID(), meta.ChannelChatID(), message.MessageID); err != nil {
 			utils.ReplyMessage(ctx, message, "发布失败: "+err.Error())
 			return nil
 		}

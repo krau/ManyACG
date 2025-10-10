@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 
+	"github.com/krau/ManyACG/internal/model/converter"
 	"github.com/krau/ManyACG/internal/model/entity"
 	"github.com/krau/ManyACG/internal/shared"
 	"gorm.io/datatypes"
@@ -25,36 +26,7 @@ func (s *Service) GetOrFetchCachedArtwork(ctx context.Context, sourceURL string)
 	if err != nil {
 		return nil, err
 	}
-	pics := make([]*entity.CachedPicture, len(fetched.Pictures))
-	for i, pic := range fetched.Pictures {
-		pics[i] = &entity.CachedPicture{
-			OrderIndex: pic.Index,
-			Thumbnail:  pic.Thumbnail,
-			Original:   pic.Original,
-			Width:      pic.Width,
-			Height:     pic.Height,
-		}
-	}
-	ent := &entity.CachedArtwork{
-		SourceURL: sourceURL,
-		Status:    shared.ArtworkStatusCached,
-		Artwork: datatypes.NewJSONType(&entity.CachedArtworkData{
-			Title:       fetched.Title,
-			Description: fetched.Description,
-			R18:         fetched.R18,
-			Tags:        fetched.Tags,
-			SourceURL:   sourceURL,
-			SourceType:  fetched.SourceType,
-			Artist: &entity.CachedArtist{
-				Name:     fetched.Artist.Name,
-				UID:      fetched.Artist.UID,
-				Type:     fetched.Artist.Type,
-				Username: fetched.Artist.Username,
-			},
-			Pictures: pics,
-			Version:  1,
-		}),
-	}
+	ent := converter.DtoFetchedArtworkToEntityCached(fetched)
 	created, err := s.repos.CachedArtwork().CreateCachedArtwork(ctx, ent)
 	if err != nil {
 		return nil, err
@@ -84,6 +56,10 @@ func (s *Service) UpdateCachedArtwork(ctx context.Context, data *entity.CachedAr
 	cachedArt.Artwork = datatypes.NewJSONType(data)
 	_, err = s.repos.CachedArtwork().SaveCachedArtwork(ctx, cachedArt)
 	return err
+}
+
+func (s *Service) CreateCachedArtwork(ctx context.Context, ent *entity.CachedArtwork) (*entity.CachedArtwork, error) {
+	return s.repos.CachedArtwork().CreateCachedArtwork(ctx, ent)
 }
 
 func (s *Service) HideCachedArtworkPicture(ctx context.Context, cachedArt *entity.CachedArtwork, picIndex int) error {

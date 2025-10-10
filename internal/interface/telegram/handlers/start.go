@@ -95,7 +95,7 @@ func Start(ctx *telegohandler.Context, message telego.Message) error {
 			artwork, err := serv.GetArtworkByURL(ctx, sourceURL)
 			if err == nil {
 				// 已经发布过了
-				msgs, err := utils.SendArtworkMediaGroup(ctx, message.Chat.ChatID(), artwork)
+				msgs, err := utils.SendArtworkMediaGroup(ctx, ctx.Bot(), message.Chat.ChatID(), artwork)
 				if err != nil {
 					utils.ReplyMessage(ctx, message, "发送作品信息失败")
 					return oops.Wrapf(err, "failed to send artwork media group")
@@ -120,7 +120,7 @@ func Start(ctx *telegohandler.Context, message telego.Message) error {
 				utils.ReplyMessage(ctx, message, "获取作品信息失败")
 				return oops.Wrapf(err, "failed to get or fetch cached artwork by url: %s", sourceURL)
 			}
-			msgs, err := utils.SendArtworkMediaGroup(ctx, message.Chat.ChatID(), cached)
+			msgs, err := utils.SendArtworkMediaGroup(ctx, ctx.Bot(), message.Chat.ChatID(), cached)
 			if err != nil {
 				utils.ReplyMessage(ctx, message, "发送作品信息失败")
 				return oops.Wrapf(err, "failed to send cached artwork media group")

@@ -1,5 +1,13 @@
 package telegram
 
+import (
+	"context"
+
+	"github.com/krau/ManyACG/internal/model/entity"
+	"github.com/krau/ManyACG/internal/service"
+	"github.com/krau/ManyACG/pkg/log"
+)
+
 // import (
 // 	"context"
 
@@ -59,3 +67,8 @@ package telegram
 // func (t *Telegram) ChannelChatID() telego.ChatID {
 // 	return ChannelChatID
 // }
+
+func (b *BotApp) PostAndCreateArtwork(ctx context.Context, serv *service.Service, artwork *entity.CachedArtworkData) error {
+	log.Debugf("telegram: posting artwork %s", artwork.SourceURL) // [TODO] IMPL
+	return nil
+}

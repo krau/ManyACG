@@ -2,11 +2,15 @@ package pixiv
 
 import (
 	"context"
+	"encoding/xml"
+	"strings"
+	"time"
 
 	"github.com/goccy/go-json"
 	"github.com/imroc/req/v3"
 	"github.com/samber/oops"
 
+	"github.com/krau/ManyACG/internal/model/dto"
 	"github.com/krau/ManyACG/pkg/reutil"
 )
 
@@ -89,39 +93,35 @@ func reqIllustPages(ctx context.Context, sourceURL string, client *req.Client) (
 // 	return nil
 // }
 
-// func fetchNewArtworksForRSSURL(rssURL string, limit int) ([]*types.Artwork, error) {
-// 	resp, err := reqClient.R().Get(rssURL)
-// 	if err != nil {
-// 		return nil, err
-// 	}
+func (p *Pixiv) fetchNewArtworksForRSSURL(ctx context.Context, rssURL string, limit int) ([]*dto.FetchedArtwork, error) {
+	resp, err := p.reqClient.R().SetContext(ctx).Get(rssURL)
+	if err != nil {
+		return nil, err
+	}
 
-// 	var pixivRss *PixivRss
-// 	err = xml.NewDecoder(strings.NewReader(resp.String())).Decode(&pixivRss)
-// 	if err != nil {
-// 		return nil, err
-// 	}
+	var pixivRss *PixivRss
+	err = xml.NewDecoder(strings.NewReader(resp.String())).Decode(&pixivRss)
+	if err != nil {
+		return nil, err
+	}
 
-// 	artworks := make([]*types.Artwork, 0)
-// 	for i, item := range pixivRss.Channel.Items {
-// 		if i >= limit {
-// 			break
-// 		}
-// 		artworkInDB, _ := service.GetArtworkByURL(context.TODO(), item.Link)
-// 		if artworkInDB != nil {
-// 			continue
-// 		}
-// 		ajaxResp, err := reqAjaxResp(item.Link)
-// 		if err != nil {
-// 			continue
-// 		}
-// 		artwork, err := ajaxResp.ToArtwork()
-// 		if err != nil {
-// 			continue
-// 		}
-// 		artworks = append(artworks, artwork)
-// 		if config.Get().Source.Pixiv.Sleep > 0 {
-// 			time.Sleep(time.Duration(config.Get().Source.Pixiv.Sleep) * time.Second)
-// 		}
-// 	}
-// 	return artworks, nil
-// }
+	artworks := make([]*dto.FetchedArtwork, 0)
+	for i, item := range pixivRss.Channel.Items {
+		if i >= limit {
+			break
+		}
+		ajaxResp, err := reqAjaxResp(ctx, item.Link, p.reqClient)
+		if err != nil {
+			continue
+		}
+		artwork, err := ajaxResp.ToArtwork(ctx, p.reqClient, p.cfg.Proxy)
+		if err != nil {
+			continue
+		}
+		artworks = append(artworks, artwork)
+		if p.cfg.Sleep > 0 {
+			time.Sleep(time.Duration(p.cfg.Sleep) * time.Second)
+		}
+	}
+	return artworks, nil
+}

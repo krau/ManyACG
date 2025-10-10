@@ -2,17 +2,18 @@ package service
 
 import (
 	"context"
+	"maps"
 	"strings"
 
-	"github.com/krau/ManyACG/internal/infra/storage"
+	"github.com/krau/ManyACG/internal/infra/source"
 	"github.com/krau/ManyACG/internal/model/dto"
 	"github.com/krau/ManyACG/internal/shared"
 	"github.com/krau/ManyACG/pkg/strutil"
 	"github.com/samber/oops"
 )
 
-func (s *Service) Source(sourceType shared.SourceType) storage.Storage {
-	return s.storages[shared.StorageType(sourceType)]
+func (s *Service) Source(sourceType shared.SourceType) source.ArtworkSource {
+	return s.sources[sourceType]
 }
 
 func (s *Service) FindSourceURL(text string) string {
@@ -42,4 +43,8 @@ func (s *Service) PrettyFileName(artwork shared.ArtworkLike, picture shared.Pict
 	}
 	ext, _ := strutil.GetFileExtFromURL(picture.GetOriginal())
 	return strings.ToLower(strutil.MD5Hash(picture.GetOriginal())) + ext
+}
+
+func (s *Service) Sources() map[shared.SourceType]source.ArtworkSource {
+	return maps.Clone(s.sources)
 }

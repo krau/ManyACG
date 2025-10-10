@@ -43,20 +43,19 @@ func init() {
 }
 
 func (p *Pixiv) FetchNewArtworks(ctx context.Context, limit int) ([]*dto.FetchedArtwork, error) {
-	// artworks := make([]*types.Artwork, 0)
-	// errs := make([]error, 0)
-	// for _, url := range config.Get().Source.Pixiv.URLs {
-	// 	artworksForURL, err := fetchNewArtworksForRSSURL(url, limit)
-	// 	if err != nil {
-	// 		errs = append(errs, err)
-	// 	}
-	// 	artworks = append(artworks, artworksForURL...)
-	// }
-	// if len(errs) > 0 {
-	// 	return artworks, fmt.Errorf("fetching pixiv encountered %d errors: %v", len(errs), errs)
-	// }
-	// return artworks, nil
-	panic("not implemented")
+	artworks := make([]*dto.FetchedArtwork, 0)
+	errs := make([]error, 0)
+	for _, url := range p.cfg.URLs {
+		artworksForURL, err := p.fetchNewArtworksForRSSURL(ctx, url, limit)
+		if err != nil {
+			errs = append(errs, err)
+		}
+		artworks = append(artworks, artworksForURL...)
+	}
+	if len(errs) > 0 {
+		return artworks, fmt.Errorf("fetching pixiv encountered %d errors: %v", len(errs), errs)
+	}
+	return artworks, nil
 }
 
 func (p *Pixiv) GetArtworkInfo(ctx context.Context, sourceURL string) (*dto.FetchedArtwork, error) {

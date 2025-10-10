@@ -3,6 +3,8 @@ package converter
 import (
 	"github.com/krau/ManyACG/internal/model/dto"
 	"github.com/krau/ManyACG/internal/model/entity"
+	"github.com/krau/ManyACG/internal/shared"
+	"gorm.io/datatypes"
 )
 
 func EntityArtworkToDtoEventItem(ent *entity.Artwork) *dto.ArtworkEventItem {
@@ -61,4 +63,38 @@ func DtoArtworkEventItemToSearchDocument(item *dto.ArtworkEventItem) *dto.Artwor
 		Tags:        item.Tags,
 		R18:         item.R18,
 	}
+}
+
+func DtoFetchedArtworkToEntityCached(art *dto.FetchedArtwork) *entity.CachedArtwork {
+	pics := make([]*entity.CachedPicture, len(art.Pictures))
+	for i, pic := range art.Pictures {
+		pics[i] = &entity.CachedPicture{
+			OrderIndex: pic.Index,
+			Thumbnail:  pic.Thumbnail,
+			Original:   pic.Original,
+			Width:      pic.Width,
+			Height:     pic.Height,
+		}
+	}
+	ent := &entity.CachedArtwork{
+		SourceURL: art.SourceURL,
+		Status:    shared.ArtworkStatusCached,
+		Artwork: datatypes.NewJSONType(&entity.CachedArtworkData{
+			Title:       art.Title,
+			Description: art.Description,
+			R18:         art.R18,
+			Tags:        art.Tags,
+			SourceURL:   art.SourceURL,
+			SourceType:  art.SourceType,
+			Artist: &entity.CachedArtist{
+				Name:     art.Artist.Name,
+				UID:      art.Artist.UID,
+				Type:     art.Artist.Type,
+				Username: art.Artist.Username,
+			},
+			Pictures: pics,
+			Version:  1,
+		}),
+	}
+	return ent
 }

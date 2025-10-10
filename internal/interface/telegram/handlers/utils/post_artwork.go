@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"context"
 	"fmt"
 	"image"
 
@@ -14,13 +15,13 @@ import (
 	"github.com/krau/ManyACG/pkg/log"
 	"github.com/krau/ManyACG/pkg/strutil"
 	"github.com/mymmrac/telego"
-	"github.com/mymmrac/telego/telegohandler"
 	"github.com/mymmrac/telego/telegoutil"
 	"github.com/samber/oops"
 )
 
 func doPostAndCreateArtwork(
-	ctx *telegohandler.Context,
+	ctx context.Context,
+	bot *telego.Bot,
 	serv *service.Service,
 	artwork *entity.CachedArtworkData,
 	fromChatID telego.ChatID,
@@ -36,7 +37,7 @@ func doPostAndCreateArtwork(
 	}
 	showProgress := (fromChatID.ID != 0 || fromChatID.Username != "") && messageID != 0
 	if showProgress {
-		ctx.Bot().EditMessageReplyMarkup(ctx, telegoutil.EditMessageReplyMarkup(
+		bot.EditMessageReplyMarkup(ctx, telegoutil.EditMessageReplyMarkup(
 			fromChatID,
 			messageID,
 			telegoutil.InlineKeyboard([]telego.InlineKeyboardButton{
@@ -46,6 +47,7 @@ func doPostAndCreateArtwork(
 	}
 
 	for i, pic := range artwork.Pictures {
+		// 下载并存储图片, 同时计算 phash, thumbhash, width, height
 		err = func() error {
 			file, clean, err := httpclient.DownloadWithCache(ctx, pic.Original, nil)
 			if err != nil {
@@ -101,8 +103,9 @@ func doPostAndCreateArtwork(
 			return err
 		}
 	}
+
 	if showProgress {
-		ctx.Bot().EditMessageReplyMarkup(ctx, telegoutil.EditMessageReplyMarkup(
+		bot.EditMessageReplyMarkup(ctx, telegoutil.EditMessageReplyMarkup(
 			fromChatID,
 			messageID,
 			telegoutil.InlineKeyboard([]telego.InlineKeyboardButton{
@@ -110,7 +113,7 @@ func doPostAndCreateArtwork(
 			}),
 		))
 	}
-	msgs, err := SendArtworkMediaGroup(ctx, toChatID, artwork)
+	msgs, err := SendArtworkMediaGroup(ctx, bot, toChatID, artwork)
 	if err != nil {
 		return oops.Wrapf(err, "failed to send artwork media group")
 	}
@@ -170,7 +173,8 @@ func doPostAndCreateArtwork(
 }
 
 type postArtworkJob struct {
-	ctx        *telegohandler.Context
+	ctx        context.Context
+	bot        *telego.Bot
 	serv       *service.Service
 	artwork    *entity.CachedArtworkData
 	fromChatID telego.ChatID
@@ -196,7 +200,7 @@ func init() {
 
 func artworkPoster(id int) {
 	for j := range postArtworkTaskQueue {
-		err := doPostAndCreateArtwork(j.ctx, j.serv, j.artwork, j.fromChatID, j.toChatID, j.messageID)
+		err := doPostAndCreateArtwork(j.ctx, j.bot, j.serv, j.artwork, j.fromChatID, j.toChatID, j.messageID)
 		if j.done != nil {
 			j.done <- err
 		}
@@ -204,7 +208,8 @@ func artworkPoster(id int) {
 }
 
 func PostAndCreateArtwork(
-	ctx *telegohandler.Context,
+	ctx context.Context,
+	bot *telego.Bot,
 	serv *service.Service,
 	artwork *entity.CachedArtworkData,
 	fromChatID telego.ChatID,
@@ -214,6 +219,7 @@ func PostAndCreateArtwork(
 	done := make(chan error, 1)
 	postArtworkTaskQueue <- &postArtworkJob{
 		ctx:        ctx,
+		bot:        bot,
 		serv:       serv,
 		artwork:    artwork,
 		fromChatID: fromChatID,

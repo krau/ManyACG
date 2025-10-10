@@ -18,6 +18,7 @@ import (
 	"github.com/krau/ManyACG/internal/infra/source"
 	"github.com/krau/ManyACG/internal/infra/storage"
 	"github.com/krau/ManyACG/internal/infra/tagging"
+	"github.com/krau/ManyACG/internal/interface/scheduler"
 	"github.com/krau/ManyACG/internal/interface/telegram"
 	"github.com/krau/ManyACG/internal/model/converter"
 	"github.com/krau/ManyACG/internal/model/dto"
@@ -104,6 +105,9 @@ func Run() {
 		log.Fatal(err)
 	}
 	go botapp.Run(ctx, serv)
+	if runtimecfg.Get().Scheduler.Enable {
+		go scheduler.StartPoster(ctx, botapp, serv)
+	}
 
 	log.Info("ManyACG is running !")
 

@@ -21,11 +21,15 @@ import (
 )
 
 type BotApp struct {
-	Bot              *telego.Bot
+	bot              *telego.Bot
 	botUsername      string // 没有 @
 	channelChatID    telego.ChatID
 	groupChatID      telego.ChatID // 附属群组
 	channelAvailable bool          // 是否可以发布到频道
+}
+
+func (app *BotApp) Bot() *telego.Bot {
+	return app.bot
 }
 
 func Init(ctx context.Context, serv *service.Service) (*BotApp, error) {
@@ -163,7 +167,7 @@ func Init(ctx context.Context, serv *service.Service) (*BotApp, error) {
 	}()
 
 	return &BotApp{
-		Bot:              bot,
+		bot:              bot,
 		channelChatID:    channelChatID,
 		groupChatID:      groupChatID,
 		botUsername:      botUsername,
@@ -173,7 +177,7 @@ func Init(ctx context.Context, serv *service.Service) (*BotApp, error) {
 
 func (app *BotApp) Run(ctx context.Context, serv *service.Service) {
 	log.Info("Start polling")
-	updates, err := app.Bot.UpdatesViaLongPolling(ctx, &telego.GetUpdatesParams{
+	updates, err := app.Bot().UpdatesViaLongPolling(ctx, &telego.GetUpdatesParams{
 		Offset: -1,
 		AllowedUpdates: []string{
 			telego.MessageUpdates,
@@ -186,7 +190,7 @@ func (app *BotApp) Run(ctx context.Context, serv *service.Service) {
 		log.Fatalf("Error when getting updates: %s", err)
 	}
 
-	botHandler, err := telegohandler.NewBotHandler(app.Bot, updates)
+	botHandler, err := telegohandler.NewBotHandler(app.Bot(), updates)
 	if err != nil {
 		log.Fatalf("Error when creating bot handler: %s", err)
 	}
