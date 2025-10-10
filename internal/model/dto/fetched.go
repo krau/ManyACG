@@ -14,6 +14,7 @@ type FetchedArtwork struct {
 	Artist   *FetchedArtist    `json:"artist"`
 	Tags     []string          `json:"tags"`
 	Pictures []*FetchedPicture `json:"pictures"`
+	Ugoira   *UgoiraMetaData   `json:"ugoira,omitempty"`
 }
 
 type FetchedArtist struct {
@@ -112,3 +113,5 @@ func (f *FetchedPicture) GetThumbnail() string {
 
 var _ shared.ArtworkLike = (*FetchedArtwork)(nil)
 var _ shared.PictureLike = (*FetchedPicture)(nil)
+
+type UgoiraMetaData = shared.UgoiraMetaData // 暂时没别的差异

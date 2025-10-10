@@ -17,6 +17,7 @@ import (
 	"github.com/mymmrac/telego"
 	"github.com/mymmrac/telego/telegoutil"
 	"github.com/samber/oops"
+	"gorm.io/datatypes"
 )
 
 func doPostAndCreateArtwork(
@@ -103,6 +104,22 @@ func doPostAndCreateArtwork(
 			return err
 		}
 	}
+	if artwork.UgoiraMeta != nil {
+		// 处理 ugoira 的 original
+		origZip := artwork.UgoiraMeta.UgoiraMetaData.Data().OriginalZip
+		file, clean, err := httpclient.DownloadWithCache(ctx, origZip, nil)
+		if err != nil {
+			return oops.Wrapf(err, "failed to download ugoira original zip")
+		}
+		defer file.Close()
+		defer clean()
+		filename := fmt.Sprintf("%s.zip", strutil.MD5Hash(origZip))
+		info, err := serv.StorageSaveOriginal(ctx, file, fmt.Sprintf("/%s/%s/ugoira", artwork.SourceType, artwork.Artist.UID), filename)
+		if err != nil {
+			return oops.Wrapf(err, "failed to save ugoira original zip")
+		}
+		artwork.UgoiraMeta.OriginalStorage = datatypes.NewJSONType(*info)
+	}
 
 	if showProgress {
 		bot.EditMessageReplyMarkup(ctx, telegoutil.EditMessageReplyMarkup(
@@ -147,6 +164,15 @@ func doPostAndCreateArtwork(
 		},
 		SourceURL: artwork.SourceURL,
 		Tags:      artwork.Tags,
+		Ugoira: func() *command.ArtworkUgoiraCreation {
+			if artwork.UgoiraMeta == nil {
+				return nil
+			}
+			return &command.ArtworkUgoiraCreation{
+				Data:            artwork.UgoiraMeta.UgoiraMetaData.Data(),
+				OriginalStorage: artwork.UgoiraMeta.OriginalStorage.Data(),
+			}
+		}(),
 		Pictures: func() []command.ArtworkPictureCreation {
 			pics := make([]command.ArtworkPictureCreation, len(artwork.Pictures))
 			for i, pic := range artwork.Pictures {
@@ -158,8 +184,8 @@ func doPostAndCreateArtwork(
 					Height:       pic.Height,
 					Phash:        pic.Phash,
 					ThumbHash:    pic.ThumbHash,
-					TelegramInfo: &pic.TelegramInfo,
-					StorageInfo:  &pic.StorageInfo,
+					TelegramInfo: pic.TelegramInfo,
+					StorageInfo:  pic.StorageInfo,
 				}
 			}
 			return pics

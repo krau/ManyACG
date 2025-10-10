@@ -70,3 +70,23 @@ func (p *Picture) BeforeCreate(tx *gorm.DB) (err error) {
 	}
 	return
 }
+
+type UgoiraMeta struct {
+	ID        objectuuid.ObjectUUID `gorm:"primaryKey;type:uuid" json:"id"`
+	ArtworkID objectuuid.ObjectUUID `gorm:"type:uuid;index" json:"artwork_id"`
+	Artwork   *Artwork              `gorm:"foreignKey:ArtworkID;references:ID;constraint:OnDelete:CASCADE" json:"-"`
+
+	Data datatypes.JSONType[shared.UgoiraMetaData] `json:"data"`
+
+	CreatedAt time.Time `gorm:"autoCreateTime" json:"created_at"`
+	UpdatedAt time.Time `gorm:"autoUpdateTime" json:"updated_at"`
+
+	OriginalStorage datatypes.JSONType[shared.StorageDetail] `json:"original_storage"`
+}
+
+func (u *UgoiraMeta) BeforeCreate(tx *gorm.DB) (err error) {
+	if u.ID == objectuuid.Nil {
+		u.ID = objectuuid.New()
+	}
+	return
+}

@@ -126,3 +126,22 @@ func (s *Service) StorageSaveAllSize(ctx context.Context, file *os.File, storDir
 		Thumb:    thumbDetail,
 	}, nil
 }
+
+func (s *Service) StorageSaveOriginal(ctx context.Context, file *os.File, storDirPath, fileName string) (*shared.StorageDetail, error) {
+	if len(s.storages) == 0 {
+		return nil, oops.New("no storage configured")
+	}
+	if s.storCfg.OriginalType == "" {
+		return nil, oops.New("no original storage configured")
+	}
+	origStor := s.storages[shared.StorageType(s.storCfg.OriginalType)]
+	if origStor == nil {
+		return nil, oops.Errorf("original storage type %s not found", s.storCfg.OriginalType)
+	}
+	origPath := path.Join(storDirPath, fileName)
+	originalDetail, err := origStor.Save(ctx, file, origPath)
+	if err != nil {
+		return nil, oops.Wrapf(err, "failed to save original file to storage %s", s.storCfg.OriginalType)
+	}
+	return originalDetail, nil
+}

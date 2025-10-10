@@ -20,11 +20,17 @@ type CachedArtworkData struct {
 	SourceType  shared.SourceType `json:"source_type"`
 	SourceURL   string            `json:"source_url"`
 
-	Artist   *CachedArtist    `json:"artist"`
-	Tags     []string         `json:"tags"`
-	Pictures []*CachedPicture `json:"pictures"`
+	Artist     *CachedArtist         `json:"artist"`
+	Tags       []string              `json:"tags"`
+	Pictures   []*CachedPicture      `json:"pictures"`
+	UgoiraMeta *CachedUgoiraMetaData `json:"ugoira,omitempty"`
 
 	Version int `json:"version"` // for future schema changes
+}
+
+type CachedUgoiraMetaData struct {
+	UgoiraMetaData  datatypes.JSONType[shared.UgoiraMetaData] `json:"data"`
+	OriginalStorage datatypes.JSONType[shared.StorageDetail]  `json:"original_storage"`
 }
 
 // GetArtistName implements ArtworkLike.

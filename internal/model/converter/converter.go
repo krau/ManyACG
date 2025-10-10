@@ -76,6 +76,12 @@ func DtoFetchedArtworkToEntityCached(art *dto.FetchedArtwork) *entity.CachedArtw
 			Height:     pic.Height,
 		}
 	}
+	ugoira := &entity.CachedUgoiraMetaData{}
+	if art.Ugoira != nil {
+		ugoira = &entity.CachedUgoiraMetaData{
+			UgoiraMetaData: datatypes.NewJSONType(*art.Ugoira),
+		}
+	}
 	ent := &entity.CachedArtwork{
 		SourceURL: art.SourceURL,
 		Status:    shared.ArtworkStatusCached,
@@ -92,8 +98,9 @@ func DtoFetchedArtworkToEntityCached(art *dto.FetchedArtwork) *entity.CachedArtw
 				Type:     art.Artist.Type,
 				Username: art.Artist.Username,
 			},
-			Pictures: pics,
-			Version:  1,
+			Pictures:   pics,
+			UgoiraMeta: ugoira,
+			Version:    1,
 		}),
 	}
 	return ent

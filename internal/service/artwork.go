@@ -102,11 +102,19 @@ func (s *Service) CreateArtwork(ctx context.Context, cmd *command.ArtworkCreatio
 				Height:       pic.Height,
 				Phash:        pic.Phash,
 				ThumbHash:    pic.ThumbHash,
-				TelegramInfo: datatypes.NewJSONType(*pic.TelegramInfo),
-				StorageInfo:  datatypes.NewJSONType(*pic.StorageInfo),
+				TelegramInfo: datatypes.NewJSONType(pic.TelegramInfo),
+				StorageInfo:  datatypes.NewJSONType(pic.StorageInfo),
 			})
 		}
 		awEnt.Pictures = pics
+		if cmd.Ugoira != nil {
+			ugoiraData := &entity.UgoiraMeta{
+				Data:            datatypes.NewJSONType(cmd.Ugoira.Data),
+				OriginalStorage: datatypes.NewJSONType(cmd.Ugoira.OriginalStorage),
+			}
+			awEnt.UgoiraMeta = ugoiraData
+		}
+
 		_, err = repos.Artwork().CreateArtwork(ctx, awEnt)
 		if err != nil {
 			return err

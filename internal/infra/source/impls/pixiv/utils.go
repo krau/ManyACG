@@ -90,6 +90,33 @@ func reqIllustPages(ctx context.Context, sourceURL string, client *req.Client) (
 	return resp, nil
 }
 
+func doReqUgoiraMeta(ctx context.Context, sourceURL string, client *req.Client) (*PixivUgoiraMeta, error) {
+	ajaxURL := "https://www.pixiv.net/ajax/illust/" + getPid(sourceURL) + "/ugoira_meta?lang=zh"
+	resp, err := client.R().SetContext(ctx).Get(ajaxURL)
+	if err != nil {
+		return nil, err
+	}
+	var pixivUgoiraMeta PixivUgoiraMeta
+	err = json.Unmarshal(resp.Bytes(), &pixivUgoiraMeta)
+	if err != nil {
+		return nil, err
+	}
+	return &pixivUgoiraMeta, nil
+}
+
+func reqUgoiraMeta(ctx context.Context, sourceURL string, client *req.Client) (*PixivUgoiraMeta, error) {
+	value, err := cache.Get[PixivUgoiraMeta](ctx, cacheKeyForIllustPages(sourceURL)+"-ugoira")
+	if err == nil {
+		return &value, nil
+	}
+	resp, err := doReqUgoiraMeta(ctx, sourceURL, client)
+	if err != nil {
+		return nil, err
+	}
+	cache.Set(ctx, cacheKeyForIllustPages(sourceURL)+"-ugoira", *resp)
+	return resp, nil
+}
+
 func (p *Pixiv) fetchNewArtworksForRSSURL(ctx context.Context, rssURL string, limit int) ([]*dto.FetchedArtwork, error) {
 	resp, err := p.reqClient.R().SetContext(ctx).Get(rssURL)
 	if err != nil {

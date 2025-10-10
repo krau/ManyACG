@@ -14,6 +14,7 @@ type ArtworkCreation struct {
 	Tags []string
 
 	Pictures []ArtworkPictureCreation
+	Ugoira   *ArtworkUgoiraCreation
 }
 
 type ArtworkArtistCreation struct {
@@ -32,6 +33,11 @@ type ArtworkPictureCreation struct {
 	Phash     string
 	ThumbHash string
 
-	TelegramInfo *shared.TelegramInfo
-	StorageInfo  *shared.StorageInfo
+	TelegramInfo shared.TelegramInfo
+	StorageInfo  shared.StorageInfo
+}
+
+type ArtworkUgoiraCreation struct {
+	Data            shared.UgoiraMetaData
+	OriginalStorage shared.StorageDetail
 }

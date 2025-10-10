@@ -45,7 +45,7 @@ type PixivAjaxResp struct {
 type PixivAjaxRespBody struct {
 	IllustId   string `json:"illustId"`
 	IlustTitle string `json:"illustTitle"`
-	IllustType int    `json:"illustType"`
+	IllustType int    `json:"illustType"` // 2: ugoira (动图) 0: 普通图片
 	Urls       struct {
 		Mini     string `json:"mini"`
 		Thumb    string `json:"thumb"`
@@ -91,13 +91,32 @@ type PixivIllustPagesBody struct {
 	Height int `json:"height"`
 }
 
+type PixivUgoiraMeta struct {
+	Error   bool                 `json:"error"`
+	Message string               `json:"message"`
+	Body    *PixivUgoiraMetaBody `json:"body"`
+}
+
+type PixivUgoiraMetaBody struct {
+	Src         string                 `json:"src"`
+	OriginalSrc string                 `json:"originalSrc"`
+	MimeType    string                 `json:"mimeType"`
+	Frames      []PixivUgoiraMetaFrame `json:"frames"`
+}
+
+type PixivUgoiraMetaFrame struct {
+	File  string `json:"file"`
+	Delay int    `json:"delay"`
+}
+
 var (
 	tagsSet             = map[string]bool{"R-18": true, "R-18G": true, "R18": true, "R18G": true}
 	bookmarksTagsSuffix = []string{"入り", "bookmarks", "0收藏", "+ users", "加入书籤"}
 	htmlRe              = regexp.MustCompile("<[^>]+>")
 )
 
-func (resp *PixivAjaxResp) ToArtwork(ctx context.Context,
+func (resp *PixivAjaxResp) ToArtwork(
+	ctx context.Context,
 	client *req.Client,
 	imgProxy string,
 ) (*dto.FetchedArtwork, error) {
@@ -116,8 +135,8 @@ func (resp *PixivAjaxResp) ToArtwork(ctx context.Context,
 	for i, page := range illustPages.Body {
 		pictures = append(pictures, &dto.FetchedPicture{
 			Index:     uint(i),
-			Thumbnail: strings.Replace(page.Urls.Small, "i.pximg.net", imgProxy, 1),
-			Original:  strings.Replace(page.Urls.Original, "i.pximg.net", imgProxy, 1),
+			Thumbnail: strings.Replace(page.Urls.Small, pixivImgDomain, imgProxy, 1),
+			Original:  strings.Replace(page.Urls.Original, pixivImgDomain, imgProxy, 1),
 			Width:     uint(page.Width),
 			Height:    uint(page.Height),
 		})
@@ -143,7 +162,7 @@ func (resp *PixivAjaxResp) ToArtwork(ctx context.Context,
 		return !strutil.HasSuffixAny(item, bookmarksTagsSuffix)
 	}))
 
-	return &dto.FetchedArtwork{
+	fetched := &dto.FetchedArtwork{
 		Title:       resp.Body.IlustTitle,
 		Description: htmlRe.ReplaceAllString(strings.ReplaceAll(resp.Body.Description, "<br />", "\n"), ""),
 		R18:         r18,
@@ -157,5 +176,36 @@ func (resp *PixivAjaxResp) ToArtwork(ctx context.Context,
 		},
 		Tags:     tags,
 		Pictures: pictures,
-	}, nil
+	}
+	if resp.Body.IllustType == 2 && len(illustPages.Body) == 1 {
+		// 动图
+		ugMeta, err := reqUgoiraMeta(ctx, fetched.SourceURL, client)
+		if err != nil {
+			return nil, err
+		}
+		if ugMeta.Error {
+			return nil, oops.Errorf("pixiv ugoira meta response error: %s", ugMeta.Message)
+		}
+		illustBody := illustPages.Body[0]
+		frames := make([]shared.UgoiraFrame, 0)
+		for _, frame := range ugMeta.Body.Frames {
+			frames = append(frames, shared.UgoiraFrame{
+				File:  frame.File,
+				Delay: frame.Delay,
+			})
+		}
+
+		ugoiraData := &dto.UgoiraMetaData{
+			PosterOriginal: strings.Replace(illustBody.Urls.Original, pixivImgDomain, imgProxy, 1),
+			PosterThumb:    strings.Replace(illustBody.Urls.Small, pixivImgDomain, imgProxy, 1),
+			Width:          illustBody.Width,
+			Height:         illustBody.Height,
+			OriginalZip:    strings.Replace(ugMeta.Body.OriginalSrc, pixivImgDomain, imgProxy, 1),
+			ThumbZip:       strings.Replace(ugMeta.Body.Src, pixivImgDomain, imgProxy, 1),
+			MimeType:       ugMeta.Body.MimeType,
+			Frames:         frames,
+		}
+		fetched.Ugoira = ugoiraData
+	}
+	return fetched, nil
 }
