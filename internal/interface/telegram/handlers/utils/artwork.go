@@ -27,7 +27,7 @@ func SendArtworkMediaGroup(ctx context.Context,
 	chatID telego.ChatID,
 	artwork shared.ArtworkLike) ([]telego.Message, error) {
 	pics := artwork.GetPictures()
-	caption := ArtworkHTMLCaption(metautil.FromContext(ctx), artwork)
+	caption := ArtworkHTMLCaption(artwork)
 	if len(pics) <= 10 {
 		inputs, err := ArtworkInputMediaPhotos(ctx, service.FromContext(ctx), artwork, caption, 0, len(pics))
 		if err != nil {
@@ -263,7 +263,7 @@ func SendArtworkInfo(ctx *telegohandler.Context,
 	if artwork == nil {
 		return oops.New("no artwork found")
 	}
-	caption := ArtworkHTMLCaption(meta, artwork)
+	caption := ArtworkHTMLCaption(artwork)
 	caption += fmt.Sprintf("\n<i>该作品共有%d张图片</i>", len(artwork.GetPictures()))
 	if deleted != nil {
 		caption += fmt.Sprintf("\n<i>这是一个在 %s 被标记为删除的作品, 如果发布会取消删除</i>", deleted.DeletedAt.Format("2006-01-02 15:04:05"))

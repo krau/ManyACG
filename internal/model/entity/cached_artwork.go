@@ -9,6 +9,9 @@ import (
 	"gorm.io/gorm"
 )
 
+var _ shared.ArtworkLike = (*CachedArtwork)(nil)
+var _ shared.ArtworkLike = (*CachedArtworkData)(nil)
+
 type CachedArtworkData struct {
 	ID          string            `json:"id"`
 	Title       string            `json:"title"`
@@ -71,6 +74,10 @@ func (c *CachedArtworkData) GetTitle() string {
 // GetR18 implements ArtworkLike.
 func (c *CachedArtworkData) GetR18() bool {
 	return c.R18
+}
+
+func (c *CachedArtworkData) GetID() string {
+	return c.ID
 }
 
 type CachedArtist struct {
@@ -173,6 +180,10 @@ func (c *CachedArtwork) GetTitle() string {
 
 func (c *CachedArtwork) GetR18() bool {
 	return c.Artwork.Data().GetR18()
+}
+
+func (c *CachedArtwork) GetID() string {
+	return c.ID.Hex()
 }
 
 func (c *CachedArtwork) BeforeCreate(tx *gorm.DB) (err error) {

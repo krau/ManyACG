@@ -10,7 +10,8 @@ type TelegramConfig struct {
 	Sleep    uint    `toml:"sleep" mapstructure:"sleep" json:"sleep" yaml:"sleep"`
 	GroupID  int64   `toml:"group_id" mapstructure:"group_id" json:"group_id" yaml:"group_id"`
 	// Chats []string       `toml:"chats" mapstructure:"chats" json:"chats" yaml:"chats"`
-	Retry BotRetryConfig `toml:"retry" mapstructure:"retry" json:"retry" yaml:"retry"`
+	Retry           BotRetryConfig `toml:"retry" mapstructure:"retry" json:"retry" yaml:"retry"`
+	CaptionTemplate string         `toml:"caption_template" mapstructure:"caption_template" json:"caption_template" yaml:"caption_template"`
 }
 
 type BotRetryConfig struct {

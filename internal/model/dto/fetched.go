@@ -37,6 +37,10 @@ func (f *FetchedPicture) IsHide() bool {
 	return false
 }
 
+func (f *FetchedArtwork) GetID() string {
+	return ""
+}
+
 // GetIndex implements shared.PictureLike.
 func (f *FetchedPicture) GetIndex() uint {
 	return f.Index

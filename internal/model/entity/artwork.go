@@ -9,6 +9,8 @@ import (
 	"gorm.io/gorm"
 )
 
+var _ shared.ArtworkLike = (*Artwork)(nil)
+
 type Artwork struct {
 	// keep ObjectID as 24-hex string
 	ID          objectuuid.ObjectUUID `gorm:"primaryKey;type:uuid" json:"id"`
@@ -82,6 +84,10 @@ func (a *Artwork) GetTitle() string {
 
 func (a *Artwork) GetR18() bool {
 	return a.R18
+}
+
+func (a *Artwork) GetID() string {
+	return a.ID.Hex()
 }
 
 func (a *Artwork) BeforeCreate(tx *gorm.DB) (err error) {

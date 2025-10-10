@@ -33,7 +33,7 @@ func InlineQuery(ctx *telegohandler.Context, inlineQuery telego.InlineQuery) err
 		}
 		pics := artwork.Artwork.Data().Pictures
 		results := make([]telego.InlineQueryResult, 0, min(len(pics), 48))
-		caption := utils.ArtworkHTMLCaption(meta, artwork)
+		caption := utils.ArtworkHTMLCaption(artwork)
 		wsrvUrl := runtimecfg.Get().Wsrv.URL
 		for _, picture := range pics {
 			if picture.TelegramInfo.PhotoFileID != "" {

@@ -132,7 +132,7 @@ func SetArtworkTags(ctx *telegohandler.Context, message telego.Message) error {
 		ctx.Bot().EditMessageCaption(ctx, &telego.EditMessageCaptionParams{
 			ChatID:    channelMeta.ChannelChatID(),
 			MessageID: msgId,
-			Caption:   utils.ArtworkHTMLCaption(channelMeta, artwork),
+			Caption:   utils.ArtworkHTMLCaption(artwork),
 			ParseMode: telego.ModeHTML,
 		})
 	}
@@ -254,7 +254,7 @@ func EditArtworkTitle(ctx *telegohandler.Context, message telego.Message) error 
 		ctx.Bot().EditMessageCaption(ctx, &telego.EditMessageCaptionParams{
 			ChatID:    meta.ChannelChatID(),
 			MessageID: msgId,
-			Caption:   utils.ArtworkHTMLCaption(meta, artwork),
+			Caption:   utils.ArtworkHTMLCaption(artwork),
 			ParseMode: telego.ModeHTML,
 		})
 	}
@@ -334,7 +334,7 @@ func ReCaptionArtwork(ctx *telegohandler.Context, message telego.Message) error 
 	ctx.Bot().EditMessageCaption(ctx, &telego.EditMessageCaptionParams{
 		ChatID:    meta.ChannelChatID(),
 		MessageID: artwork.Pictures[0].TelegramInfo.Data().MessageID,
-		Caption:   utils.ArtworkHTMLCaption(meta, artwork),
+		Caption:   utils.ArtworkHTMLCaption(artwork),
 		ParseMode: telego.ModeHTML,
 	})
 	utils.ReplyMessage(ctx, message, "已重新生成作品描述")
@@ -393,7 +393,7 @@ func AutoTaggingArtwork(ctx *telegohandler.Context, message telego.Message) erro
 	}
 	if msgId := newAw.Pictures[0].TelegramInfo.Data().MessageID; msgId != 0 {
 		meta := metautil.FromContext(ctx)
-		caption := utils.ArtworkHTMLCaption(meta, newAw)
+		caption := utils.ArtworkHTMLCaption(newAw)
 		ctx.Bot().EditMessageCaption(ctx, &telego.EditMessageCaptionParams{
 			ChatID:    meta.ChannelChatID(),
 			MessageID: msgId,

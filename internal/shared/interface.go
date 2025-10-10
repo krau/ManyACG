@@ -11,6 +11,7 @@ type PictureLike interface {
 }
 
 type ArtworkLike interface {
+	GetID() string
 	GetSourceURL() string
 	GetTitle() string
 	GetR18() bool

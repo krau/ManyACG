@@ -3,13 +3,16 @@ package utils
 import (
 	"fmt"
 	"html"
+	"html/template"
 	"strings"
 
 	"github.com/duke-git/lancet/v2/strutil"
+	"github.com/krau/ManyACG/internal/infra/config/runtimecfg"
 	"github.com/krau/ManyACG/internal/interface/telegram/metautil"
 	"github.com/krau/ManyACG/internal/model/entity"
 	"github.com/krau/ManyACG/internal/service"
 	"github.com/krau/ManyACG/internal/shared"
+	"github.com/krau/ManyACG/pkg/log"
 	"github.com/mymmrac/telego"
 	"github.com/mymmrac/telego/telegohandler"
 	"github.com/mymmrac/telego/telegoutil"
@@ -69,7 +72,74 @@ var tagCharsReplacer = strings.NewReplacer(
 	" ", "_",
 )
 
-func ArtworkHTMLCaption(meta *metautil.MetaData, artwork shared.ArtworkLike) string {
+const defaultArtworkTemplate = `
+<a href='{{.SourceURL}}'><b>{{.Title}}</b></a> / <b>{{.ArtistName}}</b>
+{{- if .Description }}
+<blockquote expandable=true>{{.Description}}</blockquote>
+{{- end }}
+{{- if .Tags }}
+<blockquote expandable=true>{{.Tags}}</blockquote>
+{{- end }}
+`
+
+type ArtworkCaptionData struct {
+	ID          string
+	SourceURL   string
+	Title       string
+	ArtistName  string
+	Description template.HTML
+	Tags        template.HTML
+}
+
+func ArtworkHTMLCaption(artwork shared.ArtworkLike) string {
+	tmplStr := defaultArtworkTemplate
+	if runtimecfg.Get().Telegram.CaptionTemplate != "" {
+		tmplStr = runtimecfg.Get().Telegram.CaptionTemplate
+	}
+	tmpl, err := template.New("artwork").Parse(tmplStr)
+	if err != nil {
+		log.Errorf("parse artwork caption template: %s", err)
+		return artworkHTMLCaptionFallback(artwork)
+	}
+
+	sourceUrl := artwork.GetSourceURL()
+	title := html.EscapeString(artwork.GetTitle())
+	artistName := html.EscapeString(artwork.GetArtistName())
+	description := html.EscapeString(strutil.Ellipsis(artwork.GetDescription(), 500))
+
+	tags := ""
+	for _, tag := range artwork.GetTags() {
+		if len(tags)+len(tag) > 200 {
+			break
+		}
+		tag = tagCharsReplacer.Replace(tag)
+		tag = strings.Trim(tag, "_")
+		tags += "#" + strings.TrimSpace(html.EscapeString(tag)) + " "
+	}
+
+	data := ArtworkCaptionData{
+		SourceURL:  sourceUrl,
+		Title:      title,
+		ArtistName: artistName,
+	}
+	if description != "" {
+		data.Description = template.HTML(description)
+	}
+	if tags != "" {
+		data.Tags = template.HTML(tags)
+	}
+	data.ID = artwork.GetID()
+
+	var sb strings.Builder
+	if err := tmpl.Execute(&sb, data); err != nil {
+		log.Errorf("execute artwork caption template: %s", err)
+		return artworkHTMLCaptionFallback(artwork)
+	}
+
+	return strings.TrimSpace(sb.String())
+}
+
+func artworkHTMLCaptionFallback(artwork shared.ArtworkLike) string {
 	tmpl := "<a href='%s'><b>%s</b></a> / <b>%s</b>"
 	sourceUrl := artwork.GetSourceURL()
 	title := html.EscapeString(artwork.GetTitle())
