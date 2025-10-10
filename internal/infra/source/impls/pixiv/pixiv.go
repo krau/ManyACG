@@ -9,6 +9,7 @@ import (
 	"github.com/krau/ManyACG/internal/infra/source"
 	"github.com/krau/ManyACG/internal/model/dto"
 	"github.com/krau/ManyACG/internal/shared"
+	"github.com/krau/ManyACG/pkg/log"
 	"github.com/krau/ManyACG/pkg/strutil"
 	"github.com/samber/oops"
 
@@ -35,6 +36,7 @@ func init() {
 			})
 		}
 		c := req.C().ImpersonateChrome().SetCommonCookies(cookies...)
+		c = c.SetLogger(log.Default()).EnableDebugLog().SetCommonRetryCount(3)
 		return &Pixiv{
 			cfg:       cfg,
 			reqClient: c,

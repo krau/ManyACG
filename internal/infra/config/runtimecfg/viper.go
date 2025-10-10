@@ -99,63 +99,6 @@ func loadConfig() Config {
 		viper.SetDefault(key, value)
 	}
 
-	// viper.SetDefault("api.address", "0.0.0.0:39080")
-	// viper.SetDefault("api.site_name", "ManyACG")
-	// viper.SetDefault("api.site_title", "ManyACG - ACG Picture Collection")
-	// viper.SetDefault("api.site_description", "Many illustrations and pictures of ACG")
-	// viper.SetDefault("api.allowed_origins", []string{"*"})
-	// viper.SetDefault("api.realm", "ManyACG")
-	// viper.SetDefault("api.token_expire", 86400*14)
-	// viper.SetDefault("api.refresh_token_expire", 86400*30)
-	// viper.SetDefault("api.geoip_db", "geoip.mmdb")
-
-	// viper.SetDefault("fetcher.max_concurrent", 5)
-	// viper.SetDefault("fetcher.limit", 50)
-
-	// viper.SetDefault("log.file_path", "logs/manyacg.log")
-	// viper.SetDefault("log.backup_num", 7)
-
-	// viper.SetDefault("source.pixiv.enable", true)
-	// viper.SetDefault("source.twitter.enable", true)
-	// viper.SetDefault("source.bilibili.enable", true)
-	// viper.SetDefault("source.danbooru.enable", true)
-	// viper.SetDefault("source.kemono.enable", true)
-	// viper.SetDefault("source.kemono.worker", 5)
-	// viper.SetDefault("source.yandere.enable", true)
-	// viper.SetDefault("source.nhentai.enable", true)
-	// viper.SetDefault("source.pixiv.intervel", 60)
-	// viper.SetDefault("source.pixiv.sleep", 1)
-	// viper.SetDefault("source.twitter.fx_twitter_domain", "fxtwitter.com")
-	// viper.SetDefault("source.twitter.sleep", 1)
-	// viper.SetDefault("source.twitter.intervel", 60)
-
-	// viper.SetDefault("storage.cache_dir", "./cache")
-	// viper.SetDefault("storage.cache_ttl", 86400)
-	// viper.SetDefault("storage.local.path", "./manyacg")
-	// viper.SetDefault("storage.alist.token_expire", 86400)
-	// viper.SetDefault("storage.regular_format", "webp")
-	// viper.SetDefault("storage.thumb_format", "webp")
-	// viper.SetDefault("storage.telegram.api_url", "https://api.telegram.org")
-
-	// viper.SetDefault("telegram.sleep", 3)
-	// viper.SetDefault("telegram.api_url", "https://api.telegram.org")
-	// viper.SetDefault("telegram.retry.max_attempts", 5)
-	// viper.SetDefault("telegram.retry.exponent_base", 2.0)
-	// viper.SetDefault("telegram.retry.start_delay", 3)
-	// viper.SetDefault("telegram.retry.max_delay", 300)
-
-	// viper.SetDefault("storage.telegram.api_url", "https://api.telegram.org")
-	// viper.SetDefault("storage.telegram.retry.max_attempts", 5)
-	// viper.SetDefault("storage.telegram.retry.exponent_base", 2.0)
-	// viper.SetDefault("storage.telegram.retry.start_delay", 3)
-	// viper.SetDefault("storage.telegram.retry.max_delay", 300)
-
-	// viper.SetDefault("database.database", "manyacg")
-	// viper.SetDefault("database.max_staleness", 120)
-
-	// viper.SetDefault("search.meilisearch.index", "manyacg")
-	// viper.SetDefault("search.meilisearch.embedder", "default")
-
 	if err := viper.ReadInConfig(); err != nil {
 		fmt.Printf("error when reading config: %s\n", err)
 		os.Exit(1)

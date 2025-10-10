@@ -3,13 +3,14 @@ package pixiv
 import (
 	"context"
 	"encoding/xml"
+	"fmt"
 	"strings"
-	"time"
 
 	"github.com/goccy/go-json"
 	"github.com/imroc/req/v3"
 	"github.com/samber/oops"
 
+	"github.com/krau/ManyACG/internal/infra/cache"
 	"github.com/krau/ManyACG/internal/model/dto"
 	"github.com/krau/ManyACG/pkg/reutil"
 )
@@ -23,7 +24,15 @@ func getPid(url string) string {
 	return id
 }
 
-func reqAjaxResp(ctx context.Context, sourceURL string, client *req.Client) (*PixivAjaxResp, error) {
+func cacheKeyForAjaxResp(sourceURL string) string {
+	return fmt.Sprintf("pixiv:reqAjaxResp:%s", sourceURL)
+}
+
+func cacheKeyForIllustPages(sourceURL string) string {
+	return fmt.Sprintf("pixiv:reqIllustPages:%s", sourceURL)
+}
+
+func doReqAjaxResp(ctx context.Context, sourceURL string, client *req.Client) (*PixivAjaxResp, error) {
 	id := getPid(sourceURL)
 	if id == "" {
 		return nil, oops.New("invalid pixiv URL, cannot find artwork ID")
@@ -41,7 +50,20 @@ func reqAjaxResp(ctx context.Context, sourceURL string, client *req.Client) (*Pi
 	return &pixivAjaxResp, nil
 }
 
-func reqIllustPages(ctx context.Context, sourceURL string, client *req.Client) (*PixivIllustPages, error) {
+func reqAjaxResp(ctx context.Context, sourceURL string, client *req.Client) (*PixivAjaxResp, error) {
+	value, err := cache.Get[PixivAjaxResp](ctx, cacheKeyForAjaxResp(sourceURL))
+	if err == nil {
+		return &value, nil
+	}
+	resp, err := doReqAjaxResp(ctx, sourceURL, client)
+	if err != nil {
+		return nil, err
+	}
+	cache.Set(ctx, cacheKeyForAjaxResp(sourceURL), *resp)
+	return resp, nil
+}
+
+func doReqIllustPages(ctx context.Context, sourceURL string, client *req.Client) (*PixivIllustPages, error) {
 	ajaxURL := "https://www.pixiv.net/ajax/illust/" + getPid(sourceURL) + "/pages?lang=zh"
 	resp, err := client.R().SetContext(ctx).Get(ajaxURL)
 	if err != nil {
@@ -55,43 +77,18 @@ func reqIllustPages(ctx context.Context, sourceURL string, client *req.Client) (
 	return &pixivIllustPages, nil
 }
 
-// func fetchNewArtworksForRSSURLWithCh(rssURL string, limit int, artworkCh chan *types.Artwork) error {
-// 	resp, err := reqClient.R().Get(rssURL)
-
-// 	if err != nil {
-// 		return err
-// 	}
-
-// 	var pixivRss *PixivRss
-// 	err = xml.NewDecoder(strings.NewReader(resp.String())).Decode(&pixivRss)
-
-// 	if err != nil {
-// 		return err
-// 	}
-
-// 	for i, item := range pixivRss.Channel.Items {
-// 		if i >= limit {
-// 			break
-// 		}
-// 		artworkInDB, _ := service.GetArtworkByURL(context.TODO(), item.Link)
-// 		if artworkInDB != nil {
-// 			continue
-// 		}
-// 		ajaxResp, err := reqAjaxResp(item.Link)
-// 		if err != nil {
-// 			continue
-// 		}
-// 		artwork, err := ajaxResp.ToArtwork()
-// 		if err != nil {
-// 			continue
-// 		}
-// 		artworkCh <- artwork
-// 		if config.Get().Source.Pixiv.Sleep > 0 {
-// 			time.Sleep(time.Duration(config.Get().Source.Pixiv.Sleep) * time.Second)
-// 		}
-// 	}
-// 	return nil
-// }
+func reqIllustPages(ctx context.Context, sourceURL string, client *req.Client) (*PixivIllustPages, error) {
+	value, err := cache.Get[PixivIllustPages](ctx, cacheKeyForIllustPages(sourceURL))
+	if err == nil {
+		return &value, nil
+	}
+	resp, err := doReqIllustPages(ctx, sourceURL, client)
+	if err != nil {
+		return nil, err
+	}
+	cache.Set(ctx, cacheKeyForIllustPages(sourceURL), *resp)
+	return resp, nil
+}
 
 func (p *Pixiv) fetchNewArtworksForRSSURL(ctx context.Context, rssURL string, limit int) ([]*dto.FetchedArtwork, error) {
 	resp, err := p.reqClient.R().SetContext(ctx).Get(rssURL)
@@ -119,9 +116,6 @@ func (p *Pixiv) fetchNewArtworksForRSSURL(ctx context.Context, rssURL string, li
 			continue
 		}
 		artworks = append(artworks, artwork)
-		if p.cfg.Sleep > 0 {
-			time.Sleep(time.Duration(p.cfg.Sleep) * time.Second)
-		}
 	}
 	return artworks, nil
 }
