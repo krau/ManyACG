@@ -6,6 +6,7 @@ import (
 
 	"github.com/krau/ManyACG/internal/model/dto"
 	"github.com/krau/ManyACG/internal/shared"
+	"github.com/krau/ManyACG/pkg/reutil"
 )
 
 var (
@@ -17,7 +18,6 @@ var (
 		Type:     shared.SourceTypeDanbooru,
 	}
 	ErrInvalidDanbooruPostURL = errors.New("invalid danbooru post url")
-	numberRegexp              = regexp.MustCompile(`\d+`)
 )
 
 func GetPostID(url string) string {
@@ -25,5 +25,9 @@ func GetPostID(url string) string {
 	if matchUrl == "" {
 		return ""
 	}
-	return numberRegexp.FindString(matchUrl)
+	id, ok := reutil.GetLatestNumberFromString(matchUrl)
+	if !ok {
+		return ""
+	}
+	return id
 }

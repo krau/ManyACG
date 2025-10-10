@@ -4,12 +4,9 @@ import (
 	"errors"
 	"fmt"
 	"regexp"
-
-	"github.com/imroc/req/v3"
 )
 
 var (
-	reqClient            *req.Client
 	kemonoSourceURLRegex = regexp.MustCompile(`kemono\.(su|cr)/\w+/user/\d+/post/\d+`)
 	kemonoDomainBase     = "https://kemono.cr"
 	apiBaseURL           = fmt.Sprintf("%s/api/v1", kemonoDomainBase)

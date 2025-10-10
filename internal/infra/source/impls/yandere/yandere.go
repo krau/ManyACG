@@ -90,24 +90,6 @@ func (y *Yandere) MatchesSourceURL(text string) (string, bool) {
 	return sourceURLPrefix + postID, true
 }
 
-// func (y *Yandere) GetFileName(artwork *types.Artwork, picture *types.Picture) string {
-// 	idStr := GetPostID(artwork.SourceURL)
-// 	if idStr == "" {
-// 		idStr = picture.ID
-// 	}
-// 	if idStr == "" {
-// 		idStr = common.MD5Hash(picture.Original)
-// 	}
-// 	return "yandere_" + idStr + "_" + strconv.Itoa(int(picture.Index)) + path.Ext(picture.Original)
-// }
-
-// func (y *Yandere) Config() *config.SourceCommonConfig {
-// 	return &config.SourceCommonConfig{
-// 		Enable:   config.Get().Source.Yandere.Enable,
-// 		Intervel: -1,
-// 	}
-// }
-
 // PrettyFileName implements source.ArtworkSource.
 func (y *Yandere) PrettyFileName(artwork shared.ArtworkLike, picture shared.PictureLike) string {
 	idStr := GetPostID(artwork.GetSourceURL())

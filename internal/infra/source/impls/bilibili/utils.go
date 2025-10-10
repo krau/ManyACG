@@ -1,17 +1,24 @@
 package bilibili
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
+
+	"github.com/krau/ManyACG/pkg/reutil"
 )
 
 func getDynamicID(url string) string {
-	return numberRegexp.FindString(dynamicURLRegexp.FindString(url))
+	id, ok := reutil.GetLatestNumberFromString(dynamicURLRegexp.FindString(url))
+	if !ok {
+		return ""
+	}
+	return id
 }
 
-func reqWebDynamicApiResp(dynamicID string) (*BilibiliWebDynamicApiResp, error) {
+func (b *Bilibili) reqWebDynamicApiResp(ctx context.Context, dynamicID string) (*BilibiliWebDynamicApiResp, error) {
 	apiUrl := fmt.Sprintf(webDynamicAPIURLFormat, dynamicID)
-	resp, err := reqClient.R().Get(apiUrl)
+	resp, err := b.reqClient.R().SetContext(ctx).Get(apiUrl)
 	if err != nil {
 		return nil, ErrRequestFailed
 	}
@@ -23,9 +30,9 @@ func reqWebDynamicApiResp(dynamicID string) (*BilibiliWebDynamicApiResp, error) 
 	return &bilibiliWebDynamicApiResp, nil
 }
 
-func reqDesktopDynamicApiResp(dynamicID string) (*BilibiliDesktopDynamicApiResp, error) {
+func (b *Bilibili) reqDesktopDynamicApiResp(ctx context.Context, dynamicID string) (*BilibiliDesktopDynamicApiResp, error) {
 	apiUrl := fmt.Sprintf(desktopDynamicAPIURLFormat, dynamicID)
-	resp, err := reqClient.R().Get(apiUrl)
+	resp, err := b.reqClient.R().SetContext(ctx).Get(apiUrl)
 	if err != nil {
 		return nil, ErrRequestFailed
 	}

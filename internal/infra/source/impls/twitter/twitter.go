@@ -56,7 +56,7 @@ func (t *Twitter) GetArtworkInfo(ctx context.Context, sourceURL string) (*dto.Fe
 		return nil, ErrInvalidURL
 	}
 	fxTwitterApiURL := fmt.Sprintf("https://api.%s/_/status/%s", t.cfg.FxTwitterDomain, tweetID)
-	resp, err := reqApiResp(ctx, fxTwitterApiURL)
+	resp, err := t.reqApiResp(ctx, fxTwitterApiURL)
 	if err != nil {
 		return nil, err
 	}

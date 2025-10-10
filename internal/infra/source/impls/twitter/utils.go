@@ -4,17 +4,14 @@ import (
 	"context"
 	"encoding/json"
 	"regexp"
-
-	"github.com/imroc/req/v3"
 )
 
 var (
 	twitterSourceURLRegexp *regexp.Regexp = regexp.MustCompile(`(?:twitter|x)\.com/([^/]+)/status/(\d+)`)
-	reqClient              *req.Client
 )
 
-func reqApiResp(ctx context.Context, url string) (*FxTwitterApiResp, error) {
-	resp, err := reqClient.R().SetContext(ctx).Get(url)
+func (t *Twitter) reqApiResp(ctx context.Context, url string) (*FxTwitterApiResp, error) {
+	resp, err := t.reqClient.R().SetContext(ctx).Get(url)
 	if err != nil {
 		return nil, ErrRequestFailed
 	}

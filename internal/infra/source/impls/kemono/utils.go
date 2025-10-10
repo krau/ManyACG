@@ -1,6 +1,7 @@
 package kemono
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"path"
@@ -13,9 +14,9 @@ func getPostPath(sourceURL string) string {
 	return strings.TrimPrefix(sourceURL, kemonoDomainBase)
 }
 
-func getAuthorProfile(service, creatorId string) (*KemonoCreatorProfileResp, error) {
+func (k *Kemono) getAuthorProfile(ctx context.Context, service, creatorId string) (*KemonoCreatorProfileResp, error) {
 	apiURL := apiBaseURL + fmt.Sprintf("/%s/user/%s/profile", service, creatorId)
-	resp, err := reqClient.R().Get(apiURL)
+	resp, err := k.reqClient.R().SetContext(ctx).Get(apiURL)
 	if err != nil {
 		return nil, err
 	}

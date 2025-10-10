@@ -1,6 +1,7 @@
 package kemono
 
 import (
+	"context"
 	"fmt"
 	"net/url"
 	"regexp"
@@ -49,9 +50,9 @@ type KemonoPreview struct {
 
 var htmlRe = regexp.MustCompile("<[^>]+>")
 
-func (resp *KemonoPostResp) ToArtwork() (*dto.FetchedArtwork, error) {
+func (k *Kemono) convertToFetchedArtwork(ctx context.Context, resp *KemonoPostResp) (*dto.FetchedArtwork, error) {
 	postResp := resp.Post
-	creatorResp, err := getAuthorProfile(postResp.Service, postResp.User)
+	creatorResp, err := k.getAuthorProfile(ctx, postResp.Service, postResp.User)
 	if err != nil {
 		return nil, err
 	}
