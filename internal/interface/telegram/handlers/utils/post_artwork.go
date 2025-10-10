@@ -54,12 +54,13 @@ func doPostAndCreateArtwork(
 			if err != nil {
 				return oops.Wrapf(err, "failed to download picture %d", i)
 			}
-			defer file.Close()
 			defer clean()
 			img, _, err := image.Decode(file)
 			if err != nil {
+				file.Close()
 				return oops.Wrapf(err, "failed to decode picture %d", i)
 			}
+			file.Close()
 			if pic.Phash == "" {
 				phash, err := imgtool.GetImagePhash(img)
 				if err != nil {
@@ -82,7 +83,6 @@ func doPostAndCreateArtwork(
 				}
 				pic.ThumbHash = thumbHash
 			}
-			file.Seek(0, 0)
 			var ext string
 			ext, err = strutil.GetFileExtFromURL(pic.Original)
 			if err != nil {
@@ -93,7 +93,7 @@ func doPostAndCreateArtwork(
 				ext = mtype.Extension()
 			}
 			filename := fmt.Sprintf("%s%s", strutil.MD5Hash(pic.Original), ext)
-			info, err := serv.StorageSaveAllSize(ctx, file, fmt.Sprintf("/%s/%s", artwork.SourceType, artwork.Artist.UID), filename)
+			info, err := serv.StorageSaveAllSize(ctx, file.Name(), fmt.Sprintf("/%s/%s", artwork.SourceType, artwork.Artist.UID), filename)
 			if err != nil {
 				return oops.Wrapf(err, "failed to save picture %d", i)
 			}
@@ -104,7 +104,7 @@ func doPostAndCreateArtwork(
 			return err
 		}
 	}
-	if artwork.UgoiraMeta != nil {
+	if artwork.UgoiraMeta != nil && artwork.UgoiraMeta.UgoiraMetaData.Data().Frames != nil {
 		// 处理 ugoira 的 original
 		origZip := artwork.UgoiraMeta.UgoiraMetaData.Data().OriginalZip
 		file, clean, err := httpclient.DownloadWithCache(ctx, origZip, nil)

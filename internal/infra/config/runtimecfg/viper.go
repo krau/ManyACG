@@ -81,9 +81,6 @@ func loadConfig() Config {
 	defaults := map[string]any{
 		"wsrv.url": "https://wsrv.nl",
 
-		"storage.cache_dir": "./imgcache",
-		"storage.cache_ttl": 86400,
-
 		"telegram.api_url":             "https://api.telegram.org",
 		"telegram.retry.max_attempts":  5,
 		"telegram.retry.exponent_base": 2.0,
@@ -95,6 +92,12 @@ func loadConfig() Config {
 		"storage.telegram.retry.exponent_base": 2.0,
 		"storage.telegram.retry.start_delay":   3,
 		"storage.telegram.retry.max_delay":     300,
+		"storage.regular_length":               2560,
+		"storage.regular_format":               "webp",
+		"storage.thumb_length":                 1280,
+		"storage.thumb_format":                 "avif",
+		"storage.cache_dir":                    "./imgcache",
+		"storage.cache_ttl":                    86400,
 
 		"cache.type":                   "ristretto",
 		"cache.default_ttl":            60 * 60,

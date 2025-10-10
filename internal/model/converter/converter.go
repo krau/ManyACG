@@ -76,7 +76,7 @@ func DtoFetchedArtworkToEntityCached(art *dto.FetchedArtwork) *entity.CachedArtw
 			Height:     pic.Height,
 		}
 	}
-	ugoira := &entity.CachedUgoiraMetaData{}
+	var ugoira *entity.CachedUgoiraMetaData
 	if art.Ugoira != nil {
 		ugoira = &entity.CachedUgoiraMetaData{
 			UgoiraMetaData: datatypes.NewJSONType(*art.Ugoira),

@@ -11,6 +11,8 @@ type UgoiraMetaData struct {
 	Frames         []UgoiraFrame `json:"frames"`
 }
 
+var ZeroUgoiraMetaData = UgoiraMetaData{}
+
 type UgoiraFrame struct {
 	File  string `json:"file"`
 	Delay int    `json:"delay"`
