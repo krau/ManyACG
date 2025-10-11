@@ -13,19 +13,14 @@ type SourceConfig struct {
 
 type SourcePixivConfig struct {
 	Disable  bool           `toml:"disable" mapstructure:"disable" json:"disable" yaml:"disable"`
-	Proxy    string         `toml:"proxy" mapstructure:"proxy" json:"proxy" yaml:"proxy"`
-	URLs     []string       `toml:"urls" mapstructure:"urls" json:"urls" yaml:"urls"`
-	Intervel int            `toml:"intervel" mapstructure:"intervel" json:"intervel" yaml:"intervel"`
-	Sleep    uint           `toml:"sleep" mapstructure:"sleep" json:"sleep" yaml:"sleep"`
-	Cookies  []cookieConfig `toml:"cookies" mapstructure:"cookies" json:"cookies" yaml:"cookies"`
+	ImgProxy string         `toml:"img_proxy" mapstructure:"img_proxy" json:"img_proxy" yaml:"img_proxy"`
+	RssURLs  []string       `toml:"rss_urls" mapstructure:"rss_urls" json:"rss_urls" yaml:"rss_urls"`
+	Cookies  []CookieConfig `toml:"cookies" mapstructure:"cookies" json:"cookies" yaml:"cookies"`
 }
 
 type SourceTwitterConfig struct {
-	Disable         bool     `toml:"disable" mapstructure:"disable" json:"disable" yaml:"disable"`
-	FxTwitterDomain string   `toml:"fx_twitter_domain" mapstructure:"fx_twitter_domain" json:"fx_twitter_domain" yaml:"fx_twitter_domain"`
-	Sleep           uint     `toml:"sleep" mapstructure:"sleep" json:"sleep" yaml:"sleep"`
-	Intervel        int      `toml:"intervel" mapstructure:"intervel" json:"intervel" yaml:"intervel"`
-	URLs            []string `toml:"urls" mapstructure:"urls" json:"urls" yaml:"urls"`
+	Disable         bool   `toml:"disable" mapstructure:"disable" json:"disable" yaml:"disable"`
+	FxTwitterDomain string `toml:"fx_twitter_domain" mapstructure:"fx_twitter_domain" json:"fx_twitter_domain" yaml:"fx_twitter_domain"`
 }
 
 type SourceBilibiliConfig struct {

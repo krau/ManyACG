@@ -10,19 +10,7 @@ import (
 )
 
 type Config struct {
-	Migrate struct {
-		Target string `toml:"target" mapstructure:"target" json:"target" yaml:"target"`
-		DSN    string `toml:"dsn" mapstructure:"dsn" json:"dsn" yaml:"dsn"`
-	} `toml:"migrate" mapstructure:"migrate" json:"migrate" yaml:"migrate"`
-
 	App AppConfig `toml:"app" mapstructure:"app" json:"app" yaml:"app"`
-	Web struct {
-		Enable  bool   `toml:"enable" mapstructure:"enable" json:"enable" yaml:"enable"`
-		Address string `toml:"address" mapstructure:"address" json:"address" yaml:"address"`
-	} `toml:"web" mapstructure:"web" json:"web" yaml:"web"`
-	API  apiConfig  `toml:"api" mapstructure:"api" json:"api" yaml:"api"`
-	Auth authConfig `toml:"auth" mapstructure:"auth" json:"auth" yaml:"auth"`
-
 	// some common packages config
 	Log        LogConfig        `toml:"log" mapstructure:"log" json:"log" yaml:"log"`
 	HttpClient HttpClientConfig `toml:"http_client" mapstructure:"http_client" json:"http_client" yaml:"http_client"`
@@ -50,10 +38,6 @@ type SchedulerConfig struct {
 type AppConfig struct {
 	// Something globally used in app
 	Debug bool `toml:"debug" mapstructure:"debug" json:"debug" yaml:"debug"`
-}
-
-type WsrvConfig struct {
-	URL string `toml:"url" mapstructure:"url" json:"url" yaml:"url"`
 }
 
 var (

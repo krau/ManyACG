@@ -47,7 +47,7 @@ func init() {
 func (p *Pixiv) FetchNewArtworks(ctx context.Context, limit int) ([]*dto.FetchedArtwork, error) {
 	artworks := make([]*dto.FetchedArtwork, 0)
 	errs := make([]error, 0)
-	for _, url := range p.cfg.URLs {
+	for _, url := range p.cfg.RssURLs {
 		artworksForURL, err := p.fetchNewArtworksForRSSURL(ctx, url, limit)
 		if err != nil {
 			errs = append(errs, err)
@@ -68,7 +68,7 @@ func (p *Pixiv) GetArtworkInfo(ctx context.Context, sourceURL string) (*dto.Fetc
 	if ajaxResp.Err {
 		return nil, oops.Wrapf(err, "pixiv ajax response error: %s", ajaxResp.Message)
 	}
-	return ajaxResp.ToArtwork(ctx, p.reqClient, p.cfg.Proxy)
+	return ajaxResp.ToArtwork(ctx, p.reqClient, p.cfg.ImgProxy)
 }
 
 func (p *Pixiv) MatchesSourceURL(text string) (string, bool) {

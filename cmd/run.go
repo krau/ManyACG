@@ -164,30 +164,3 @@ func registerArtworkEventSearcherHandlers(ctx context.Context, bus repo.EventBus
 		log.Debug("deleted indexed artwork", "id", payload.ID, "title", payload.Title)
 	}, filter)
 }
-
-// func cleanCacheDir(cfg runtimecfg.Config) {
-// 	if cfg.Storage.CacheDir != "" && !cfg.App.Debug {
-// 		for _, path := range []string{"/", ".", "\\", ".."} {
-// 			if filepath.Clean(cfg.Storage.CacheDir) == path {
-// 				log.Error("Invalid cache dir: ", cfg.Storage.CacheDir)
-// 				return
-// 			}
-// 		}
-// 		currentDir, err := os.Getwd()
-// 		if err != nil {
-// 			log.Error(err)
-// 			return
-// 		}
-// 		cachePath := filepath.Join(currentDir, cfg.Storage.CacheDir)
-// 		cachePath, err = filepath.Abs(cachePath)
-// 		if err != nil {
-// 			log.Error(err)
-// 			return
-// 		}
-// 		log.Info("Removing cache dir: ", cachePath)
-// 		if err := os.RemoveAll(cachePath); err != nil {
-// 			log.Error(err)
-// 			return
-// 		}
-// 	}
-// }

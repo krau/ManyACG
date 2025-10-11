@@ -138,7 +138,7 @@ func (p *Pixiv) fetchNewArtworksForRSSURL(ctx context.Context, rssURL string, li
 		if err != nil {
 			continue
 		}
-		artwork, err := ajaxResp.ToArtwork(ctx, p.reqClient, p.cfg.Proxy)
+		artwork, err := ajaxResp.ToArtwork(ctx, p.reqClient, p.cfg.ImgProxy)
 		if err != nil {
 			continue
 		}
