@@ -83,6 +83,7 @@ func (s *Service) CreateArtwork(ctx context.Context, cmd *command.ArtworkCreatio
 		}
 		// 创建 artwork
 		awEnt := &entity.Artwork{
+			ID:          cmd.ID,
 			Title:       cmd.Title,
 			Description: cmd.Description,
 			R18:         cmd.R18,

@@ -200,5 +200,10 @@ func (c *CachedArtwork) BeforeCreate(tx *gorm.DB) (err error) {
 	if c.ID == objectuuid.Nil {
 		c.ID = objectuuid.New()
 	}
+	if c.Artwork.Data().ID == "" {
+		data := c.Artwork.Data()
+		data.ID = c.ID.Hex()
+		c.Artwork = datatypes.NewJSONType(data)
+	}
 	return nil
 }

@@ -1,8 +1,12 @@
 package command
 
-import "github.com/krau/ManyACG/internal/shared"
+import (
+	"github.com/krau/ManyACG/internal/shared"
+	"github.com/krau/ManyACG/pkg/objectuuid"
+)
 
 type ArtworkCreation struct {
+	ID          objectuuid.ObjectUUID
 	Title       string
 	Description string
 	R18         bool

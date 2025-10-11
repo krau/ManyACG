@@ -279,7 +279,11 @@ type CreateArtworkInfoReplyMarkupOptions struct {
 	HasPermission  bool
 }
 
-func CreateArtworkInfoReplyMarkup(ctx context.Context, meta *metautil.MetaData, serv *service.Service, artwork shared.ArtworkLike, controls *CreateArtworkInfoReplyMarkupOptions) (*telego.InlineKeyboardMarkup, error) {
+func CreateArtworkInfoReplyMarkup(ctx context.Context,
+	meta *metautil.MetaData,
+	serv *service.Service,
+	artwork shared.ArtworkLike,
+	controls *CreateArtworkInfoReplyMarkupOptions) (*telego.InlineKeyboardMarkup, error) {
 	if controls == nil {
 		controls = &CreateArtworkInfoReplyMarkupOptions{}
 	}
