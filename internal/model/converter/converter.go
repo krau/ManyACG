@@ -76,10 +76,13 @@ func DtoFetchedArtworkToEntityCached(art *dto.FetchedArtwork) *entity.CachedArtw
 			Height:     pic.Height,
 		}
 	}
-	var ugoira *entity.CachedUgoiraMetaData
-	if art.Ugoira != nil {
-		ugoira = &entity.CachedUgoiraMetaData{
-			UgoiraMetaData: datatypes.NewJSONType(*art.Ugoira),
+	var ugoiras []*entity.CachedUgoiraMetaData
+	if len(art.UgoiraMetas) > 0 {
+		for _, ugoiraMeta := range art.UgoiraMetas {
+			ugoiras = append(ugoiras, &entity.CachedUgoiraMetaData{
+				OrderIndex:     ugoiraMeta.Index,
+				UgoiraMetaData: datatypes.NewJSONType(ugoiraMeta.Data),
+			})
 		}
 	}
 	ent := &entity.CachedArtwork{
@@ -98,9 +101,9 @@ func DtoFetchedArtworkToEntityCached(art *dto.FetchedArtwork) *entity.CachedArtw
 				Type:     art.Artist.Type,
 				Username: art.Artist.Username,
 			},
-			Pictures:   pics,
-			UgoiraMeta: ugoira,
-			Version:    1,
+			Pictures:    pics,
+			UgoiraMetas: ugoiras,
+			Version:     1,
 		}),
 	}
 	return ent

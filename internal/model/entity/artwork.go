@@ -33,8 +33,8 @@ type Artwork struct {
 	Pictures []*Picture `gorm:"foreignKey:ArtworkID;constraint:OnDelete:CASCADE" json:"pictures"`
 
 	// https://www.pixiv.help/hc/en-us/articles/235584628-What-are-Ugoira
-	// artwork 可能拥有一个 ugoira meta 或没有
-	UgoiraMeta *UgoiraMeta `gorm:"foreignKey:ArtworkID;constraint:OnDelete:CASCADE" json:"ugoira_meta,omitempty"`
+	// one-to-many ugoira meta, usually only one
+	UgoiraMetas []*UgoiraMeta `gorm:"foreignKey:ArtworkID;constraint:OnDelete:CASCADE" json:"ugoira_meta,omitempty"`
 }
 
 // GetArtistName implements ArtworkLike.

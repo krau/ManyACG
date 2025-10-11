@@ -20,3 +20,21 @@ type ArtworkLike interface {
 	GetTags() []string
 	GetPictures() []PictureLike
 }
+
+type UgoiraArtworkLike interface {
+	GetID() string
+	GetSourceURL() string
+	GetTitle() string
+	GetR18() bool
+	GetArtistName() string
+	GetDescription() string
+	GetTags() []string
+	GetUgoiraMetas() []UgoiraMetaLike
+}
+
+type UgoiraMetaLike interface {
+	GetIndex() uint
+	GetUgoiraMetaData() UgoiraMetaData
+	GetOriginalStorage() StorageInfo
+	GetTelegramInfo() TelegramInfo
+}

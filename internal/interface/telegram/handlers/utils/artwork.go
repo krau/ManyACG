@@ -22,7 +22,14 @@ import (
 	"github.com/samber/oops"
 )
 
-func SendArtworkMediaGroup(ctx context.Context,
+type ResultMessage struct {
+	Message telego.Message
+	Picture shared.PictureLike
+	Ugoira  shared.UgoiraMetaData
+}
+
+func SendArtworkPhotoMediaGroup(
+	ctx context.Context,
 	bot *telego.Bot,
 	chatID telego.ChatID,
 	artwork shared.ArtworkLike) ([]telego.Message, error) {
@@ -71,8 +78,12 @@ func ArtworkInputMediaPhotos(ctx context.Context,
 	caption string,
 	start, end int) ([]telego.InputMedia, error) {
 	inputMediaPhotos := make([]telego.InputMedia, end-start)
+	awPics := artwork.GetPictures()
+	if start < 0 || end > len(awPics) || start >= end {
+		return nil, oops.Errorf("invalid start or end index: %d, %d, len=%d", start, end, len(awPics))
+	}
 	for i := start; i < end; i++ {
-		picture := artwork.GetPictures()[i]
+		picture := awPics[i]
 		var photo *telego.InputMediaPhoto
 		if id := picture.GetTelegramInfo().PhotoFileID; id != "" {
 			photo = telegoutil.MediaPhoto(telegoutil.FileFromID(id))
@@ -113,7 +124,7 @@ func ArtworkInputMediaPhotos(ctx context.Context,
 			if err != nil {
 				return nil, oops.Wrapf(err, "failed to compress image: %s", picture.GetOriginal())
 			}
-			photo = telegoutil.MediaPhoto(telegoutil.File(telegoutil.NameReader(bytes.NewReader(fileBytes), serv.PrettyFileName(artwork, picture))))
+			photo = telegoutil.MediaPhoto(telegoutil.File(telegoutil.NameBytes(fileBytes, serv.PrettyFileName(artwork, picture))))
 		}
 		if i == 0 {
 			photo = photo.WithCaption(caption).WithParseMode(telego.ModeHTML)
@@ -124,6 +135,70 @@ func ArtworkInputMediaPhotos(ctx context.Context,
 		inputMediaPhotos[i-start] = photo
 	}
 	return inputMediaPhotos, nil
+}
+
+// used for ugoira
+func ArtworkInputMediaAnimations(
+	ctx context.Context,
+	serv *service.Service,
+	artwork shared.UgoiraArtworkLike,
+	caption string,
+	start, end int) ([]telego.InputMedia, error) {
+	inputAnimations := make([]telego.InputMedia, end-start)
+	awUgoiras := artwork.GetUgoiraMetas()
+	if start < 0 || end > len(awUgoiras) || start >= end {
+		return nil, oops.Errorf("invalid start or end index: %d, %d, len=%d", start, end, len(awUgoiras))
+	}
+	for i := start; i < end; i++ {
+		ugoira := awUgoiras[i]
+		var animation *telego.InputMediaAnimation
+		if id := ugoira.GetTelegramInfo().PhotoFileID; id != "" {
+			animation = telegoutil.MediaAnimation(telegoutil.FileFromID(id))
+		}
+		if animation == nil {
+			var fileBytes []byte
+			var err error
+			fileBytes, err = httpclient.GetReqCachedFile(ugoira.GetUgoiraMetaData().OriginalZip)
+			if err != nil {
+				if ugoira.GetOriginalStorage() == shared.ZeroStorageInfo || ugoira.GetOriginalStorage().Original == nil {
+					file, clean, err := httpclient.DownloadWithCache(ctx, ugoira.GetUgoiraMetaData().OriginalZip, nil)
+					if err != nil {
+						return nil, oops.Wrapf(err, "failed to download file: %s", ugoira.GetUgoiraMetaData().OriginalZip)
+					}
+					defer clean()
+					defer file.Close()
+					fileBytes, err = os.ReadFile(file.Name())
+					if err != nil {
+						return nil, oops.Wrapf(err, "failed to read file: %s", ugoira.GetUgoiraMetaData().OriginalZip)
+					}
+				} else {
+					rc, err := serv.StorageGetFile(ctx, *ugoira.GetOriginalStorage().Original)
+					if err != nil {
+						return nil, oops.Wrapf(err, "failed to get file: %s", ugoira.GetUgoiraMetaData().OriginalZip)
+					}
+					defer rc.Close()
+					var buf bytes.Buffer
+					writer := bufio.NewWriter(&buf)
+					_, err = writer.ReadFrom(rc)
+					if err != nil {
+						return nil, oops.Wrapf(err, "failed to read file: %s", ugoira.GetUgoiraMetaData().OriginalZip)
+					}
+					writer.Flush()
+					fileBytes = buf.Bytes()
+				}
+			}
+			// TODO: transform zip to webm or gif
+			animation = telegoutil.MediaAnimation(telegoutil.File(telegoutil.NameBytes(fileBytes, strutil.MD5Hash(ugoira.GetUgoiraMetaData().OriginalZip))))
+		}
+		if i == 0 {
+			animation = animation.WithCaption(caption).WithParseMode(telego.ModeHTML)
+		}
+		if artwork.GetR18() {
+			animation = animation.WithHasSpoiler()
+		}
+		inputAnimations[i-start] = animation
+	}
+	return inputAnimations, nil
 }
 
 func GetPicturePhotoInputFile(ctx context.Context, serv *service.Service, picture shared.PictureLike) (telego.InputFile, error) {

@@ -104,21 +104,30 @@ func doPostAndCreateArtwork(
 			return err
 		}
 	}
-	if artwork.UgoiraMeta != nil && artwork.UgoiraMeta.UgoiraMetaData.Data().Frames != nil {
+	isUgoira := len(artwork.UgoiraMetas) > 0
+	if isUgoira {
 		// 处理 ugoira 的 original
-		origZip := artwork.UgoiraMeta.UgoiraMetaData.Data().OriginalZip
-		file, clean, err := httpclient.DownloadWithCache(ctx, origZip, nil)
-		if err != nil {
-			return oops.Wrapf(err, "failed to download ugoira original zip")
+		for _, ugoira := range artwork.UgoiraMetas {
+			err := func() error {
+				origZip := ugoira.UgoiraMetaData.Data().OriginalZip
+				file, clean, err := httpclient.DownloadWithCache(ctx, origZip, nil)
+				if err != nil {
+					return oops.Wrapf(err, "failed to download ugoira original zip")
+				}
+				defer file.Close()
+				defer clean()
+				filename := fmt.Sprintf("%s.zip", strutil.MD5Hash(origZip))
+				info, err := serv.StorageSaveOriginal(ctx, file, fmt.Sprintf("/%s/%s/ugoira", artwork.SourceType, artwork.Artist.UID), filename)
+				if err != nil {
+					return oops.Wrapf(err, "failed to save ugoira original zip")
+				}
+				ugoira.OriginalStorage = datatypes.NewJSONType(*info)
+				return nil
+			}()
+			if err != nil {
+				return err
+			}
 		}
-		defer file.Close()
-		defer clean()
-		filename := fmt.Sprintf("%s.zip", strutil.MD5Hash(origZip))
-		info, err := serv.StorageSaveOriginal(ctx, file, fmt.Sprintf("/%s/%s/ugoira", artwork.SourceType, artwork.Artist.UID), filename)
-		if err != nil {
-			return oops.Wrapf(err, "failed to save ugoira original zip")
-		}
-		artwork.UgoiraMeta.OriginalStorage = datatypes.NewJSONType(*info)
 	}
 
 	if showProgress {
@@ -130,7 +139,8 @@ func doPostAndCreateArtwork(
 			}),
 		))
 	}
-	msgs, err := SendArtworkMediaGroup(ctx, bot, toChatID, artwork)
+
+	msgs, err := SendArtworkPhotoMediaGroup(ctx, bot, toChatID, artwork)
 	if err != nil {
 		return oops.Wrapf(err, "failed to send artwork media group")
 	}
@@ -164,14 +174,20 @@ func doPostAndCreateArtwork(
 		},
 		SourceURL: artwork.SourceURL,
 		Tags:      artwork.Tags,
-		Ugoira: func() *command.ArtworkUgoiraCreation {
-			if artwork.UgoiraMeta == nil {
+		UgoiraMetas: func() []*command.ArtworkUgoiraCreation {
+			if !isUgoira {
 				return nil
 			}
-			return &command.ArtworkUgoiraCreation{
-				Data:            artwork.UgoiraMeta.UgoiraMetaData.Data(),
-				OriginalStorage: artwork.UgoiraMeta.OriginalStorage.Data(),
+			ugos := make([]*command.ArtworkUgoiraCreation, len(artwork.UgoiraMetas))
+			for i, ugoira := range artwork.UgoiraMetas {
+				ugos[i] = &command.ArtworkUgoiraCreation{
+					Index:           ugoira.OrderIndex,
+					Data:            ugoira.UgoiraMetaData.Data(),
+					OriginalStorage: ugoira.OriginalStorage.Data(),
+					TelegramInfo:    ugoira.TelegramInfo.Data(),
+				}
 			}
+			return ugos
 		}(),
 		Pictures: func() []command.ArtworkPictureCreation {
 			pics := make([]command.ArtworkPictureCreation, len(artwork.Pictures))

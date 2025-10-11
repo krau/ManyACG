@@ -107,12 +107,16 @@ func (s *Service) CreateArtwork(ctx context.Context, cmd *command.ArtworkCreatio
 			})
 		}
 		awEnt.Pictures = pics
-		if cmd.Ugoira != nil {
-			ugoiraData := &entity.UgoiraMeta{
-				Data:            datatypes.NewJSONType(cmd.Ugoira.Data),
-				OriginalStorage: datatypes.NewJSONType(cmd.Ugoira.OriginalStorage),
+		if len(cmd.UgoiraMetas) > 0 {
+			for _, ugoira := range cmd.UgoiraMetas {
+				ugoiraData := &entity.UgoiraMeta{
+					OrderIndex:      ugoira.Index,
+					Data:            datatypes.NewJSONType(ugoira.Data),
+					OriginalStorage: datatypes.NewJSONType(ugoira.OriginalStorage),
+					TelegramInfo:    datatypes.NewJSONType(ugoira.TelegramInfo),
+				}
+				awEnt.UgoiraMetas = append(awEnt.UgoiraMetas, ugoiraData)
 			}
-			awEnt.UgoiraMeta = ugoiraData
 		}
 
 		_, err = repos.Artwork().CreateArtwork(ctx, awEnt)

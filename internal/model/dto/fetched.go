@@ -11,10 +11,10 @@ type FetchedArtwork struct {
 	SourceType  shared.SourceType `json:"source_type"`
 	SourceURL   string            `json:"source_url"`
 
-	Artist   *FetchedArtist    `json:"artist"`
-	Tags     []string          `json:"tags"`
-	Pictures []*FetchedPicture `json:"pictures"`
-	Ugoira   *UgoiraMetaData   `json:"ugoira,omitempty"`
+	Artist      *FetchedArtist       `json:"artist"`
+	Tags        []string             `json:"tags"`
+	Pictures    []*FetchedPicture    `json:"pictures"`
+	UgoiraMetas []*FetchedUgoiraMeta `json:"ugoira_metas,omitempty"`
 }
 
 type FetchedArtist struct {
@@ -114,4 +114,7 @@ func (f *FetchedPicture) GetThumbnail() string {
 var _ shared.ArtworkLike = (*FetchedArtwork)(nil)
 var _ shared.PictureLike = (*FetchedPicture)(nil)
 
-type UgoiraMetaData = shared.UgoiraMetaData // 暂时没别的差异
+type FetchedUgoiraMeta struct {
+	Index uint                  `json:"index"`
+	Data  shared.UgoiraMetaData `json:"data"`
+}

@@ -13,8 +13,8 @@ type ArtworkCreation struct {
 
 	Tags []string
 
-	Pictures []ArtworkPictureCreation
-	Ugoira   *ArtworkUgoiraCreation
+	Pictures    []ArtworkPictureCreation
+	UgoiraMetas []*ArtworkUgoiraCreation
 }
 
 type ArtworkArtistCreation struct {
@@ -38,6 +38,8 @@ type ArtworkPictureCreation struct {
 }
 
 type ArtworkUgoiraCreation struct {
+	Index           uint
 	Data            shared.UgoiraMetaData
 	OriginalStorage shared.StorageDetail
+	TelegramInfo    shared.TelegramInfo
 }

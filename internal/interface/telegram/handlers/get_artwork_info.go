@@ -73,7 +73,7 @@ func GetArtworkInfoCommand(ctx *telegohandler.Context, message telego.Message) e
 		utils.ReplyMessage(ctx, message, "获取作品信息失败")
 		return oops.Wrapf(err, "get or fetch cached artwork failed: %s", sourceURL)
 	}
-	msgs, err := utils.SendArtworkMediaGroup(ctx, ctx.Bot(), message.Chat.ChatID(), artwork)
+	msgs, err := utils.SendArtworkPhotoMediaGroup(ctx, ctx.Bot(), message.Chat.ChatID(), artwork)
 	if err != nil {
 		utils.ReplyMessage(ctx, message, "发送作品图片时出现错误")
 		return oops.Wrapf(err, "send artwork media group failed: %s", artwork.SourceURL)

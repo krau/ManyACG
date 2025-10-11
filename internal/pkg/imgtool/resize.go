@@ -37,6 +37,10 @@ func init() {
 	}
 }
 
+func FFmpegAvailable() bool {
+	return ffmpegAvailable
+}
+
 func GetSize(img image.Image) (int, int, error) {
 	if img == nil {
 		return 0, 0, fmt.Errorf("nil image")

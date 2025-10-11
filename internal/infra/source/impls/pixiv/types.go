@@ -195,17 +195,21 @@ func (resp *PixivAjaxResp) ToArtwork(
 			})
 		}
 
-		ugoiraData := &dto.UgoiraMetaData{
-			PosterOriginal: strings.Replace(illustBody.Urls.Original, pixivImgDomain, imgProxy, 1),
-			PosterThumb:    strings.Replace(illustBody.Urls.Small, pixivImgDomain, imgProxy, 1),
-			Width:          illustBody.Width,
-			Height:         illustBody.Height,
-			OriginalZip:    strings.Replace(ugMeta.Body.OriginalSrc, pixivImgDomain, imgProxy, 1),
-			ThumbZip:       strings.Replace(ugMeta.Body.Src, pixivImgDomain, imgProxy, 1),
-			MimeType:       ugMeta.Body.MimeType,
-			Frames:         frames,
+		ugoiraData := &dto.FetchedUgoiraMeta{
+			Index: 0,
+			Data: shared.UgoiraMetaData{
+				PosterOriginal: strings.Replace(illustBody.Urls.Original, pixivImgDomain, imgProxy, 1),
+				PosterThumb:    strings.Replace(illustBody.Urls.Small, pixivImgDomain, imgProxy, 1),
+				Width:          illustBody.Width,
+				Height:         illustBody.Height,
+				OriginalZip:    strings.Replace(ugMeta.Body.OriginalSrc, pixivImgDomain, imgProxy, 1),
+				ThumbZip:       strings.Replace(ugMeta.Body.Src, pixivImgDomain, imgProxy, 1),
+				MimeType:       ugMeta.Body.MimeType,
+				Frames:         frames,
+			},
 		}
-		fetched.Ugoira = ugoiraData
+		fetched.UgoiraMetas = make([]*dto.FetchedUgoiraMeta, 0)
+		fetched.UgoiraMetas = append(fetched.UgoiraMetas, ugoiraData)
 	}
 	return fetched, nil
 }
