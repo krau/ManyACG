@@ -8,6 +8,8 @@ import (
 	"github.com/duke-git/lancet/v2/maputil"
 	"github.com/duke-git/lancet/v2/slice"
 	"github.com/krau/ManyACG/internal/common/httpclient"
+	"github.com/krau/ManyACG/internal/infra/config/runtimecfg"
+	"github.com/krau/ManyACG/internal/infra/tagging"
 	"github.com/krau/ManyACG/internal/model/entity"
 	"github.com/krau/ManyACG/internal/repo"
 	"github.com/krau/ManyACG/internal/shared/errs"
@@ -174,4 +176,15 @@ func (s *Service) PredictAndUpdateArtworkTags(ctx context.Context, artworkID obj
 	}
 	newTags := slice.Compact(slice.Union(origTags, predictedTags))
 	return s.UpdateArtworkTagsByURL(ctx, artwork.SourceURL, newTags)
+}
+
+func (s *Service) Tagger() tagging.Tagger {
+	return s.tagger
+}
+
+func (s *Service) ShouldTagNewArtwork() bool {
+	if s.tagger == nil {
+		return false
+	}
+	return runtimecfg.Get().Tagging.TagNew
 }

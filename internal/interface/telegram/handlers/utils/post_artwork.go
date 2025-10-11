@@ -3,12 +3,15 @@ package utils
 import (
 	"context"
 	"fmt"
+	"html"
 	"image"
 
 	"github.com/gabriel-vasile/mimetype"
 	"github.com/krau/ManyACG/internal/common/httpclient"
+	"github.com/krau/ManyACG/internal/interface/telegram/metautil"
 	"github.com/krau/ManyACG/internal/model/command"
 	"github.com/krau/ManyACG/internal/model/entity"
+	"github.com/krau/ManyACG/internal/model/query"
 	"github.com/krau/ManyACG/internal/pkg/imgtool"
 	"github.com/krau/ManyACG/internal/service"
 	"github.com/krau/ManyACG/internal/shared"
@@ -38,15 +41,34 @@ func doPostAndCreateArtwork(
 		return oops.Errorf("artwork is marked as deleted: %s", artwork.SourceURL)
 	}
 	showProgress := (fromChatID.ID != 0 || fromChatID.Username != "") && messageID != 0
-	if showProgress {
-		bot.EditMessageReplyMarkup(ctx, telegoutil.EditMessageReplyMarkup(
-			fromChatID,
-			messageID,
-			telegoutil.InlineKeyboard([]telego.InlineKeyboardButton{
-				telegoutil.InlineKeyboardButton("正在存储图片...").WithCallbackData("noop"),
-			}),
-		))
+
+	editReplyMarkupText := func(text string) {
+		if showProgress {
+			_, err := bot.EditMessageReplyMarkup(ctx, telegoutil.EditMessageReplyMarkup(
+				fromChatID,
+				messageID,
+				telegoutil.InlineKeyboard([]telego.InlineKeyboardButton{
+					telegoutil.InlineKeyboardButton(text).WithCallbackData("noop"),
+				}),
+			))
+			if err != nil {
+				log.Warn("failed to edit reply markup", "err", err)
+			}
+		}
 	}
+	// replyWaitMsg 回复 messageID 的消息
+	replyWaitMsg := func(text string) {
+		if showProgress {
+			_, err := bot.SendMessage(ctx, telegoutil.Message(fromChatID, text).WithReplyParameters(&telego.ReplyParameters{
+				MessageID: messageID,
+			}).WithParseMode(telego.ModeHTML))
+			if err != nil {
+				log.Warn("failed to send reply wait message", "err", err)
+			}
+		}
+	}
+
+	editReplyMarkupText("正在存储图片...")
 
 	for i, pic := range artwork.Pictures {
 		// 下载并存储图片, 同时计算 phash, thumbhash, width, height
@@ -128,15 +150,7 @@ func doPostAndCreateArtwork(
 		}
 	}
 
-	if showProgress {
-		bot.EditMessageReplyMarkup(ctx, telegoutil.EditMessageReplyMarkup(
-			fromChatID,
-			messageID,
-			telegoutil.InlineKeyboard([]telego.InlineKeyboardButton{
-				telegoutil.InlineKeyboardButton("正在发布到频道...").WithCallbackData("noop"),
-			}),
-		))
-	}
+	editReplyMarkupText("正在发布到频道...")
 
 	msgs, err := SendArtworkPhotoMediaGroup(ctx, bot, toChatID, artwork)
 	if err != nil {
@@ -214,6 +228,61 @@ func doPostAndCreateArtwork(
 		return oops.Wrapf(err, "failed to create artwork in db")
 	}
 	log.Info("created artwork", "id", ent.ID, "url", ent.SourceURL, "title", ent.Title, "pics", len(ent.Pictures))
+
+	if serv.ShouldTagNewArtwork() {
+		log.Info("predicting artwork tags", "id", ent.ID, "title", ent.Title)
+		editReplyMarkupText("已发布到频道, 正在推理作品标签...")
+		if err := serv.PredictAndUpdateArtworkTags(ctx, ent.ID); err != nil {
+			log.Error("failed to predict and update artwork tags after create artwork", "id", ent.ID, "err", err)
+			editReplyMarkupText("推理作品标签失败, 作品已发布")
+		}
+		caption := ArtworkHTMLCaption(ent)
+		bot.EditMessageCaption(ctx, telegoutil.
+			EditMessageCaption(toChatID,
+				ent.Pictures[0].TelegramInfo.Data().MessageID,
+				caption).
+			WithParseMode(telego.ModeHTML))
+	}
+	editReplyMarkupText("已发布到频道, 正在检测重复图片...")
+	meta := metautil.FromContext(ctx)
+	for i, pic := range ent.Pictures {
+		similars, err := serv.QueryPicturesByPhash(ctx, query.PicturesPhash{Input: pic.Phash, Distance: 10})
+		if err != nil {
+			log.Error("failed to query pictures by phash", "phash", pic.Phash, "err", err)
+			editReplyMarkupText(fmt.Sprintf("检测第%d张图片重复失败, 作品已发布", i+1))
+			continue
+		}
+		if len(similars) == 0 {
+			continue
+		}
+		sims := make([]*entity.Picture, 0, len(similars))
+		for _, sim := range similars {
+			if sim.ArtworkID == ent.ID {
+				continue
+			}
+			sims = append(sims, sim)
+		}
+		if len(sims) == 0 {
+			continue
+		}
+		log.Info("found similar pictures", "artwork_id", ent.ID, "picture_id", pic.ID, "count", len(sims), "similars", func() []string {
+			ids := make([]string, len(sims))
+			for i, s := range sims {
+				ids[i] = s.ID.String()
+			}
+			return ids
+		}())
+		text := fmt.Sprintf("检测到 %d 张与该作品第 %d 张图片相似的图片", len(sims), pic.OrderIndex)
+		for j, sim := range sims {
+			text += fmt.Sprintf("\n\n%d - <a href=%s>%s_%d</a>", j+1, func() string {
+				if meta != nil && meta.ChannelAvailable() {
+					return meta.ChannelMessageURL(sim.TelegramInfo.Data().MessageID)
+				}
+				return sim.Artwork.SourceURL
+			}(), html.EscapeString(sim.Artwork.Title), sim.OrderIndex)
+		}
+		replyWaitMsg(text)
+	}
 	return nil
 }
 

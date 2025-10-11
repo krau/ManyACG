@@ -78,13 +78,13 @@ func loadConfig() Config {
 		"storage.telegram.retry.max_delay":     300,
 		"storage.regular_length":               2560,
 		"storage.regular_format":               "webp",
-		"storage.thumb_length":                 1280,
+		"storage.thumb_length":                 500,
 		"storage.thumb_format":                 "avif",
 		"storage.cache_dir":                    "./imgcache",
-		"storage.cache_ttl":                    86400,
+		"storage.cache_ttl":                    60 * 60 * 4, // in seconds
 
 		"cache.type":                   "ristretto",
-		"cache.default_ttl":            60 * 60,
+		"cache.default_ttl":            60 * 60 * 4,
 		"cache.ristretto.num_counters": 1e5,
 		"cache.ristretto.max_cost":     1e6,
 		"cache.ristretto.buffer_items": 64,

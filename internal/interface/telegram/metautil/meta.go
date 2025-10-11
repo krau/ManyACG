@@ -59,7 +59,15 @@ func FromContext(ctx context.Context) *MetaData {
 	if meta, ok := ctx.Value(contextKey).(*MetaData); ok {
 		return meta
 	}
-	return &MetaData{}
+	return nil
+}
+
+func MustFromContext(ctx context.Context) *MetaData {
+	meta := FromContext(ctx)
+	if meta == nil {
+		panic("metautil: MetaData not found in context")
+	}
+	return meta
 }
 
 func WithContext(ctx context.Context, meta *MetaData) context.Context {

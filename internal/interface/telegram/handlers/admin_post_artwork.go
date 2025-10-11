@@ -114,7 +114,6 @@ func PostArtworkCallbackQuery(ctx *telegohandler.Context, query telego.CallbackQ
 		return err
 	}
 	return nil
-	// [TODO] implement non-channel posting
 }
 
 func PostArtworkCommand(ctx *telegohandler.Context, message telego.Message) error {
