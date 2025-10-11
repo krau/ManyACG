@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"image"
 	"io"
+	"math/rand"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -12,6 +13,7 @@ import (
 	"github.com/gen2brain/avif"
 	"github.com/krau/ManyACG/internal/infra/config/runtimecfg"
 	"github.com/krau/ManyACG/pkg/log"
+	"github.com/krau/ManyACG/pkg/strutil"
 )
 
 var (
@@ -133,4 +135,52 @@ func CompressForTelegram(input []byte) ([]byte, error) {
 		return nil, fmt.Errorf("failed to read temp file: %w", err)
 	}
 	return result, nil
+}
+
+// TempFile is a temporary file that will be deleted when closed.
+type TempFile struct {
+	*os.File
+}
+
+func (t *TempFile) Close() error {
+	err := t.File.Close()
+	if err != nil {
+		return err
+	}
+	return os.Remove(t.File.Name())
+}
+
+func CompressForTelegramFromFile(filePath string) (*TempFile, error) {
+	outputPath := filepath.Join(runtimecfg.Get().Storage.CacheDir, "compress", fmt.Sprintf("tg_%s_%d.jpg", strutil.MD5Hash(filePath), rand.Int()))
+	if _, ok := vipsFormat["jpeg"]; ok {
+		err := compressImageForTelegramByVIPSFromFile(filePath, outputPath)
+		if err != nil {
+			return nil, err
+		}
+		f, err := os.Open(outputPath)
+		if err != nil {
+			return nil, err
+		}
+		return &TempFile{f}, nil
+	}
+	if ffmpegAvailable {
+		err := compressImageByFFmpeg(filePath, outputPath, TelegramMaxPhotoSideLength)
+		if err != nil {
+			return nil, err
+		}
+		f, err := os.Open(outputPath)
+		if err != nil {
+			return nil, err
+		}
+		return &TempFile{f}, nil
+	}
+	err := compressImageNative(filePath, outputPath, "jpeg", TelegramMaxPhotoSideLength)
+	if err != nil {
+		return nil, err
+	}
+	f, err := os.Open(outputPath)
+	if err != nil {
+		return nil, err
+	}
+	return &TempFile{f}, nil
 }

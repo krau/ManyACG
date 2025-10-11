@@ -2,40 +2,13 @@ package osutil
 
 import (
 	"errors"
-	"html"
 	"os"
 	"path/filepath"
-	"regexp"
 	"strings"
-	"sync"
-	"time"
 
-	"github.com/duke-git/lancet/v2/fileutil"
 	"github.com/duke-git/lancet/v2/strutil"
 	"github.com/duke-git/lancet/v2/validator"
 )
-
-var fileLocks sync.Map
-
-// 创建文件, 自动创建目录
-func MkFile(path string, data []byte) error {
-	lock, _ := fileLocks.LoadOrStore(path, &sync.Mutex{})
-	lock.(*sync.Mutex).Lock()
-	defer func() {
-		lock.(*sync.Mutex).Unlock()
-		fileLocks.Delete(path)
-	}()
-
-	err := os.MkdirAll(filepath.Dir(path), os.ModePerm)
-	if err != nil {
-		return err
-	}
-	return os.WriteFile(path, data, os.ModePerm)
-}
-
-func FileExists(path string) bool {
-	return fileutil.IsExist(path)
-}
 
 // 删除文件, 并清理空目录. 如果文件不存在则返回 nil
 func PurgeFile(path string) error {
@@ -61,79 +34,6 @@ func RemoveEmptyDirectories(dirPath string) error {
 		return RemoveEmptyDirectories(filepath.Dir(dirPath))
 	}
 	return nil
-}
-
-// 在指定时间后删除和清理文件 (定时器)
-func PurgeFileAfter(path string, td time.Duration) {
-	_, err := os.Stat(path)
-	if err != nil {
-		return
-	}
-	time.AfterFunc(td, func() {
-		PurgeFile(path)
-	})
-}
-
-var timerMap sync.Map
-
-func RmFileAfter(path string, td time.Duration) {
-	if _, ok := timerMap.Load(path); ok {
-		return
-	}
-	timerMap.Store(path, struct{}{})
-	defer timerMap.Delete(path)
-
-	_, err := os.Stat(path)
-	if err != nil {
-		return
-	}
-	time.AfterFunc(td, func() {
-		os.Remove(path)
-	})
-}
-
-type CacheFile struct {
-	*os.File
-	td time.Duration
-}
-
-func (c *CacheFile) Close() error {
-	err := c.File.Close()
-	if err != nil {
-		return err
-	}
-	go RmFileAfter(c.File.Name(), c.td)
-	return nil
-}
-
-func (c *CacheFile) Remove() error {
-	err := c.File.Close()
-	if err != nil {
-		return err
-	}
-	return os.Remove(c.File.Name())
-}
-
-func NewCacheFile(path string, td time.Duration) (*CacheFile, error) {
-	err := os.MkdirAll(filepath.Dir(path), os.ModePerm)
-	if err != nil {
-		return nil, err
-	}
-	f, err := os.Create(path)
-	if err != nil {
-		return nil, err
-	}
-	return &CacheFile{
-		File: f,
-		td:   td,
-	}, nil
-}
-
-func MkCache(path string, data []byte, td time.Duration) {
-	if err := MkFile(path, data); err != nil {
-		return
-	}
-	go RmFileAfter(path, td)
 }
 
 var fileNameReplacer = strings.NewReplacer(
@@ -169,14 +69,4 @@ func SanitizeFileName(fileName string) string {
 		return '_'
 	}, fname)
 	return fname
-}
-
-var markdownRe = regexp.MustCompile("([" + regexp.QuoteMeta(`\_*[]()~`+"`"+`>#+-=|{}.!`) + "])")
-
-func EscapeMarkdown(text string) string {
-	return markdownRe.ReplaceAllString(text, "\\$1")
-}
-
-func EscapeHTML(text string) string {
-	return html.EscapeString(text)
 }

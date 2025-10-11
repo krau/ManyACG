@@ -156,11 +156,10 @@ func (s *Service) PredictAndUpdateArtworkTags(ctx context.Context, artworkID obj
 				predictedTags = slice.Union(predictedTags, maputil.Keys(result))
 				return nil
 			}
-			file, clean, err := httpclient.DownloadWithCache(ctx, picture.Original, nil)
+			file, err := httpclient.DownloadWithCache(ctx, picture.Original, nil)
 			if err != nil {
 				return err
 			}
-			defer clean()
 			defer file.Close()
 			result, err := s.tagger.Predict(ctx, file)
 			if err != nil {

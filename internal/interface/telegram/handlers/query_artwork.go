@@ -40,7 +40,7 @@ func RandomPicture(ctx *telegohandler.Context, message telego.Message) error {
 			R18:      r18Type,
 			Keywords: textArray,
 		},
-		Paginate: query.Paginate{
+		Paginate: query.Paginate{ 
 			Offset: 0,
 			Limit:  1,
 		},
@@ -66,9 +66,10 @@ func RandomPicture(ctx *telegohandler.Context, message telego.Message) error {
 		utils.ReplyMessage(ctx, message, "获取图片失败")
 		return oops.Wrapf(err, "failed to get picture input file")
 	}
+	defer file.Close()
 	aw := artwork[0]
 	photo := telegoutil.
-		Photo(message.Chat.ChatID(), file).
+		Photo(message.Chat.ChatID(), file.InputFile).
 		WithCaption(fmt.Sprintf("<a href=\"%s\">%s</a>", aw.SourceURL, html.EscapeString(aw.Title))).
 		WithParseMode(telego.ModeHTML).
 		WithReplyParameters(&telego.ReplyParameters{

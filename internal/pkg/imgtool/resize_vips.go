@@ -4,8 +4,11 @@ package imgtool
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
 
 	"github.com/cshum/vipsgen/vips"
+	"github.com/duke-git/lancet/v2/fileutil"
 )
 
 func init() {
@@ -98,4 +101,41 @@ func compressImageForTelegramByVIPS(input []byte) ([]byte, error) {
 		return nil, fmt.Errorf("failed to save image to buffer: %w", err)
 	}
 	return result, nil
+}
+
+func compressImageForTelegramByVIPSFromFile(filePath, outputPath string) error {
+	img, err := vips.NewImageFromFile(filePath, vips.DefaultLoadOptions())
+	if err != nil {
+		return fmt.Errorf("failed to create image from file: %w", err)
+	}
+	if os.MkdirAll(filepath.Dir(outputPath), os.ModePerm); err != nil {
+		return err
+	}
+	defer img.Close()
+	width := img.Width()
+	height := img.Height()
+	inputLen, err := os.Stat(filePath)
+	if err != nil {
+		return fmt.Errorf("failed to get file info: %w", err)
+	}
+	currentTotalSideLength := width + height
+	if currentTotalSideLength <= TelegramMaxPhotoTotalSideLength &&
+		inputLen.Size() <= int64(TelegramMaxPhotoFileSize) {
+		return fileutil.CopyFile(filePath, outputPath)
+	}
+	var scale float64 = 1.0
+	if currentTotalSideLength > TelegramMaxPhotoTotalSideLength {
+		scale = float64(TelegramMaxPhotoTotalSideLength) / float64(currentTotalSideLength)
+	}
+	if scale < 1.0 {
+		err = img.Resize(scale, vips.DefaultResizeOptions())
+		if err != nil {
+			return fmt.Errorf("failed to resize image: %w", err)
+		}
+	}
+	err = img.Jpegsave(outputPath, vips.DefaultJpegsaveOptions())
+	if err != nil {
+		return fmt.Errorf("failed to save image to buffer: %w", err)
+	}
+	return nil
 }

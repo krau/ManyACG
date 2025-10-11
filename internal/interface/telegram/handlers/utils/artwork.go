@@ -1,12 +1,9 @@
 package utils
 
 import (
-	"bufio"
-	"bytes"
 	"context"
 	"errors"
 	"fmt"
-	"os"
 
 	"github.com/krau/ManyACG/internal/common/httpclient"
 	"github.com/krau/ManyACG/internal/interface/telegram/metautil"
@@ -15,7 +12,7 @@ import (
 	"github.com/krau/ManyACG/internal/service"
 	"github.com/krau/ManyACG/internal/shared"
 	"github.com/krau/ManyACG/internal/shared/errs"
-	"github.com/krau/ManyACG/pkg/strutil"
+	"github.com/krau/ManyACG/pkg/log"
 	"github.com/mymmrac/telego"
 	"github.com/mymmrac/telego/telegohandler"
 	"github.com/mymmrac/telego/telegoutil"
@@ -40,10 +37,11 @@ func SendArtworkPhotoMediaGroup(
 		if err != nil {
 			return nil, oops.Wrapf(err, "failed to create input media photos")
 		}
+		defer inputs.Close()
 		// Send the media group
 		return bot.SendMediaGroup(ctx, telegoutil.MediaGroup(
 			chatID,
-			inputs...,
+			inputs.Medias...,
 		))
 	}
 	messages := make([]telego.Message, len(pics))
@@ -56,7 +54,8 @@ func SendArtworkPhotoMediaGroup(
 		if err != nil {
 			return nil, oops.Wrapf(err, "failed to create input media photos")
 		}
-		mediaGroup := telegoutil.MediaGroup(chatID, inputs...)
+		defer inputs.Close()
+		mediaGroup := telegoutil.MediaGroup(chatID, inputs.Medias...)
 		if i > 0 {
 			mediaGroup = mediaGroup.WithReplyParameters(&telego.ReplyParameters{
 				ChatID:    chatID,
@@ -72,174 +71,201 @@ func SendArtworkPhotoMediaGroup(
 	return messages, nil
 }
 
+type InputMediasCloser struct {
+	Medias    []telego.InputMedia
+	CloseFunc func() error
+}
+
+func (c *InputMediasCloser) Close() error {
+	if c.CloseFunc != nil {
+		return c.CloseFunc()
+	}
+	return nil
+}
+
 func ArtworkInputMediaPhotos(ctx context.Context,
 	serv *service.Service,
 	artwork shared.ArtworkLike,
 	caption string,
-	start, end int) ([]telego.InputMedia, error) {
+	start, end int) (*InputMediasCloser, error) {
 	inputMediaPhotos := make([]telego.InputMedia, end-start)
 	awPics := artwork.GetPictures()
 	if start < 0 || end > len(awPics) || start >= end {
 		return nil, oops.Errorf("invalid start or end index: %d, %d, len=%d", start, end, len(awPics))
 	}
+
+	closers := make([]func() error, 0, end-start)
+
 	for i := start; i < end; i++ {
 		picture := awPics[i]
-		var photo *telego.InputMediaPhoto
-		if id := picture.GetTelegramInfo().PhotoFileID; id != "" {
-			photo = telegoutil.MediaPhoto(telegoutil.FileFromID(id))
-		}
-		if photo == nil {
-			var fileBytes []byte
-			var err error
-			fileBytes, err = httpclient.GetReqCachedFile(picture.GetOriginal())
-			if err != nil {
-				if picture.GetStorageInfo() == shared.ZeroStorageInfo || picture.GetStorageInfo().Original == nil {
-					file, clean, err := httpclient.DownloadWithCache(ctx, picture.GetOriginal(), nil)
+		err := func() error {
+			var photo *telego.InputMediaPhoto
+			if id := picture.GetTelegramInfo().PhotoFileID; id != "" {
+				photo = telegoutil.MediaPhoto(telegoutil.FileFromID(id))
+			} else {
+				if picture.GetStorageInfo() != shared.ZeroStorageInfo && picture.GetStorageInfo().Original != nil {
+					// download from storage
+					file, err := serv.StorageGetFile(ctx, *picture.GetStorageInfo().Original)
 					if err != nil {
-						return nil, oops.Wrapf(err, "failed to download file: %s", picture.GetOriginal())
+						return oops.Wrapf(err, "failed to get file from storage")
 					}
 					defer file.Close()
-					defer clean()
-					fileBytes, err = os.ReadFile(file.Name())
+					compressed, err := imgtool.CompressForTelegramFromFile(file.Name())
 					if err != nil {
-						return nil, oops.Wrapf(err, "failed to read file: %s", picture.GetOriginal())
+						return oops.Wrapf(err, "failed to compress image")
 					}
+					photo = telegoutil.MediaPhoto(telegoutil.File(compressed))
+					closers = append(closers, func() error { return compressed.Close() })
 				} else {
-					rc, err := serv.StorageGetFile(ctx, *picture.GetStorageInfo().Original)
+					file, err := httpclient.DownloadWithCache(ctx, picture.GetOriginal(), nil)
 					if err != nil {
-						return nil, oops.Wrapf(err, "failed to get file: %s", picture.GetOriginal())
+						return oops.Wrapf(err, "failed to download file: %s", picture.GetOriginal())
 					}
-					defer rc.Close()
-					var buf bytes.Buffer
-					writer := bufio.NewWriter(&buf)
-					_, err = writer.ReadFrom(rc)
-					if err != nil {
-						return nil, oops.Wrapf(err, "failed to read file: %s", picture.GetOriginal())
-					}
-					writer.Flush()
-					fileBytes = buf.Bytes()
-				}
-			}
-			fileBytes, err = imgtool.CompressForTelegram(fileBytes)
-			if err != nil {
-				return nil, oops.Wrapf(err, "failed to compress image: %s", picture.GetOriginal())
-			}
-			photo = telegoutil.MediaPhoto(telegoutil.File(telegoutil.NameBytes(fileBytes, serv.PrettyFileName(artwork, picture))))
-		}
-		if i == 0 {
-			photo = photo.WithCaption(caption).WithParseMode(telego.ModeHTML)
-		}
-		if artwork.GetR18() {
-			photo = photo.WithHasSpoiler()
-		}
-		inputMediaPhotos[i-start] = photo
-	}
-	return inputMediaPhotos, nil
-}
-
-// used for ugoira
-func ArtworkInputMediaAnimations(
-	ctx context.Context,
-	serv *service.Service,
-	artwork shared.UgoiraArtworkLike,
-	caption string,
-	start, end int) ([]telego.InputMedia, error) {
-	inputAnimations := make([]telego.InputMedia, end-start)
-	awUgoiras := artwork.GetUgoiraMetas()
-	if start < 0 || end > len(awUgoiras) || start >= end {
-		return nil, oops.Errorf("invalid start or end index: %d, %d, len=%d", start, end, len(awUgoiras))
-	}
-	for i := start; i < end; i++ {
-		ugoira := awUgoiras[i]
-		var animation *telego.InputMediaAnimation
-		if id := ugoira.GetTelegramInfo().PhotoFileID; id != "" {
-			animation = telegoutil.MediaAnimation(telegoutil.FileFromID(id))
-		}
-		if animation == nil {
-			var fileBytes []byte
-			var err error
-			fileBytes, err = httpclient.GetReqCachedFile(ugoira.GetUgoiraMetaData().OriginalZip)
-			if err != nil {
-				if ugoira.GetOriginalStorage() == shared.ZeroStorageInfo || ugoira.GetOriginalStorage().Original == nil {
-					file, clean, err := httpclient.DownloadWithCache(ctx, ugoira.GetUgoiraMetaData().OriginalZip, nil)
-					if err != nil {
-						return nil, oops.Wrapf(err, "failed to download file: %s", ugoira.GetUgoiraMetaData().OriginalZip)
-					}
-					defer clean()
 					defer file.Close()
-					fileBytes, err = os.ReadFile(file.Name())
+					compressed, err := imgtool.CompressForTelegramFromFile(file.Name())
 					if err != nil {
-						return nil, oops.Wrapf(err, "failed to read file: %s", ugoira.GetUgoiraMetaData().OriginalZip)
+						return oops.Wrapf(err, "failed to compress image")
 					}
-				} else {
-					rc, err := serv.StorageGetFile(ctx, *ugoira.GetOriginalStorage().Original)
-					if err != nil {
-						return nil, oops.Wrapf(err, "failed to get file: %s", ugoira.GetUgoiraMetaData().OriginalZip)
-					}
-					defer rc.Close()
-					var buf bytes.Buffer
-					writer := bufio.NewWriter(&buf)
-					_, err = writer.ReadFrom(rc)
-					if err != nil {
-						return nil, oops.Wrapf(err, "failed to read file: %s", ugoira.GetUgoiraMetaData().OriginalZip)
-					}
-					writer.Flush()
-					fileBytes = buf.Bytes()
+					photo = telegoutil.MediaPhoto(telegoutil.File(compressed))
+					closers = append(closers, func() error { return compressed.Close() })
 				}
 			}
-			// TODO: transform zip to webm or gif
-			animation = telegoutil.MediaAnimation(telegoutil.File(telegoutil.NameBytes(fileBytes, strutil.MD5Hash(ugoira.GetUgoiraMetaData().OriginalZip))))
+			if photo == nil {
+				return oops.New("failed to create input media photo")
+			}
+			if i == 0 {
+				photo = photo.WithCaption(caption).WithParseMode(telego.ModeHTML)
+			}
+			if artwork.GetR18() {
+				photo = photo.WithHasSpoiler()
+			}
+			inputMediaPhotos[i-start] = photo
+			return nil
+		}()
+		if err != nil {
+			var closeErrs []error
+			for _, closer := range closers {
+				if err := closer(); err != nil {
+					closeErrs = append(closeErrs, err)
+				}
+			}
+			return nil, oops.Wrapf(err, "failed to create input media photo, close errs: %v", oops.Join(closeErrs...))
 		}
-		if i == 0 {
-			animation = animation.WithCaption(caption).WithParseMode(telego.ModeHTML)
-		}
-		if artwork.GetR18() {
-			animation = animation.WithHasSpoiler()
-		}
-		inputAnimations[i-start] = animation
 	}
-	return inputAnimations, nil
+	return &InputMediasCloser{
+		Medias: inputMediaPhotos,
+		CloseFunc: func() error {
+			var errs []error
+			for _, closer := range closers {
+				if err := closer(); err != nil {
+					errs = append(errs, err)
+				}
+			}
+			return oops.Join(errs...)
+		},
+	}, nil
 }
 
-func GetPicturePhotoInputFile(ctx context.Context, serv *service.Service, picture shared.PictureLike) (telego.InputFile, error) {
+// // used for ugoira
+// func ArtworkInputMediaAnimations(
+// 	ctx context.Context,
+// 	serv *service.Service,
+// 	artwork shared.UgoiraArtworkLike,
+// 	caption string,
+// 	start, end int) ([]telego.InputMedia, error) {
+// 	inputAnimations := make([]telego.InputMedia, end-start)
+// 	awUgoiras := artwork.GetUgoiraMetas()
+// 	if start < 0 || end > len(awUgoiras) || start >= end {
+// 		return nil, oops.Errorf("invalid start or end index: %d, %d, len=%d", start, end, len(awUgoiras))
+// 	}
+// 	for i := start; i < end; i++ {
+// 		ugoira := awUgoiras[i]
+// 		var animation *telego.InputMediaAnimation
+// 		if id := ugoira.GetTelegramInfo().PhotoFileID; id != "" {
+// 			animation = telegoutil.MediaAnimation(telegoutil.FileFromID(id))
+// 		}
+// 		if animation == nil {
+// 			var fileBytes []byte
+// 			var err error
+// 			fileBytes, err = httpclient.GetReqCachedFile(ugoira.GetUgoiraMetaData().OriginalZip)
+// 			if err != nil {
+// 				if ugoira.GetOriginalStorage() == shared.ZeroStorageInfo || ugoira.GetOriginalStorage().Original == nil {
+// 					file, clean, err := httpclient.DownloadWithCache(ctx, ugoira.GetUgoiraMetaData().OriginalZip, nil)
+// 					if err != nil {
+// 						return nil, oops.Wrapf(err, "failed to download file: %s", ugoira.GetUgoiraMetaData().OriginalZip)
+// 					}
+// 					defer clean()
+// 					defer file.Close()
+// 					fileBytes, err = os.ReadFile(file.Name())
+// 					if err != nil {
+// 						return nil, oops.Wrapf(err, "failed to read file: %s", ugoira.GetUgoiraMetaData().OriginalZip)
+// 					}
+// 				} else {
+// 					rc, err := serv.StorageGetFile(ctx, *ugoira.GetOriginalStorage().Original)
+// 					if err != nil {
+// 						return nil, oops.Wrapf(err, "failed to get file: %s", ugoira.GetUgoiraMetaData().OriginalZip)
+// 					}
+// 					defer rc.Close()
+// 					var buf bytes.Buffer
+// 					writer := bufio.NewWriter(&buf)
+// 					_, err = writer.ReadFrom(rc)
+// 					if err != nil {
+// 						return nil, oops.Wrapf(err, "failed to read file: %s", ugoira.GetUgoiraMetaData().OriginalZip)
+// 					}
+// 					writer.Flush()
+// 					fileBytes = buf.Bytes()
+// 				}
+// 			}
+// 			// TODO: transform zip to webm or gif
+// 			animation = telegoutil.MediaAnimation(telegoutil.File(telegoutil.NameBytes(fileBytes, strutil.MD5Hash(ugoira.GetUgoiraMetaData().OriginalZip))))
+// 		}
+// 		if i == 0 {
+// 			animation = animation.WithCaption(caption).WithParseMode(telego.ModeHTML)
+// 		}
+// 		if artwork.GetR18() {
+// 			animation = animation.WithHasSpoiler()
+// 		}
+// 		inputAnimations[i-start] = animation
+// 	}
+// 	return inputAnimations, nil
+// }
+
+func GetPicturePhotoInputFile(ctx context.Context, serv *service.Service, picture shared.PictureLike) (*InputFileCloser, error) {
 	if id := picture.GetTelegramInfo().PhotoFileID; id != "" {
-		return telegoutil.FileFromID(id), nil
+		return &InputFileCloser{
+			telegoutil.FileFromID(id),
+			func() error { return nil },
+		}, nil
 	}
 	orgStorDetail := picture.GetStorageInfo().Original
 	if orgStorDetail != nil {
-		rsc, err := serv.StorageGetFile(ctx, *picture.GetStorageInfo().Original)
+		file, err := serv.StorageGetFile(ctx, *picture.GetStorageInfo().Original)
 		if err != nil {
-			return telego.InputFile{}, oops.Wrapf(err, "failed to get file from storage")
+			return nil, oops.Wrapf(err, "failed to get file from storage")
 		}
-		defer rsc.Close()
-		// 将 rsc(ReadSeekCloser) 读取到内存中
-		data := new(bytes.Buffer)
-		_, err = data.ReadFrom(rsc)
+		defer file.Close()
+		compressed, err := imgtool.CompressForTelegramFromFile(file.Name())
 		if err != nil {
-			return telego.InputFile{}, oops.Wrapf(err, "failed to read file from storage")
+			return nil, oops.Wrapf(err, "failed to compress image")
 		}
-		compressed, err := imgtool.CompressForTelegram(data.Bytes())
-		if err != nil {
-			return telego.InputFile{}, oops.Wrapf(err, "failed to compress image")
-		}
-
-		return telegoutil.File(telegoutil.NameBytes(compressed, fmt.Sprintf("%s%s", strutil.MD5Hash(picture.GetOriginal()), ".jpg"))), nil
+		return &InputFileCloser{
+			telegoutil.File(compressed),
+			func() error { return compressed.Close() },
+		}, nil
 	}
-	file, clean, err := httpclient.DownloadWithCache(ctx, picture.GetOriginal(), nil)
+	file, err := httpclient.DownloadWithCache(ctx, picture.GetOriginal(), nil)
 	if err != nil {
-		return telego.InputFile{}, oops.Wrapf(err, "failed to download file: %s", picture.GetOriginal())
+		return nil, oops.Wrapf(err, "failed to download file: %s", picture.GetOriginal())
 	}
 	defer file.Close()
-	defer clean()
-	fileBytes, err := os.ReadFile(file.Name())
+	compressed, err := imgtool.CompressForTelegramFromFile(file.Name())
 	if err != nil {
-		return telego.InputFile{}, oops.Wrapf(err, "failed to read file: %s", picture.GetOriginal())
+		return nil, oops.Wrapf(err, "failed to compress image")
 	}
-	compressed, err := imgtool.CompressForTelegram(fileBytes)
-	if err != nil {
-		return telego.InputFile{}, oops.Wrapf(err, "failed to compress image")
-	}
-	return telegoutil.File(telegoutil.NameBytes(compressed, fmt.Sprintf("%s%s", strutil.MD5Hash(picture.GetOriginal()), ".jpg"))), nil
+	return &InputFileCloser{
+		telegoutil.File(compressed),
+		func() error { return compressed.Close() },
+	}, nil
 }
 
 type SendArtworkInfoOptions struct {
@@ -357,7 +383,13 @@ func SendArtworkInfo(ctx *telegohandler.Context,
 	if err != nil {
 		return oops.Wrapf(err, "failed to get picture preview input file")
 	}
-	photo := telegoutil.MediaPhoto(inputFile).
+	defer func() {
+		err := inputFile.Close()
+		if err != nil {
+			log.Errorf("failed to close input file: %s", err)
+		}
+	}()
+	photo := telegoutil.MediaPhoto(inputFile.InputFile).
 		WithCaption(caption).WithParseMode(telego.ModeHTML)
 	if artwork.GetR18() {
 		photo = photo.WithHasSpoiler()
@@ -438,15 +470,13 @@ func GetPictureDocumentInputFile(ctx context.Context, serv *service.Service, art
 			},
 		}, nil
 	}
-	file, clean, err := httpclient.DownloadWithCache(ctx, picture.GetOriginal(), nil)
+	file, err := httpclient.DownloadWithCache(ctx, picture.GetOriginal(), nil)
 	if err != nil {
 		return nil, oops.Wrapf(err, "failed to download file: %s", picture.GetOriginal())
 	}
-	defer clean()
 	return &InputFileCloser{
 		telegoutil.File(file),
 		func() error {
-			defer clean()
 			return file.Close()
 		},
 	}, nil

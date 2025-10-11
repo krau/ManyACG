@@ -26,6 +26,7 @@ import (
 	"github.com/krau/ManyACG/internal/service"
 	"github.com/krau/ManyACG/pkg/log"
 	"github.com/krau/ManyACG/pkg/objectuuid"
+	"github.com/krau/ManyACG/pkg/osutil"
 )
 
 const banner = `
@@ -44,12 +45,13 @@ Kawaii is All You Need! ᕕ(◠ڼ◠)ᕗ
 
 func Run() {
 	fmt.Printf(banner, version.BuildTime, version.Version, version.Commit[:7])
-	log.SetDefault(log.New(log.Config{
-		LogFile:    runtimecfg.Get().Log.FilePath,
-		MaxBackups: int(runtimecfg.Get().Log.BackupNum),
-	}))
+	cfg := runtimecfg.Get()
 
-	if runtimecfg.Get().App.Debug {
+	log.SetDefault(log.New(log.Config{
+		LogFile:    cfg.Log.FilePath,
+		MaxBackups: int(cfg.Log.BackupNum),
+	}))
+	if cfg.App.Debug {
 		go func() {
 			log.Info("Start pprof server")
 			if err := http.ListenAndServe("localhost:39060", nil); err != nil {
@@ -61,6 +63,11 @@ func Run() {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 	log.Info("Starting...")
+
+	osutil.SetCacheTTL(time.Duration(cfg.Storage.CacheTTL) * time.Second)
+	osutil.SetOnRemoveError(func(path string, err error) {
+		log.Error("remove cache file error", "path", path, "err", err)
+	})
 
 	source.InitAll()
 	if err := storage.InitAll(ctx); err != nil {
@@ -118,7 +125,6 @@ func Run() {
 	if err := serv.Cleanup(cleanCtx); err != nil {
 		log.Error(err)
 	}
-	// cleanCacheDir(runtimecfg.Get())
 }
 
 func registerArtworkEventSearcherHandlers(ctx context.Context, bus repo.EventBus[*dto.ArtworkEventItem], searcher search.Searcher) {

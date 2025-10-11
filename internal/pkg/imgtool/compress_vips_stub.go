@@ -11,3 +11,7 @@ func compressImageVIPS(inputPath, outputPath, format string, maxEdgeLength int) 
 func compressImageForTelegramByVIPS(input []byte) ([]byte, error) {
 	return nil, fmt.Errorf("vips compression is only supported on linux/amd64")
 }
+
+func compressImageForTelegramByVIPSFromFile(filePath, outputPath string) error {
+	return fmt.Errorf("vips compression is only supported on linux/amd64")
+}

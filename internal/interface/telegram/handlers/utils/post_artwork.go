@@ -50,17 +50,15 @@ func doPostAndCreateArtwork(
 	for i, pic := range artwork.Pictures {
 		// 下载并存储图片, 同时计算 phash, thumbhash, width, height
 		err = func() error {
-			file, clean, err := httpclient.DownloadWithCache(ctx, pic.Original, nil)
+			file, err := httpclient.DownloadWithCache(ctx, pic.Original, nil)
 			if err != nil {
 				return oops.Wrapf(err, "failed to download picture %d", i)
 			}
-			defer clean()
+			defer file.Close()
 			img, _, err := image.Decode(file)
 			if err != nil {
-				file.Close()
 				return oops.Wrapf(err, "failed to decode picture %d", i)
 			}
-			file.Close()
 			if pic.Phash == "" {
 				phash, err := imgtool.GetImagePhash(img)
 				if err != nil {
@@ -110,12 +108,11 @@ func doPostAndCreateArtwork(
 		for _, ugoira := range artwork.UgoiraMetas {
 			err := func() error {
 				origZip := ugoira.UgoiraMetaData.Data().OriginalZip
-				file, clean, err := httpclient.DownloadWithCache(ctx, origZip, nil)
+				file, err := httpclient.DownloadWithCache(ctx, origZip, nil)
 				if err != nil {
 					return oops.Wrapf(err, "failed to download ugoira original zip")
 				}
 				defer file.Close()
-				defer clean()
 				filename := fmt.Sprintf("%s.zip", strutil.MD5Hash(origZip))
 				info, err := serv.StorageSaveOriginal(ctx, file, fmt.Sprintf("/%s/%s/ugoira", artwork.SourceType, artwork.Artist.UID), filename)
 				if err != nil {
