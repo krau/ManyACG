@@ -311,16 +311,21 @@ func CreateArtworkInfoReplyMarkup(ctx context.Context,
 		return nil, oops.Wrapf(err, "failed to create callback data")
 	}
 	return telegoutil.InlineKeyboard(
-		[]telego.InlineKeyboardButton{
+		ArtworkPostKeyboard(meta, cbId)...,
+	), nil
+}
+
+func ArtworkPostKeyboard(meta *metautil.MetaData, cbId string) [][]telego.InlineKeyboardButton {
+	return [][]telego.InlineKeyboardButton{
+		{
 			telegoutil.InlineKeyboardButton("发布").WithCallbackData(fmt.Sprintf("post_artwork %s", cbId)),
 			telegoutil.InlineKeyboardButton("发布(反转R18)").WithCallbackData(fmt.Sprintf("post_artwork_r18 %s", cbId)),
 		},
-		[]telego.InlineKeyboardButton{
+		{
 			telegoutil.InlineKeyboardButton("查重").WithCallbackData(fmt.Sprintf("search_picture %s", cbId)),
 			telegoutil.InlineKeyboardButton("预览").WithURL(meta.BotDeepLink("info", cbId)),
 		},
-	), nil
-
+	}
 }
 
 // SendArtworkInfo 将作品信息附带操作按钮发送到指定聊天, 用于提供给管理员发布或修改作品
@@ -336,11 +341,7 @@ func SendArtworkInfo(ctx *telegohandler.Context,
 	if sourceUrl == "" {
 		return oops.New("no valid source url found")
 	}
-
-	waitMsg, err := ctx.Bot().SendMessage(ctx, telegoutil.Message(chatID, "正在获取作品信息...").WithReplyParameters(opts.ReplyParameters))
-	if err != nil {
-		return oops.Wrapf(err, "failed to send wait message")
-	}
+	var waitMsg *telego.Message
 	var artwork shared.ArtworkLike
 	created := false
 	if awent, err := serv.GetArtworkByURL(ctx, sourceUrl); err == nil {
@@ -354,11 +355,32 @@ func SendArtworkInfo(ctx *telegohandler.Context,
 		if rec, err := serv.GetDeletedByURL(ctx, sourceUrl); err == nil {
 			deleted = rec
 		}
-		cached, err := serv.GetOrFetchCachedArtwork(ctx, sourceUrl)
-		if err != nil {
-			return oops.Wrapf(err, "failed to get or fetch cached artwork by url: %s", sourceUrl)
+		cached, err := serv.GetCachedArtworkByURL(ctx, sourceUrl)
+		if err == nil {
+			artwork = cached
+		} else if !errors.Is(err, errs.ErrRecordNotFound) {
+			return oops.Wrapf(err, "failed to get cached artwork by url: %s", sourceUrl)
 		}
-		artwork = cached
+		if artwork == nil {
+			// 既没有发布也没有缓存, 则尝试抓取
+			cbId, err := serv.CreateStringData(ctx, sourceUrl)
+			if err != nil {
+				return oops.Wrapf(err, "failed to create callback data")
+			}
+			waitMsg, err = ctx.Bot().SendMessage(ctx, telegoutil.
+				Message(chatID, "正在获取作品信息...").
+				WithReplyParameters(opts.ReplyParameters).WithReplyMarkup(telegoutil.InlineKeyboard(
+				ArtworkPostKeyboard(meta, cbId)...,
+			)))
+			if err != nil {
+				return oops.Wrapf(err, "failed to send wait message")
+			}
+			cached, err = serv.GetOrFetchCachedArtwork(ctx, sourceUrl)
+			if err != nil {
+				return oops.Wrapf(err, "failed to get or fetch cached artwork by url: %s", sourceUrl)
+			}
+			artwork = cached
+		}
 		// 再次检查是否已经发布, 主要解决某些源作品多个图片不同url时的问题
 		if awent, err := serv.GetArtworkByURL(ctx, cached.SourceURL); err == nil {
 			artwork = awent
@@ -398,51 +420,69 @@ func SendArtworkInfo(ctx *telegohandler.Context,
 	if artwork.GetR18() {
 		photo = photo.WithHasSpoiler()
 	}
-	editReq := telegoutil.EditMessageMedia(chatID, waitMsg.MessageID, photo).WithReplyMarkup(replyMarkup)
-	msg, err := ctx.Bot().EditMessageMedia(ctx, editReq)
+
+	updatePictureFileID := func(msg *telego.Message) error {
+		if msg != nil && msg.Photo != nil {
+			fileId := msg.Photo[len(msg.Photo)-1].FileID
+			pic := artwork.GetPictures()[0]
+			switch p := pic.(type) {
+			case *entity.Picture:
+				tginfo := p.GetTelegramInfo()
+				tginfo.PhotoFileID = fileId
+				return serv.UpdatePictureTelegramInfo(ctx, p.ID, &tginfo)
+			case *entity.CachedPicture:
+				switch aw := artwork.(type) {
+				case *entity.CachedArtworkData:
+					for _, p := range aw.Pictures {
+						if p.GetOriginal() != pic.GetOriginal() {
+							continue
+						}
+						tginfo := p.GetTelegramInfo()
+						tginfo.PhotoFileID = fileId
+						p.TelegramInfo = tginfo
+						break
+					}
+					return serv.UpdateCachedArtwork(ctx, aw)
+				case *entity.CachedArtwork:
+					data := aw.Artwork.Data()
+					for _, p := range data.Pictures {
+						if p.GetOriginal() != pic.GetOriginal() {
+							continue
+						}
+						tginfo := p.GetTelegramInfo()
+						tginfo.PhotoFileID = fileId
+						p.TelegramInfo = tginfo
+						break
+					}
+					return serv.UpdateCachedArtwork(ctx, data)
+				default:
+					return oops.Errorf("unknown artwork type: %T", artwork)
+				}
+			}
+		}
+		return nil
+	}
+
+	if waitMsg != nil {
+		editReq := telegoutil.EditMessageMedia(chatID, waitMsg.MessageID, photo).WithReplyMarkup(replyMarkup)
+		msg, err := ctx.Bot().EditMessageMedia(ctx, editReq)
+		if err != nil {
+			return oops.Wrapf(err, "failed to send artwork info photo")
+		}
+		return updatePictureFileID(msg)
+	}
+	sendPhoto := telegoutil.Photo(chatID, inputFile.InputFile).
+		WithCaption(caption).WithParseMode(telego.ModeHTML).
+		WithReplyParameters(opts.ReplyParameters).
+		WithReplyMarkup(replyMarkup)
+	if artwork.GetR18() {
+		sendPhoto = sendPhoto.WithHasSpoiler()
+	}
+	msg, err := ctx.Bot().SendPhoto(ctx, sendPhoto)
 	if err != nil {
 		return oops.Wrapf(err, "failed to send artwork info photo")
 	}
-	if msg != nil && msg.Photo != nil {
-		fileId := msg.Photo[len(msg.Photo)-1].FileID
-		pic := artwork.GetPictures()[0]
-		switch p := pic.(type) {
-		case *entity.Picture:
-			tginfo := p.GetTelegramInfo()
-			tginfo.PhotoFileID = fileId
-			return serv.UpdatePictureTelegramInfo(ctx, p.ID, &tginfo)
-		case *entity.CachedPicture:
-			switch aw := artwork.(type) {
-			case *entity.CachedArtworkData:
-				for _, p := range aw.Pictures {
-					if p.GetOriginal() != pic.GetOriginal() {
-						continue
-					}
-					tginfo := p.GetTelegramInfo()
-					tginfo.PhotoFileID = fileId
-					p.TelegramInfo = tginfo
-					break
-				}
-				return serv.UpdateCachedArtwork(ctx, aw)
-			case *entity.CachedArtwork:
-				data := aw.Artwork.Data()
-				for _, p := range data.Pictures {
-					if p.GetOriginal() != pic.GetOriginal() {
-						continue
-					}
-					tginfo := p.GetTelegramInfo()
-					tginfo.PhotoFileID = fileId
-					p.TelegramInfo = tginfo
-					break
-				}
-				return serv.UpdateCachedArtwork(ctx, data)
-			default:
-				return oops.Errorf("unknown artwork type: %T", artwork)
-			}
-		}
-	}
-	// [TODO] lazy load input file and update preview
-	return nil
+	return updatePictureFileID(msg)
 }
 
 type InputFileCloser struct {

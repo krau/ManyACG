@@ -85,7 +85,7 @@ func DeleteArtwork(ctx *telegohandler.Context, message telego.Message) error {
 			return oops.Errorf("delete picture %d of artwork %s failed: %w", pictureIndex, artwork.ID.String(), err)
 		}
 		if err := serv.StorageDeleteByInfo(ctx, picture.StorageInfo.Data()); err != nil {
-			log.Errorf("删除图片失败: %s", err)
+			log.Errorf("failed to delete picture file: %s", err)
 		}
 	}
 	utils.ReplyMessage(ctx, message, "在数据库中已删除所选图片")
