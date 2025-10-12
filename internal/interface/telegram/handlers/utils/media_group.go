@@ -24,11 +24,12 @@ type MediaGroupResultMessage struct {
 func SendArtworkMediaGroup(
 	ctx context.Context,
 	bot *telego.Bot,
+	serv *service.Service,
 	chatID telego.ChatID,
 	artwork shared.ArtworkLike) ([]MediaGroupResultMessage, error) {
 
 	results := make([]MediaGroupResultMessage, 0)
-	photoMsgs, err := SendArtworkPhotoMediaGroup(ctx, bot, chatID, artwork)
+	photoMsgs, err := SendArtworkPhotoMediaGroup(ctx, bot, serv, chatID, artwork)
 	if err != nil {
 		return nil, oops.Wrapf(err, "failed to send artwork photo media group")
 	}
@@ -44,12 +45,12 @@ func SendArtworkMediaGroup(
 			UgoiraIndex:  -1,
 		})
 	}
-	if ugoiraArt, ok := artwork.(shared.UgoiraArtworkLike); ok && imgtool.FFmpegAvailable() {
+	if ugoiraArt, ok := artwork.(shared.UgoiraArtworkLike); ok && imgtool.FFmpegAvailable() && len(ugoiraArt.GetUgoiraMetas()) > 0 {
 		sendOption := &SendOption{}
 		if len(results) > 0 {
 			sendOption.ReplyTo = results[0].Message.MessageID
 		}
-		ugoiraMsgs, err := SendArtworkUgoiraMediaGroup(ctx, bot, chatID, ugoiraArt, sendOption)
+		ugoiraMsgs, err := SendArtworkUgoiraMediaGroup(ctx, bot, serv, chatID, ugoiraArt, sendOption)
 		if err != nil {
 			return nil, oops.Wrapf(err, "failed to send artwork ugoira media group")
 		}
@@ -72,6 +73,7 @@ func SendArtworkMediaGroup(
 func SendArtworkPhotoMediaGroup(
 	ctx context.Context,
 	bot *telego.Bot,
+	serv *service.Service,
 	chatID telego.ChatID,
 	artwork shared.ArtworkLike) ([]telego.Message, error) {
 
@@ -79,7 +81,7 @@ func SendArtworkPhotoMediaGroup(
 	caption := ArtworkHTMLCaption(artwork)
 
 	if len(pics) <= 10 {
-		inputs, err := ArtworkInputMediaPhotos(ctx, service.FromContext(ctx), artwork, caption, 0, len(pics))
+		inputs, err := ArtworkInputMediaPhotos(ctx, serv, artwork, caption, 0, len(pics))
 		if err != nil {
 			return nil, oops.Wrapf(err, "failed to create input media photos")
 		}
@@ -207,6 +209,7 @@ type SendOption struct {
 func SendArtworkUgoiraMediaGroup(
 	ctx context.Context,
 	bot *telego.Bot,
+	serv *service.Service,
 	chatID telego.ChatID,
 	artwork shared.UgoiraArtworkLike,
 	opt *SendOption,
@@ -215,9 +218,9 @@ func SendArtworkUgoiraMediaGroup(
 	ugoiras := artwork.GetUgoiraMetas()
 	caption := ArtworkHTMLCaption(artwork)
 	if len(ugoiras) <= 10 {
-		inputs, err := ArtworkInputMediaVideos(ctx, service.FromContext(ctx), artwork, caption, 0, len(ugoiras))
+		inputs, err := ArtworkInputMediaVideos(ctx, serv, artwork, caption, 0, len(ugoiras))
 		if err != nil {
-			return nil, oops.Wrapf(err, "failed to create input media animations")
+			return nil, oops.Wrapf(err, "failed to create input media videos")
 		}
 		defer inputs.Close()
 		mediaGroup := telegoutil.MediaGroup(
@@ -239,9 +242,9 @@ func SendArtworkUgoiraMediaGroup(
 		if end > len(ugoiras) {
 			end = len(ugoiras)
 		}
-		inputs, err := ArtworkInputMediaVideos(ctx, service.FromContext(ctx), artwork, caption, i, end)
+		inputs, err := ArtworkInputMediaVideos(ctx, serv, artwork, caption, i, end)
 		if err != nil {
-			return nil, oops.Wrapf(err, "failed to create input media animations")
+			return nil, oops.Wrapf(err, "failed to create input media videos")
 		}
 		defer inputs.Close()
 		mediaGroup := telegoutil.MediaGroup(chatID, inputs.Value...)
@@ -287,9 +290,10 @@ func ArtworkInputMediaVideos(ctx context.Context,
 			if id := ugoira.GetTelegramInfo().PhotoFileID; id != "" {
 				video = telegoutil.MediaVideo(telegoutil.FileFromID(id))
 			} else {
-				if ugoira.GetOriginalStorage() != nil {
+				storDetail := ugoira.GetOriginalStorage()
+				if storDetail != shared.ZeroStorageDetail {
 					// download from storage
-					file, err := serv.StorageGetFile(ctx, *ugoira.GetOriginalStorage())
+					file, err := serv.StorageGetFile(ctx, storDetail)
 					if err != nil {
 						return oops.Wrapf(err, "failed to get file from storage")
 					}

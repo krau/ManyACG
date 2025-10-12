@@ -73,37 +73,6 @@ func Start(ctx *telegohandler.Context, message telego.Message) error {
 				artwork = created
 			}
 			return getArtworkFiles(ctx, serv, metautil.FromContext(ctx), message, artwork)
-		case "code":
-			// userID := message.From.ID
-			// userModel, _ := service.GetUserByTelegramID(ctx, userID)
-			// if userModel != nil {
-			// 	ctx.Bot().SendMessage(ctx, telegoutil.Messagef(message.Chat.ChatID(), "您的此 Telegram 账号 ( %d ) 已经绑定了 ManyACG 账号 %s", userID, userModel.Username))
-			// 	return nil
-			// }
-			// unauthUserID := args[0][5:]
-			// objectID, err := primitive.ObjectIDFromHex(unauthUserID)
-			// if err != nil {
-			// 	utils.ReplyMessage(ctx, ctx.Bot(), message, "无效的ID")
-			// 	return nil
-			// }
-			// unauthUser, err := service.GetUnauthUserByID(ctx, objectID)
-			// if err != nil {
-			// 	utils.ReplyMessage(ctx, ctx.Bot(), message, "获取失败: "+err.Error())
-			// 	return nil
-			// }
-			// _, err = ctx.Bot().SendMessage(ctx, telegoutil.Messagef(message.Chat.ChatID(),
-			// 	"您的此 Telegram 账号 ( %d ) 将与 ManyACG 账号 %s 绑定\n验证码: <code>%s</code>",
-			// 	userID,
-			// 	common.EscapeHTML(unauthUser.Username),
-			// 	common.EscapeHTML(unauthUser.Code)).
-			// 	WithParseMode(telego.ModeHTML),
-			// )
-			// if err != nil {
-			// 	common.Logger.Errorf("Failed to send message: %v", err)
-			// 	return nil
-			// }
-			// unauthUser.TelegramID = userID
-			// service.UpdateUnauthUser(ctx, objectID, unauthUser)
 		case "info":
 			dataID := args[0][5:]
 			sourceURL, err := serv.GetStringDataByID(ctx, dataID)
@@ -111,49 +80,30 @@ func Start(ctx *telegohandler.Context, message telego.Message) error {
 				utils.ReplyMessage(ctx, message, "获取失败")
 				return oops.Wrapf(err, "failed to get string data by id: %s", dataID)
 			}
-			artwork, err := serv.GetArtworkByURL(ctx, sourceURL)
-			if err == nil {
-				// 已经发布过了
-				msgs, err := utils.SendArtworkPhotoMediaGroup(ctx, ctx.Bot(), message.Chat.ChatID(), artwork)
-				if err != nil {
-					utils.ReplyMessage(ctx, message, "发送作品信息失败")
-					return oops.Wrapf(err, "failed to send artwork media group")
-				}
-				if len(artwork.GetPictures()) != len(msgs) {
-					log.Warn("number of messages sent does not match number of pictures", "sent", len(msgs), "pictures", len(artwork.GetPictures()), "title", artwork.GetTitle(), "url", artwork.GetSourceURL())
-					return nil
-				}
-				for i, pic := range artwork.Pictures {
-					if photoSize := msgs[i].Photo; len(photoSize) > 0 {
-						tginfo := pic.GetTelegramInfo()
-						tginfo.PhotoFileID = photoSize[len(photoSize)-1].FileID
-						if err := serv.UpdatePictureTelegramInfo(ctx, pic.ID, &tginfo); err != nil {
-							log.Warn("failed to update picture telegram info", "err", err, "picture_id", pic.ID)
-						}
-					}
-				}
-				return nil
-			}
-			cached, err := serv.GetOrFetchCachedArtwork(ctx, sourceURL)
+			artwork, err := serv.GetOrFetchCachedArtwork(ctx, sourceURL)
 			if err != nil {
 				utils.ReplyMessage(ctx, message, "获取作品信息失败")
 				return oops.Wrapf(err, "failed to get or fetch cached artwork by url: %s", sourceURL)
 			}
-			msgs, err := utils.SendArtworkPhotoMediaGroup(ctx, ctx.Bot(), message.Chat.ChatID(), cached)
+			results, err := utils.SendArtworkMediaGroup(ctx, ctx.Bot(), serv, message.Chat.ChatID(), artwork)
 			if err != nil {
 				utils.ReplyMessage(ctx, message, "发送作品信息失败")
-				return oops.Wrapf(err, "failed to send cached artwork media group")
+				return oops.Wrapf(err, "failed to send artwork media group")
 			}
-			if len(msgs) != len(cached.GetPictures()) {
-				log.Warn("number of messages sent does not match number of pictures", "sent", len(msgs), "pictures", len(cached.GetPictures()), "title", cached.GetTitle(), "url", cached.GetSourceURL())
-				return nil
-			}
-			data := cached.Artwork.Data()
-			for i, pic := range data.Pictures {
-				if photoSize := msgs[i].Photo; len(photoSize) > 0 {
-					tginfo := pic.GetTelegramInfo()
-					tginfo.PhotoFileID = photoSize[len(photoSize)-1].FileID
-					pic.TelegramInfo = tginfo
+			data := artwork.Artwork.Data()
+			for _, res := range results {
+				if res.UgoiraIndex >= 0 {
+					if len(data.UgoiraMetas) <= res.UgoiraIndex {
+						log.Warn("ugoira index out of range", "index", res.UgoiraIndex, "len", len(data.UgoiraMetas), "title", artwork.GetTitle(), "url", artwork.GetSourceURL())
+						continue
+					}
+					data.UgoiraMetas[res.UgoiraIndex].TelegramInfo.PhotoFileID = res.FileID
+				} else if res.PictureIndex >= 0 {
+					if len(data.Pictures) <= res.PictureIndex {
+						log.Warn("picture index out of range", "index", res.PictureIndex, "len", len(data.Pictures), "title", artwork.GetTitle(), "url", artwork.GetSourceURL())
+						continue
+					}
+					data.Pictures[res.PictureIndex].TelegramInfo.PhotoFileID = res.FileID
 				}
 			}
 			if err := serv.UpdateCachedArtwork(ctx, data); err != nil {

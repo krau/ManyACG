@@ -318,9 +318,9 @@ func UgoiraZipToMp4(zipPath string, frames []shared.UgoiraFrame, outputPath stri
 
 	out := filtered.Output(ffoutPath, ffmpeg.KwArgs{
 		"fps_mode": "vfr",
-		"pix_fmt":  "yuv420p",
 		"crf":      "23",
 		"c:v":      "libx264",
+		"pix_fmt":  "yuv420p",
 	})
 	// 覆盖输出
 	if err := out.OverWriteOutput().ErrorToStdOut().Run(); err != nil {

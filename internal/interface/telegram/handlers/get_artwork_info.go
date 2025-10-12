@@ -73,27 +73,29 @@ func GetArtworkInfoCommand(ctx *telegohandler.Context, message telego.Message) e
 		utils.ReplyMessage(ctx, message, "获取作品信息失败")
 		return oops.Wrapf(err, "get or fetch cached artwork failed: %s", sourceURL)
 	}
-	msgs, err := utils.SendArtworkPhotoMediaGroup(ctx, ctx.Bot(), message.Chat.ChatID(), artwork)
+	results, err := utils.SendArtworkMediaGroup(ctx, ctx.Bot(), serv, message.Chat.ChatID(), artwork)
 	if err != nil {
 		utils.ReplyMessage(ctx, message, "发送作品图片时出现错误")
 		return oops.Wrapf(err, "send artwork media group failed: %s", artwork.SourceURL)
 	}
-	if len(msgs) != len(artwork.GetPictures()) {
-		log.Warnf("sent media group count mismatch: sent %d, expected %d", len(msgs), len(artwork.GetPictures()))
-		return nil
-	}
 	data := artwork.Artwork.Data()
-	for i, msg := range msgs {
-		if len(msg.Photo) == 0 {
-			continue
+	for _, res := range results {
+		if res.UgoiraIndex >= 0 {
+			if len(data.UgoiraMetas) <= res.UgoiraIndex {
+				log.Warn("ugoira index out of range", "index", res.UgoiraIndex, "len", len(data.UgoiraMetas), "title", artwork.GetTitle(), "url", artwork.GetSourceURL())
+				continue
+			}
+			data.UgoiraMetas[res.UgoiraIndex].TelegramInfo.PhotoFileID = res.FileID
+		} else if res.PictureIndex >= 0 {
+			if len(data.Pictures) <= res.PictureIndex {
+				log.Warn("picture index out of range", "index", res.PictureIndex, "len", len(data.Pictures), "title", artwork.GetTitle(), "url", artwork.GetSourceURL())
+				continue
+			}
+			data.Pictures[res.PictureIndex].TelegramInfo.PhotoFileID = res.FileID
 		}
-		pic := data.Pictures[i]
-		tginfo := pic.TelegramInfo
-		tginfo.PhotoFileID = msg.Photo[len(msg.Photo)-1].FileID
-		pic.TelegramInfo = tginfo
 	}
 	if err := serv.UpdateCachedArtwork(ctx, data); err != nil {
-		return oops.Wrapf(err, "update cached artwork failed: %s", artwork.SourceURL)
+		return oops.Wrapf(err, "failed to update cached artwork after send media group")
 	}
 	return nil
 }

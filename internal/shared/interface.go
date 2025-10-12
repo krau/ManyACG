@@ -29,6 +29,6 @@ type UgoiraArtworkLike interface {
 type UgoiraMetaLike interface {
 	GetIndex() uint
 	GetUgoiraMetaData() UgoiraMetaData
-	GetOriginalStorage() *StorageDetail
+	GetOriginalStorage() StorageDetail
 	GetTelegramInfo() TelegramInfo
 }

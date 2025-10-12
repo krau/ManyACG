@@ -92,9 +92,8 @@ func (u *UgoiraMeta) GetIndex() uint {
 }
 
 // GetOriginalStorage implements shared.UgoiraMetaLike.
-func (u *UgoiraMeta) GetOriginalStorage() *shared.StorageDetail {
-	data := u.OriginalStorage.Data()
-	return &data
+func (u *UgoiraMeta) GetOriginalStorage() shared.StorageDetail {
+	return u.OriginalStorage.Data()
 }
 
 // GetTelegramInfo implements shared.UgoiraMetaLike.

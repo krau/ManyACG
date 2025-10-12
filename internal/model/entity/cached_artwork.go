@@ -52,8 +52,8 @@ func (c *CachedUgoiraMeta) GetIndex() uint {
 }
 
 // GetOriginalStorage implements shared.UgoiraMetaLike.
-func (c *CachedUgoiraMeta) GetOriginalStorage() *shared.StorageDetail {
-	return &c.OriginalStorage
+func (c *CachedUgoiraMeta) GetOriginalStorage() shared.StorageDetail {
+	return c.OriginalStorage
 }
 
 // GetTelegramInfo implements shared.UgoiraMetaLike.
@@ -223,6 +223,11 @@ func (c *CachedArtwork) GetR18() bool {
 
 func (c *CachedArtwork) GetID() string {
 	return c.ID.Hex()
+}
+
+// GetUgoiraMetas implements shared.UgoiraArtworkLike.
+func (c *CachedArtwork) GetUgoiraMetas() []shared.UgoiraMetaLike {
+	return c.Artwork.Data().GetUgoiraMetas()
 }
 
 func (c *CachedArtwork) BeforeCreate(tx *gorm.DB) (err error) {

@@ -292,8 +292,8 @@ func GetUgoiraVideoDocumentInputFile(ctx context.Context, serv *service.Service,
 	}
 	data := ugoira.GetUgoiraMetaData()
 	orgStorDetail := ugoira.GetOriginalStorage()
-	if orgStorDetail != nil {
-		file, err := serv.StorageGetFile(ctx, *orgStorDetail)
+	if orgStorDetail != shared.ZeroStorageDetail {
+		file, err := serv.StorageGetFile(ctx, orgStorDetail)
 		if err != nil {
 			return nil, oops.Wrapf(err, "failed to get ugoira file from storage")
 		}

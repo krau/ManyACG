@@ -151,7 +151,7 @@ func doPostAndCreateArtwork(
 
 	editReplyMarkupText("正在发布到频道...")
 
-	msgs, err := SendArtworkMediaGroup(ctx, bot, toChatID, artwork)
+	msgs, err := SendArtworkMediaGroup(ctx, bot, serv, toChatID, artwork)
 	if err != nil {
 		return oops.Wrapf(err, "failed to send artwork media group")
 	}
