@@ -1,11 +1,14 @@
 package handlers
 
 import (
+	"errors"
 	"strings"
 
 	"github.com/krau/ManyACG/internal/interface/telegram/handlers/utils"
 	"github.com/krau/ManyACG/internal/interface/telegram/metautil"
 	"github.com/krau/ManyACG/internal/service"
+	"github.com/krau/ManyACG/internal/shared"
+	"github.com/krau/ManyACG/internal/shared/errs"
 	"github.com/krau/ManyACG/pkg/log"
 	"github.com/krau/ManyACG/pkg/objectuuid"
 	"github.com/mymmrac/telego"
@@ -48,10 +51,26 @@ func Start(ctx *telegohandler.Context, message telego.Message) error {
 				utils.ReplyMessage(ctx, message, "无效的ID")
 				return nil
 			}
-			artwork, err := serv.GetArtworkByID(ctx, artworkID)
-			if err != nil {
+			var artwork shared.ArtworkLike
+			created, err := serv.GetArtworkByID(ctx, artworkID)
+			if err != nil && !errors.Is(err, errs.ErrRecordNotFound) {
 				utils.ReplyMessage(ctx, message, "获取失败")
-				return oops.Wrapf(err, "failed to get artwork by id: %s", artworkIDStr)
+				return oops.Wrapf(err, "failed to get artwork by id %s", artworkIDStr)
+			}
+			if created == nil {
+				sourceUrl, err := serv.GetStringDataByID(ctx, artworkIDStr)
+				if err != nil {
+					utils.ReplyMessage(ctx, message, "获取失败")
+					return oops.Wrapf(err, "failed to get string data by id: %s", artworkIDStr)
+				}
+				cached, err := serv.GetOrFetchCachedArtwork(ctx, sourceUrl)
+				if err != nil {
+					utils.ReplyMessage(ctx, message, "获取失败")
+					return oops.Wrapf(err, "failed to get or fetch cached artwork by url: %s", sourceUrl)
+				}
+				artwork = cached
+			} else {
+				artwork = created
 			}
 			return getArtworkFiles(ctx, serv, metautil.FromContext(ctx), message, artwork)
 		case "code":

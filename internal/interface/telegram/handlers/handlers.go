@@ -30,7 +30,7 @@ func (m HandlerManager) Register(hg *telegohandler.HandlerGroup) {
 	})
 	mg := hg.Group(telegohandler.AnyMessage(), filter.CommandToMe)
 	mg.HandleMessage(Start, telegohandler.CommandEqual("start"))
-	mg.HandleMessage(GetPictureFile, telegohandler.Or(telegohandler.CommandEqual("file"), telegohandler.CommandEqual("files")))
+	mg.HandleMessage(GetArtworkFiles, telegohandler.Or(telegohandler.CommandEqual("file"), telegohandler.CommandEqual("files")))
 	mg.HandleMessage(RandomPicture, telegohandler.Or(telegohandler.CommandEqual("setu"), telegohandler.CommandEqual("random")))
 	mg.HandleMessage(Help, telegohandler.CommandEqual("help"))
 	mg.HandleMessage(SearchPicture, telegohandler.CommandEqual("search"))

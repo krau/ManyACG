@@ -72,3 +72,8 @@ func (s *Service) DeletePictureByID(ctx context.Context, id objectuuid.ObjectUUI
 func (s *Service) GetPictureByID(ctx context.Context, id objectuuid.ObjectUUID) (*entity.Picture, error) {
 	return s.repos.Picture().GetPictureByID(ctx, id)
 }
+
+func (s *Service) UpdateUgoiraTelegramInfo(ctx context.Context, id objectuuid.ObjectUUID, tgInfo *shared.TelegramInfo) error {
+	_, err := s.repos.Ugoira().UpdateUgoiraTelegramInfoByID(ctx, id, tgInfo)
+	return err
+}

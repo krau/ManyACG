@@ -22,7 +22,7 @@ import (
 	"github.com/samber/oops"
 )
 
-func GetPictureFile(ctx *telegohandler.Context, message telego.Message) error {
+func GetArtworkFiles(ctx *telegohandler.Context, message telego.Message) error {
 	var sourceURL string
 	serv := service.FromContext(ctx)
 	if message.ReplyToMessage != nil {
@@ -64,13 +64,7 @@ func GetPictureFile(ctx *telegohandler.Context, message telego.Message) error {
 			utils.ReplyMessageWithHTML(ctx, message, helpText)
 			return nil
 		}
-
-		artwork, err := serv.GetArtworkByID(ctx, picture.ArtworkID)
-		if err != nil {
-			utils.ReplyMessage(ctx, message, "获取作品信息失败")
-			return nil
-		}
-		return getArtworkFiles(ctx, serv, meta, message, artwork)
+		return getArtworkFiles(ctx, serv, meta, message, picture.Artwork)
 	}
 
 	artwork, err := serv.GetArtworkByURL(ctx, sourceURL)
@@ -169,6 +163,78 @@ func getArtworkFiles(ctx *telegohandler.Context,
 		}()
 		if err != nil {
 			errs = append(errs, oops.Wrapf(err, "failed to send picture %d file", i+1))
+		}
+	}
+	awUgoira, ok := artwork.(shared.UgoiraArtworkLike)
+	if !ok || awUgoira.GetUgoiraMetas() == nil {
+		return oops.Join(errs...)
+	}
+	for i, ugoira := range awUgoira.GetUgoiraMetas() {
+		err := func() error {
+			buildDocument := func() (*telego.SendDocumentParams, func() error, error) {
+				file, err := utils.GetUgoiraVideoDocumentInputFile(ctx, serv, awUgoira, ugoira)
+				if err != nil {
+					return nil, nil, oops.Wrapf(err, "failed to get ugoira video document input file")
+				}
+				document := telegoutil.Document(message.Chat.ChatID(), file.Value).
+					WithReplyParameters(&telego.ReplyParameters{
+						MessageID: message.MessageID,
+					}).WithCaption(artwork.GetTitle() + "_" + strconv.Itoa(i+1)).WithDisableContentTypeDetection()
+				if meta.ChannelAvailable() && ugoira.GetTelegramInfo().MessageID != 0 {
+					document.WithReplyMarkup(telegoutil.InlineKeyboard([]telego.InlineKeyboardButton{
+						telegoutil.InlineKeyboardButton("详情").WithURL(meta.ChannelMessageURL(ugoira.GetTelegramInfo().MessageID)),
+					}))
+				} else {
+					document.WithReplyMarkup(telegoutil.InlineKeyboard([]telego.InlineKeyboardButton{
+						telegoutil.InlineKeyboardButton("详情").WithURL(artwork.GetSourceURL()),
+					}))
+				}
+				return document, file.Close, nil
+			}
+			document, close, err := buildDocument()
+			if err != nil {
+				return oops.Wrapf(err, "failed to build document")
+			}
+			defer close()
+			documentMessage, err := ctx.Bot().SendDocument(ctx, document)
+			if err != nil {
+				ctx.Bot().SendMessage(ctx, telegoutil.Messagef(
+					message.Chat.ChatID(),
+					"发送第 %d 个动图时失败",
+					i+1,
+				).WithReplyParameters(&telego.ReplyParameters{
+					MessageID: message.MessageID,
+				}))
+				return oops.Wrapf(err, "failed to send document")
+			}
+			if documentMessage != nil && documentMessage.Document != nil {
+				switch ugo := ugoira.(type) {
+				case *entity.UgoiraMeta:
+					tginfo := ugo.GetTelegramInfo()
+					tginfo.DocumentFileID = documentMessage.Document.FileID
+					return serv.UpdateUgoiraTelegramInfo(ctx, ugo.ID, &tginfo)
+				case *entity.CachedUgoiraMeta:
+					cached, err := serv.GetCachedArtworkByURL(ctx, artwork.GetSourceURL())
+					if err != nil {
+						return oops.Wrapf(err, "failed to get cached artwork by url: %s", artwork.GetSourceURL())
+					}
+					data := cached.Artwork.Data()
+					for _, u := range data.UgoiraMetas {
+						if u.MetaData.OriginalZip == ugo.MetaData.OriginalZip {
+							tginfo := ugo.GetTelegramInfo()
+							tginfo.DocumentFileID = documentMessage.Document.FileID
+							u.TelegramInfo = tginfo
+							return serv.UpdateCachedArtwork(ctx, data)
+						}
+					}
+				default:
+					log.Warnf("unknown ugoira type: %T", ugo)
+				}
+			}
+			return nil
+		}()
+		if err != nil {
+			errs = append(errs, oops.Wrapf(err, "failed to send ugoira %d file", i+1))
 		}
 	}
 	return oops.Join(errs...)

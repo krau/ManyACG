@@ -86,6 +86,27 @@ type UgoiraMeta struct {
 	TelegramInfo    datatypes.JSONType[shared.TelegramInfo]  `json:"telegram_info"`
 }
 
+// GetIndex implements shared.UgoiraMetaLike.
+func (u *UgoiraMeta) GetIndex() uint {
+	return u.OrderIndex
+}
+
+// GetOriginalStorage implements shared.UgoiraMetaLike.
+func (u *UgoiraMeta) GetOriginalStorage() *shared.StorageDetail {
+	data := u.OriginalStorage.Data()
+	return &data
+}
+
+// GetTelegramInfo implements shared.UgoiraMetaLike.
+func (u *UgoiraMeta) GetTelegramInfo() shared.TelegramInfo {
+	return u.TelegramInfo.Data()
+}
+
+// GetUgoiraMetaData implements shared.UgoiraMetaLike.
+func (u *UgoiraMeta) GetUgoiraMetaData() shared.UgoiraMetaData {
+	return u.Data.Data()
+}
+
 func (u *UgoiraMeta) BeforeCreate(tx *gorm.DB) (err error) {
 	if u.ID == objectuuid.Nil {
 		u.ID = objectuuid.New()

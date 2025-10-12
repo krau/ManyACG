@@ -244,10 +244,37 @@ type WithArtworkEventImpl struct {
 	ArtworkRepo Artwork
 	TagRepo     Tag
 	PictureRepo Picture
+	UgoiraRepo  Ugoira
 	DeletedRepo DeletedRecord
 	CachedRepo  CachedArtwork
 
 	ArtworkBus EventBus[*dto.ArtworkEventItem]
+}
+
+func NewWithArtworkEventImpl(tx Transactional,
+	admin Admin,
+	apiKey APIKey,
+	artist Artist,
+	artwork Artwork,
+	tag Tag,
+	picture Picture,
+	ugoira Ugoira,
+	deleted DeletedRecord,
+	cached CachedArtwork,
+	bus EventBus[*dto.ArtworkEventItem]) *WithArtworkEventImpl {
+	return &WithArtworkEventImpl{
+		Tx:          tx,
+		AdminRepo:   admin,
+		ApiKeyRepo:  apiKey,
+		ArtistRepo:  artist,
+		ArtworkRepo: artwork,
+		TagRepo:     tag,
+		PictureRepo: picture,
+		UgoiraRepo:  ugoira,
+		DeletedRepo: deleted,
+		CachedRepo:  cached,
+		ArtworkBus:  bus,
+	}
 }
 
 // APIKey implements Repositories.
@@ -283,6 +310,10 @@ func (r *WithArtworkEventImpl) DeletedRecord() DeletedRecord {
 // Picture implements Repositories.
 func (r *WithArtworkEventImpl) Picture() Picture {
 	return r.PictureRepo
+}
+
+func (r *WithArtworkEventImpl) Ugoira() Ugoira {
+	return r.UgoiraRepo
 }
 
 // Tag implements Repositories.

@@ -37,6 +37,15 @@ type Artwork struct {
 	UgoiraMetas []*UgoiraMeta `gorm:"foreignKey:ArtworkID;constraint:OnDelete:CASCADE" json:"ugoira_meta,omitempty"`
 }
 
+// GetUgoiraMetas implements shared.UgoiraArtworkLike.
+func (a *Artwork) GetUgoiraMetas() []shared.UgoiraMetaLike {
+	var metas []shared.UgoiraMetaLike
+	for _, m := range a.UgoiraMetas {
+		metas = append(metas, m)
+	}
+	return metas
+}
+
 // GetArtistName implements ArtworkLike.
 func (a *Artwork) GetArtistName() string {
 	return a.Artist.Name

@@ -11,6 +11,7 @@ type Repositories interface {
 	Artwork() Artwork
 	Tag() Tag
 	Picture() Picture
+	Ugoira() Ugoira
 	DeletedRecord() DeletedRecord
 	CachedArtwork() CachedArtwork
 	Transactional

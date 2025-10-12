@@ -20,10 +20,10 @@ type CachedArtworkData struct {
 	SourceType  shared.SourceType `json:"source_type"`
 	SourceURL   string            `json:"source_url"`
 
-	Artist      *CachedArtist           `json:"artist"`
-	Tags        []string                `json:"tags"`
-	Pictures    []*CachedPicture        `json:"pictures"`
-	UgoiraMetas []*CachedUgoiraMetaData `json:"ugoira_metas,omitempty"`
+	Artist      *CachedArtist       `json:"artist"`
+	Tags        []string            `json:"tags"`
+	Pictures    []*CachedPicture    `json:"pictures"`
+	UgoiraMetas []*CachedUgoiraMeta `json:"ugoira_metas,omitempty"`
 
 	Version int `json:"version"` // for future schema changes
 }
@@ -37,33 +37,33 @@ func (c *CachedArtworkData) GetUgoiraMetas() []shared.UgoiraMetaLike {
 	return metas
 }
 
-type CachedUgoiraMetaData struct {
+type CachedUgoiraMeta struct {
 	ID              string                `json:"id"`
 	ArtworkID       string                `json:"artwork_id"`
 	OrderIndex      uint                  `json:"index"`
-	UgoiraMetaData  shared.UgoiraMetaData `json:"data"`
+	MetaData        shared.UgoiraMetaData `json:"data"`
 	OriginalStorage shared.StorageDetail  `json:"original_storage"`
 	TelegramInfo    shared.TelegramInfo   `json:"telegram_info"`
 }
 
 // GetIndex implements shared.UgoiraMetaLike.
-func (c *CachedUgoiraMetaData) GetIndex() uint {
+func (c *CachedUgoiraMeta) GetIndex() uint {
 	return c.OrderIndex
 }
 
 // GetOriginalStorage implements shared.UgoiraMetaLike.
-func (c *CachedUgoiraMetaData) GetOriginalStorage() *shared.StorageDetail {
+func (c *CachedUgoiraMeta) GetOriginalStorage() *shared.StorageDetail {
 	return &c.OriginalStorage
 }
 
 // GetTelegramInfo implements shared.UgoiraMetaLike.
-func (c *CachedUgoiraMetaData) GetTelegramInfo() shared.TelegramInfo {
+func (c *CachedUgoiraMeta) GetTelegramInfo() shared.TelegramInfo {
 	return c.TelegramInfo
 }
 
 // GetUgoiraMetaData implements shared.UgoiraMetaLike.
-func (c *CachedUgoiraMetaData) GetUgoiraMetaData() shared.UgoiraMetaData {
-	return c.UgoiraMetaData
+func (c *CachedUgoiraMeta) GetUgoiraMetaData() shared.UgoiraMetaData {
+	return c.MetaData
 }
 
 // GetArtistName implements ArtworkLike.

@@ -129,7 +129,7 @@ func doPostAndCreateArtwork(
 		// 处理 ugoira 的 original
 		for _, ugoira := range artwork.UgoiraMetas {
 			err := func() error {
-				origZip := ugoira.UgoiraMetaData.OriginalZip
+				origZip := ugoira.MetaData.OriginalZip
 				file, err := httpclient.DownloadWithCache(ctx, origZip, nil)
 				if err != nil {
 					return oops.Wrapf(err, "failed to download ugoira original zip")
@@ -202,7 +202,7 @@ func doPostAndCreateArtwork(
 			for i, ugoira := range artwork.UgoiraMetas {
 				ugos[i] = &command.ArtworkUgoiraCreation{
 					Index:           ugoira.OrderIndex,
-					Data:            ugoira.UgoiraMetaData,
+					Data:            ugoira.MetaData,
 					OriginalStorage: ugoira.OriginalStorage,
 					TelegramInfo:    ugoira.TelegramInfo,
 				}

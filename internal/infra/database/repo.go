@@ -42,6 +42,10 @@ func (d *DB) Picture() repo.Picture {
 	return d
 }
 
+func (d *DB) Ugoira() repo.Ugoira {
+	return d
+}
+
 // Tag implements repo.Repositories.
 func (d *DB) Tag() repo.Tag {
 	return d

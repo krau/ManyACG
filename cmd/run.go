@@ -84,18 +84,7 @@ func Run() {
 		artworkBus := eventbus.New[*dto.ArtworkEventItem]()
 		searcher := search.Default(ctx)
 		registerArtworkEventSearcherHandlers(ctx, artworkBus, searcher)
-		repos = &repo.WithArtworkEventImpl{
-			Tx:          dbRepo,
-			AdminRepo:   dbRepo,
-			ApiKeyRepo:  dbRepo,
-			ArtistRepo:  dbRepo,
-			TagRepo:     dbRepo,
-			PictureRepo: dbRepo,
-			DeletedRepo: dbRepo,
-			CachedRepo:  dbRepo,
-			ArtworkRepo: repo.NewArtworkWithEvent(dbRepo, artworkBus),
-			ArtworkBus:  artworkBus,
-		}
+		repos = repo.NewWithArtworkEventImpl(dbRepo, dbRepo, dbRepo, dbRepo, repo.NewArtworkWithEvent(dbRepo, artworkBus), dbRepo, dbRepo, dbRepo, dbRepo, dbRepo, artworkBus)
 	}
 
 	serv := service.NewService(
@@ -106,7 +95,7 @@ func Run() {
 		source.Sources(),
 		runtimecfg.Get().Storage)
 	service.SetDefault(serv)
-	
+
 	botapp, err := telegram.Init(ctx, serv)
 	if err != nil {
 		log.Fatal(err)
