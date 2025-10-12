@@ -106,7 +106,7 @@ func Run() {
 		source.Sources(),
 		runtimecfg.Get().Storage)
 	service.SetDefault(serv)
-
+	
 	botapp, err := telegram.Init(ctx, serv)
 	if err != nil {
 		log.Fatal(err)

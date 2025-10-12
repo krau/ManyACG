@@ -109,7 +109,7 @@ func getArtworkFiles(ctx *telegohandler.Context,
 				if err != nil {
 					return nil, nil, oops.Wrapf(err, "failed to get picture document input file")
 				}
-				document := telegoutil.Document(message.Chat.ChatID(), file.InputFile).
+				document := telegoutil.Document(message.Chat.ChatID(), file.Value).
 					WithReplyParameters(&telego.ReplyParameters{
 						MessageID: message.MessageID,
 					}).WithCaption(artwork.GetTitle() + "_" + strconv.Itoa(i+1)).WithDisableContentTypeDetection()

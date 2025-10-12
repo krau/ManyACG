@@ -28,13 +28,42 @@ type CachedArtworkData struct {
 	Version int `json:"version"` // for future schema changes
 }
 
+// GetUgoiraMetas implements shared.UgoiraArtworkLike.
+func (c *CachedArtworkData) GetUgoiraMetas() []shared.UgoiraMetaLike {
+	var metas []shared.UgoiraMetaLike
+	for _, m := range c.UgoiraMetas {
+		metas = append(metas, m)
+	}
+	return metas
+}
+
 type CachedUgoiraMetaData struct {
-	ID              string                                    `json:"id"`
-	ArtworkID       string                                    `json:"artwork_id"`
-	OrderIndex      uint                                      `json:"index"`
-	UgoiraMetaData  datatypes.JSONType[shared.UgoiraMetaData] `json:"data"`
-	OriginalStorage datatypes.JSONType[shared.StorageDetail]  `json:"original_storage"`
-	TelegramInfo    datatypes.JSONType[shared.TelegramInfo]   `json:"telegram_info"`
+	ID              string                `json:"id"`
+	ArtworkID       string                `json:"artwork_id"`
+	OrderIndex      uint                  `json:"index"`
+	UgoiraMetaData  shared.UgoiraMetaData `json:"data"`
+	OriginalStorage shared.StorageDetail  `json:"original_storage"`
+	TelegramInfo    shared.TelegramInfo   `json:"telegram_info"`
+}
+
+// GetIndex implements shared.UgoiraMetaLike.
+func (c *CachedUgoiraMetaData) GetIndex() uint {
+	return c.OrderIndex
+}
+
+// GetOriginalStorage implements shared.UgoiraMetaLike.
+func (c *CachedUgoiraMetaData) GetOriginalStorage() *shared.StorageDetail {
+	return &c.OriginalStorage
+}
+
+// GetTelegramInfo implements shared.UgoiraMetaLike.
+func (c *CachedUgoiraMetaData) GetTelegramInfo() shared.TelegramInfo {
+	return c.TelegramInfo
+}
+
+// GetUgoiraMetaData implements shared.UgoiraMetaLike.
+func (c *CachedUgoiraMetaData) GetUgoiraMetaData() shared.UgoiraMetaData {
+	return c.UgoiraMetaData
 }
 
 // GetArtistName implements ArtworkLike.

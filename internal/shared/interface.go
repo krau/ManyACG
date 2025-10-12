@@ -22,19 +22,13 @@ type ArtworkLike interface {
 }
 
 type UgoiraArtworkLike interface {
-	GetID() string
-	GetSourceURL() string
-	GetTitle() string
-	GetR18() bool
-	GetArtistName() string
-	GetDescription() string
-	GetTags() []string
+	ArtworkLike
 	GetUgoiraMetas() []UgoiraMetaLike
 }
 
 type UgoiraMetaLike interface {
 	GetIndex() uint
 	GetUgoiraMetaData() UgoiraMetaData
-	GetOriginalStorage() StorageInfo
+	GetOriginalStorage() *StorageDetail
 	GetTelegramInfo() TelegramInfo
 }

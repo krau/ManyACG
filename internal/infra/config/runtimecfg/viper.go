@@ -63,6 +63,9 @@ func loadConfig() Config {
 	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
 
 	defaults := map[string]any{
+		"log.file_path":  "logs/manyacg.log",
+		"log.backup_num": 7,
+
 		"wsrv.url": "https://wsrv.nl",
 
 		"telegram.api_url":             "https://api.telegram.org",

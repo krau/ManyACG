@@ -82,7 +82,7 @@ func DtoFetchedArtworkToEntityCached(art *dto.FetchedArtwork) *entity.CachedArtw
 		for _, ugoiraMeta := range art.UgoiraMetas {
 			ugoiras = append(ugoiras, &entity.CachedUgoiraMetaData{
 				OrderIndex:     ugoiraMeta.Index,
-				UgoiraMetaData: datatypes.NewJSONType(ugoiraMeta.Data),
+				UgoiraMetaData: ugoiraMeta.Data,
 			})
 		}
 	}

@@ -39,7 +39,7 @@ func Start(ctx *telegohandler.Context, message telego.Message) error {
 				return oops.Wrapf(err, "failed to get picture document input file by id %s", pictureIDStr)
 			}
 			defer file.Close()
-			_, err = ctx.Bot().SendDocument(ctx, telegoutil.Document(message.Chat.ChatID(), file.InputFile))
+			_, err = ctx.Bot().SendDocument(ctx, telegoutil.Document(message.Chat.ChatID(), file.Value))
 			return err
 		case "files":
 			artworkIDStr := args[0][6:]

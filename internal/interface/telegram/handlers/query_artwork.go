@@ -69,7 +69,7 @@ func RandomPicture(ctx *telegohandler.Context, message telego.Message) error {
 	defer file.Close()
 	aw := artwork[0]
 	photo := telegoutil.
-		Photo(message.Chat.ChatID(), file.InputFile).
+		Photo(message.Chat.ChatID(), file.Value).
 		WithCaption(fmt.Sprintf("<a href=\"%s\">%s</a>", aw.SourceURL, html.EscapeString(aw.Title))).
 		WithParseMode(telego.ModeHTML).
 		WithReplyParameters(&telego.ReplyParameters{

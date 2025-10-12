@@ -33,12 +33,12 @@ func (app *BotApp) Bot() *telego.Bot {
 }
 
 func Init(ctx context.Context, serv *service.Service) (*BotApp, error) {
-	log.Info("Initialize telegram client")
+	log.Info("Initing telegram client")
 	cfg := runtimecfg.Get().Telegram
 	var err error
 	apiUrl := cfg.APIURL
 	bot, err := telego.NewBot(
-		cfg.Token,
+		cfg.BotToken,
 		telego.WithLogger(log.New(log.Config{
 			Level:     log.LevelError,
 			FileLevel: log.LevelError,
@@ -65,11 +65,9 @@ func Init(ctx context.Context, serv *service.Service) (*BotApp, error) {
 	}
 	var channelAvailable bool
 	if channelChatID.ID == 0 && channelChatID.Username == "" {
-		if cfg.Channel {
-			return nil, oops.New("Enabled channel mode but no channel ID or username is provided")
-		}
+		return nil, oops.New("no channel ID or username is provided")
 	} else {
-		channelAvailable = cfg.Channel
+		channelAvailable = true
 	}
 	var groupChatID telego.ChatID
 	if cfg.GroupID != 0 {
@@ -104,6 +102,7 @@ func Init(ctx context.Context, serv *service.Service) (*BotApp, error) {
 			Commands: CommonCommands,
 			Scope:    &telego.BotCommandScopeDefault{Type: telego.ScopeTypeDefault},
 		})
+
 		allCommands := append(CommonCommands, AdminCommands...)
 		adminUserIDs, err := serv.GetAdminUserIDs(ctx)
 		if err != nil {

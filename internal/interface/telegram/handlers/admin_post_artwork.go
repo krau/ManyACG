@@ -182,50 +182,6 @@ func PostArtworkCommand(ctx *telegohandler.Context, message telego.Message) erro
 					telegoutil.InlineKeyboard(utils.GetPostedArtworkInlineKeyboardButton(awEnt, meta)),
 				))
 	}
-	// [TODO] non-channel posting
-	// var err error
-	// for i, picture := range artwork.Pictures {
-	// 	ctx.Bot().EditMessageText(ctx, &telego.EditMessageTextParams{
-	// 		ChatID:    message.Chat.ChatID(),
-	// 		MessageID: msg.MessageID,
-	// 		Text:      fmt.Sprintf("正在保存图片 %d/%d", i+1, len(artwork.Pictures)),
-	// 	})
-	// 	info, err := storage.SaveAll(ctx, artwork, picture)
-	// 	if err != nil {
-	// 		ctx.Bot().EditMessageText(ctx, &telego.EditMessageTextParams{
-	// 			ChatID:    message.Chat.ChatID(),
-	// 			MessageID: msg.MessageID,
-	// 			Text:      "保存图片失败: " + err.Error(),
-	// 		})
-	// 		return nil
-	// 	}
-	// 	artwork.Pictures[i].StorageInfo = info
-	// }
-	// ctx.Bot().EditMessageText(ctx, &telego.EditMessageTextParams{
-	// 	ChatID:    message.Chat.ChatID(),
-	// 	MessageID: msg.MessageID,
-	// 	Text:      "图片保存完成, 正在发布...",
-	// })
-	// artwork, err = service.CreateArtwork(ctx, artwork)
-	// if err != nil {
-	// 	ctx.Bot().EditMessageText(ctx, &telego.EditMessageTextParams{
-	// 		ChatID:    message.Chat.ChatID(),
-	// 		MessageID: msg.MessageID,
-	// 		Text:      "创建作品失败: " + err.Error(),
-	// 	})
-	// 	return nil
-	// }
-	// go func() {
-	// 	for _, picture := range artwork.Pictures {
-	// 		service.AddProcessPictureTask(context.TODO(), picture)
-	// 	}
-	// }()
-	// ctx.Bot().SendMessage(ctx, telegoutil.Message(telegoutil.ID(message.Chat.ID), "发布成功: "+artwork.Title).
-	// 	WithReplyParameters(&telego.ReplyParameters{
-	// 		ChatID:    message.Chat.ChatID(),
-	// 		MessageID: message.MessageID,
-	// 	},
-	// 	).WithReplyMarkup(utils.GetPostedPictureReplyMarkup(artwork, 0, ChannelChatID, BotUsername)))
 	return nil
 }
 

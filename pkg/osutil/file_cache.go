@@ -183,3 +183,23 @@ func (f *File) Close() error {
 	markClosed(f.path)
 	return err
 }
+
+type TempFile struct {
+	*os.File
+}
+
+func (t *TempFile) Close() error {
+	err := t.File.Close()
+	if err != nil {
+		return err
+	}
+	return os.Remove(t.File.Name())
+}
+
+func OpenTemp(path string) (*TempFile, error) {
+	f, err := os.Open(path)
+	if err != nil {
+		return nil, err
+	}
+	return &TempFile{f}, nil
+}

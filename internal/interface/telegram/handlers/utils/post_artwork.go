@@ -21,7 +21,6 @@ import (
 	"github.com/mymmrac/telego"
 	"github.com/mymmrac/telego/telegoutil"
 	"github.com/samber/oops"
-	"gorm.io/datatypes"
 )
 
 func doPostAndCreateArtwork(
@@ -130,7 +129,7 @@ func doPostAndCreateArtwork(
 		// 处理 ugoira 的 original
 		for _, ugoira := range artwork.UgoiraMetas {
 			err := func() error {
-				origZip := ugoira.UgoiraMetaData.Data().OriginalZip
+				origZip := ugoira.UgoiraMetaData.OriginalZip
 				file, err := httpclient.DownloadWithCache(ctx, origZip, nil)
 				if err != nil {
 					return oops.Wrapf(err, "failed to download ugoira original zip")
@@ -141,7 +140,7 @@ func doPostAndCreateArtwork(
 				if err != nil {
 					return oops.Wrapf(err, "failed to save ugoira original zip")
 				}
-				ugoira.OriginalStorage = datatypes.NewJSONType(*info)
+				ugoira.OriginalStorage = *info
 				return nil
 			}()
 			if err != nil {
@@ -152,7 +151,7 @@ func doPostAndCreateArtwork(
 
 	editReplyMarkupText("正在发布到频道...")
 
-	msgs, err := SendArtworkPhotoMediaGroup(ctx, bot, toChatID, artwork)
+	msgs, err := SendArtworkMediaGroup(ctx, bot, toChatID, artwork)
 	if err != nil {
 		return oops.Wrapf(err, "failed to send artwork media group")
 	}
@@ -160,15 +159,19 @@ func doPostAndCreateArtwork(
 		return oops.New("no messages sent")
 	}
 	// 更新 cached artwork 的 TelegramInfo
-	for i := range artwork.Pictures {
+	for _, msg := range msgs {
 		tginfo := shared.TelegramInfo{
-			MessageID:    msgs[i].MessageID,
-			MediaGroupID: msgs[i].MediaGroupID,
+			MessageID:    msg.Message.MessageID,
+			MediaGroupID: msg.Message.MediaGroupID,
+			PhotoFileID:  msg.FileID,
 		}
-		if photoSize := msgs[i].Photo; len(photoSize) > 0 {
-			tginfo.PhotoFileID = photoSize[len(photoSize)-1].FileID
+		if msg.UgoiraIndex >= 0 {
+			artwork.UgoiraMetas[msg.UgoiraIndex].TelegramInfo = tginfo
+		} else if msg.PictureIndex >= 0 {
+			artwork.Pictures[msg.PictureIndex].TelegramInfo = tginfo
+		} else {
+			log.Warn("message has neither picture index nor ugoira index", "message_id", msg.Message.MessageID)
 		}
-		artwork.Pictures[i].TelegramInfo = tginfo
 	}
 	if err := serv.UpdateCachedArtwork(ctx, artwork); err != nil {
 		return oops.Wrapf(err, "failed to update cached artwork after sending")
@@ -199,9 +202,9 @@ func doPostAndCreateArtwork(
 			for i, ugoira := range artwork.UgoiraMetas {
 				ugos[i] = &command.ArtworkUgoiraCreation{
 					Index:           ugoira.OrderIndex,
-					Data:            ugoira.UgoiraMetaData.Data(),
-					OriginalStorage: ugoira.OriginalStorage.Data(),
-					TelegramInfo:    ugoira.TelegramInfo.Data(),
+					Data:            ugoira.UgoiraMetaData,
+					OriginalStorage: ugoira.OriginalStorage,
+					TelegramInfo:    ugoira.TelegramInfo,
 				}
 			}
 			return ugos
