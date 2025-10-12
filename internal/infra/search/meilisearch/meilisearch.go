@@ -21,7 +21,8 @@ type SearcherMeilisearch struct {
 
 // AddDocuments implements search.Searcher.
 func (m *SearcherMeilisearch) AddDocuments(ctx context.Context, docs []*dto.ArtworkSearchDocument) error {
-	_, err := m.client.AddDocumentsWithContext(ctx, docs, "id")
+	primaryKey := "id"
+	_, err := m.client.AddDocumentsWithContext(ctx, docs, &primaryKey)
 	return err
 }
 
