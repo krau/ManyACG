@@ -5,7 +5,7 @@ import (
 	"image"
 	"os"
 
-	ffmpeg "github.com/u2takey/ffmpeg-go"
+	"github.com/krau/ffmpeg-go"
 )
 
 // 使用 ffmpeg 压缩图片

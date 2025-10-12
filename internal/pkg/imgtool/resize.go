@@ -18,7 +18,7 @@ import (
 	"github.com/krau/ManyACG/internal/shared"
 	"github.com/krau/ManyACG/pkg/log"
 	"github.com/krau/ManyACG/pkg/strutil"
-	ffmpeg "github.com/u2takey/ffmpeg-go"
+	"github.com/krau/ffmpeg-go"
 )
 
 var (
