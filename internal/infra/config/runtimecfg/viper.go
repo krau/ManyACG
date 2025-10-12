@@ -27,6 +27,7 @@ type Config struct {
 	// interfaces
 	Telegram  TelegramConfig  `toml:"telegram" mapstructure:"telegram" json:"telegram" yaml:"telegram"`
 	Scheduler SchedulerConfig `toml:"scheduler" mapstructure:"scheduler" json:"scheduler" yaml:"scheduler"`
+	Rest      RestConfig      `toml:"rest" mapstructure:"rest" json:"rest" yaml:"rest"`
 }
 
 type SchedulerConfig struct {

@@ -18,6 +18,7 @@ import (
 	"github.com/krau/ManyACG/internal/infra/source"
 	"github.com/krau/ManyACG/internal/infra/storage"
 	"github.com/krau/ManyACG/internal/infra/tagging"
+	"github.com/krau/ManyACG/internal/interface/rest"
 	"github.com/krau/ManyACG/internal/interface/scheduler"
 	"github.com/krau/ManyACG/internal/interface/telegram"
 	"github.com/krau/ManyACG/internal/model/converter"
@@ -93,16 +94,33 @@ func Run() {
 		tagging.Default(),
 		storage.Storages(),
 		source.Sources(),
-		runtimecfg.Get().Storage)
+		cfg.Storage)
 	service.SetDefault(serv)
 
-	botapp, err := telegram.Init(ctx, serv)
-	if err != nil {
-		log.Fatal(err)
+	var poster scheduler.ArtworkPoster
+	if !cfg.Telegram.Disable {
+		botapp, err := telegram.Init(ctx, serv)
+		if err != nil {
+			log.Fatal(err)
+		}
+		go botapp.Run(ctx, serv)
+		poster = botapp
 	}
-	go botapp.Run(ctx, serv)
-	if runtimecfg.Get().Scheduler.Enable {
-		go scheduler.StartPoster(ctx, botapp, serv)
+	if cfg.Scheduler.Enable && poster != nil {
+		go scheduler.StartPoster(ctx, poster, serv)
+	}
+	if cfg.Rest.Enable {
+		restApp, err := rest.New(ctx, serv, cfg.Rest)
+		if err != nil {
+			log.Fatal(err)
+		}
+		go func() {
+			log.Info("Starting RESTful API server", "addr", cfg.Rest.Addr)
+			if err := restApp.Run(ctx); err != nil {
+				log.Error(err)
+				stop()
+			}
+		}()
 	}
 
 	log.Info("ManyACG is running !")

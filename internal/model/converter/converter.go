@@ -81,8 +81,8 @@ func DtoFetchedArtworkToEntityCached(art *dto.FetchedArtwork) *entity.CachedArtw
 	if len(art.UgoiraMetas) > 0 {
 		for _, ugoiraMeta := range art.UgoiraMetas {
 			ugoiras = append(ugoiras, &entity.CachedUgoiraMeta{
-				OrderIndex:     ugoiraMeta.Index,
-				MetaData: ugoiraMeta.Data,
+				OrderIndex: ugoiraMeta.Index,
+				MetaData:   ugoiraMeta.Data,
 			})
 		}
 	}
