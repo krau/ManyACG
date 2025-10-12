@@ -171,50 +171,7 @@ func SearchSimilarArtworks(ctx *telegohandler.Context, message telego.Message) e
 	sourceURL := utils.FindSourceURLInMessage(serv, message.ReplyToMessage)
 	if sourceURL == "" {
 		utils.ReplyMessage(ctx, message, "回复的消息中未找到支持的链接")
-		// [TODO] implement image recognition and search
-		// if message.ReplyToMessage.Photo == nil && message.ReplyToMessage.Document == nil {
-		// 	utils.ReplyMessage(ctx, message, "回复的消息中未找到支持的链接")
-		// 	return nil
-		// }
-		// var err error
-		// var file []byte
-		// sourceURL, file, err = handleGetSourceURLFromPicture(ctx, serv, message)
-		// if err != nil {
-		// 	log.Warnf("failed to get source url from picture: %s", err)
-		// 	// if file == nil || common.TaggerClient == nil {
-		// 	// 	utils.ReplyMessage(ctx, message, "回复的消息中未找到支持的链接或图片")
-		// 	// 	return nil
-		// 	// }
-		// 	// result, err := common.TaggerClient.Predict(ctx, file)
-		// 	// if err != nil || len(result.PredictedTags) == 0 {
-		// 	// 	common.Logger.Errorf("图片识别失败: %s", err)
-		// 	// 	utils.ReplyMessage(ctx, ctx.Bot(), message, "图片识别失败")
-		// 	// 	return nil
-		// 	// }
-		// 	// queryText := strings.Join(result.PredictedTags, ",")
-		// 	// artworks, err := service.SearchArtworks(ctx, &query.ArtworkSearch{
-		// 	// 	// queryText, 0.8, 0, 10, types.R18TypeAll
-		// 	// 	Query:  queryText,
-		// 	// 	Hybrid: true,
-		// 	// 	Paginate: query.Paginate{
-		// 	// 		Offset: 0,
-		// 	// 		Limit:  10,
-		// 	// 	},
-		// 	// 	R18: shared.R18TypeAll,
-		// 	// })
-		// 	// if err != nil || len(artworks) == 0 {
-		// 	// 	common.Logger.Errorf("搜索失败: %s", err)
-		// 	// 	utils.ReplyMessage(ctx, ctx.Bot(), message, "搜索失败")
-		// 	// 	return nil
-		// 	// }
-		// 	// handleSendResultArtworks(ctx, artworks, message, ctx.Bot())
-		// 	// return nil
-		// 	return err
-		// }
 	}
-	// if sourceURL == "" {
-	// 	return nil
-	// }
 	artwork, err := serv.GetArtworkByURL(ctx, sourceURL)
 	if err != nil {
 		utils.ReplyMessage(ctx, message, "获取作品信息失败")

@@ -93,7 +93,7 @@ func loadConfig() Config {
 		"cache.ristretto.buffer_items": 64,
 
 		"database.type": "sqlite",
-		"database.dsn":  "file:data/manyacg.db?_pragma=journal_mode(WAL)&_pragma=synchronous(NORMAL)&_pragma=busy_timeout(5000)&_txlock=deferred",
+		"database.dsn":  `file:manyacg.db?_pragma=journal_mode(WAL)&_pragma=synchronous(NORMAL)&_pragma=busy_timeout(5000)&_txlock=deferred`,
 	}
 
 	for key, value := range defaults {

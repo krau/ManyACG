@@ -26,6 +26,10 @@ func (s *Service) GetOrFetchCachedArtwork(ctx context.Context, sourceURL string)
 	if err != nil {
 		return nil, err
 	}
+	cached, err = s.repos.CachedArtwork().GetCachedArtworkByURL(ctx, fetched.SourceURL)
+	if err == nil {
+		return cached, nil
+	}
 	ent := converter.DtoFetchedArtworkToEntityCached(fetched)
 	created, err := s.repos.CachedArtwork().CreateCachedArtwork(ctx, ent)
 	if err != nil {

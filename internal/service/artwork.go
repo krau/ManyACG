@@ -4,8 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"slices"
 
 	"github.com/duke-git/lancet/v2/slice"
+	"github.com/duke-git/lancet/v2/validator"
 	"github.com/krau/ManyACG/internal/infra/search"
 	"github.com/krau/ManyACG/internal/model/command"
 	"github.com/krau/ManyACG/internal/model/entity"
@@ -184,8 +186,18 @@ func (s *Service) UpdateArtworkTagsByURL(ctx context.Context, sourceURL string, 
 				return err
 			}
 			tagEnts = append(tagEnts, res)
-			// [TODO] tag 排序
 		}
+		slices.SortFunc(tagEnts, func(i, j *entity.Tag) int {
+			iIsChinese := validator.ContainChinese(i.Name)
+			jIsChinese := validator.ContainChinese(j.Name)
+			if iIsChinese && !jIsChinese {
+				return 1
+			}
+			if !iIsChinese && jIsChinese {
+				return -1
+			}
+			return 0
+		})
 		return repos.Artwork().UpdateArtworkTags(ctx, awEnt.ID, tagEnts)
 	})
 }

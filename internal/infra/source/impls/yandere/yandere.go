@@ -60,12 +60,6 @@ func (y *Yandere) GetArtworkInfo(ctx context.Context, sourceURL string) (*dto.Fe
 		return yandereResp.ToArtwork(), nil
 	}
 
-	// parentURL := sourceURLPrefix + strconv.Itoa(parentID)
-	// artwork, _ := service.GetArtworkByURL(context.TODO(), parentURL)
-	// if artwork != nil {
-	// 	return artwork, nil
-	// }
-
 	apiURL := apiBaseURL + strconv.Itoa(parentID)
 	resp, err = y.reqClient.R().SetContext(ctx).Get(apiURL)
 	if err != nil {

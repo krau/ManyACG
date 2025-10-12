@@ -218,7 +218,7 @@ func (app *BotApp) Run(ctx context.Context, serv *service.Service) {
 	}
 	<-ctx.Done()
 	log.Info("Shutting down telegram bot...")
-	stopCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second) // [TODO] config
+	stopCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 	if err := botHandler.StopWithContext(stopCtx); err != nil {
 		log.Warnf("Error when stopping bot handler: %s", err)
