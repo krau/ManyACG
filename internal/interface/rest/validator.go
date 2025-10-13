@@ -55,8 +55,7 @@ func NewStructValidator() *structValidator {
 	validate.RegisterValidation("objectid", func(fl validator.FieldLevel) bool {
 		s := fl.Field().String()
 		log.Debug("validating objectid", "field", fl.FieldName(), "value", s)
-		_, err := objectuuid.ObjectIDFromHex(s)
-		return err == nil
+		return objectuuid.Validate(s) == nil
 	})
 	return &structValidator{validate: validate}
 }

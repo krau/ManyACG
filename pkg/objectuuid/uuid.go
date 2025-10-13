@@ -39,6 +39,11 @@ func FromObjectIDHex(oidHex string) (ObjectUUID, error) {
 	return FromObjectID(oid), nil
 }
 
+func Validate(s string) error {
+	_, err := ObjectIDFromHex(s)
+	return err
+}
+
 func (cu ObjectUUID) IsZero() bool {
 	return cu == Nil
 }

@@ -24,7 +24,6 @@ type RestApp struct {
 }
 
 func New(ctx context.Context, serv *service.Service, cfg runtimecfg.RestConfig) (*RestApp, error) {
-
 	errHandler := func(c fiber.Ctx, err error) error {
 		c.Set(fiber.HeaderContentType, fiber.MIMEApplicationJSONCharsetUTF8)
 		var e *common.Error
@@ -78,3 +77,11 @@ func (r *RestApp) Run(stopCtx context.Context) error {
 		GracefulContext: stopCtx,
 	})
 }
+
+/*
+Api 代码编写备忘
+- 请求结构体使用 `message` 标签定义错误时的返回信息
+- 校验错误直接在 handler 中原样返回, 外层 errHandler 会处理并返回 BadRequest 和错误信息
+- 内部业务也直接返回, 外层 errHandler 会处理并返回 InternalServerError , 并打印日志
+- 所有 json 返回值均使用 common.NewSuccess 和 common.NewError 包装
+*/

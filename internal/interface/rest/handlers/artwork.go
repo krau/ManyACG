@@ -9,18 +9,17 @@ import (
 	"github.com/krau/ManyACG/internal/model/query"
 	"github.com/krau/ManyACG/internal/service"
 	"github.com/krau/ManyACG/internal/shared"
-	"github.com/krau/ManyACG/pkg/log"
 	"github.com/krau/ManyACG/pkg/objectuuid"
 	"github.com/krau/ManyACG/pkg/strutil"
 )
 
-type GetRandomArtworksRequest struct {
-	R18   int `query:"r18,default=0" form:"r18,default=0" json:"r18" validate:"gte=0,lte=2" message:"R18 must be 0 (no R18), 1 (only R18) or 2 (both)"`
-	Limit int `query:"limit,default=1" form:"limit,default=1" json:"limit" validate:"lte=200" message:"Limit must be between 1 and 200"`
+type RequestRandomArtworks struct {
+	R18   int `query:"r18,default=0" form:"r18,default=0" json:"r18" validate:"gte=0,lte=2" message:"r18 must be 0 (no R18), 1 (only R18) or 2 (both)"`
+	Limit int `query:"limit,default=1" form:"limit,default=1" json:"limit" validate:"lte=200" message:"limit must be between 1 and 200"`
 	// Simple bool `form:"simple,default=false" json:"simple"` // deprecated
 }
 
-type ArtworkResponseItem struct {
+type ResponseArtworkItem struct {
 	ID          string             `json:"id"`
 	CreatedAt   string             `json:"created_at"`
 	Title       string             `json:"title"`
@@ -29,12 +28,12 @@ type ArtworkResponseItem struct {
 	R18         bool               `json:"r18"`
 	LikeCount   uint               `json:"like_count"`
 	Tags        []string           `json:"tags"`
-	Artist      *ArtistResponse    `json:"artist"`
+	Artist      *ResponseArtist    `json:"artist"`
 	SourceType  shared.SourceType  `json:"source_type"`
-	Pictures    []*PictureResponse `json:"pictures"`
+	Pictures    []*ResponsePicture `json:"pictures"`
 }
 
-type ArtistResponse struct {
+type ResponseArtist struct {
 	ID       string            `json:"id" bson:"_id"`
 	Name     string            `json:"name" bson:"name"`
 	Type     shared.SourceType `json:"type" bson:"type"`
@@ -42,7 +41,7 @@ type ArtistResponse struct {
 	Username string            `json:"username" bson:"username"`
 }
 
-type PictureResponse struct {
+type ResponsePicture struct {
 	ID        string `json:"id"`
 	Width     uint   `json:"width"`
 	Height    uint   `json:"height"`
@@ -55,13 +54,13 @@ type PictureResponse struct {
 	Regular   string `json:"regular"`
 }
 
-func artworksResponseFromEntity(artworks []*entity.Artwork, cfg runtimecfg.RestConfig, serv *service.Service) []*ArtworkResponseItem {
-	resp := make([]*ArtworkResponseItem, 0, len(artworks))
+func artworksResponseFromEntity(artworks []*entity.Artwork, cfg runtimecfg.RestConfig, serv *service.Service) []*ResponseArtworkItem {
+	resp := make([]*ResponseArtworkItem, 0, len(artworks))
 	for _, art := range artworks {
-		pics := make([]*PictureResponse, 0, len(art.Pictures))
+		pics := make([]*ResponsePicture, 0, len(art.Pictures))
 		for _, pic := range art.Pictures {
 			thumb, regular := utils.GetPictureResponseUrl(pic, cfg)
-			pics = append(pics, &PictureResponse{
+			pics = append(pics, &ResponsePicture{
 				ID:        pic.ID.Hex(),
 				Width:     pic.Width,
 				Height:    pic.Height,
@@ -74,7 +73,7 @@ func artworksResponseFromEntity(artworks []*entity.Artwork, cfg runtimecfg.RestC
 				Regular:   regular,
 			})
 		}
-		resp = append(resp, &ArtworkResponseItem{
+		resp = append(resp, &ResponseArtworkItem{
 			ID:          art.ID.Hex(),
 			CreatedAt:   art.CreatedAt.Format("2006-01-02 15:04:05"),
 			Title:       art.Title,
@@ -83,7 +82,7 @@ func artworksResponseFromEntity(artworks []*entity.Artwork, cfg runtimecfg.RestC
 			R18:         art.R18,
 			LikeCount:   art.LikeCount,
 			Tags:        art.GetTags(),
-			Artist: &ArtistResponse{
+			Artist: &ResponseArtist{
 				ID:       art.Artist.ID.Hex(),
 				Name:     art.Artist.Name,
 				Type:     art.Artist.Type,
@@ -97,9 +96,9 @@ func artworksResponseFromEntity(artworks []*entity.Artwork, cfg runtimecfg.RestC
 	return resp
 }
 
-func RandomArtworks(ctx fiber.Ctx) error {
+func HandleRandomArtworks(ctx fiber.Ctx) error {
 	serv := common.MustGetState[*service.Service](ctx, common.StateKeyService)
-	req := new(GetRandomArtworksRequest)
+	req := new(RequestRandomArtworks)
 	if err := ctx.Bind().All(req); err != nil {
 		return err
 	}
@@ -126,20 +125,20 @@ func RandomArtworks(ctx fiber.Ctx) error {
 	return ctx.JSON(common.NewSuccess(resp))
 }
 
-type GetArtworkListRequest struct {
-	R18      int    `query:"r18" form:"r18" json:"r18" validate:"gte=0,lte=2" message:"R18 must be 0 (no R18), 1 (only R18) or 2 (both)"`
-	ArtistID string `query:"artist_id" form:"artist_id" json:"artist_id" validate:"omitempty,objectid" message:"ArtistID must be a valid ObjectID"`
-	Tag      string `query:"tag" form:"tag" json:"tag"`
-	Keyword  string `query:"keyword" form:"keyword" json:"keyword" validate:"max=100" message:"Keyword max length is 100"`
-	Page     int64  `query:"page" form:"page" json:"page"`
-	PageSize int64  `query:"page_size" form:"page_size" json:"page_size" validate:"gte=0,lte=200" message:"PageSize must be between 1 and 200"`
-	// Hybrid        bool   `query:"hybrid" form:"hybrid" json:"hybrid"`
-	// SimilarTarget string `query:"similar_target" form:"similar_target" json:"similar_target"`
+type RequestListArtworks struct {
+	R18           int    `query:"r18" form:"r18" json:"r18" validate:"gte=0,lte=2" message:"r18 must be 0 (no R18), 1 (only R18) or 2 (both)"`
+	ArtistID      string `query:"artist_id" form:"artist_id" json:"artist_id" validate:"omitempty,objectid" message:"artist_id must be a valid ObjectID"`
+	Tag           string `query:"tag" form:"tag" json:"tag"`
+	Keyword       string `query:"keyword" form:"keyword" json:"keyword" validate:"max=100" message:"keyword max length is 100"`
+	Page          int64  `query:"page" form:"page" json:"page"`
+	PageSize      int64  `query:"page_size" form:"page_size" json:"page_size" validate:"gte=0,lte=200" message:"page_size must be between 1 and 200"`
+	Hybrid        bool   `query:"hybrid" form:"hybrid" json:"hybrid"`
+	SimilarTarget string `query:"similar_target" form:"similar_target" json:"similar_target" validate:"omitempty,objectid" message:"similar_target must be a valid ObjectID"`
 	// Simple        bool   `query:"simple" form:"simple" json:"simple"`
 }
 
-func ListArtworks(ctx fiber.Ctx) error {
-	req := new(GetArtworkListRequest)
+func HandleListArtworks(ctx fiber.Ctx) error {
+	req := new(RequestListArtworks)
 	if err := ctx.Bind().All(req); err != nil {
 		return err
 	}
@@ -149,52 +148,89 @@ func ListArtworks(ctx fiber.Ctx) error {
 	if req.Page <= 0 {
 		req.Page = 1
 	}
+
 	var artistID objectuuid.ObjectUUID
 	if req.ArtistID != "" {
 		parsed, err := objectuuid.FromObjectIDHex(req.ArtistID)
 		if err != nil {
-			return err // should not happen due to validation
+			return err
 		}
 		artistID = parsed
 	}
-	serv := common.MustGetState[*service.Service](ctx, common.StateKeyService)
-	var tagId objectuuid.ObjectUUID
-	if req.Tag != "" {
-		tag, err := serv.GetTagByNameWithAlias(ctx, req.Tag)
-		if err != nil {
-			return common.NewError(fiber.StatusNotFound, "tag not found")
-		}
-		tagId = tag.ID
-	}
 
-	keywords := strutil.ParseTo2DArray(req.Keyword, ",", "|")
-	dbQuery := query.ArtworksDB{
-		ArtworksFilter: query.ArtworksFilter{
-			R18: shared.R18TypeFromInt(req.R18),
-		},
-		Paginate: query.Paginate{
-			Limit:  int(req.PageSize),
-			Offset: int((req.Page - 1) * req.PageSize),
-		},
+	serv := common.MustGetState[*service.Service](ctx, common.StateKeyService)
+	cfg := common.MustGetState[runtimecfg.RestConfig](ctx, common.StateKeyConfig)
+
+	var artworks []*entity.Artwork
+	var err error
+
+	if req.SimilarTarget != "" {
+		targetId, err := objectuuid.FromObjectIDHex(req.SimilarTarget)
+		if err != nil {
+			return err
+		}
+		artworks, err = serv.FindSimilarArtworks(ctx, &query.ArtworkSimilar{
+			ArtworkID: targetId,
+			R18:       shared.R18TypeFromInt(req.R18),
+			Paginate: query.Paginate{
+				Limit:  int(req.PageSize),
+				Offset: int((req.Page - 1) * req.PageSize),
+			},
+		})
+		if err != nil {
+			return err
+		}
+	} else if req.Hybrid {
+		artworks, err = serv.SearchArtworks(ctx, &query.ArtworkSearch{
+			Hybrid:              req.Hybrid,
+			HybridSemanticRatio: 0.8,
+			R18:                 shared.R18TypeFromInt(req.R18),
+			Query:               req.Keyword,
+			Paginate: query.Paginate{
+				Limit:  int(req.PageSize),
+				Offset: int((req.Page - 1) * req.PageSize),
+			},
+		})
+		if err != nil {
+			return err
+		}
+	} else {
+		var tagId objectuuid.ObjectUUID
+		if req.Tag != "" {
+			tag, err := serv.GetTagByNameWithAlias(ctx, req.Tag)
+			if err != nil {
+				return common.NewError(fiber.StatusNotFound, "tag not found")
+			}
+			tagId = tag.ID
+		}
+
+		keywords := strutil.ParseTo2DArray(req.Keyword, ",", "|")
+		dbQuery := query.ArtworksDB{
+			ArtworksFilter: query.ArtworksFilter{
+				R18: shared.R18TypeFromInt(req.R18),
+			},
+			Paginate: query.Paginate{
+				Limit:  int(req.PageSize),
+				Offset: int((req.Page - 1) * req.PageSize),
+			},
+		}
+		if artistID != objectuuid.Nil {
+			dbQuery.ArtistID = artistID
+		}
+		if tagId != objectuuid.Nil {
+			dbQuery.Tags = [][]objectuuid.ObjectUUID{{tagId}}
+		}
+		if len(keywords) > 0 {
+			dbQuery.Keywords = keywords
+		}
+		artworks, err = serv.QueryArtworks(ctx, dbQuery)
 	}
-	if artistID != objectuuid.Nil {
-		dbQuery.ArtistID = artistID
-	}
-	if tagId != objectuuid.Nil {
-		dbQuery.Tags = [][]objectuuid.ObjectUUID{{tagId}}
-	}
-	if len(keywords) > 0 {
-		dbQuery.Keywords = keywords
-	}
-	log.Debug("listing artworks", "query", dbQuery)
-	artworks, err := serv.QueryArtworks(ctx, dbQuery)
 	if err != nil {
 		return err
 	}
-	cfg := common.MustGetState[runtimecfg.RestConfig](ctx, common.StateKeyConfig)
-	resp := artworksResponseFromEntity(artworks, cfg, serv)
-	if len(resp) == 0 {
+	if len(artworks) == 0 {
 		return common.NewError(fiber.StatusNotFound, "no artworks found")
 	}
+	resp := artworksResponseFromEntity(artworks, cfg, serv)
 	return ctx.JSON(common.NewSuccess(resp))
 }

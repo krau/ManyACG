@@ -8,7 +8,7 @@ import "strings"
 //
 // ParseTo2DArray("1,2,3;\"4,5,6\"", ",", ";") => [][]string{{"1", "2", "3"}, {"4,5,6"}}
 func ParseTo2DArray(str, sep, sep2 string) [][]string {
-	var result [][]string
+	result := make([][]string, 0)
 	if str == "" {
 		return result
 	}

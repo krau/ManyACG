@@ -7,6 +7,7 @@ import (
 const (
 	StateKeyService = "serv"
 	StateKeyConfig  = "cfg"
+	StateKeyLogger  = "logger"
 )
 
 func GetState[T any](ctx fiber.Ctx, key string) (T, bool) {
@@ -24,9 +25,10 @@ func GetState[T any](ctx fiber.Ctx, key string) (T, bool) {
 }
 
 func MustGetState[T any](ctx fiber.Ctx, key string) T {
-	val, ok := GetState[T](ctx, key)
+	val := ctx.App().State().MustGet(key)
+	v, ok := val.(T)
 	if !ok {
-		panic("failed to get state: " + key)
+		panic("state: dependency type assertion failed!")
 	}
-	return val
+	return v
 }

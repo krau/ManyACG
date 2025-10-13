@@ -154,10 +154,11 @@ func SendArtworkInfo(ctx *telegohandler.Context,
 				return oops.Wrapf(err, "failed to create callback data")
 			}
 			waitMsg, err = ctx.Bot().SendMessage(ctx, telegoutil.
-				Message(chatID, "正在获取作品信息...").
-				WithReplyParameters(opts.ReplyParameters).WithReplyMarkup(telegoutil.InlineKeyboard(
-				ArtworkPostKeyboard(meta, cbId)...,
-			)))
+				Message(chatID, sourceUrl+"\n正在获取作品信息...").
+				WithReplyParameters(opts.ReplyParameters).
+				WithReplyMarkup(telegoutil.InlineKeyboard(
+					ArtworkPostKeyboard(meta, cbId)...,
+				)))
 			if err != nil {
 				return oops.Wrapf(err, "failed to send wait message")
 			}
