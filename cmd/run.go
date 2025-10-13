@@ -9,6 +9,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/duke-git/lancet/v2/retry"
 	"github.com/krau/ManyACG/internal/common/version"
 	_ "github.com/krau/ManyACG/internal/infra"
 	"github.com/krau/ManyACG/internal/infra/config/runtimecfg"
@@ -143,35 +144,44 @@ func registerArtworkEventSearcherHandlers(ctx context.Context, bus repo.EventBus
 		return payload != nil && payload.ID != objectuuid.Nil
 	}
 	bus.Subscribe(repo.EventTypeArtworkCreate, func(payload *dto.ArtworkEventItem) {
-		doc := converter.DtoArtworkEventItemToSearchDocument(payload)
-		if doc == nil {
-			return
-		}
-		err := searcher.AddDocuments(ctx, []*dto.ArtworkSearchDocument{doc})
-		if err != nil {
-			log.Error(err)
-			return
-		}
-		log.Debug("indexed artwork", "id", payload.ID, "title", payload.Title)
+		retry.Retry(func() error {
+			doc := converter.DtoArtworkEventItemToSearchDocument(payload)
+			if doc == nil {
+				return nil
+			}
+			err := searcher.AddDocuments(ctx, []*dto.ArtworkSearchDocument{doc})
+			if err != nil {
+				log.Error(err)
+				return err
+			}
+			log.Debug("indexed artwork", "id", payload.ID, "title", payload.Title)
+			return nil
+		}, retry.Context(ctx))
 	}, filter)
 	bus.Subscribe(repo.EventTypeArtworkUpdate, func(payload *dto.ArtworkEventItem) {
-		doc := converter.DtoArtworkEventItemToSearchDocument(payload)
-		if doc == nil {
-			return
-		}
-		err := searcher.AddDocuments(ctx, []*dto.ArtworkSearchDocument{doc})
-		if err != nil {
-			log.Error(err)
-			return
-		}
-		log.Debug("re-indexed artwork", "id", payload.ID, "title", payload.Title)
+		retry.Retry(func() error {
+			doc := converter.DtoArtworkEventItemToSearchDocument(payload)
+			if doc == nil {
+				return nil
+			}
+			err := searcher.AddDocuments(ctx, []*dto.ArtworkSearchDocument{doc})
+			if err != nil {
+				log.Error(err)
+				return err
+			}
+			log.Debug("re-indexed artwork", "id", payload.ID, "title", payload.Title)
+			return nil
+		}, retry.Context(ctx))
 	}, filter)
 	bus.Subscribe(repo.EventTypeArtworkDelete, func(payload *dto.ArtworkEventItem) {
-		err := searcher.DeleteDocuments(ctx, []string{payload.ID.Hex()})
-		if err != nil {
-			log.Error(err)
-			return
-		}
-		log.Debug("deleted indexed artwork", "id", payload.ID, "title", payload.Title)
+		retry.Retry(func() error {
+			err := searcher.DeleteDocuments(ctx, []string{payload.ID.Hex()})
+			if err != nil {
+				log.Error(err)
+				return err
+			}
+			log.Debug("deleted indexed artwork", "id", payload.ID, "title", payload.Title)
+			return nil
+		}, retry.Context(ctx))
 	}, filter)
 }
