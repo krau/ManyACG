@@ -277,7 +277,7 @@ func doPostAndCreateArtwork(
 		}())
 		text := fmt.Sprintf("检测到 %d 张与该作品第 %d 张图片相似的图片", len(sims), pic.OrderIndex)
 		for j, sim := range sims {
-			text += fmt.Sprintf("\n\n%d - <a href=%s>%s_%d</a>", j+1, func() string {
+			text += fmt.Sprintf("\n\n%d - <a href='%s'>%s_%d</a>", j+1, func() string {
 				if meta != nil && meta.ChannelAvailable() {
 					return meta.ChannelMessageURL(sim.TelegramInfo.Data().MessageID)
 				}

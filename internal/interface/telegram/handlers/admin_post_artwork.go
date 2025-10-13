@@ -5,6 +5,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/krau/ManyACG/internal/infra/cache"
 	"github.com/krau/ManyACG/internal/interface/telegram/handlers/utils"
 	"github.com/krau/ManyACG/internal/interface/telegram/metautil"
 	"github.com/krau/ManyACG/internal/service"
@@ -30,7 +31,7 @@ func PostArtworkCallbackQuery(ctx *telegohandler.Context, query telego.CallbackQ
 	queryDataSlice := strings.Split(query.Data, " ")
 	reverseR18 := queryDataSlice[0] == "post_artwork_r18"
 	dataID := queryDataSlice[1]
-	sourceURL, err := serv.GetStringDataByID(ctx, dataID)
+	sourceURL, err := cache.Get[string](ctx, dataID)
 	if err != nil {
 		ctx.Bot().AnswerCallbackQuery(ctx, &telego.AnswerCallbackQueryParams{
 			CallbackQueryID: query.ID,

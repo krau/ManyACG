@@ -14,6 +14,7 @@ import (
 	"github.com/krau/ManyACG/internal/infra/config/runtimecfg"
 	"github.com/krau/ManyACG/internal/infra/database"
 	"github.com/krau/ManyACG/internal/infra/eventbus"
+	"github.com/krau/ManyACG/internal/infra/kvstor"
 	"github.com/krau/ManyACG/internal/infra/search"
 	"github.com/krau/ManyACG/internal/infra/source"
 	"github.com/krau/ManyACG/internal/infra/storage"
@@ -69,6 +70,9 @@ func Run() {
 	osutil.SetOnRemoveError(func(path string, err error) {
 		log.Error("remove cache file error", "path", path, "err", err)
 	})
+
+	kvstor.Set("app:last_start_time", time.Now().Format(time.RFC3339))
+	defer kvstor.Close()
 
 	source.InitAll()
 	if err := storage.InitAll(ctx); err != nil {

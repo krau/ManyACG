@@ -1,6 +1,13 @@
 package telegram
 
-import "github.com/mymmrac/telego"
+import (
+	"crypto/sha256"
+	"encoding/hex"
+
+	"github.com/krau/ManyACG/internal/infra/config/runtimecfg"
+	"github.com/mymmrac/telego"
+	"github.com/vmihailenco/msgpack/v5"
+)
 
 var (
 	CommonCommands = []telego.BotCommand{
@@ -101,3 +108,21 @@ var (
 		},
 	}
 )
+
+func commandsSignature(cfg runtimecfg.TelegramConfig) (string, error) {
+	data := struct {
+		Common []telego.BotCommand
+		Admin  []telego.BotCommand
+		Cfg    runtimecfg.TelegramConfig
+	}{
+		Common: CommonCommands,
+		Admin:  AdminCommands,
+		Cfg:    cfg,
+	}
+	b, err := msgpack.Marshal(data)
+	if err != nil {
+		return "", err
+	}
+	sum := sha256.Sum256(b)
+	return hex.EncodeToString(sum[:]), nil
+}

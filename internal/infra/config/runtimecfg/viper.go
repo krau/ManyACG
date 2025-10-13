@@ -17,6 +17,7 @@ type Config struct {
 
 	// infrastructures config
 	Cache    CacheConfig    `toml:"cache" mapstructure:"cache" json:"cache" yaml:"cache"`
+	KVDB     KVDBConfig     `toml:"kvdb" mapstructure:"kvdb" json:"kvdb" yaml:"kvdb"`
 	Search   SearchConfig   `toml:"search" mapstructure:"search" json:"search" yaml:"search"`
 	Tagging  TaggingConfig  `toml:"tagging" mapstructure:"tagging" json:"tagging" yaml:"tagging"`
 	Database databaseConfig `toml:"database" mapstructure:"database" json:"database" yaml:"database"`
@@ -28,6 +29,11 @@ type Config struct {
 	Telegram  TelegramConfig  `toml:"telegram" mapstructure:"telegram" json:"telegram" yaml:"telegram"`
 	Scheduler SchedulerConfig `toml:"scheduler" mapstructure:"scheduler" json:"scheduler" yaml:"scheduler"`
 	Rest      RestConfig      `toml:"rest" mapstructure:"rest" json:"rest" yaml:"rest"`
+}
+
+type KVDBConfig struct {
+	Type string `toml:"type" mapstructure:"type" json:"type" yaml:"type"` // "badger"
+	Path string `toml:"path" mapstructure:"path" json:"path" yaml:"path"`
 }
 
 type SchedulerConfig struct {

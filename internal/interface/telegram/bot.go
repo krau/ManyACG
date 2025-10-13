@@ -2,10 +2,14 @@ package telegram
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/krau/ManyACG/internal/infra/config/runtimecfg"
+	"github.com/krau/ManyACG/internal/infra/kvstor"
 	"github.com/krau/ManyACG/internal/interface/telegram/handlers"
 	"github.com/krau/ManyACG/internal/interface/telegram/metautil"
 	"github.com/krau/ManyACG/internal/service"
@@ -73,11 +77,23 @@ func Init(ctx context.Context, serv *service.Service) (*BotApp, error) {
 	if cfg.GroupID != 0 {
 		groupChatID = telegoutil.ID(cfg.GroupID)
 	}
-	me, err := bot.GetMe(ctx)
-	if err != nil {
-		log.Fatalf("Error when getting bot info: %s", err)
+
+	// key: telegram:bot:username:<token_hash>
+	// value: bot username without @
+	// token_hash is the SHA256 hash of the bot token
+
+	tokenHash := hex.EncodeToString(sha256.New().Sum([]byte(cfg.BotToken)))
+	key := fmt.Sprintf("telegram:bot:username:%s", tokenHash)
+
+	botUsername, err := kvstor.Get[string](key)
+	if err != nil || botUsername == "" {
+		me, err := bot.GetMe(ctx)
+		if err != nil {
+			log.Fatalf("Error when getting bot info: %s", err)
+		}
+		botUsername = me.Username
 	}
-	botUsername := me.Username
+	kvstor.Set(key, botUsername)
 
 	admins := cfg.Admins
 	for _, adminID := range admins {
@@ -97,6 +113,22 @@ func Init(ctx context.Context, serv *service.Service) (*BotApp, error) {
 	}
 
 	go func() {
+		sig, err := commandsSignature(cfg)
+		if err != nil {
+			log.Warnf("Error when calculating commands signature: %s", err)
+			return
+		}
+		sigKey := fmt.Sprintf("telegram:bot:commands:%s", tokenHash)
+		oldSig, err := kvstor.Get[string](sigKey)
+		if err != nil && !errors.Is(err, errs.ErrRecordNotFound) {
+			log.Warnf("Error when getting commands signature: %s", err)
+			return
+		}
+		if sig == oldSig {
+			// unchanged, skip
+			return
+		}
+		log.Info("Commands signature changed, updating commands...")
 		// set bot commands
 		bot.SetMyCommands(ctx, &telego.SetMyCommandsParams{
 			Commands: CommonCommands,
@@ -162,6 +194,12 @@ func Init(ctx context.Context, serv *service.Service) (*BotApp, error) {
 					},
 				})
 			}
+		}
+
+		err = kvstor.Set(sigKey, sig)
+		if err != nil {
+			log.Warnf("Error when setting commands signature: %s", err)
+			return
 		}
 	}()
 
