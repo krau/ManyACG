@@ -13,7 +13,7 @@ var (
 	CommonCommands = []telego.BotCommand{
 		{
 			Command:     "start",
-			Description: "开始涩涩",
+			Description: "开始使用",
 		},
 		{
 			Command:     "files",
@@ -21,7 +21,7 @@ var (
 		},
 		{
 			Command:     "setu",
-			Description: "来点涩图",
+			Description: "来点涩图(R18)",
 		},
 		{
 			Command:     "random",
@@ -88,23 +88,23 @@ var (
 		},
 		{
 			Command:     "tagalias",
-			Description: "为标签添加别名 <原标签名> <别名1> <别名2> ...",
+			Description: "为标签添加别名",
 		},
 		{
 			Command:     "post",
-			Description: "发布作品 <url>",
+			Description: "发布作品",
 		},
 		{
 			Command:     "refresh",
-			Description: "删除作品缓存 <url>",
+			Description: "刷新作品缓存",
 		},
 		{
 			Command:     "recaption",
-			Description: "重新生成作品描述 <url>",
+			Description: "重新生成作品描述",
 		},
 		{
 			Command:     "dump",
-			Description: "导出作品信息 <url>",
+			Description: "导出作品信息",
 		},
 	}
 )

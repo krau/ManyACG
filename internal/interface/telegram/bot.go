@@ -30,6 +30,7 @@ type BotApp struct {
 	channelChatID    telego.ChatID
 	groupChatID      telego.ChatID // 附属群组
 	channelAvailable bool          // 是否可以发布到频道
+	cfg              runtimecfg.TelegramConfig
 }
 
 func (app *BotApp) Bot() *telego.Bot {
@@ -81,7 +82,6 @@ func Init(ctx context.Context, serv *service.Service) (*BotApp, error) {
 	// key: telegram:bot:username:<token_hash>
 	// value: bot username without @
 	// token_hash is the SHA256 hash of the bot token
-
 	tokenHash := hex.EncodeToString(sha256.New().Sum([]byte(cfg.BotToken)))
 	key := fmt.Sprintf("telegram:bot:username:%s", tokenHash)
 
@@ -209,6 +209,7 @@ func Init(ctx context.Context, serv *service.Service) (*BotApp, error) {
 		groupChatID:      groupChatID,
 		botUsername:      botUsername,
 		channelAvailable: channelAvailable,
+		cfg:              cfg,
 	}, nil
 }
 

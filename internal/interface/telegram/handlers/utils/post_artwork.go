@@ -39,31 +39,41 @@ func doPostAndCreateArtwork(
 	if serv.CheckDeletedByURL(ctx, artwork.SourceURL) {
 		return oops.Errorf("artwork is marked as deleted: %s", artwork.SourceURL)
 	}
-	showProgress := (fromChatID.ID != 0 || fromChatID.Username != "") && messageID != 0
+	showProgress := (fromChatID.ID != 0 || fromChatID.Username != "")
+	useEdit := (messageID != 0)
 
 	editReplyMarkupText := func(text string) {
-		if showProgress {
-			_, err := bot.EditMessageReplyMarkup(ctx, telegoutil.EditMessageReplyMarkup(
-				fromChatID,
-				messageID,
-				telegoutil.InlineKeyboard([]telego.InlineKeyboardButton{
-					telegoutil.InlineKeyboardButton(text).WithCallbackData("noop"),
-				}),
-			))
-			if err != nil {
-				log.Warn("failed to edit reply markup", "err", err)
-			}
+		if !showProgress || !useEdit {
+			return
+		}
+		_, err := bot.EditMessageReplyMarkup(ctx, telegoutil.EditMessageReplyMarkup(
+			fromChatID,
+			messageID,
+			telegoutil.InlineKeyboard([]telego.InlineKeyboardButton{
+				telegoutil.InlineKeyboardButton(text).WithCallbackData("noop"),
+			}),
+		))
+		if err != nil {
+			log.Warn("failed to edit reply markup", "err", err)
 		}
 	}
 	// replyWaitMsg 回复 messageID 的消息
 	replyWaitMsg := func(text string) {
-		if showProgress {
+		if !showProgress {
+			return
+		}
+		if useEdit {
 			_, err := bot.SendMessage(ctx, telegoutil.Message(fromChatID, text).WithReplyParameters(&telego.ReplyParameters{
 				MessageID: messageID,
 			}).WithParseMode(telego.ModeHTML))
 			if err != nil {
 				log.Warn("failed to send reply wait message", "err", err)
 			}
+			return
+		}
+		_, err := bot.SendMessage(ctx, telegoutil.Message(fromChatID, text).WithParseMode(telego.ModeHTML))
+		if err != nil {
+			log.Warn("failed to send reply wait message", "err", err)
 		}
 	}
 
@@ -275,7 +285,12 @@ func doPostAndCreateArtwork(
 			}
 			return ids
 		}())
-		text := fmt.Sprintf("检测到 %d 张与该作品第 %d 张图片相似的图片", len(sims), pic.OrderIndex)
+		text := fmt.Sprintf("检测到 %d 张与作品 <a href='%s'>%s 第 %d 张图片</a>相似的图片", len(sims), func() string {
+			if meta != nil && meta.ChannelAvailable() {
+				return meta.ChannelMessageURL(pic.TelegramInfo.Data().MessageID)
+			}
+			return ent.SourceURL
+		}(), html.EscapeString(ent.Title), pic.OrderIndex)
 		for j, sim := range sims {
 			text += fmt.Sprintf("\n\n%d - <a href='%s'>%s_%d</a>", j+1, func() string {
 				if meta != nil && meta.ChannelAvailable() {
