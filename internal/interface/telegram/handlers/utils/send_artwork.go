@@ -18,7 +18,6 @@ import (
 	"github.com/krau/ManyACG/pkg/objectuuid"
 	"github.com/krau/ManyACG/pkg/osutil"
 	"github.com/mymmrac/telego"
-	"github.com/mymmrac/telego/telegohandler"
 	"github.com/mymmrac/telego/telegoutil"
 	"github.com/samber/oops"
 )
@@ -116,7 +115,8 @@ func ArtworkPostKeyboard(meta *metautil.MetaData, cbId string) [][]telego.Inline
 // SendArtworkInfo 将作品信息附带操作按钮发送到指定聊天, 用于提供给管理员发布或修改作品
 //
 // 需要区分已发布的作品, 已标记为删除的作品, 和未发布的作品
-func SendArtworkInfo(ctx *telegohandler.Context,
+func SendArtworkInfo(ctx context.Context,
+	bot *telego.Bot,
 	meta *metautil.MetaData,
 	serv *service.Service,
 	sourceUrl string,
@@ -153,7 +153,7 @@ func SendArtworkInfo(ctx *telegohandler.Context,
 			if err != nil {
 				return oops.Wrapf(err, "failed to create callback data")
 			}
-			waitMsg, err = ctx.Bot().SendMessage(ctx, telegoutil.
+			waitMsg, err = bot.SendMessage(ctx, telegoutil.
 				Message(chatID, sourceUrl+"\n正在获取作品信息...").
 				WithReplyParameters(opts.ReplyParameters).
 				WithReplyMarkup(telegoutil.InlineKeyboard(
@@ -252,7 +252,7 @@ func SendArtworkInfo(ctx *telegohandler.Context,
 
 	if waitMsg != nil {
 		editReq := telegoutil.EditMessageMedia(chatID, waitMsg.MessageID, photo).WithReplyMarkup(replyMarkup)
-		msg, err := ctx.Bot().EditMessageMedia(ctx, editReq)
+		msg, err := bot.EditMessageMedia(ctx, editReq)
 		if err != nil {
 			return oops.Wrapf(err, "failed to send artwork info photo")
 		}
@@ -265,7 +265,7 @@ func SendArtworkInfo(ctx *telegohandler.Context,
 	if artwork.GetR18() {
 		sendPhoto = sendPhoto.WithHasSpoiler()
 	}
-	msg, err := ctx.Bot().SendPhoto(ctx, sendPhoto)
+	msg, err := bot.SendPhoto(ctx, sendPhoto)
 	if err != nil {
 		return oops.Wrapf(err, "failed to send artwork info photo")
 	}

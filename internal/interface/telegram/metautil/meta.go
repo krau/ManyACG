@@ -12,6 +12,8 @@ type MetaData struct {
 	channelChatID    telego.ChatID
 	botUsername      string
 	siteUrl          string
+	groupChatID      telego.ChatID
+	// should not set manually
 	channelAvailable bool
 }
 
@@ -40,6 +42,12 @@ type Option func(*MetaData)
 func WithSiteURL(url string) Option {
 	return func(m *MetaData) {
 		m.siteUrl = strings.TrimRight(url, "/")
+	}
+}
+
+func WithGroupChatID(id telego.ChatID) Option {
+	return func(m *MetaData) {
+		m.groupChatID = id
 	}
 }
 

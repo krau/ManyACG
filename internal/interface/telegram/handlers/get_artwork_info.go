@@ -42,7 +42,7 @@ func GetArtworkInfo(ctx *telegohandler.Context, message telego.Message) error {
 	if !hasPermission {
 		return nil
 	}
-	err := utils.SendArtworkInfo(ctx, meta, serv, sourceURL, chatID, utils.SendArtworkInfoOptions{
+	err := utils.SendArtworkInfo(ctx, ctx.Bot(), meta, serv, sourceURL, chatID, utils.SendArtworkInfoOptions{
 		HasPermission:   hasPermission,
 		ReplyParameters: &telego.ReplyParameters{MessageID: message.MessageID},
 	})

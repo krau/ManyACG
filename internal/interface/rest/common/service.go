@@ -1,14 +1,21 @@
 package common
 
 import (
+	"context"
+
 	"github.com/gofiber/fiber/v3"
 )
 
 const (
-	StateKeyService = "serv"
-	StateKeyConfig  = "cfg"
-	StateKeyLogger  = "logger"
+	StateKeyService     = "serv"
+	StateKeyConfig      = "cfg"
+	StateKeyLogger      = "logger"
+	StateKeyTelegramBot = "telegrambot" // DO NOT USE MustGetState to get this value!
 )
+
+type TelegramBot interface {
+	SendArtworkInfo(ctx context.Context, sourceUrl string, chatID int64, appendCaption string) error
+}
 
 func GetState[T any](ctx fiber.Ctx, key string) (T, bool) {
 	val, ok := ctx.App().State().Get(key)

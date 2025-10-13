@@ -29,4 +29,7 @@ func Register(router fiber.Router, serv *service.Service, cfg runtimecfg.RestCon
 
 	tagGroup := router.Group("/tag")
 	tagGroup.Get("/random", HandleGetRandomTags)
+
+	tgbotGroup := router.Group("/bot")
+	tgbotGroup.Post("/send_artwork_info", HandleSendArtworkInfoByTelegramBot)
 }

@@ -21,9 +21,22 @@ import (
 type RestApp struct {
 	fiberApp *fiber.App
 	cfg      runtimecfg.RestConfig
+	tgbot    common.TelegramBot
 }
 
-func New(ctx context.Context, serv *service.Service, cfg runtimecfg.RestConfig) (*RestApp, error) {
+type RestAppOption func(app *RestApp) error
+
+func WithTelegramBot(bot common.TelegramBot) RestAppOption {
+	return func(app *RestApp) error {
+		if bot == nil {
+			return oops.New("telegram bot is nil")
+		}
+		app.tgbot = bot
+		return nil
+	}
+}
+
+func New(ctx context.Context, serv *service.Service, cfg runtimecfg.RestConfig, opts ...RestAppOption) (*RestApp, error) {
 	errHandler := func(c fiber.Ctx, err error) error {
 		c.Set(fiber.HeaderContentType, fiber.MIMEApplicationJSONCharsetUTF8)
 		var e *common.Error
@@ -46,6 +59,7 @@ func New(ctx context.Context, serv *service.Service, cfg runtimecfg.RestConfig) 
 		ErrorHandler:    errHandler,
 		StructValidator: NewStructValidator(),
 	})
+
 	app.State().Set(common.StateKeyService, serv)
 	app.State().Set(common.StateKeyConfig, cfg)
 
@@ -66,10 +80,20 @@ func New(ctx context.Context, serv *service.Service, cfg runtimecfg.RestConfig) 
 	v1group := app.Group("/api/v1")
 	handlers.Register(v1group, serv, cfg)
 
-	return &RestApp{
+	restApp := &RestApp{
 		fiberApp: app,
 		cfg:      cfg,
-	}, nil
+	}
+
+	for _, opt := range opts {
+		if err := opt(restApp); err != nil {
+			return nil, oops.Wrapf(err, "applying option")
+		}
+	}
+	if restApp.tgbot != nil {
+		app.State().Set(common.StateKeyTelegramBot, restApp.tgbot)
+	}
+	return restApp, nil
 }
 
 func (r *RestApp) Run(stopCtx context.Context) error {

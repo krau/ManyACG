@@ -17,7 +17,7 @@ import (
 
 // Poster 应该完成所有创建工作, 包括文件存储等
 type ArtworkPoster interface {
-	PostAndCreateArtwork(ctx context.Context, serv *service.Service, artwork *entity.CachedArtworkData) error
+	PostAndCreateArtwork(ctx context.Context, artwork *entity.CachedArtworkData) error
 }
 
 func StartPoster(ctx context.Context, poster ArtworkPoster, serv *service.Service) {
@@ -89,7 +89,7 @@ func StartPoster(ctx context.Context, poster ArtworkPoster, serv *service.Servic
 			if data == nil || len(data.Pictures) == 0 {
 				continue
 			}
-			if err := poster.PostAndCreateArtwork(ctx, serv, data); err != nil {
+			if err := poster.PostAndCreateArtwork(ctx, data); err != nil {
 				log.Errorf("scheduler: posting artwork %s: %s", exist.SourceURL, err)
 				continue
 			}

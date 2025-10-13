@@ -104,7 +104,7 @@ func Run() {
 
 	var poster scheduler.ArtworkPoster
 	if !cfg.Telegram.Disable {
-		botapp, err := telegram.Init(ctx, serv)
+		botapp, err := telegram.Init(ctx, serv, cfg.Telegram)
 		if err != nil {
 			log.Fatal(err)
 		}

@@ -25,21 +25,18 @@ import (
 )
 
 type BotApp struct {
-	bot              *telego.Bot
-	botUsername      string // 没有 @
-	channelChatID    telego.ChatID
-	groupChatID      telego.ChatID // 附属群组
-	channelAvailable bool          // 是否可以发布到频道
-	cfg              runtimecfg.TelegramConfig
+	bot  *telego.Bot
+	cfg  runtimecfg.TelegramConfig
+	serv *service.Service
+	meta *metautil.MetaData
 }
 
 func (app *BotApp) Bot() *telego.Bot {
 	return app.bot
 }
 
-func Init(ctx context.Context, serv *service.Service) (*BotApp, error) {
+func Init(ctx context.Context, serv *service.Service, cfg runtimecfg.TelegramConfig) (*BotApp, error) {
 	log.Info("Initing telegram client")
-	cfg := runtimecfg.Get().Telegram
 	var err error
 	apiUrl := cfg.APIURL
 	bot, err := telego.NewBot(
@@ -67,12 +64,6 @@ func Init(ctx context.Context, serv *service.Service) (*BotApp, error) {
 		channelChatID = telegoutil.Username(cfg.Username)
 	} else {
 		channelChatID = telegoutil.ID(cfg.ChatID)
-	}
-	var channelAvailable bool
-	if channelChatID.ID == 0 && channelChatID.Username == "" {
-		return nil, oops.New("no channel ID or username is provided")
-	} else {
-		channelAvailable = true
 	}
 	var groupChatID telego.ChatID
 	if cfg.GroupID != 0 {
@@ -204,12 +195,10 @@ func Init(ctx context.Context, serv *service.Service) (*BotApp, error) {
 	}()
 
 	return &BotApp{
-		bot:              bot,
-		channelChatID:    channelChatID,
-		groupChatID:      groupChatID,
-		botUsername:      botUsername,
-		channelAvailable: channelAvailable,
-		cfg:              cfg,
+		bot:  bot,
+		serv: serv,
+		meta: metautil.NewMetaData(channelChatID, botUsername, metautil.WithGroupChatID(groupChatID)),
+		cfg:  cfg,
 	}, nil
 }
 
@@ -251,7 +240,7 @@ func (app *BotApp) Run(ctx context.Context, serv *service.Service) {
 	botHandler.Use(messageLogger)
 
 	baseGroup := botHandler.BaseGroup()
-	handlers.New(metautil.NewMetaData(app.channelChatID, app.botUsername), serv).Register(baseGroup)
+	handlers.New(app.meta, serv).Register(baseGroup)
 	if err := botHandler.Start(); err != nil {
 		log.Fatalf("Error when starting bot handler: %s", err)
 	}
