@@ -183,3 +183,16 @@ func (d *DB) MigrateTagAlias(ctx context.Context, aliasTagID, targetTagID object
 // 		return nil
 // 	})
 // }
+
+func (d *DB) RandomTags(ctx context.Context, limit int) ([]*entity.Tag, error) {
+	var tags []*entity.Tag
+	err := d.db.WithContext(ctx).Model(&entity.Tag{}).
+		Preload("Alias", nil).
+		Order("RANDOM()").
+		Limit(limit).
+		Find(&tags).Error
+	if err != nil {
+		return nil, err
+	}
+	return tags, nil
+}

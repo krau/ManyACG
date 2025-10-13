@@ -188,3 +188,7 @@ func (s *Service) ShouldTagNewArtwork() bool {
 	}
 	return runtimecfg.Get().Tagging.TagNew
 }
+
+func (s *Service) RandomTags(ctx context.Context, limit int) ([]*entity.Tag, error) {
+	return s.repos.Tag().RandomTags(ctx, limit)
+}
