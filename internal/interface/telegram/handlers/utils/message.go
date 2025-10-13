@@ -104,7 +104,7 @@ func ArtworkHTMLCaption(artwork shared.ArtworkLike) string {
 
 	sourceUrl := artwork.GetSourceURL()
 	title := html.EscapeString(artwork.GetTitle())
-	artistName := html.EscapeString(artwork.GetArtistName())
+	artistName := html.EscapeString(artwork.GetArtist().GetName())
 	description := html.EscapeString(strutil.Ellipsis(artwork.GetDescription(), 500))
 
 	tags := ""
@@ -143,7 +143,7 @@ func artworkHTMLCaptionFallback(artwork shared.ArtworkLike) string {
 	tmpl := "<a href='%s'><b>%s</b></a> / <b>%s</b>"
 	sourceUrl := artwork.GetSourceURL()
 	title := html.EscapeString(artwork.GetTitle())
-	artistName := html.EscapeString(artwork.GetArtistName())
+	artistName := html.EscapeString(artwork.GetArtist().GetName())
 	description := html.EscapeString(strutil.Ellipsis(artwork.GetDescription(), 500))
 
 	tags := ""

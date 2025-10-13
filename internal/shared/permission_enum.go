@@ -21,6 +21,8 @@ const (
 	PermissionGetArtworkInfo Permission = "get_artwork_info"
 	// PermissionEditArtwork is a Permission of type edit_artwork.
 	PermissionEditArtwork Permission = "edit_artwork"
+	// PermissionFetchArtwork is a Permission of type fetch_artwork.
+	PermissionFetchArtwork Permission = "fetch_artwork"
 )
 
 var ErrInvalidPermission = fmt.Errorf("not a valid Permission, try [%s]", strings.Join(_PermissionNames, ", "))
@@ -31,6 +33,7 @@ var _PermissionNames = []string{
 	string(PermissionDeleteArtwork),
 	string(PermissionGetArtworkInfo),
 	string(PermissionEditArtwork),
+	string(PermissionFetchArtwork),
 }
 
 // PermissionNames returns a list of possible string values of Permission.
@@ -48,6 +51,7 @@ func PermissionValues() []Permission {
 		PermissionDeleteArtwork,
 		PermissionGetArtworkInfo,
 		PermissionEditArtwork,
+		PermissionFetchArtwork,
 	}
 }
 
@@ -69,6 +73,7 @@ var _PermissionValue = map[string]Permission{
 	"delete_artwork":   PermissionDeleteArtwork,
 	"get_artwork_info": PermissionGetArtworkInfo,
 	"edit_artwork":     PermissionEditArtwork,
+	"fetch_artwork":    PermissionFetchArtwork,
 }
 
 // ParsePermission attempts to convert a string to a Permission.

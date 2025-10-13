@@ -35,10 +35,9 @@ func (s *Service) CreateApiKey(ctx context.Context, key string, quota int, permi
 	return s.repos.APIKey().GetApiKeyByKey(ctx, key)
 }
 
-// func GetApiKeyByKey(ctx context.Context, key string) (*entity.ApiKey, error) {
-// 	// return dao.GetApiKeyByKey(ctx, key)
-// 	return database.Default().GetApiKeyByKey(ctx, key)
-// }
+func (s *Service) GetApiKeyByKey(ctx context.Context, key string) (*entity.ApiKey, error) {
+	return s.repos.APIKey().GetApiKeyByKey(ctx, key)
+}
 
 // func IncreaseApiKeyUsed(ctx context.Context, key string) error {
 // 	// return dao.IncreaseApiKeyUsed(ctx, key)

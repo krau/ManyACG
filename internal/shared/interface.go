@@ -15,10 +15,17 @@ type ArtworkLike interface {
 	GetSourceURL() string
 	GetTitle() string
 	GetR18() bool
-	GetArtistName() string
+	GetArtist() ArtistLike
 	GetDescription() string
 	GetTags() []string
 	GetPictures() []PictureLike
+	GetType() SourceType
+}
+
+type ArtistLike interface {
+	GetName() string
+	GetUserName() string
+	GetUID() string
 }
 
 type UgoiraArtworkLike interface {

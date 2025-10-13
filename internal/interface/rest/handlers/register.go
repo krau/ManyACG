@@ -12,5 +12,11 @@ func Register(router fiber.Router, serv *service.Service, cfg runtimecfg.RestCon
 
 	artworkGroup := router.Group("/artwork")
 	artworkGroup.Get("/random", HandleRandomArtworks)
+	artworkGroup.Post("/random", HandleRandomArtworks)
 	artworkGroup.Get("/list", HandleListArtworks)
+	artworkGroup.Post("/list", HandleListArtworks)
+	artworkGroup.Get("/count", HandleCountArtwork)
+	artworkGroup.Get("/fetch", HandleFetchArtwork)
+	artworkGroup.Post("/fetch", HandleFetchArtwork)
+	artworkGroup.Get("/:id", HandleGetArtworkByID)
 }

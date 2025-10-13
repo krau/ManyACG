@@ -17,11 +17,31 @@ type FetchedArtwork struct {
 	UgoiraMetas []*FetchedUgoiraMeta `json:"ugoira_metas,omitempty"`
 }
 
+// GetType implements shared.ArtworkLike.
+func (f *FetchedArtwork) GetType() shared.SourceType {
+	return f.SourceType
+}
+
 type FetchedArtist struct {
 	Name     string            `json:"name"`
 	Type     shared.SourceType `json:"type"`
 	UID      string            `json:"uid"`
 	Username string            `json:"username"`
+}
+
+// GetName implements shared.ArtistLike.
+func (f *FetchedArtist) GetName() string {
+	return f.Name
+}
+
+// GetUID implements shared.ArtistLike.
+func (f *FetchedArtist) GetUID() string {
+	return f.UID
+}
+
+// GetUserName implements shared.ArtistLike.
+func (f *FetchedArtist) GetUserName() string {
+	return f.Username
 }
 
 type FetchedPicture struct {
@@ -47,9 +67,9 @@ func (f *FetchedPicture) GetIndex() uint {
 	return f.Index
 }
 
-// GetArtistName implements shared.ArtworkLike.
-func (f *FetchedArtwork) GetArtistName() string {
-	return f.Artist.Name
+// GetArtist implements shared.ArtworkLike.
+func (f *FetchedArtwork) GetArtist() shared.ArtistLike {
+	return f.Artist
 }
 
 // GetDescription implements shared.ArtworkLike.

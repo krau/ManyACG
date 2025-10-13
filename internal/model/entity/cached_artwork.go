@@ -28,6 +28,10 @@ type CachedArtworkData struct {
 	Version int `json:"version"` // for future schema changes
 }
 
+func (c *CachedArtworkData) GetType() shared.SourceType {
+	return c.SourceType
+}
+
 // GetUgoiraMetas implements shared.UgoiraArtworkLike.
 func (c *CachedArtworkData) GetUgoiraMetas() []shared.UgoiraMetaLike {
 	var metas []shared.UgoiraMetaLike
@@ -66,9 +70,9 @@ func (c *CachedUgoiraMeta) GetUgoiraMetaData() shared.UgoiraMetaData {
 	return c.MetaData
 }
 
-// GetArtistName implements ArtworkLike.
-func (c *CachedArtworkData) GetArtistName() string {
-	return c.Artist.Name
+// GetArtist implements ArtworkLike.
+func (c *CachedArtworkData) GetArtist() shared.ArtistLike {
+	return c.Artist
 }
 
 // GetDescription implements ArtworkLike.
@@ -125,6 +129,21 @@ type CachedArtist struct {
 	Type     shared.SourceType `json:"type"`
 	UID      string            `json:"uid"`
 	Username string            `json:"username"`
+}
+
+// GetName implements shared.ArtistLike.
+func (c *CachedArtist) GetName() string {
+	return c.Name
+}
+
+// GetUID implements shared.ArtistLike.
+func (c *CachedArtist) GetUID() string {
+	return c.UID
+}
+
+// GetUserName implements shared.ArtistLike.
+func (c *CachedArtist) GetUserName() string {
+	return c.Username
 }
 
 type CachedPicture struct {
@@ -187,9 +206,14 @@ type CachedArtwork struct {
 	Status    shared.ArtworkStatus                   `gorm:"type:text;index" json:"status"`
 }
 
-// GetArtistName implements ArtworkLike.
-func (c *CachedArtwork) GetArtistName() string {
-	return c.Artwork.Data().GetArtistName()
+// GetType implements shared.ArtworkLike.
+func (c *CachedArtwork) GetType() shared.SourceType {
+	return c.Artwork.Data().GetType()
+}
+
+// GetArtist implements ArtworkLike.
+func (c *CachedArtwork) GetArtist() shared.ArtistLike {
+	return c.Artwork.Data().GetArtist()
 }
 
 // GetDescription implements ArtworkLike.

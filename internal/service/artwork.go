@@ -291,3 +291,7 @@ func (s *Service) SearchArtworks(ctx context.Context, que *query.ArtworkSearch) 
 	}
 	return artworks, nil
 }
+
+func (s *Service) CountArtworks(ctx context.Context, r18 shared.R18Type) (int64, error) {
+	return s.repos.Artwork().CountArtworks(ctx, r18)
+}

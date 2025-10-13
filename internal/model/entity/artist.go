@@ -17,6 +17,21 @@ type Artist struct {
 	Artworks []*Artwork `gorm:"foreignKey:ArtistID" json:"-"` // json ignore to avoid circular reference
 }
 
+// GetName implements shared.ArtistLike.
+func (a *Artist) GetName() string {
+	return a.Name
+}
+
+// GetUID implements shared.ArtistLike.
+func (a *Artist) GetUID() string {
+	return a.UID
+}
+
+// GetUserName implements shared.ArtistLike.
+func (a *Artist) GetUserName() string {
+	return a.Username
+}
+
 func (a *Artist) BeforeCreate(tx *gorm.DB) (err error) {
 	if a.ID == objectuuid.Nil {
 		a.ID = objectuuid.New()

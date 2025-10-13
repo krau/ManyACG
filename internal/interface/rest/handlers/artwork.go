@@ -9,6 +9,7 @@ import (
 	"github.com/krau/ManyACG/internal/model/query"
 	"github.com/krau/ManyACG/internal/service"
 	"github.com/krau/ManyACG/internal/shared"
+	"github.com/krau/ManyACG/internal/shared/errs"
 	"github.com/krau/ManyACG/pkg/objectuuid"
 	"github.com/krau/ManyACG/pkg/strutil"
 )
@@ -233,4 +234,137 @@ func HandleListArtworks(ctx fiber.Ctx) error {
 	}
 	resp := artworksResponseFromEntity(artworks, cfg, serv)
 	return ctx.JSON(common.NewSuccess(resp))
+}
+
+type RequestCountArtwork struct {
+	R18 int `query:"r18" form:"r18" json:"r18" validate:"omitempty,gte=0,lte=2" message:"r18 must be 0 (no R18), 1 (only R18) or 2 (both)"`
+}
+
+func HandleCountArtwork(ctx fiber.Ctx) error {
+	serv := common.MustGetState[*service.Service](ctx, common.StateKeyService)
+	req := new(RequestCountArtwork)
+	if err := ctx.Bind().All(req); err != nil {
+		return err
+	}
+	count, err := serv.CountArtworks(ctx, shared.R18TypeFromInt(req.R18))
+	if err != nil {
+		return err
+	}
+	return ctx.JSON(common.NewSuccess(count))
+}
+
+type RequestFetchArtwork struct {
+	URL string `query:"url" form:"url" json:"url" validate:"required,url" message:"url is required and must be a valid url"`
+	// NoCache bool   `query:"no_cache" form:"no_cache" json:"no_cache"` // deprecated
+}
+
+type ResponseFetchArtwork struct {
+	CacheID     string                    `json:"cache_id"`
+	Title       string                    `json:"title"`
+	Description string                    `json:"description"`
+	SourceURL   string                    `json:"source_url"`
+	R18         bool                      `json:"r18"`
+	Tags        []string                  `json:"tags"`
+	Artist      *ResponseFetchedArtist    `json:"artist"`
+	SourceType  shared.SourceType         `json:"source_type"`
+	Pictures    []*ResponseFetchedPicture `json:"pictures"`
+}
+
+type ResponseFetchedArtist struct {
+	Name     string `json:"name"`
+	Username string `json:"username"`
+	UID      string `json:"uid"`
+}
+
+type ResponseFetchedPicture struct {
+	Width     uint   `json:"width"`
+	Height    uint   `json:"height"`
+	Index     uint   `json:"index"`
+	Thumbnail string `json:"thumbnail"`
+	Original  string `json:"original"`
+	FileName  string `json:"file_name"`
+}
+
+func fetchArtworkResponse(cacheID string, art shared.ArtworkLike, serv *service.Service) *ResponseFetchArtwork {
+	pics := make([]*ResponseFetchedPicture, 0, len(art.GetPictures()))
+	for _, pic := range art.GetPictures() {
+		width, height := pic.GetSize()
+		pics = append(pics, &ResponseFetchedPicture{
+			Width:     width,
+			Height:    height,
+			Index:     pic.GetIndex(),
+			Thumbnail: pic.GetThumbnail(),
+			Original:  pic.GetOriginal(),
+			FileName:  serv.PrettyFileName(art, pic),
+		})
+	}
+	return &ResponseFetchArtwork{
+		CacheID:     cacheID,
+		Title:       art.GetTitle(),
+		Description: art.GetDescription(),
+		SourceURL:   art.GetSourceURL(),
+		R18:         art.GetR18(),
+		Tags:        art.GetTags(),
+		Artist: &ResponseFetchedArtist{
+			Name:     art.GetArtist().GetName(),
+			Username: art.GetArtist().GetUserName(),
+			UID:      art.GetArtist().GetUID(),
+		},
+		SourceType: art.GetType(),
+		Pictures:   pics,
+	}
+}
+
+func HandleFetchArtwork(ctx fiber.Ctx) error {
+	key := ctx.Get("X-API-KEY")
+	if key == "" {
+		return common.NewError(fiber.StatusUnauthorized, "api key is required")
+	}
+	serv := common.MustGetState[*service.Service](ctx, common.StateKeyService)
+	keyEnt, err := serv.GetApiKeyByKey(ctx, key)
+	if err != nil {
+		return common.NewError(fiber.StatusUnauthorized, "invalid api key")
+	}
+	if !keyEnt.HasPermission(shared.PermissionFetchArtwork) {
+		return common.NewError(fiber.StatusForbidden, "no permission to fetch artwork")
+	}
+	if !keyEnt.CanUse() {
+		return common.NewError(fiber.StatusForbidden, "api key quota exceeded")
+	}
+
+	req := new(RequestFetchArtwork)
+	if err := ctx.Bind().All(req); err != nil {
+		return err
+	}
+	sourceUrl := serv.FindSourceURL(req.URL)
+	if sourceUrl == "" {
+		return common.NewError(fiber.StatusBadRequest, "no valid source url found")
+	}
+	artwork, err := serv.GetOrFetchCachedArtwork(ctx, sourceUrl)
+	if err != nil {
+		return err
+	}
+	return ctx.JSON(common.NewSuccess(fetchArtworkResponse(artwork.ID.Hex(), artwork.Artwork.Data(), serv)))
+}
+
+func HandleGetArtworkByID(ctx fiber.Ctx) error {
+	artworkId := ctx.Params("id")
+	if artworkId == "" {
+		return common.NewError(fiber.StatusBadRequest, "artwork id is required")
+	}
+	artworkUUID, err := objectuuid.FromObjectIDHex(artworkId)
+	if err != nil {
+		return common.NewError(fiber.StatusBadRequest, "invalid artwork id")
+	}
+	serv := common.MustGetState[*service.Service](ctx, common.StateKeyService)
+	artwork, err := serv.GetArtworkByID(ctx, artworkUUID)
+	if err != nil {
+		if err == errs.ErrRecordNotFound {
+			return common.NewError(fiber.StatusNotFound, "artwork not found")
+		}
+		return err
+	}
+	cfg := common.MustGetState[runtimecfg.RestConfig](ctx, common.StateKeyConfig)
+	resp := artworksResponseFromEntity([]*entity.Artwork{artwork}, cfg, serv)
+	return ctx.JSON(common.NewSuccess(resp[0]))
 }

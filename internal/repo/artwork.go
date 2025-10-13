@@ -8,6 +8,7 @@ import (
 	"github.com/krau/ManyACG/internal/model/dto"
 	"github.com/krau/ManyACG/internal/model/entity"
 	"github.com/krau/ManyACG/internal/model/query"
+	"github.com/krau/ManyACG/internal/shared"
 	"github.com/krau/ManyACG/pkg/objectuuid"
 )
 
@@ -22,11 +23,17 @@ type Artwork interface {
 	DeleteArtworkByID(ctx context.Context, id objectuuid.ObjectUUID) error
 	QueryArtworks(ctx context.Context, que query.ArtworksDB) ([]*entity.Artwork, error)
 	GetArtworksByIDs(ctx context.Context, ids []objectuuid.ObjectUUID) ([]*entity.Artwork, error)
+	CountArtworks(ctx context.Context, r18 shared.R18Type) (int64, error)
 }
 
 type ArtworkWithEvent struct {
 	inner    Artwork
 	eventBus EventBus[*dto.ArtworkEventItem]
+}
+
+// CountArtworks implements Artwork.
+func (a *ArtworkWithEvent) CountArtworks(ctx context.Context, r18 shared.R18Type) (int64, error) {
+	return a.inner.CountArtworks(ctx, r18)
 }
 
 var _ Artwork = (*ArtworkWithEvent)(nil)
@@ -141,6 +148,11 @@ type artworkEventItem struct {
 type ArtworkWithRecorder struct {
 	inner    Artwork
 	recorder func(typ EventType, item *dto.ArtworkEventItem)
+}
+
+// CountArtworks implements Artwork.
+func (a *ArtworkWithRecorder) CountArtworks(ctx context.Context, r18 shared.R18Type) (int64, error) {
+	return a.inner.CountArtworks(ctx, r18)
 }
 
 var _ Artwork = (*ArtworkWithRecorder)(nil)

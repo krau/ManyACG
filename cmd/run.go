@@ -72,7 +72,7 @@ func Run() {
 		log.Error("remove cache file error", "path", path, "err", err)
 	})
 
-	kvstor.Set("app:last_start_time", time.Now().Format(time.RFC3339))
+	kvstor.Set("app:last_start_time", time.Now().Format(time.RFC3339)) // just for preheat
 	defer kvstor.Close()
 
 	source.InitAll()
