@@ -34,7 +34,11 @@ func initDefaultClient() {
 }
 
 func getCachePath(url string) string {
-	ext, _ := strutil.GetFileExtFromURL(url)
+	ext, err := strutil.GetFileExtFromURL(url)
+	if err != nil {
+		log.Warnf("failed to get file extension from url %s: %v", url, err)
+	}
+	log.Debug("file extension from url %s: %s", url, ext)
 	return filepath.Join(runtimecfg.Get().Storage.CacheDir, "req", strutil.MD5Hash(url)+ext)
 }
 
@@ -58,16 +62,15 @@ func DownloadWithCache(ctx context.Context, url string, client *req.Client) (
 		if fi, err := os.Stat(cachePath); err == nil && !fi.IsDir() {
 			return nil, nil
 		}
-
-		resp, err := client.R().SetContext(ctx).Get(url)
+		resp, err := client.R().
+			SetContext(ctx).
+			SetOutputFile(cachePath).
+			Get(url)
 		if err != nil {
 			return nil, err
 		}
 		if resp.IsErrorState() {
 			return nil, fmt.Errorf("http error: %d", resp.GetStatusCode())
-		}
-		if err := osutil.MkFile(cachePath, resp.Bytes()); err != nil {
-			return nil, err
 		}
 		return nil, nil
 	})

@@ -77,3 +77,7 @@ func (s *Service) UpdateUgoiraTelegramInfo(ctx context.Context, id objectuuid.Ob
 	_, err := s.repos.Ugoira().UpdateUgoiraTelegramInfoByID(ctx, id, tgInfo)
 	return err
 }
+
+func (s *Service) RandomPictures(ctx context.Context, limit int) ([]*entity.Picture, error) {
+	return s.repos.Picture().RandomPictures(ctx, limit)
+}

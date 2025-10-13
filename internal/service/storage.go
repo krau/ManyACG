@@ -15,9 +15,14 @@ import (
 )
 
 func (s *Service) StorageGetFile(ctx context.Context, detail shared.StorageDetail) (*osutil.File, error) {
+	cachePath := filepath.Join(s.storCfg.CacheDir, "storage", detail.Hash())
+	ext := filepath.Ext(detail.Path)
+	if ext != "" {
+		cachePath += ext
+	}
 	if stor, ok := s.storages[detail.Type]; ok {
 		// 先检查缓存
-		if cacheFile, err := osutil.OpenCache(filepath.Join(s.storCfg.CacheDir, "storage", detail.Hash())); err == nil {
+		if cacheFile, err := osutil.OpenCache(cachePath); err == nil {
 			return cacheFile, nil
 		}
 		// 从存储获取
@@ -27,7 +32,7 @@ func (s *Service) StorageGetFile(ctx context.Context, detail shared.StorageDetai
 		}
 		defer rc.Close()
 		// 读取到临时文件, 避免频繁从远程存储获取文件
-		cacheFile, err := osutil.CreateCache(filepath.Join(s.storCfg.CacheDir, "storage", detail.Hash()))
+		cacheFile, err := osutil.CreateCache(cachePath)
 		if err != nil {
 			return nil, oops.Wrapf(err, "create cache file failed")
 		}

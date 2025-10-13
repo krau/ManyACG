@@ -2,8 +2,10 @@ package database
 
 import (
 	"context"
+	"math/rand"
 
 	"github.com/corona10/goimagehash"
+	"github.com/krau/ManyACG/internal/infra/cache"
 	"github.com/krau/ManyACG/internal/model/entity"
 	"github.com/krau/ManyACG/internal/model/query"
 	"github.com/krau/ManyACG/internal/shared"
@@ -101,4 +103,26 @@ func (d *DB) UpdatePictureTelegramInfoByID(ctx context.Context, id objectuuid.Ob
 		return nil, err
 	}
 	return pic, nil
+}
+
+// RandomPictures implements repo.Picture.
+func (d *DB) RandomPictures(ctx context.Context, limit int) ([]*entity.Picture, error) {
+	count, err := cache.Get[int64](ctx, "database:picture:count")
+	if err != nil {
+		err := d.db.WithContext(ctx).Model(&entity.Picture{}).Count(&count).Error
+		if err != nil {
+			return nil, err
+		}
+		cache.Set(ctx, "database:picture:count", count)
+	}
+	if count == 0 {
+		return []*entity.Picture{}, nil
+	}
+	offset := int(rand.Int63n(count))
+	var pictures []*entity.Picture
+	err = d.db.WithContext(ctx).Model(&entity.Picture{}).Offset(offset).Limit(limit).Find(&pictures).Error
+	if err != nil {
+		return nil, err
+	}
+	return pictures, nil
 }

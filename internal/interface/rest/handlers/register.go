@@ -19,4 +19,8 @@ func Register(router fiber.Router, serv *service.Service, cfg runtimecfg.RestCon
 	artworkGroup.Get("/fetch", HandleFetchArtwork)
 	artworkGroup.Post("/fetch", HandleFetchArtwork)
 	artworkGroup.Get("/:id", HandleGetArtworkByID)
+
+	pictureGroup := router.Group("/picture")
+	pictureGroup.Get("/file/:id", HandleGetPictureFileByID)
+	pictureGroup.Get("/random", HandleGetRandomPicture)
 }
