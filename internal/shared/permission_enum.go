@@ -23,6 +23,8 @@ const (
 	PermissionEditArtwork Permission = "edit_artwork"
 	// PermissionFetchArtwork is a Permission of type fetch_artwork.
 	PermissionFetchArtwork Permission = "fetch_artwork"
+	// PermissionSendArtworkInfo is a Permission of type send_artwork_info.
+	PermissionSendArtworkInfo Permission = "send_artwork_info"
 )
 
 var ErrInvalidPermission = fmt.Errorf("not a valid Permission, try [%s]", strings.Join(_PermissionNames, ", "))
@@ -34,6 +36,7 @@ var _PermissionNames = []string{
 	string(PermissionGetArtworkInfo),
 	string(PermissionEditArtwork),
 	string(PermissionFetchArtwork),
+	string(PermissionSendArtworkInfo),
 }
 
 // PermissionNames returns a list of possible string values of Permission.
@@ -52,6 +55,7 @@ func PermissionValues() []Permission {
 		PermissionGetArtworkInfo,
 		PermissionEditArtwork,
 		PermissionFetchArtwork,
+		PermissionSendArtworkInfo,
 	}
 }
 
@@ -68,12 +72,13 @@ func (x Permission) IsValid() bool {
 }
 
 var _PermissionValue = map[string]Permission{
-	"sudo":             PermissionSudo,
-	"post_artwork":     PermissionPostArtwork,
-	"delete_artwork":   PermissionDeleteArtwork,
-	"get_artwork_info": PermissionGetArtworkInfo,
-	"edit_artwork":     PermissionEditArtwork,
-	"fetch_artwork":    PermissionFetchArtwork,
+	"sudo":              PermissionSudo,
+	"post_artwork":      PermissionPostArtwork,
+	"delete_artwork":    PermissionDeleteArtwork,
+	"get_artwork_info":  PermissionGetArtworkInfo,
+	"edit_artwork":      PermissionEditArtwork,
+	"fetch_artwork":     PermissionFetchArtwork,
+	"send_artwork_info": PermissionSendArtworkInfo,
 }
 
 // ParsePermission attempts to convert a string to a Permission.

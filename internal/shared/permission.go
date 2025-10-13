@@ -11,6 +11,7 @@ delete_artwork
 get_artwork_info
 edit_artwork
 fetch_artwork
+send_artwork_info
 )
 */
 type Permission string

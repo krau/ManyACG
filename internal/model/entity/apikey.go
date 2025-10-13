@@ -26,6 +26,9 @@ func (a *ApiKey) BeforeCreate(tx *gorm.DB) (err error) {
 }
 
 func (a *ApiKey) HasPermission(p shared.Permission) bool {
+	if slices.Contains(a.Permissions, shared.PermissionSudo) {
+		return true
+	}
 	return slices.Contains(a.Permissions, p)
 }
 

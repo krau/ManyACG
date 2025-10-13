@@ -21,6 +21,7 @@ import (
 	"github.com/krau/ManyACG/internal/infra/storage"
 	"github.com/krau/ManyACG/internal/infra/tagging"
 	"github.com/krau/ManyACG/internal/interface/rest"
+	restcommon "github.com/krau/ManyACG/internal/interface/rest/common"
 	"github.com/krau/ManyACG/internal/interface/scheduler"
 	"github.com/krau/ManyACG/internal/interface/telegram"
 	"github.com/krau/ManyACG/internal/model/converter"
@@ -103,6 +104,7 @@ func Run() {
 	service.SetDefault(serv)
 
 	var poster scheduler.ArtworkPoster
+	var restTgBotService restcommon.TelegramBot
 	if !cfg.Telegram.Disable {
 		botapp, err := telegram.Init(ctx, serv, cfg.Telegram)
 		if err != nil {
@@ -110,12 +112,17 @@ func Run() {
 		}
 		go botapp.Run(ctx, serv)
 		poster = botapp
+		restTgBotService = botapp
 	}
 	if cfg.Scheduler.Enable && poster != nil {
 		go scheduler.StartPoster(ctx, poster, serv)
 	}
 	if cfg.Rest.Enable {
-		restApp, err := rest.New(ctx, serv, cfg.Rest)
+		opts := []rest.RestAppOption{}
+		if restTgBotService != nil {
+			opts = append(opts, rest.WithTelegramBot(restTgBotService))
+		}
+		restApp, err := rest.New(ctx, serv, cfg.Rest, opts...)
 		if err != nil {
 			log.Fatal(err)
 		}

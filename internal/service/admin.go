@@ -40,38 +40,7 @@ func (s *Service) CreateAdmin(ctx context.Context, tgID int64, permissions []sha
 	return err
 }
 
-// func DeleteAdminByTgID(ctx context.Context, tgid int64) error {
-// 	// _, err := dao.DeleteAdminByUserID(ctx, userID)
-// 	// return err
-// 	return database.Default().DeleteAdminByTelegramID(ctx, tgid)
-// }
-
-// func GetAdminByTgID(ctx context.Context, userID int64) (*entity.Admin, error) {
-// 	// return dao.GetAdminByUserID(ctx, userID)
-// 	admin, err := database.Default().GetAdminByTelegramID(ctx, userID)
-// 	if err != nil {
-// 		return nil, err
-// 	}
-// 	return admin, nil
-// }
-
 func (s *Service) CheckAdminPermissionByTgID(ctx context.Context, userID int64, permissions ...shared.Permission) bool {
-	// admin, err := dao.GetAdminByUserID(ctx, userID)
-	// if err != nil {
-	// 	return false
-	// }
-	// if admin == nil {
-	// 	return false
-	// }
-	// if admin.SuperAdmin {
-	// 	return true
-	// }
-	// for _, p := range permissions {
-	// 	if !admin.HasPermission(p) {
-	// 		return false
-	// 	}
-	// }
-	// return true
 	admin, err := s.repos.Admin().GetAdminByTelegramID(ctx, userID)
 	if err != nil {
 		return false
