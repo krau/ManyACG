@@ -34,11 +34,7 @@ func initDefaultClient() {
 }
 
 func getCachePath(url string) string {
-	ext, err := strutil.GetFileExtFromURL(url)
-	if err != nil {
-		log.Warnf("failed to get file extension from url %s: %v", url, err)
-	}
-	log.Debug("file extension from url %s: %s", url, ext)
+	ext, _ := strutil.GetFileExtFromURL(url)
 	return filepath.Join(runtimecfg.Get().Storage.CacheDir, "req", strutil.MD5Hash(url)+ext)
 }
 
