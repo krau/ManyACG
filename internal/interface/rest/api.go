@@ -58,6 +58,12 @@ func New(ctx context.Context, serv *service.Service, cfg runtimecfg.RestConfig, 
 	app := fiber.New(fiber.Config{
 		ErrorHandler:    errHandler,
 		StructValidator: NewStructValidator(),
+		TrustProxy:      true,
+		TrustProxyConfig: fiber.TrustProxyConfig{
+			LinkLocal: true,
+			Private:   true,
+			Loopback:  true,
+		},
 	})
 
 	app.State().Set(common.StateKeyService, serv)
