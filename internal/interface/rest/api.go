@@ -77,7 +77,10 @@ func New(ctx context.Context, serv *service.Service, cfg runtimecfg.RestConfig, 
 	}
 	app.Use(cors.New())
 	app.Use(compress.New())
-	app.Use(logger.New())
+
+	loggerCfg := logger.ConfigDefault
+	loggerCfg.Format = "${time} | ${status} | ${latency} | ${ip} | ${method} | ${path} | ${queryParams} | ${error}\n"
+	app.Use(logger.New(loggerCfg))
 
 	if serv == nil {
 		return nil, oops.New("service is nil")
