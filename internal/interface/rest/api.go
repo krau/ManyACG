@@ -64,7 +64,8 @@ func New(ctx context.Context, serv *service.Service, cfg runtimecfg.RestConfig, 
 			Private:   true,
 			Loopback:  true,
 		},
-		ProxyHeader: fiber.HeaderXForwardedFor, 
+		ProxyHeader:        fiber.HeaderXForwardedFor,
+		EnableIPValidation: true,
 	})
 
 	app.State().Set(common.StateKeyService, serv)
