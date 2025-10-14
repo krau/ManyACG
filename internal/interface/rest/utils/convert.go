@@ -63,7 +63,7 @@ func EntityArtworkToFeedItems(cfg runtimecfg.RestConfig,
 // 否则空
 func ApplyApiStoragePathRule(detail shared.StorageDetail, rules []runtimecfg.StoragePathRule) string {
 	for _, rule := range rules {
-		if strings.HasPrefix(detail.Path, rule.Path) && (rule.StorageType == "" || rule.StorageType == string(detail.Type)) {
+		if strings.HasPrefix(detail.Path, rule.MatchPrefix) && (rule.StorageType == "" || rule.StorageType == string(detail.Type)) {
 			parsedUrl, err := url.JoinPath(rule.JoinPrefix, strings.TrimPrefix(detail.Path, rule.TrimPrefix))
 			if err != nil {
 				log.Errorf("failed to join path: %v", err)

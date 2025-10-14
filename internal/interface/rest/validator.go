@@ -6,7 +6,6 @@ import (
 
 	"github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v3"
-	"github.com/krau/ManyACG/pkg/log"
 	"github.com/krau/ManyACG/pkg/objectuuid"
 )
 
@@ -54,7 +53,6 @@ func NewStructValidator() *structValidator {
 	validate := validator.New()
 	validate.RegisterValidation("objectid", func(fl validator.FieldLevel) bool {
 		s := fl.Field().String()
-		log.Debug("validating objectid", "field", fl.FieldName(), "value", s)
 		return objectuuid.Validate(s) == nil
 	})
 	return &structValidator{validate: validate}
