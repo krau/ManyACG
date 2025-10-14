@@ -149,7 +149,7 @@ func SendArtworkInfo(ctx context.Context,
 		if artwork == nil {
 			// 既没有发布也没有缓存, 则尝试抓取
 			cbId := objectuuid.New().Hex()
-			err := cache.Set(ctx, cbId, artwork.GetSourceURL())
+			err := cache.Set(ctx, cbId, sourceUrl)
 			if err != nil {
 				return oops.Wrapf(err, "failed to create callback data")
 			}
