@@ -55,12 +55,12 @@ type ResponsePicture struct {
 	Regular   string `json:"regular"`
 }
 
-func artworksResponseFromEntity(artworks []*entity.Artwork, cfg runtimecfg.RestConfig, serv *service.Service) []*ResponseArtworkItem {
+func artworksResponseFromEntity(ctx fiber.Ctx, artworks []*entity.Artwork, cfg runtimecfg.RestConfig, serv *service.Service) []*ResponseArtworkItem {
 	resp := make([]*ResponseArtworkItem, 0, len(artworks))
 	for _, art := range artworks {
 		pics := make([]*ResponsePicture, 0, len(art.Pictures))
 		for _, pic := range art.Pictures {
-			thumb, regular := utils.GetPictureResponseUrl(pic, cfg)
+			thumb, regular := utils.PictureResponseUrl(ctx, pic, cfg)
 			pics = append(pics, &ResponsePicture{
 				ID:        pic.ID.Hex(),
 				Width:     pic.Width,
@@ -119,7 +119,7 @@ func HandleRandomArtworks(ctx fiber.Ctx) error {
 		return err
 	}
 	cfg := common.MustGetState[runtimecfg.RestConfig](ctx, common.StateKeyConfig)
-	resp := artworksResponseFromEntity(artworks, cfg, serv)
+	resp := artworksResponseFromEntity(ctx, artworks, cfg, serv)
 	if len(resp) == 0 {
 		return common.NewError(fiber.StatusNotFound, "no artworks found")
 	}
@@ -132,7 +132,7 @@ type RequestListArtworks struct {
 	Tag           string `query:"tag" form:"tag" json:"tag"`
 	Keyword       string `query:"keyword" form:"keyword" json:"keyword" validate:"max=100" message:"keyword max length is 100"`
 	Page          int64  `query:"page" form:"page" json:"page"`
-	PageSize      int64  `query:"page_size" form:"page_size" json:"page_size" validate:"gte=0,lte=200" message:"page_size must be between 1 and 200"`
+	PageSize      int64  `query:"page_size" form:"page_size" json:"page_size" validate:"omitempty,gte=0,lte=200" message:"page_size must be between 1 and 200"`
 	Hybrid        bool   `query:"hybrid" form:"hybrid" json:"hybrid"`
 	SimilarTarget string `query:"similar_target" form:"similar_target" json:"similar_target" validate:"omitempty,objectid" message:"similar_target must be a valid ObjectID"`
 	// Simple        bool   `query:"simple" form:"simple" json:"simple"`
@@ -232,7 +232,7 @@ func HandleListArtworks(ctx fiber.Ctx) error {
 	if len(artworks) == 0 {
 		return common.NewError(fiber.StatusNotFound, "no artworks found")
 	}
-	resp := artworksResponseFromEntity(artworks, cfg, serv)
+	resp := artworksResponseFromEntity(ctx, artworks, cfg, serv)
 	return ctx.JSON(common.NewSuccess(resp))
 }
 
@@ -365,6 +365,6 @@ func HandleGetArtworkByID(ctx fiber.Ctx) error {
 		return err
 	}
 	cfg := common.MustGetState[runtimecfg.RestConfig](ctx, common.StateKeyConfig)
-	resp := artworksResponseFromEntity([]*entity.Artwork{artwork}, cfg, serv)
+	resp := artworksResponseFromEntity(ctx, []*entity.Artwork{artwork}, cfg, serv)
 	return ctx.JSON(common.NewSuccess(resp[0]))
 }

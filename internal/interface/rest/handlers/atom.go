@@ -35,7 +35,7 @@ func GenerateAtomFeed(ctx fiber.Ctx) error {
 		Description: cfg.Site.Desc,
 		Author:      &feeds.Author{Name: cfg.Site.Name, Email: cfg.Site.Email},
 		Created:     time.Now(),
-		Items:       utils.EntityArtworkToFeedItems(cfg, artworks),
+		Items:       utils.EntityArtworkToFeedItems(ctx, cfg, artworks),
 	}
 	atom, err := feed.ToAtom()
 	if err != nil {

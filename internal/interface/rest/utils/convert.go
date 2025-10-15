@@ -3,17 +3,22 @@ package utils
 import (
 	"fmt"
 	"html"
+	"math/rand"
 	"net/url"
 	"strings"
 
+	"github.com/gofiber/fiber/v3"
 	"github.com/gorilla/feeds"
+	"github.com/krau/ManyACG/internal/infra/cache"
 	"github.com/krau/ManyACG/internal/infra/config/runtimecfg"
 	"github.com/krau/ManyACG/internal/model/entity"
 	"github.com/krau/ManyACG/internal/shared"
 	"github.com/krau/ManyACG/pkg/log"
 )
 
-func EntityArtworkToFeedItems(cfg runtimecfg.RestConfig,
+func EntityArtworkToFeedItems(
+	ctx fiber.Ctx,
+	cfg runtimecfg.RestConfig,
 	arts []*entity.Artwork) []*feeds.Item {
 	if len(arts) == 0 {
 		return nil
@@ -36,7 +41,7 @@ func EntityArtworkToFeedItems(cfg runtimecfg.RestConfig,
 					if pic.StorageInfo.Data() == shared.ZeroStorageInfo || pic.StorageInfo.Data().Regular == nil {
 						return pic.Thumbnail
 					}
-					picUrl := ApplyApiStoragePathRule(*pic.StorageInfo.Data().Regular, cfg.StoragePathRules)
+					picUrl := ResponseUrlForStoragePath(ctx, *pic.StorageInfo.Data().Regular, cfg.StoragePathRules)
 					if picUrl == "" || picUrl == pic.StorageInfo.Data().Regular.Path {
 						return pic.Thumbnail
 					}
@@ -52,7 +57,7 @@ func EntityArtworkToFeedItems(cfg runtimecfg.RestConfig,
 	return items
 }
 
-// 在api返回中重写图片路径, 用于拼接图片直链
+// 在api返回中重写存储路径, 用于拼接直链
 //
 // 例: rule.Type = "alist", rule.Path = "/pictures/", rule.JoinPrefix = "https://example.com/pictures/", rule.TrimPrefix = "/pictures/"
 //
@@ -61,21 +66,27 @@ func EntityArtworkToFeedItems(cfg runtimecfg.RestConfig,
 // 如果图片路径以rule.Path开头, 且rule.StorageType为空或与图片存储类型匹配, 则将图片路径转换为rule.JoinPrefix + 图片路径去掉rule.TrimPrefix的部分
 //
 // 否则空
-func ApplyApiStoragePathRule(detail shared.StorageDetail, rules []runtimecfg.StoragePathRule) string {
+func ResponseUrlForStoragePath(ctx fiber.Ctx, detail shared.StorageDetail, rules []runtimecfg.StoragePathRule) string {
+	cacheKey := fmt.Sprintf("rest:storage_path_rule_result:%s", detail.Hash())
+	if v, err := cache.Get[string](ctx, cacheKey); err == nil && v != "" {
+		return v
+	}
 	for _, rule := range rules {
-		if strings.HasPrefix(detail.Path, rule.MatchPrefix) && (rule.StorageType == "" || rule.StorageType == string(detail.Type)) {
-			parsedUrl, err := url.JoinPath(rule.JoinPrefix, strings.TrimPrefix(detail.Path, rule.TrimPrefix))
+		if strings.HasPrefix(detail.Path, rule.MatchPrefix) && (rule.StorageType == "" || rule.StorageType == detail.Type.String()) {
+			prefix := rule.JoinPrefix[rand.Intn(len(rule.JoinPrefix))]
+			parsedUrl, err := url.JoinPath(prefix, strings.TrimPrefix(detail.Path, rule.TrimPrefix))
 			if err != nil {
 				log.Errorf("failed to join path: %v", err)
 				return ""
 			}
+			cache.Set(ctx, cacheKey, parsedUrl)
 			return parsedUrl
 		}
 	}
 	return ""
 }
 
-func GetPictureResponseUrl(pic *entity.Picture, cfg runtimecfg.RestConfig) (thumbnail, regular string) {
+func PictureResponseUrl(ctx fiber.Ctx, pic *entity.Picture, cfg runtimecfg.RestConfig) (thumbnail, regular string) {
 	data := pic.StorageInfo.Data()
 	if data == shared.ZeroStorageInfo {
 		thumbnail = pic.Thumbnail
@@ -83,16 +94,40 @@ func GetPictureResponseUrl(pic *entity.Picture, cfg runtimecfg.RestConfig) (thum
 		return
 	}
 	if data.Thumb != nil {
-		thumbnail = ApplyApiStoragePathRule(*data.Thumb, cfg.StoragePathRules)
+		thumbnail = ResponseUrlForStoragePath(ctx, *data.Thumb, cfg.StoragePathRules)
 		if thumbnail == "" {
-			thumbnail = pic.Thumbnail
+			thumbnail = AbsoluteURLWithRouteReplacement(ctx, fmt.Sprintf("/api/v1/picture/file/thumb/%s", pic.ID.Hex()))
 		}
 	}
 	if data.Regular != nil {
-		regular = ApplyApiStoragePathRule(*data.Regular, cfg.StoragePathRules)
+		regular = ResponseUrlForStoragePath(ctx, *data.Regular, cfg.StoragePathRules)
 		if regular == "" {
-			regular = pic.Thumbnail
+			regular = AbsoluteURLWithRouteReplacement(ctx, fmt.Sprintf("/api/v1/picture/file/regular/%s", pic.ID.Hex()))
 		}
 	}
 	return
+}
+
+func AbsoluteURLWithRouteReplacement(c fiber.Ctx, newPath string) string {
+	base := c.BaseURL()
+	orig := c.OriginalURL()
+
+	u, _ := url.Parse(orig)
+	pathOnly := u.Path
+
+	routePattern := c.Route().Path
+
+	idx := strings.LastIndex(pathOnly, routePattern)
+	if idx < 0 {
+		newFullPath := strings.TrimSuffix(pathOnly, "/") + newPath
+		return base + newFullPath
+	}
+
+	prefix := pathOnly[:idx]
+	if !strings.HasPrefix(newPath, "/") {
+		newPath = "/" + newPath
+	}
+	newFullPath := prefix + newPath
+
+	return base + newFullPath
 }

@@ -13,7 +13,10 @@ import (
 )
 
 func (d *DB) GetPictureByID(ctx context.Context, id objectuuid.ObjectUUID) (*entity.Picture, error) {
-	pic, err := gorm.G[entity.Picture](d.db).Where("id = ?", id).First(ctx)
+	pic, err := gorm.G[entity.Picture](d.db).
+		Where("id = ?", id).
+		Preload("Artwork", nil).
+		First(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -106,9 +109,16 @@ func (d *DB) UpdatePictureTelegramInfoByID(ctx context.Context, id objectuuid.Ob
 // RandomPictures implements repo.Picture.
 func (d *DB) RandomPictures(ctx context.Context, limit int) ([]*entity.Picture, error) {
 	var pics []*entity.Picture
-	err := d.db.WithContext(ctx).Model(&entity.Picture{}).Order("RANDOM()").Limit(limit).Find(&pics).Error
+	err := d.db.WithContext(ctx).Model(&entity.Picture{}).Order("RANDOM()").
+		Limit(limit).
+		Preload("Artwork", nil).
+		Find(&pics).Error
 	if err != nil {
 		return nil, err
 	}
 	return pics, nil
+}
+
+func (d *DB) SavePicture(ctx context.Context, pic *entity.Picture) error {
+	return d.db.WithContext(ctx).Save(pic).Error
 }

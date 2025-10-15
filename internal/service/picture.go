@@ -13,6 +13,17 @@ import (
 	"gorm.io/datatypes"
 )
 
+// only used for updates, do not use for create
+func (s *Service) SavePicture(ctx context.Context, pic *entity.Picture) error {
+	if pic == nil {
+		return oops.New("picture is nil")
+	}
+	if pic.ID.IsZero() {
+		return oops.New("picture ID is zero")
+	}
+	return s.repos.Picture().SavePicture(ctx, pic)
+}
+
 func (s *Service) UpdatePictureTelegramInfo(ctx context.Context, id objectuuid.ObjectUUID, tgInfo *shared.TelegramInfo) error {
 	_, err := s.repos.Picture().UpdatePictureTelegramInfoByID(ctx, id, tgInfo)
 	return err

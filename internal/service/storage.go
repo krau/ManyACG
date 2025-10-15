@@ -8,14 +8,24 @@ import (
 	"path"
 	"path/filepath"
 
+	"github.com/gabriel-vasile/mimetype"
 	"github.com/krau/ManyACG/internal/pkg/imgtool"
 	"github.com/krau/ManyACG/internal/shared"
 	"github.com/krau/ManyACG/pkg/osutil"
 	"github.com/samber/oops"
 )
 
-func (s *Service) StorageGetFile(ctx context.Context, detail shared.StorageDetail) (*osutil.File, error) {
+func (s *Service) storageCachePath(detail shared.StorageDetail) string {
 	cachePath := filepath.Join(s.storCfg.CacheDir, "storage", detail.Hash())
+	ext := filepath.Ext(detail.Path)
+	if ext != "" {
+		cachePath += ext
+	}
+	return cachePath
+}
+
+func (s *Service) StorageGetFile(ctx context.Context, detail shared.StorageDetail) (*osutil.File, error) {
+	cachePath := s.storageCachePath(detail)
 	ext := filepath.Ext(detail.Path)
 	if ext != "" {
 		cachePath += ext
@@ -44,6 +54,40 @@ func (s *Service) StorageGetFile(ctx context.Context, detail shared.StorageDetai
 		return cacheFile, nil
 	}
 	return nil, oops.Errorf("storage type %s not found", detail.Type)
+}
+
+func (s *Service) StorageStreamFile(ctx context.Context, detail shared.StorageDetail, w io.Writer) error {
+	// 将文件流式传输到 w, 同时使用 io.TeeReader 来缓存到临时文件
+	cachePath := s.storageCachePath(detail)
+	if stor, ok := defaultService.storages[detail.Type]; ok {
+		// 先检查缓存
+		if cacheFile, err := osutil.OpenCache(cachePath); err == nil {
+			defer cacheFile.Close()
+			_, err := io.Copy(w, cacheFile)
+			return err
+		}
+		// 从存储获取
+		rc, err := stor.GetFile(ctx, detail)
+		if err != nil {
+			return oops.Wrapf(err, "get file from storage %s failed", detail.Type)
+		}
+		defer rc.Close()
+		// 读取到临时文件, 避免频繁从远程存储获取文件
+		cacheFile, err := osutil.CreateCache(cachePath)
+		if err != nil {
+			return oops.Wrapf(err, "create cache file failed")
+		}
+		defer func() {
+			cacheFile.Close()
+			if err != nil {
+				osutil.RemoveNow(cacheFile.Name())
+			}
+		}()
+		tr := io.TeeReader(rc, cacheFile)
+		_, err = io.Copy(w, tr)
+		return err
+	}
+	return oops.Errorf("storage type %s not found", detail.Type)
 }
 
 func (s *Service) StorageDelete(ctx context.Context, detail shared.StorageDetail) error {
@@ -93,6 +137,11 @@ func (s *Service) StorageSaveAllSize(ctx context.Context, inputPath, storDirPath
 			if err != nil {
 				return oops.Wrapf(err, "failed to save original file to storage %s", s.storCfg.OriginalType)
 			}
+			mimeType, err := mimetype.DetectFile(inputPath)
+			if err != nil {
+				return oops.Wrapf(err, "failed to detect mime type for original storage %s", s.storCfg.OriginalType)
+			}
+			originalDetail.Mime = mimeType.String()
 			return nil
 		}()
 		if err != nil {
@@ -125,6 +174,11 @@ func (s *Service) StorageSaveAllSize(ctx context.Context, inputPath, storDirPath
 		if err != nil {
 			return nil, oops.Wrapf(err, "failed to save regular file to storage %s", s.storCfg.RegularType)
 		}
+		mimeType, err := mimetype.DetectFile(compressedPath)
+		if err != nil {
+			return nil, oops.Wrapf(err, "failed to detect mime type for regular storage %s", s.storCfg.RegularType)
+		}
+		regularDetail.Mime = mimeType.String()
 	}
 	compressedPath2 := filepath.Join(s.storCfg.CacheDir, "compress", fmt.Sprintf("thumb_%s.%s", fileNameWithOutExt, s.storCfg.ThumbFormat))
 	err = imgtool.Compress(inputPath, compressedPath2, s.storCfg.ThumbFormat, s.storCfg.ThumbLength)
@@ -148,6 +202,11 @@ func (s *Service) StorageSaveAllSize(ctx context.Context, inputPath, storDirPath
 		if err != nil {
 			return nil, oops.Wrapf(err, "failed to save thumb file to storage %s", s.storCfg.ThumbType)
 		}
+		mimeType, err := mimetype.DetectFile(compressedPath2)
+		if err != nil {
+			return nil, oops.Wrapf(err, "failed to detect mime type for thumb storage %s", s.storCfg.ThumbType)
+		}
+		thumbDetail.Mime = mimeType.String()
 	}
 	return &shared.StorageInfo{
 		Original: originalDetail,
@@ -172,5 +231,10 @@ func (s *Service) StorageSaveOriginal(ctx context.Context, file io.Reader, storD
 	if err != nil {
 		return nil, oops.Wrapf(err, "failed to save original file to storage %s", s.storCfg.OriginalType)
 	}
+	mimeType, err := mimetype.DetectFile(fileName)
+	if err != nil {
+		return nil, oops.Wrapf(err, "failed to detect mime type for original storage %s", s.storCfg.OriginalType)
+	}
+	originalDetail.Mime = mimeType.String()
 	return originalDetail, nil
 }

@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/charmbracelet/log"
+	"github.com/goccy/go-json"
 	"github.com/gofiber/fiber/v3"
 	"github.com/gofiber/fiber/v3/middleware/compress"
 	"github.com/gofiber/fiber/v3/middleware/cors"
@@ -56,6 +57,8 @@ func New(ctx context.Context, serv *service.Service, cfg runtimecfg.RestConfig, 
 	}
 
 	app := fiber.New(fiber.Config{
+		JSONEncoder:     json.Marshal,
+		JSONDecoder:     json.Unmarshal,
 		ErrorHandler:    errHandler,
 		StructValidator: NewStructValidator(),
 		TrustProxy:      true,
@@ -83,10 +86,6 @@ func New(ctx context.Context, serv *service.Service, cfg runtimecfg.RestConfig, 
 	loggerCfg := logger.ConfigDefault
 	loggerCfg.Format = "${time} | ${status} | ${latency} | ${ip} | ${method} | ${path} | ${queryParams} | ${error}\n"
 	app.Use(logger.New(loggerCfg))
-
-	if serv == nil {
-		return nil, oops.New("service is nil")
-	}
 
 	v1group := app.Group("/api/v1")
 	handlers.Register(v1group, serv, cfg)

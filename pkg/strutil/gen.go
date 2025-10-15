@@ -2,6 +2,7 @@ package strutil
 
 import (
 	"crypto/md5"
+	"crypto/sha256"
 	"encoding/hex"
 	"math/rand"
 	"regexp"
@@ -26,6 +27,11 @@ func GenerateRandomString(length int, charset ...string) string {
 
 func MD5Hash(data string) string {
 	sum := md5.Sum([]byte(data))
+	return hex.EncodeToString(sum[:])
+}
+
+func SHA256Hash(data string) string {
+	sum := sha256.Sum256([]byte(data))
 	return hex.EncodeToString(sum[:])
 }
 

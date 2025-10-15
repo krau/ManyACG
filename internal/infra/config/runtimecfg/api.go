@@ -11,10 +11,10 @@ type RestConfig struct {
 }
 
 type StoragePathRule struct {
-	MatchPrefix string `toml:"match_prefix" mapstructure:"match_prefix" json:"match_prefix" yaml:"match_prefix"`
-	StorageType string `toml:"storage_type" mapstructure:"storage_type" json:"storage_type" yaml:"storage_type"`
-	TrimPrefix  string `toml:"trim_prefix" mapstructure:"trim_prefix" json:"trim_prefix" yaml:"trim_prefix"`
-	JoinPrefix  string `toml:"join_prefix" mapstructure:"join_prefix" json:"join_prefix" yaml:"join_prefix"`
+	MatchPrefix string   `toml:"match_prefix" mapstructure:"match_prefix" json:"match_prefix" yaml:"match_prefix"`
+	StorageType string   `toml:"storage_type" mapstructure:"storage_type" json:"storage_type" yaml:"storage_type"`
+	TrimPrefix  string   `toml:"trim_prefix" mapstructure:"trim_prefix" json:"trim_prefix" yaml:"trim_prefix"`
+	JoinPrefix  []string `toml:"join_prefix" mapstructure:"join_prefix" json:"join_prefix" yaml:"join_prefix"`
 }
 
 type SiteConfig struct {

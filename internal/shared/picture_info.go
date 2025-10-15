@@ -6,21 +6,6 @@ import (
 	"github.com/krau/ManyACG/pkg/strutil"
 )
 
-// type PictureInfo struct {
-// 	Index     uint
-// 	Thumbnail string
-// 	Original  string
-// 	Width     uint
-// 	Height    uint
-// 	Phash     string // phash
-// 	ThumbHash string // thumbhash
-
-// 	TelegramInfo *TelegramInfo
-// 	StorageInfo  *StorageInfo
-// }
-
-var ZeroTelegramInfo = TelegramInfo{}
-
 type TelegramInfo struct {
 	PhotoFileID    string `json:"photo_file_id"`
 	DocumentFileID string `json:"document_file_id"`
@@ -28,7 +13,11 @@ type TelegramInfo struct {
 	MediaGroupID   string `json:"media_group_id"`
 }
 
-var ZeroStorageInfo = StorageInfo{}
+var ZeroTelegramInfo = TelegramInfo{}
+
+func (t TelegramInfo) IsZero() bool {
+	return t == ZeroTelegramInfo
+}
 
 type StorageInfo struct {
 	Original *StorageDetail `json:"original"`
@@ -36,9 +25,20 @@ type StorageInfo struct {
 	Thumb    *StorageDetail `json:"thumb"`
 }
 
+var ZeroStorageInfo = StorageInfo{}
+
+func (s StorageInfo) IsZero() bool {
+	return s == ZeroStorageInfo
+}
+
 type StorageDetail struct {
 	Type StorageType `json:"type"`
 	Path string      `json:"path"`
+	Mime string      `json:"mime,omitempty"`
+}
+
+func (s StorageDetail) IsZero() bool {
+	return s == ZeroStorageDetail
 }
 
 var ZeroStorageDetail = StorageDetail{}
