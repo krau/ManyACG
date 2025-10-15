@@ -177,29 +177,30 @@ func (s *Service) StorageDeleteByInfo(ctx context.Context, info shared.StorageIn
 }
 
 func (s *Service) StorageSaveAllSize(ctx context.Context, inputPath, storDirPath, fileName string) (*shared.StorageInfo, error) {
-	if len(s.storages) == 0 {
-		return nil, oops.New("no storage configured")
-	}
 	var originalDetail, regularDetail, thumbDetail *shared.StorageDetail
 	if s.storCfg.OriginalType != "" {
 		err := func() error {
-			origStor := s.storages[shared.StorageType(s.storCfg.OriginalType)]
+			origType, err := shared.ParseStorageType(s.storCfg.OriginalType)
+			if err != nil {
+				return oops.Wrapf(err, "parse storage type %s failed", s.storCfg.OriginalType)
+			}
+			origStor := s.storages[origType]
 			if origStor == nil {
-				return oops.Errorf("original storage type %s not found", s.storCfg.OriginalType)
+				return oops.Errorf("original storage type %s not found", origType)
 			}
 			file, err := os.Open(inputPath)
 			if err != nil {
-				return oops.Wrapf(err, "failed to open file for original storage %s", s.storCfg.OriginalType)
+				return oops.Wrapf(err, "failed to open file for original storage %s", origType)
 			}
 			defer file.Close()
 			origPath := path.Join(storDirPath, fileName)
 			originalDetail, err = origStor.Save(ctx, file, origPath)
 			if err != nil {
-				return oops.Wrapf(err, "failed to save original file to storage %s", s.storCfg.OriginalType)
+				return oops.Wrapf(err, "failed to save original file to storage %s", origType)
 			}
 			mimeType, err := mimetype.DetectFile(inputPath)
 			if err != nil {
-				return oops.Wrapf(err, "failed to detect mime type for original storage %s", s.storCfg.OriginalType)
+				return oops.Wrapf(err, "failed to detect mime type for original storage %s", origType)
 			}
 			originalDetail.Mime = mimeType.String()
 			return nil
@@ -224,19 +225,22 @@ func (s *Service) StorageSaveAllSize(ctx context.Context, inputPath, storDirPath
 	defer os.Remove(compressedFile.Name())
 	defer compressedFile.Close()
 	if s.storCfg.RegularType != "" {
-		regStor := s.storages[shared.StorageType(s.storCfg.RegularType)]
+		regType, err := shared.ParseStorageType(s.storCfg.RegularType)
+		if err != nil {
+			return nil, oops.Wrapf(err, "parse storage type %s failed", s.storCfg.RegularType)
+		}
+		regStor := s.storages[regType]
 		if regStor == nil {
-			return nil, oops.Errorf("regular storage type %s not found", s.storCfg.RegularType)
+			return nil, oops.Errorf("regular storage type %s not found", regType)
 		}
 		regPath := path.Join(storDirPath, fmt.Sprintf("%s_regular.%s", fileNameWithOutExt, s.storCfg.RegularFormat))
-		var err error
 		regularDetail, err = regStor.Save(ctx, compressedFile, regPath)
 		if err != nil {
-			return nil, oops.Wrapf(err, "failed to save regular file to storage %s", s.storCfg.RegularType)
+			return nil, oops.Wrapf(err, "failed to save regular file to storage %s", regType)
 		}
 		mimeType, err := mimetype.DetectFile(compressedPath)
 		if err != nil {
-			return nil, oops.Wrapf(err, "failed to detect mime type for regular storage %s", s.storCfg.RegularType)
+			return nil, oops.Wrapf(err, "failed to detect mime type for regular storage %s", regType)
 		}
 		regularDetail.Mime = mimeType.String()
 	}
@@ -252,19 +256,22 @@ func (s *Service) StorageSaveAllSize(ctx context.Context, inputPath, storDirPath
 	defer os.Remove(compressedFile2.Name())
 	defer compressedFile2.Close()
 	if s.storCfg.ThumbType != "" {
-		thumbStor := s.storages[shared.StorageType(s.storCfg.ThumbType)]
+		thumbType, err := shared.ParseStorageType(s.storCfg.ThumbType)
+		if err != nil {
+			return nil, oops.Wrapf(err, "parse storage type %s failed", s.storCfg.ThumbType)
+		}
+		thumbStor := s.storages[thumbType]
 		if thumbStor == nil {
-			return nil, oops.Errorf("thumb storage type %s not found", s.storCfg.ThumbType)
+			return nil, oops.Errorf("thumb storage type %s not found", thumbType)
 		}
 		thumbPath := path.Join(storDirPath, fmt.Sprintf("%s_thumb.%s", fileNameWithOutExt, s.storCfg.ThumbFormat))
-		var err error
 		thumbDetail, err = thumbStor.Save(ctx, compressedFile2, thumbPath)
 		if err != nil {
-			return nil, oops.Wrapf(err, "failed to save thumb file to storage %s", s.storCfg.ThumbType)
+			return nil, oops.Wrapf(err, "failed to save thumb file to storage %s", thumbType)
 		}
 		mimeType, err := mimetype.DetectFile(compressedPath2)
 		if err != nil {
-			return nil, oops.Wrapf(err, "failed to detect mime type for thumb storage %s", s.storCfg.ThumbType)
+			return nil, oops.Wrapf(err, "failed to detect mime type for thumb storage %s", thumbType)
 		}
 		thumbDetail.Mime = mimeType.String()
 	}

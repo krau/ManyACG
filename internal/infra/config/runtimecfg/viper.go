@@ -93,6 +93,8 @@ func loadConfig() Config {
 		"storage.cache_dir":                    "./imgcache",
 		"storage.cache_ttl":                    60 * 60 * 4, // in seconds
 
+		"source.pixiv.img_proxy": "pximg.manyacg.top",
+
 		"cache.type":                   "ristretto",
 		"cache.default_ttl":            60 * 60 * 4,
 		"cache.ristretto.num_counters": 1e5,
