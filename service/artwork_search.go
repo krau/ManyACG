@@ -121,7 +121,8 @@ func SearchSimilarArtworks(ctx context.Context, artworkIdStr string, offset, lim
 					common.Logger.Errorf("Failed to marshal artwork search doc: %s", err)
 					return
 				}
-				task, err := index.UpdateDocumentsWithContext(ctx, artworkJson)
+				primKey := "id"
+				task, err := index.UpdateDocumentsWithContext(ctx, artworkJson, &primKey)
 				if err != nil {
 					common.Logger.Errorf("Failed to update artwork to Meilisearch: %s", err)
 					return

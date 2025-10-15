@@ -133,7 +133,8 @@ func (m *artworkSyncManager) ProcessArtworkUpdateEvent(event bson.M) {
 		common.Logger.Errorf("marshal search doc error: %s", err)
 		return
 	}
-	task, err := common.MeilisearchClient.Index(config.Cfg.Search.MeiliSearch.Index).UpdateDocumentsWithContext(ctx, artworkJSON)
+	primKey := "id"
+	task, err := common.MeilisearchClient.Index(config.Cfg.Search.MeiliSearch.Index).UpdateDocumentsWithContext(ctx, artworkJSON, &primKey)
 	if err != nil {
 		common.Logger.Errorf("update artwork to meilisearch error: %s", err)
 		return
@@ -172,7 +173,8 @@ func (m *artworkSyncManager) ProcessArtworkReplaceEvent(event bson.M) {
 		common.Logger.Errorf("marshal search doc error: %s", err)
 		return
 	}
-	task, err := common.MeilisearchClient.Index(config.Cfg.Search.MeiliSearch.Index).UpdateDocumentsWithContext(ctx, artworkJSON)
+	primKey := "id"
+	task, err := common.MeilisearchClient.Index(config.Cfg.Search.MeiliSearch.Index).UpdateDocumentsWithContext(ctx, artworkJSON, &primKey)
 	if err != nil {
 		common.Logger.Errorf("update artwork to meilisearch error: %s", err)
 		return
