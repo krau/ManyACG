@@ -66,7 +66,7 @@ func PostArtworkCallbackQuery(ctx *telegohandler.Context, query telego.CallbackQ
 		log.Errorf("更新缓存作品状态失败: %s", err)
 		return oops.Wrapf(err, "failed to update cached artwork status")
 	}
-	log.Infof("posting artwork: %s", sourceURL)
+	log.Info("posting artwork", "url", sourceURL)
 
 	artwork := cachedArtwork.Artwork.Data()
 	ctx.Bot().EditMessageCaption(ctx, &telego.EditMessageCaptionParams{

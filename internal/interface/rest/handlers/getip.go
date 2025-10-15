@@ -62,7 +62,6 @@ func MyIP(cfg runtimecfg.RestConfig) fiber.Handler {
 		if countryName == "" {
 			countryName = "未知"
 		}
-		log.Infof("IP: %s, Country: %s (%s)", ip, country, countryName)
 		ctx.JSON(fiber.Map{
 			"ip":          ip,
 			"country":     country,

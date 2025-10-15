@@ -76,22 +76,6 @@ func BenchmarkSanitizeFileName(b *testing.B) {
 	}
 }
 
-func TestGenerateRandomString(t *testing.T) {
-	charsets := []string{
-		"abcdefghijklmnopqrstuvwxyz",
-		"ABCDEFGHIJKLMNOPQRSTUVWXYZ",
-		"0123456789",
-		"!@#$%^&*()_+",
-	}
-
-	for _, charset := range charsets {
-		result := GenerateRandomString(100, charset)
-		if len(result) != 100 {
-			t.Fatalf("GenerateRandomString(%d, %s) = %s, expected length 100", 100, charset, result)
-		}
-	}
-}
-
 func TestExtractTagsFromText(t *testing.T) {
 	tests := []struct {
 		text     string

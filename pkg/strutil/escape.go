@@ -52,9 +52,3 @@ func SanitizeFileName(fileName string) string {
 
 	return fname
 }
-
-var markdownRe = regexp.MustCompile("([" + regexp.QuoteMeta(`\_*[]()~`+"`"+`>#+-=|{}.!`) + "])")
-
-func EscapeMarkdown(text string) string {
-	return markdownRe.ReplaceAllString(text, "\\$1")
-}

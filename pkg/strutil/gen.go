@@ -2,36 +2,13 @@ package strutil
 
 import (
 	"crypto/md5"
-	"crypto/sha256"
 	"encoding/hex"
-	"math/rand"
 	"regexp"
-	"strings"
 )
 
-const defaultCharset = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
-
-func GenerateRandomString(length int, charset ...string) string {
-	var letters string
-	if len(charset) > 0 {
-		letters = strings.Join(charset, "")
-	} else {
-		letters = defaultCharset
-	}
-	b := make([]byte, length)
-	for i := range b {
-		b[i] = letters[rand.Intn(len(letters))]
-	}
-	return string(b)
-}
 
 func MD5Hash(data string) string {
 	sum := md5.Sum([]byte(data))
-	return hex.EncodeToString(sum[:])
-}
-
-func SHA256Hash(data string) string {
-	sum := sha256.Sum256([]byte(data))
 	return hex.EncodeToString(sum[:])
 }
 

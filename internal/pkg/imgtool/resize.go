@@ -17,6 +17,7 @@ import (
 	"github.com/krau/ManyACG/internal/infra/config/runtimecfg"
 	"github.com/krau/ManyACG/internal/shared"
 	"github.com/krau/ManyACG/pkg/log"
+	"github.com/krau/ManyACG/pkg/osutil"
 	"github.com/krau/ManyACG/pkg/strutil"
 	"github.com/krau/ffmpeg-go"
 )
@@ -67,6 +68,9 @@ func GetSizeFromReader(r io.Reader) (int, int, error) {
 	return GetSize(img)
 }
 
+// Compress compresses the image at inputPath and saves the result to outputPath.
+//
+// The input image will be resized so that its longest edge does not exceed maxEdgeLength,
 func Compress(inputPath, outputPath, format string, maxEdgeLength int) error {
 	if err := os.MkdirAll(filepath.Dir(outputPath), os.ModePerm); err != nil {
 		return err
@@ -142,20 +146,7 @@ func CompressForTelegram(input []byte) ([]byte, error) {
 	return result, nil
 }
 
-// TempFile is a temporary file that will be deleted when closed.
-type TempFile struct {
-	*os.File
-}
-
-func (t *TempFile) Close() error {
-	err := t.File.Close()
-	if err != nil {
-		return err
-	}
-	return os.Remove(t.File.Name())
-}
-
-func CompressForTelegramFromFile(filePath string) (*TempFile, error) {
+func CompressForTelegramFromFile(filePath string) (*osutil.TempFile, error) {
 	outputPath := filepath.Join(runtimecfg.Get().Storage.CacheDir, "compress", fmt.Sprintf("tg_%s_%d.jpg", strutil.MD5Hash(filePath), rand.Int()))
 	if _, ok := vipsFormat["jpeg"]; ok {
 		err := compressImageForTelegramByVIPSFromFile(filePath, outputPath)
@@ -166,7 +157,7 @@ func CompressForTelegramFromFile(filePath string) (*TempFile, error) {
 		if err != nil {
 			return nil, err
 		}
-		return &TempFile{f}, nil
+		return &osutil.TempFile{File: f}, nil
 	}
 	if ffmpegAvailable {
 		err := compressImageByFFmpeg(filePath, outputPath, TelegramMaxPhotoSideLength)
@@ -177,7 +168,7 @@ func CompressForTelegramFromFile(filePath string) (*TempFile, error) {
 		if err != nil {
 			return nil, err
 		}
-		return &TempFile{f}, nil
+		return &osutil.TempFile{File: f}, nil
 	}
 	err := compressImageNative(filePath, outputPath, "jpeg", TelegramMaxPhotoSideLength)
 	if err != nil {
@@ -187,14 +178,12 @@ func CompressForTelegramFromFile(filePath string) (*TempFile, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &TempFile{f}, nil
+	return &osutil.TempFile{File: f}, nil
 }
 
 // UgoiraZipToMp4 从 ugoira 的 zip 解压并转换为 mp4
-// zipPath: zip 文件路径
-// frames: 按显示顺序的帧信息（File = zip 内文件名）
-// outputPath: 目标 mp4 路径（会覆盖同名文件）
-// 返回生成的 mp4 路径（可能与 outputPath 不同，因会自动添加 .mp4 后缀）
+//
+// 返回生成的 mp4 路径（可能与 outputPath 不同，会自动添加 .mp4 后缀）
 func UgoiraZipToMp4(zipPath string, frames []shared.UgoiraFrame, outputPath string) (string, error) {
 	if !ffmpegAvailable {
 		return "", fmt.Errorf("ffmpeg is not available")
@@ -280,7 +269,7 @@ func UgoiraZipToMp4(zipPath string, frames []shared.UgoiraFrame, outputPath stri
 			log.Warn("ugoira frames length mismatch", "expected", len(frames), "got", len(extractedPaths))
 			break
 		}
-		// duration 单位为秒（小数）
+		// duration 单位为（小数）
 		delaySec := float64(fr.Delay) / 1000
 		bw.WriteString(fmt.Sprintf("file '%s'\n", escapePathForConcat(extractedPaths[i])))
 		bw.WriteString(fmt.Sprintf("duration %.6f\n", delaySec))
@@ -294,14 +283,12 @@ func UgoiraZipToMp4(zipPath string, frames []shared.UgoiraFrame, outputPath stri
 	bw.Flush()
 	listF.Close()
 
-	// 5) 调用 ffmpeg-go (concat demuxer)
 	// ffmpeg -f concat -safe 0 -i ffconcat.txt -vsync vfr -pix_fmt yuv420p -c:v libx264 output.mp4
 	in := ffmpeg.Input(listPath, ffmpeg.KwArgs{
 		"f":    "concat",
 		"safe": "0",
 	})
 
-	// 检查 outputPath 是否以 .mp4 结尾
 	ffoutPath := outputPath
 	if strings.ToLower(filepath.Ext(outputPath)) != ".mp4" {
 		ffoutPath += ".mp4"

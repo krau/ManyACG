@@ -3,6 +3,7 @@ package scheduler
 import (
 	"context"
 	"errors"
+	"fmt"
 	"math"
 	"time"
 
@@ -43,12 +44,12 @@ func StartPoster(ctx context.Context, poster ArtworkPoster, serv *service.Servic
 		for _, sou := range sources {
 			artworks, err := sou.FetchNewArtworks(ctx, limit)
 			if err != nil {
-				log.Errorf("scheduler: fetching new artworks from source %T: %s", sou, err)
+				log.Error("fetching new artworks from source", "source", fmt.Sprintf("%T", sou), "err", err)
 			}
 			if len(artworks) == 0 {
 				continue
 			}
-			log.Infof("scheduler: fetched %d new artworks from source %T", len(artworks), sou)
+			log.Info("fetched artworks", "count", len(artworks), "source", fmt.Sprintf("%T", sou))
 			for _, artwork := range artworks {
 				if artwork == nil || artwork.SourceURL == "" {
 					continue
@@ -63,13 +64,13 @@ func StartPoster(ctx context.Context, poster ArtworkPoster, serv *service.Servic
 		for _, fetchedArtwork := range fetcheds {
 			exist, err := serv.GetCachedArtworkByURL(ctx, fetchedArtwork.SourceURL)
 			if err != nil && !errors.Is(err, errs.ErrRecordNotFound) {
-				log.Errorf("scheduler: checking cached artwork %s: %s", fetchedArtwork.SourceURL, err)
+				log.Error("checking cached artwork", "url", fetchedArtwork.SourceURL, "err", err)
 				continue
 			}
 			if err != nil {
 				cached, err := serv.CreateCachedArtwork(ctx, converter.DtoFetchedArtworkToEntityCached(fetchedArtwork))
 				if err != nil {
-					log.Errorf("scheduler: creating cached artwork %s: %s", fetchedArtwork.SourceURL, err)
+					log.Error("creating cached artwork", "url", fetchedArtwork.SourceURL, "err", err)
 					continue
 				}
 				exist = cached
@@ -90,10 +91,10 @@ func StartPoster(ctx context.Context, poster ArtworkPoster, serv *service.Servic
 				continue
 			}
 			if err := poster.PostAndCreateArtwork(ctx, data); err != nil {
-				log.Errorf("scheduler: posting artwork %s: %s", exist.SourceURL, err)
+				log.Error("posting artwork", "url", exist.SourceURL, "err", err)
 				continue
 			}
-			log.Infof("scheduler: posted artwork %s", exist.SourceURL)
+			log.Info("posted artwork", "url", exist.SourceURL)
 		}
 	}
 	doTask()
