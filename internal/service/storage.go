@@ -7,8 +7,10 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"strings"
 
 	"github.com/gabriel-vasile/mimetype"
+	"github.com/krau/ManyACG/internal/infra/cache"
 	"github.com/krau/ManyACG/internal/pkg/imgtool"
 	"github.com/krau/ManyACG/internal/shared"
 	"github.com/krau/ManyACG/pkg/osutil"
@@ -24,7 +26,58 @@ func (s *Service) storageCachePath(detail shared.StorageDetail) string {
 	return cachePath
 }
 
+func (s *Service) storageApplyRule(ctx context.Context, detail shared.StorageDetail) (shared.StorageDetail, error) {
+	currentType := detail.Type.String()
+	currentPath := detail.Path
+
+	if currentType == "" || currentPath == "" {
+		return detail, nil
+	}
+	cacheKey := fmt.Sprintf("storage:apply_rule:%s", detail.Hash())
+	if cached, err := cache.Get[shared.StorageDetail](ctx, cacheKey); err == nil {
+		return cached, nil
+	}
+
+	newValue := shared.StorageDetail{}
+	for _, rule := range s.storCfg.Rules {
+		if !(currentType == rule.MatchType && strings.HasPrefix(currentPath, rule.MatchPrefix)) {
+			continue
+		}
+		if rule.RewriteStorage == "" {
+			continue
+		}
+		newType, err := shared.ParseStorageType(rule.RewriteStorage)
+		if err != nil {
+			return shared.ZeroStorageDetail, oops.Wrapf(err, "parse storage type %s failed", rule.RewriteStorage)
+		}
+		_, ok := s.storages[newType]
+		if !ok {
+			return shared.ZeroStorageDetail, oops.Errorf("storage type %s not found", rule.RewriteStorage)
+		}
+		newValue.Type = newType
+		newValue.Path = path.Join(rule.JoinPrefix, strings.TrimPrefix(currentPath, rule.TrimPrefix))
+		break
+	}
+	if newValue.Type == "" {
+		// no rule applied
+		cache.Set(ctx, cacheKey, detail)
+		return detail, nil
+	}
+	newValue.Mime = detail.Mime
+	cache.Set(ctx, cacheKey, newValue)
+	return newValue, nil
+
+}
+
 func (s *Service) StorageGetFile(ctx context.Context, detail shared.StorageDetail) (*osutil.File, error) {
+	ruledDetail, err := s.storageApplyRule(ctx, detail)
+	if err != nil {
+		return nil, oops.Wrapf(err, "apply storage rule failed")
+	}
+	if ruledDetail.Type != "" && ruledDetail.Path != "" {
+		detail = ruledDetail
+	}
+
 	cachePath := s.storageCachePath(detail)
 	ext := filepath.Ext(detail.Path)
 	if ext != "" {
@@ -57,6 +110,13 @@ func (s *Service) StorageGetFile(ctx context.Context, detail shared.StorageDetai
 }
 
 func (s *Service) StorageStreamFile(ctx context.Context, detail shared.StorageDetail, w io.Writer) error {
+	ruledDetail, err := s.storageApplyRule(ctx, detail)
+	if err != nil {
+		return oops.Wrapf(err, "apply storage rule failed")
+	}
+	if ruledDetail.Type != "" && ruledDetail.Path != "" {
+		detail = ruledDetail
+	}
 	// 将文件流式传输到 w, 同时使用 io.TeeReader 来缓存到临时文件
 	cachePath := s.storageCachePath(detail)
 	if stor, ok := defaultService.storages[detail.Type]; ok {

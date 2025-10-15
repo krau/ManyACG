@@ -22,14 +22,14 @@ type StorageRuleConfig struct {
 		Match: 进行 与 匹配
 		Replace: 依次进行替换
 		example:
-		  match: {storage_type: "webdav", path_prefix: "/onedrive"}
+		  match: {match_type: "webdav", match_prefix: "/onedrive"}
 		  replace: {rewrite_storage: "local", trim_prefix: "/onedrive", join_prefix: "/local/manyacg"}
 		此规则被应用后, storage 在获取 webdav 存储驱动下的以 /onedrive 开头的图片时, 会去寻找 local 存储驱动下的以 /local/manyacg 开头的图片(路径前缀被替换)
 	*/
 
 	// Match
-	StorageType string `toml:"storage_type" mapstructure:"storage_type" json:"storage_type" yaml:"storage_type"`
-	PathPrefix  string `toml:"path_prefix" mapstructure:"path_prefix" json:"path_prefix" yaml:"path_prefix"`
+	MatchType   string `toml:"match_type" mapstructure:"match_type" json:"match_type" yaml:"match_type"`
+	MatchPrefix string `toml:"match_prefix" mapstructure:"match_prefix" json:"match_prefix" yaml:"match_prefix"`
 
 	// Replace
 	RewriteStorage string `toml:"rewrite_storage" mapstructure:"rewrite_storage" json:"rewrite_storage" yaml:"rewrite_storage"`

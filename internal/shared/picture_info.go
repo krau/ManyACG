@@ -44,5 +44,5 @@ func (s StorageDetail) IsZero() bool {
 var ZeroStorageDetail = StorageDetail{}
 
 func (s StorageDetail) Hash() string {
-	return strutil.MD5Hash(fmt.Sprintf("%s:%s", s.Type, s.Path))
+	return strutil.MD5Hash(fmt.Sprintf("%s:%s:%s", s.Type, s.Path, s.Mime))
 }
