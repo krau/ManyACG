@@ -78,6 +78,7 @@ func MyIP(ctx *gin.Context) {
 			"country":     "无法获取",
 			"countryName": "无法获取",
 		})
+		return
 	}
 	record, err := geoipReader.Country(net.ParseIP(ip))
 	if err != nil {
