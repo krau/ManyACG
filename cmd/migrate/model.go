@@ -96,9 +96,7 @@ type Tag struct {
 type TagAlias struct {
 	ID    MongoUUID `gorm:"primaryKey;type:uuid" json:"id"`
 	TagID MongoUUID `gorm:"type:uuid;index" json:"tag_id"`
-	Tag   *Tag      `gorm:"foreignKey:TagID;references:ID;constraint:OnDelete:CASCADE" json:"tag"`
-
-	Alias string `gorm:"type:text;not null;index" json:"alias"`
+	Alias string    `gorm:"type:text;not null;index" json:"alias"`
 }
 
 func (t *Tag) BeforeCreate(tx *gorm.DB) (err error) {
@@ -119,8 +117,8 @@ type Picture struct {
 	Original   string `gorm:"type:text;index" json:"original"`
 	Width      uint   `json:"width"`
 	Height     uint   `json:"height"`
-	Phash      string `gorm:"type:varchar(18);index" json:"phash"` // phash
-	ThumbHash  string `gorm:"type:varchar(28)" json:"thumb_hash"`  // thumbhash
+	Phash      string `gorm:"type:varchar(32);index" json:"phash"` // phash
+	ThumbHash  string `gorm:"type:varchar(32)" json:"thumb_hash"`  // thumbhash
 
 	TelegramInfo datatypes.JSONType[TelegramInfo] `gorm:"type:json" json:"telegram_info"` // original TelegramInfo struct as JSON
 	StorageInfo  datatypes.JSONType[StorageInfo]  `gorm:"type:json" json:"storage_info"`  // StorageInfo as JSON
@@ -134,6 +132,44 @@ func (p *Picture) BeforeCreate(tx *gorm.DB) (err error) {
 		p.ID = NewMongoUUID()
 	}
 	return nil
+}
+
+type UgoiraMetaData struct {
+	PosterOriginal string        `json:"poster_original"`
+	PosterThumb    string        `json:"poster_thumb"`
+	OriginalZip    string        `json:"original_zip"`
+	ThumbZip       string        `json:"thumb_zip"`
+	MimeType       string        `json:"mime_type"`
+	Width          int           `json:"width"`
+	Height         int           `json:"height"`
+	Frames         []UgoiraFrame `json:"frames"`
+}
+
+func (u *UgoiraMeta) BeforeCreate(tx *gorm.DB) (err error) {
+	if u.ID == (MongoUUID{}) {
+		u.ID = NewMongoUUID()
+	}
+	return
+}
+
+type UgoiraFrame struct {
+	File  string `json:"file"`
+	Delay int    `json:"delay"`
+}
+
+type UgoiraMeta struct {
+	ID        MongoUUID `gorm:"primaryKey;type:uuid" json:"id"`
+	ArtworkID MongoUUID `gorm:"type:uuid;index" json:"artwork_id"`
+	Artwork   *Artwork  `gorm:"foreignKey:ArtworkID;references:ID;constraint:OnDelete:CASCADE" json:"-"`
+
+	OrderIndex uint                               `gorm:"column:order_index;not null;default:0;index:idx_ugoira_artwork_index,priority:1" json:"index"`
+	Data       datatypes.JSONType[UgoiraMetaData] `json:"data"`
+
+	CreatedAt time.Time `gorm:"autoCreateTime" json:"created_at"`
+	UpdatedAt time.Time `gorm:"autoUpdateTime" json:"updated_at"`
+
+	OriginalStorage datatypes.JSONType[StorageDetail] `json:"original_storage"`
+	TelegramInfo    datatypes.JSONType[TelegramInfo]  `json:"telegram_info"`
 }
 
 type DeletedRecord struct {
@@ -158,11 +194,21 @@ type CachedArtworkData struct {
 	SourceType  SourceType `json:"source_type"`
 	SourceURL   string     `json:"source_url"`
 
-	Artist   *CachedArtist    `json:"artist"`
-	Tags     []string         `json:"tags"`
-	Pictures []*CachedPicture `json:"pictures"`
+	Artist      *CachedArtist       `json:"artist"`
+	Tags        []string            `json:"tags"`
+	Pictures    []*CachedPicture    `json:"pictures"`
+	UgoiraMetas []*CachedUgoiraMeta `json:"ugoira_metas,omitempty"`
 
 	Version int `json:"version"` // for future schema changes
+}
+
+type CachedUgoiraMeta struct {
+	ID              string         `json:"id"`
+	ArtworkID       string         `json:"artwork_id"`
+	OrderIndex      uint           `json:"index"`
+	MetaData        UgoiraMetaData `json:"data"`
+	OriginalStorage StorageDetail  `json:"original_storage"`
+	TelegramInfo    TelegramInfo   `json:"telegram_info"`
 }
 
 type CachedArtist struct {
@@ -174,12 +220,12 @@ type CachedArtist struct {
 }
 
 type CachedPicture struct {
-	ID        string `json:"id"`
-	ArtworkID string `json:"artwork_id"`
-	OrderIndex     uint   `json:"index"`
-	Thumbnail string `json:"thumbnail"`
-	Original  string `json:"original"`
-	Hidden    bool   `json:"hidden"` // don't post when true
+	ID         string `json:"id"`
+	ArtworkID  string `json:"artwork_id"`
+	OrderIndex uint   `json:"index"`
+	Thumbnail  string `json:"thumbnail"`
+	Original   string `json:"original"`
+	Hidden     bool   `json:"hidden"` // don't post when true
 
 	Width     uint   `json:"width"`
 	Height    uint   `json:"height"`
@@ -206,6 +252,7 @@ type StorageInfo struct {
 type StorageDetail struct {
 	Type StorageType `json:"type" bson:"type"`
 	Path string      `json:"path" bson:"path"`
+	Mime string      `json:"mime" bson:"mime"`
 }
 
 // ----- Cached Artworks -----

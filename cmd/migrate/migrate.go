@@ -33,6 +33,7 @@ func Run(ctx context.Context, opt *Option) error {
 		&TagAlias{},
 		&Artwork{},
 		&Picture{},
+		&UgoiraMeta{},
 		&DeletedRecord{},
 		&CachedArtwork{},
 		&ApiKey{},
@@ -238,6 +239,7 @@ func migratePictures(ctx context.Context, collection *mongo.Collection, db *gorm
 						return &StorageDetail{
 							StorageType(pictureModel.StorageInfo.Original.Type),
 							pictureModel.StorageInfo.Original.Path,
+							"",
 						}
 					}
 					return nil
@@ -247,6 +249,7 @@ func migratePictures(ctx context.Context, collection *mongo.Collection, db *gorm
 						return &StorageDetail{
 							StorageType(pictureModel.StorageInfo.Regular.Type),
 							pictureModel.StorageInfo.Regular.Path,
+							"",
 						}
 					}
 					return nil
@@ -256,6 +259,7 @@ func migratePictures(ctx context.Context, collection *mongo.Collection, db *gorm
 						return &StorageDetail{
 							StorageType(pictureModel.StorageInfo.Thumb.Type),
 							pictureModel.StorageInfo.Thumb.Path,
+							"",
 						}
 					}
 					return nil
