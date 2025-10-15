@@ -127,7 +127,9 @@ func doPostAndCreateArtwork(
 			if err != nil {
 				return oops.Wrapf(err, "failed to save picture %d", i)
 			}
-			artwork.Pictures[i].StorageInfo = *info
+			if info != nil {
+				artwork.Pictures[i].StorageInfo = *info
+			}
 			return nil
 		}()
 		if err != nil {
