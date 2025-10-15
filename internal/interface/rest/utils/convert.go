@@ -95,39 +95,21 @@ func PictureResponseUrl(ctx fiber.Ctx, pic *entity.Picture, cfg runtimecfg.RestC
 	}
 	if data.Thumb != nil {
 		thumbnail = ResponseUrlForStoragePath(ctx, *data.Thumb, cfg.StoragePathRules)
-		if thumbnail == "" {
-			thumbnail = AbsoluteURLWithRouteReplacement(ctx, fmt.Sprintf("/api/v1/picture/file/thumb/%s", pic.ID.Hex()))
+		if thumbnail == "" && cfg.Base != "" {
+			thumbnail = fmt.Sprintf("%s/api/v1/picture/file/thumb/%s", strings.TrimRight(cfg.Base, "/"), pic.ID.Hex())
 		}
 	}
 	if data.Regular != nil {
 		regular = ResponseUrlForStoragePath(ctx, *data.Regular, cfg.StoragePathRules)
-		if regular == "" {
-			regular = AbsoluteURLWithRouteReplacement(ctx, fmt.Sprintf("/api/v1/picture/file/regular/%s", pic.ID.Hex()))
+		if regular == "" && cfg.Base != "" {
+			regular = fmt.Sprintf("%s/api/v1/picture/file/regular/%s", strings.TrimRight(cfg.Base, "/"), pic.ID.Hex())
 		}
 	}
+	if thumbnail == "" {
+		thumbnail = pic.Thumbnail
+	}
+	if regular == "" {
+		regular = pic.Thumbnail
+	}
 	return
-}
-
-func AbsoluteURLWithRouteReplacement(c fiber.Ctx, newPath string) string {
-	base := c.BaseURL()
-	orig := c.OriginalURL()
-
-	u, _ := url.Parse(orig)
-	pathOnly := u.Path
-
-	routePattern := c.Route().Path
-
-	idx := strings.LastIndex(pathOnly, routePattern)
-	if idx < 0 {
-		newFullPath := strings.TrimSuffix(pathOnly, "/") + newPath
-		return base + newFullPath
-	}
-
-	prefix := pathOnly[:idx]
-	if !strings.HasPrefix(newPath, "/") {
-		newPath = "/" + newPath
-	}
-	newFullPath := prefix + newPath
-
-	return base + newFullPath
 }

@@ -3,6 +3,7 @@ package runtimecfg
 type RestConfig struct {
 	Enable bool   `toml:"enable" mapstructure:"enable" json:"enable" yaml:"enable"`
 	Addr   string `toml:"addr" mapstructure:"addr" json:"addr" yaml:"addr"`
+	Base   string `toml:"base" mapstructure:"base" json:"base" yaml:"base"` // https://example.com/some-reserve-path 
 	// rate limit
 	Limit            LimiterConfig     `toml:"limit" mapstructure:"limit" json:"limit" yaml:"limit"`
 	Site             SiteConfig        `toml:"site" mapstructure:"site" json:"site" yaml:"site"`
