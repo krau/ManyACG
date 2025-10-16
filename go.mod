@@ -134,7 +134,7 @@ require (
 	github.com/fsnotify/fsnotify v1.9.0 // indirect
 	github.com/gorilla/feeds v1.2.0
 	github.com/imroc/req/v3 v3.55.0
-	github.com/mymmrac/telego v1.3.0
+	github.com/mymmrac/telego v1.3.1-0.20251016070456-07edcd95e52f
 	github.com/ncruces/go-sqlite3/gormlite v0.24.0
 	github.com/oschwald/geoip2-golang v1.13.0
 	github.com/pelletier/go-toml/v2 v2.2.4 // indirect

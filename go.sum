@@ -199,6 +199,8 @@ github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 h1:C3w9PqII01/Oq
 github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822/go.mod h1:+n7T8mK8HuQTcFwEeznm/DIxMOiR9yIdICNftLE1DvQ=
 github.com/mymmrac/telego v1.3.0 h1:y2bDDCioLgkcs+5luUaPgTNHKel1Qh30iUxFcMUrowg=
 github.com/mymmrac/telego v1.3.0/go.mod h1:0D2l/IA/gUFn4oqsi1O4/tSnlezw5jNV/ReFRDUEKk8=
+github.com/mymmrac/telego v1.3.1-0.20251016070456-07edcd95e52f h1:MoQzgGepW+9sSonaCAffpfMqkOMdUyq6RxfdFszPjik=
+github.com/mymmrac/telego v1.3.1-0.20251016070456-07edcd95e52f/go.mod h1:3D0h4jJ3OzubY/gI4xDIGx4jkY26fmcPyqx0Lq24+zI=
 github.com/ncruces/go-sqlite3 v0.29.1 h1:NIi8AISWBToRHyoz01FXiTNvU147Tqdibgj2tFzJCqM=
 github.com/ncruces/go-sqlite3 v0.29.1/go.mod h1:PpccBNNhvjwUOwDQEn2gXQPFPTWdlromj0+fSkd5KSg=
 github.com/ncruces/go-sqlite3/gormlite v0.24.0 h1:81sHeq3CCdhjoqAB650n5wEdRlLO9VBvosArskcN3+c=
