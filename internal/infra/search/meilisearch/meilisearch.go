@@ -78,12 +78,12 @@ func (m *SearcherMeilisearch) SearchArtworks(ctx context.Context, que *query.Art
 		return nil, fmt.Errorf("meilisearch unmarshal hits failed: %w", err)
 	}
 	oids := make([]objectuuid.ObjectUUID, 0, len(docs))
-	for i, doc := range docs {
+	for _, doc := range docs {
 		oid, err := objectuuid.FromObjectIDHex(doc.ID)
 		if err != nil {
 			return nil, fmt.Errorf("meilisearch parse objectid failed: %w", err)
 		}
-		oids[i] = oid
+		oids = append(oids, oid)
 	}
 	return &dto.ArtworkSearchResult{
 		IDs: oids,
@@ -120,12 +120,12 @@ func (m *SearcherMeilisearch) FindSimilarArtworks(ctx context.Context, que *quer
 		return nil, fmt.Errorf("meilisearch unmarshal hits failed: %w", err)
 	}
 	oids := make([]objectuuid.ObjectUUID, 0, len(docs))
-	for i, doc := range docs {
+	for _, doc := range docs {
 		oid, err := objectuuid.FromObjectIDHex(doc.ID)
 		if err != nil {
 			return nil, fmt.Errorf("meilisearch parse objectid failed: %w", err)
 		}
-		oids[i] = oid
+		oids = append(oids, oid)
 	}
 	return &dto.ArtworkSearchResult{
 		IDs: oids,
