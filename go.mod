@@ -8,6 +8,7 @@ require (
 	github.com/allegro/bigcache/v3 v3.1.0
 	github.com/blang/semver v3.5.1+incompatible
 	github.com/bytedance/sonic v1.14.1
+	github.com/cespare/xxhash/v2 v2.3.0
 	github.com/corona10/goimagehash v1.1.0
 	github.com/cshum/vipsgen v1.1.3
 	github.com/dgraph-io/badger/v4 v4.8.0
@@ -44,7 +45,6 @@ require (
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/bytedance/gopkg v0.1.3 // indirect
 	github.com/bytedance/sonic/loader v0.3.0 // indirect
-	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/charmbracelet/colorprofile v0.3.2 // indirect
 	github.com/charmbracelet/lipgloss v1.1.0 // indirect
 	github.com/charmbracelet/x/ansi v0.10.2 // indirect

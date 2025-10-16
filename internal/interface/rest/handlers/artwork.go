@@ -1,6 +1,13 @@
 package handlers
 
 import (
+	"hash"
+	"strconv"
+	"strings"
+	"time"
+
+	"github.com/cespare/xxhash/v2"
+	"github.com/dgraph-io/ristretto/v2"
 	"github.com/gofiber/fiber/v3"
 	"github.com/krau/ManyACG/internal/infra/config/runtimecfg"
 	"github.com/krau/ManyACG/internal/interface/rest/common"
@@ -10,6 +17,7 @@ import (
 	"github.com/krau/ManyACG/internal/service"
 	"github.com/krau/ManyACG/internal/shared"
 	"github.com/krau/ManyACG/internal/shared/errs"
+	"github.com/krau/ManyACG/pkg/log"
 	"github.com/krau/ManyACG/pkg/objectuuid"
 	"github.com/krau/ManyACG/pkg/strutil"
 )
@@ -138,102 +146,170 @@ type RequestListArtworks struct {
 	// Simple        bool   `query:"simple" form:"simple" json:"simple"`
 }
 
-func HandleListArtworks(ctx fiber.Ctx) error {
-	req := new(RequestListArtworks)
-	if err := ctx.Bind().All(req); err != nil {
-		return err
+func (r *RequestListArtworks) ID() uint64 {
+	var b strings.Builder
+	// 按固定顺序写入字段
+	b.WriteString("r18=")
+	b.WriteString(strconv.Itoa(r.R18))
+
+	if r.ArtistID != "" {
+		b.WriteString("&aid=")
+		b.WriteString(r.ArtistID)
+	}
+	if r.Tag != "" {
+		b.WriteString("&tag=")
+		b.WriteString(r.Tag)
+	}
+	if r.Keyword != "" {
+		b.WriteString("&kw=")
+		b.WriteString(r.Keyword)
+	}
+	if r.Page != 0 {
+		b.WriteString("&p=")
+		b.WriteString(strconv.FormatInt(r.Page, 10))
+	}
+	if r.PageSize != 0 {
+		b.WriteString("&ps=")
+		b.WriteString(strconv.FormatInt(r.PageSize, 10))
+	}
+	if r.Hybrid {
+		b.WriteString("&hy=1")
+	}
+	if r.SimilarTarget != "" {
+		b.WriteString("&st=")
+		b.WriteString(r.SimilarTarget)
 	}
 
-	if req.PageSize <= 0 {
-		req.PageSize = 20
-	}
-	if req.Page <= 0 {
-		req.Page = 1
-	}
+	var h hash.Hash64 = xxhash.New()
+	_, _ = h.Write([]byte(b.String()))
+	return h.Sum64()
+}
 
-	var artistID objectuuid.ObjectUUID
-	if req.ArtistID != "" {
-		parsed, err := objectuuid.FromObjectIDHex(req.ArtistID)
-		if err != nil {
-			return err
-		}
-		artistID = parsed
-	}
+func GetHandleListArtworks(serv *service.Service, cfg runtimecfg.RestConfig) fiber.Handler {
 
-	serv := common.MustGetState[*service.Service](ctx, common.StateKeyService)
-	cfg := common.MustGetState[runtimecfg.RestConfig](ctx, common.StateKeyConfig)
-
-	var artworks []*entity.Artwork
+	// cache := algorithm.NewLRUCache[uint64, common.Response[[]ResponseArtworkItem]](1000)
+	var cache *ristretto.Cache[uint64, common.Response[[]ResponseArtworkItem]]
 	var err error
-	if req.SimilarTarget != "" {
-		targetId, err := objectuuid.FromObjectIDHex(req.SimilarTarget)
-		if err != nil {
-			return err
-		}
-		artworks, err = serv.FindSimilarArtworks(ctx, &query.ArtworkSimilar{
-			ArtworkID: targetId,
-			R18:       shared.R18TypeFromInt(req.R18),
-			Paginate: query.Paginate{
-				Limit:  int(req.PageSize),
-				Offset: int((req.Page - 1) * req.PageSize),
+	if !cfg.Cache.Disable {
+		cache, err = ristretto.NewCache(&ristretto.Config[uint64, common.Response[[]ResponseArtworkItem]]{
+			NumCounters:        1e4, // number of keys to track frequency of (10k).
+			MaxCost:            1e5,
+			BufferItems:        64, // number of keys per Get buffer.
+			IgnoreInternalCost: true,
+			Cost: func(value common.Response[[]ResponseArtworkItem]) int64 {
+				return 1
 			},
 		})
 		if err != nil {
+			log.Fatalf("failed to create cache: %v", err)
+		}
+	}
+	ttl := time.Duration(cfg.Cache.DefaultTTL) * time.Second
+
+	return func(ctx fiber.Ctx) error {
+		req := new(RequestListArtworks)
+		if err := ctx.Bind().All(req); err != nil {
 			return err
 		}
-	} else if req.Hybrid {
-		artworks, err = serv.SearchArtworks(ctx, &query.ArtworkSearch{
-			Hybrid:              req.Hybrid,
-			HybridSemanticRatio: 0.8,
-			R18:                 shared.R18TypeFromInt(req.R18),
-			Query:               req.Keyword,
-			Paginate: query.Paginate{
-				Limit:  int(req.PageSize),
-				Offset: int((req.Page - 1) * req.PageSize),
-			},
-		})
-		if err != nil {
-			return err
-		}
-	} else {
-		var tagId objectuuid.ObjectUUID
-		if req.Tag != "" {
-			tag, err := serv.GetTagByNameWithAlias(ctx, req.Tag)
-			if err != nil {
-				return common.NewError(fiber.StatusNotFound, "tag not found")
+		cacheKey := req.ID()
+		if cache != nil {
+			if cached, found := cache.Get(cacheKey); found {
+				return ctx.JSON(cached)
 			}
-			tagId = tag.ID
 		}
 
-		keywords := strutil.ParseTo2DArray(req.Keyword, ",", "|")
-		dbQuery := query.ArtworksDB{
-			ArtworksFilter: query.ArtworksFilter{
-				R18: shared.R18TypeFromInt(req.R18),
-			},
-			Paginate: query.Paginate{
-				Limit:  int(req.PageSize),
-				Offset: int((req.Page - 1) * req.PageSize),
-			},
+		if req.PageSize <= 0 {
+			req.PageSize = 20
 		}
-		if artistID != objectuuid.Nil {
-			dbQuery.ArtistID = artistID
+		if req.Page <= 0 {
+			req.Page = 1
 		}
-		if tagId != objectuuid.Nil {
-			dbQuery.Tags = [][]objectuuid.ObjectUUID{{tagId}}
+
+		var artistID objectuuid.ObjectUUID
+		if req.ArtistID != "" {
+			parsed, err := objectuuid.FromObjectIDHex(req.ArtistID)
+			if err != nil {
+				return err
+			}
+			artistID = parsed
 		}
-		if len(keywords) > 0 {
-			dbQuery.Keywords = keywords
+
+		var artworks []*entity.Artwork
+		var err error
+		if req.SimilarTarget != "" {
+			targetId, err := objectuuid.FromObjectIDHex(req.SimilarTarget)
+			if err != nil {
+				return err
+			}
+			artworks, err = serv.FindSimilarArtworks(ctx, &query.ArtworkSimilar{
+				ArtworkID: targetId,
+				R18:       shared.R18TypeFromInt(req.R18),
+				Paginate: query.Paginate{
+					Limit:  int(req.PageSize),
+					Offset: int((req.Page - 1) * req.PageSize),
+				},
+			})
+			if err != nil {
+				return err
+			}
+		} else if req.Hybrid {
+			artworks, err = serv.SearchArtworks(ctx, &query.ArtworkSearch{
+				Hybrid:              req.Hybrid,
+				HybridSemanticRatio: 0.8,
+				R18:                 shared.R18TypeFromInt(req.R18),
+				Query:               req.Keyword,
+				Paginate: query.Paginate{
+					Limit:  int(req.PageSize),
+					Offset: int((req.Page - 1) * req.PageSize),
+				},
+			})
+			if err != nil {
+				return err
+			}
+		} else {
+			var tagId objectuuid.ObjectUUID
+			if req.Tag != "" {
+				tag, err := serv.GetTagByNameWithAlias(ctx, req.Tag)
+				if err != nil {
+					return common.NewError(fiber.StatusNotFound, "tag not found")
+				}
+				tagId = tag.ID
+			}
+
+			keywords := strutil.ParseTo2DArray(req.Keyword, ",", "|")
+			dbQuery := query.ArtworksDB{
+				ArtworksFilter: query.ArtworksFilter{
+					R18: shared.R18TypeFromInt(req.R18),
+				},
+				Paginate: query.Paginate{
+					Limit:  int(req.PageSize),
+					Offset: int((req.Page - 1) * req.PageSize),
+				},
+			}
+			if artistID != objectuuid.Nil {
+				dbQuery.ArtistID = artistID
+			}
+			if tagId != objectuuid.Nil {
+				dbQuery.Tags = [][]objectuuid.ObjectUUID{{tagId}}
+			}
+			if len(keywords) > 0 {
+				dbQuery.Keywords = keywords
+			}
+			artworks, err = serv.QueryArtworks(ctx, dbQuery)
 		}
-		artworks, err = serv.QueryArtworks(ctx, dbQuery)
+		if err != nil {
+			return err
+		}
+		if len(artworks) == 0 {
+			return common.NewError(fiber.StatusNotFound, "no artworks found")
+		}
+		items := artworksResponseFromEntity(ctx, artworks, cfg, serv)
+		resp := common.NewSuccess(items)
+		if cache != nil {
+			cache.SetWithTTL(cacheKey, *resp, 1, ttl)
+		}
+		return ctx.JSON(resp)
 	}
-	if err != nil {
-		return err
-	}
-	if len(artworks) == 0 {
-		return common.NewError(fiber.StatusNotFound, "no artworks found")
-	}
-	resp := artworksResponseFromEntity(ctx, artworks, cfg, serv)
-	return ctx.JSON(common.NewSuccess(resp))
 }
 
 type RequestCountArtwork struct {
