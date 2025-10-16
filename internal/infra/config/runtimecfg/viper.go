@@ -81,6 +81,10 @@ func loadConfig() Config {
 		"telegram.retry.start_delay":   3,
 		"telegram.retry.max_delay":     300,
 
+		"rest.site.title": "ManyACG - Kawaii is all you need",
+		"rest.site.desc":  "ACG Image Collector and Gallery Server",
+		"rest.site.name":  "ManyACG",
+
 		"storage.telegram.api_url":             "https://api.telegram.org",
 		"storage.telegram.retry.max_attempts":  5,
 		"storage.telegram.retry.exponent_base": 2.0,
