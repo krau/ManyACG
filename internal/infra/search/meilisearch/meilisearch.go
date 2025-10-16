@@ -102,6 +102,7 @@ func (m *SearcherMeilisearch) FindSimilarArtworks(ctx context.Context, que *quer
 		Filter:               filter,
 		Offset:               int64(que.Offset),
 		Limit:                int64(que.Limit),
+		Embedder:             m.cfg.Embedder,
 	}
 	var resp meilisearch.SimilarDocumentResult
 	err := m.client.SearchSimilarDocumentsWithContext(ctx, req, &resp)
