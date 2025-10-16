@@ -18,7 +18,7 @@ type Local struct {
 	basePath string
 }
 
-func init() {
+func Init() {
 	if !config.Get().Storage.Local.Enable {
 		return
 	}

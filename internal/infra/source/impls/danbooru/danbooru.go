@@ -20,7 +20,7 @@ type Danbooru struct {
 	reqClient *req.Client
 }
 
-func init() {
+func Init() {
 	cfg := runtimecfg.Get().Source.Danbooru
 	if cfg.Disable {
 		return

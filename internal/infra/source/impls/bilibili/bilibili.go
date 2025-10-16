@@ -19,7 +19,7 @@ type Bilibili struct {
 	reqClient *req.Client
 }
 
-func init() {
+func Init() {
 	cfg := runtimecfg.Get().Source.Bilibili
 	if cfg.Disable {
 		return

@@ -20,7 +20,7 @@ type Twitter struct {
 	reqClient *req.Client
 }
 
-func init() {
+func Init() {
 	cfg := runtimecfg.Get().Source.Twitter
 	if cfg.Disable {
 		return

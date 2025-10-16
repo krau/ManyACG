@@ -11,11 +11,10 @@ import (
 
 	"github.com/duke-git/lancet/v2/retry"
 	"github.com/krau/ManyACG/internal/common/version"
-	_ "github.com/krau/ManyACG/internal/infra"
+	"github.com/krau/ManyACG/internal/infra"
 	"github.com/krau/ManyACG/internal/infra/config/runtimecfg"
 	"github.com/krau/ManyACG/internal/infra/database"
 	"github.com/krau/ManyACG/internal/infra/eventbus"
-	"github.com/krau/ManyACG/internal/infra/kvstor"
 	"github.com/krau/ManyACG/internal/infra/search"
 	"github.com/krau/ManyACG/internal/infra/source"
 	"github.com/krau/ManyACG/internal/infra/storage"
@@ -67,21 +66,23 @@ func Run() {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 	log.Info("Starting...")
+	closer, err := infra.Init(ctx)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer func() {
+		if closer != nil {
+			if err := closer(); err != nil {
+				log.Error(err)
+			}
+		}
+	}()
 
 	osutil.SetCacheTTL(time.Duration(cfg.Storage.CacheTTL) * time.Second)
 	osutil.SetOnRemoveError(func(path string, err error) {
 		log.Error("remove cache file error", "path", path, "err", err)
 	})
 
-	kvstor.Set("app:last_start_time", time.Now().Format(time.RFC3339)) // just for preheat
-	defer kvstor.Close()
-
-	source.InitAll()
-	if err := storage.InitAll(ctx); err != nil {
-		log.Fatal(err)
-	}
-
-	database.Init(ctx)
 	dbRepo := database.Default()
 
 	var repos repo.Repositories

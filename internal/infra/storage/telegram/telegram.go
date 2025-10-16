@@ -24,7 +24,7 @@ type TelegramStorage struct {
 	chatID telego.ChatID
 }
 
-func init() {
+func Init() {
 	storageCfg := config.Get().Storage.Telegram
 	if !storageCfg.Enable {
 		return

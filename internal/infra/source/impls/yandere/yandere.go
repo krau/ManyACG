@@ -19,7 +19,7 @@ type Yandere struct {
 	reqClient *req.Client
 }
 
-func init() {
+func Init() {
 	cfg := runtimecfg.Get().Source.Yandere
 	if cfg.Disable {
 		return

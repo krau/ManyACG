@@ -17,7 +17,7 @@ type Nhentai struct {
 	reqClient *req.Client
 }
 
-func init() {
+func Init() {
 	cfg := config.Get().Source.Nhentai
 	if cfg.Disable {
 		return

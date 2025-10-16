@@ -22,7 +22,7 @@ type Kemono struct {
 	reqClient *req.Client
 }
 
-func init() {
+func Init() {
 	cfg := config.Get().Source.Kemono
 	if cfg.Disable {
 		return

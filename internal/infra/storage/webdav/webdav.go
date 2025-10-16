@@ -21,7 +21,7 @@ type Webdav struct {
 	client   *gowebdav.Client
 }
 
-func init() {
+func Init() {
 	if !config.Get().Storage.Webdav.Enable {
 		return
 	}

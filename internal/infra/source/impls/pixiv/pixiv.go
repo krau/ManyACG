@@ -21,7 +21,7 @@ type Pixiv struct {
 	reqClient *req.Client
 }
 
-func init() {
+func Init() {
 	cfg := config.Get().Source.Pixiv
 	if cfg.Disable {
 		return
