@@ -119,7 +119,7 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           ldflags: >-
             -s -w
-            -X "github.com/krau/ManyACG/internal/common/version/version.Version=${{ env.VERSION }}"
-            -X "github.com/krau/ManyACG/internal/common/version/version.BuildTime=${{ env.BUILD_TIME }}"
-            -X "github.com/krau/ManyACG/internal/common/version/version.Commit=${{ env.COMMIT }}"
+            -X "github.com/krau/ManyACG/internal/common/version.Version=${{ env.VERSION }}"
+            -X "github.com/krau/ManyACG/internal/common/version.BuildTime=${{ env.BUILD_TIME }}"
+            -X "github.com/krau/ManyACG/internal/common/version.Commit=${{ env.COMMIT }}"
           binary_name: manyacg
