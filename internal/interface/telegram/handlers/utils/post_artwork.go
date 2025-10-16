@@ -288,14 +288,14 @@ func doPostAndCreateArtwork(
 			return ids
 		}())
 		text := fmt.Sprintf("检测到 %d 张与作品 <a href='%s'>%s 第 %d 张图片</a>相似的图片", len(sims), func() string {
-			if meta.ChannelAvailable() {
+			if meta != nil && meta.ChannelAvailable() { // 非 telegram handler context 下 meta 可能为 nil
 				return meta.ChannelMessageURL(pic.TelegramInfo.Data().MessageID)
 			}
 			return ent.SourceURL
 		}(), html.EscapeString(ent.Title), pic.OrderIndex)
 		for j, sim := range sims {
 			text += fmt.Sprintf("\n\n%d - <a href='%s'>%s_%d</a>", j+1, func() string {
-				if meta.ChannelAvailable() {
+				if meta != nil && meta.ChannelAvailable() {
 					return meta.ChannelMessageURL(sim.TelegramInfo.Data().MessageID)
 				}
 				return sim.Artwork.SourceURL
