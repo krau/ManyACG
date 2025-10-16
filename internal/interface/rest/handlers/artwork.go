@@ -50,7 +50,7 @@ type ResponsePicture struct {
 	Hash      string `json:"hash"`
 	ThumbHash string `json:"thumb_hash"`
 	FileName  string `json:"file_name"`
-	MessageID int    `json:"message_id"`
+	MessageID int    `json:"message_id"` // deprecated
 	Thumbnail string `json:"thumbnail"`
 	Regular   string `json:"regular"`
 }
@@ -69,7 +69,7 @@ func artworksResponseFromEntity(ctx fiber.Ctx, artworks []*entity.Artwork, cfg r
 				Hash:      pic.Phash,
 				ThumbHash: pic.ThumbHash,
 				FileName:  serv.PrettyFileName(art, pic),
-				MessageID: pic.GetTelegramInfo().MessageID,
+				MessageID: 0, // deprecated
 				Thumbnail: thumb,
 				Regular:   regular,
 			})

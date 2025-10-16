@@ -127,10 +127,10 @@ func SetArtworkTags(ctx *telegohandler.Context, message telego.Message) error {
 		utils.ReplyMessage(ctx, message, "获取更新后的作品信息失败: "+err.Error())
 		return nil
 	}
-	if msgId := artwork.Pictures[0].TelegramInfo.Data().MessageID; msgId != 0 {
-		channelMeta := metautil.FromContext(ctx)
+	meta := metautil.MustFromContext(ctx)
+	if msgId := artwork.Pictures[0].TelegramInfo.Data().MessageID(meta.ChannelChatID().ID); msgId != 0 {
 		ctx.Bot().EditMessageCaption(ctx, &telego.EditMessageCaptionParams{
-			ChatID:    channelMeta.ChannelChatID(),
+			ChatID:    meta.ChannelChatID(),
 			MessageID: msgId,
 			Caption:   utils.ArtworkHTMLCaption(artwork),
 			ParseMode: telego.ModeHTML,
@@ -249,8 +249,8 @@ func EditArtworkTitle(ctx *telegohandler.Context, message telego.Message) error 
 		utils.ReplyMessage(ctx, message, "获取更新后的作品信息失败: "+err.Error())
 		return nil
 	}
-	if msgId := artwork.Pictures[0].TelegramInfo.Data().MessageID; msgId != 0 {
-		meta := metautil.FromContext(ctx)
+	meta := metautil.MustFromContext(ctx)
+	if msgId := artwork.Pictures[0].TelegramInfo.Data().MessageID(meta.ChannelChatID().ID); msgId != 0 {
 		ctx.Bot().EditMessageCaption(ctx, &telego.EditMessageCaptionParams{
 			ChatID:    meta.ChannelChatID(),
 			MessageID: msgId,
@@ -292,11 +292,13 @@ func RefreshArtwork(ctx *telegohandler.Context, message telego.Message) error {
 		return nil
 	}
 	for _, picture := range artwork.Pictures {
-		newInfo := &shared.TelegramInfo{
-			MessageID:    picture.TelegramInfo.Data().MessageID,
-			MediaGroupID: picture.TelegramInfo.Data().MediaGroupID,
-		}
-		if err := serv.UpdatePictureTelegramInfo(ctx, picture.ID, newInfo); err != nil {
+		// newInfo := &shared.TelegramInfo{
+		// 	MessageID:    picture.TelegramInfo.Data().MessageID,
+		// 	MediaGroupID: picture.TelegramInfo.Data().MediaGroupID,
+		// }
+		newInfo := picture.TelegramInfo.Data()
+		newInfo.ClearFileIDs()
+		if err := serv.UpdatePictureTelegramInfo(ctx, picture.ID, &newInfo); err != nil {
 			utils.ReplyMessage(ctx, message, "刷新作品信息失败: "+err.Error())
 			return nil
 		}
@@ -326,14 +328,14 @@ func ReCaptionArtwork(ctx *telegohandler.Context, message telego.Message) error 
 		utils.ReplyMessage(ctx, message, "获取作品信息失败: "+err.Error())
 		return nil
 	}
-	if artwork.Pictures[0].TelegramInfo.Data().MessageID == 0 {
+	meta := metautil.MustFromContext(ctx)
+	if artwork.Pictures[0].TelegramInfo.Data().MessageID(meta.ChannelChatID().ID) == 0 {
 		utils.ReplyMessage(ctx, message, "该作品未在频道发布")
 		return nil
 	}
-	meta := metautil.FromContext(ctx)
 	ctx.Bot().EditMessageCaption(ctx, &telego.EditMessageCaptionParams{
 		ChatID:    meta.ChannelChatID(),
-		MessageID: artwork.Pictures[0].TelegramInfo.Data().MessageID,
+		MessageID: artwork.Pictures[0].TelegramInfo.Data().MessageID(meta.ChannelChatID().ID),
 		Caption:   utils.ArtworkHTMLCaption(artwork),
 		ParseMode: telego.ModeHTML,
 	})
@@ -391,8 +393,8 @@ func AutoTaggingArtwork(ctx *telegohandler.Context, message telego.Message) erro
 		})
 		return nil
 	}
-	if msgId := newAw.Pictures[0].TelegramInfo.Data().MessageID; msgId != 0 {
-		meta := metautil.FromContext(ctx)
+	meta := metautil.MustFromContext(ctx)
+	if msgId := newAw.Pictures[0].TelegramInfo.Data().MessageID(meta.ChannelChatID().ID); msgId != 0 {
 		caption := utils.ArtworkHTMLCaption(newAw)
 		ctx.Bot().EditMessageCaption(ctx, &telego.EditMessageCaptionParams{
 			ChatID:    meta.ChannelChatID(),

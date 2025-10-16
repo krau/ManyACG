@@ -27,6 +27,7 @@ func doPostAndCreateArtwork(
 	ctx context.Context,
 	bot *telego.Bot,
 	serv *service.Service,
+	meta *metautil.MetaData,
 	artwork *entity.CachedArtworkData,
 	fromChatID telego.ChatID,
 	toChatID telego.ChatID,
@@ -163,7 +164,7 @@ func doPostAndCreateArtwork(
 
 	editReplyMarkupText("正在发布到频道...")
 
-	msgs, err := SendArtworkMediaGroup(ctx, bot, serv, toChatID, artwork)
+	msgs, err := SendArtworkMediaGroup(ctx, bot, serv, meta, toChatID, artwork)
 	if err != nil {
 		return oops.Wrapf(err, "failed to send artwork media group")
 	}
@@ -172,14 +173,13 @@ func doPostAndCreateArtwork(
 	}
 	// 更新 cached artwork 的 TelegramInfo
 	for _, msg := range msgs {
-		tginfo := shared.TelegramInfo{
-			MessageID:    msg.Message.MessageID,
-			MediaGroupID: msg.Message.MediaGroupID,
-			PhotoFileID:  msg.FileID,
-		}
+		tginfo := shared.TelegramInfo{}
+		tginfo.SetMessage(meta.ChannelChatID().ID, msg.Message.MessageID, msg.Message.MediaGroupID)
 		if msg.UgoiraIndex >= 0 {
+			tginfo.SetFileID(meta.BotID(), shared.TelegramMediaTypeVideo, msg.FileID)
 			artwork.UgoiraMetas[msg.UgoiraIndex].TelegramInfo = tginfo
 		} else if msg.PictureIndex >= 0 {
+			tginfo.SetFileID(meta.BotID(), shared.TelegramMediaTypePhoto, msg.FileID)
 			artwork.Pictures[msg.PictureIndex].TelegramInfo = tginfo
 		} else {
 			log.Warn("message has neither picture index nor ugoira index", "message_id", msg.Message.MessageID)
@@ -254,12 +254,11 @@ func doPostAndCreateArtwork(
 		caption := ArtworkHTMLCaption(ent)
 		bot.EditMessageCaption(ctx, telegoutil.
 			EditMessageCaption(toChatID,
-				ent.Pictures[0].TelegramInfo.Data().MessageID,
+				ent.Pictures[0].TelegramInfo.Data().MessageID(meta.ChannelChatID().ID),
 				caption).
 			WithParseMode(telego.ModeHTML))
 	}
 	editReplyMarkupText("已发布到频道, 正在检测重复图片...")
-	meta := metautil.FromContext(ctx)
 	for i, pic := range ent.Pictures {
 		similars, err := serv.QueryPicturesByPhash(ctx, query.PicturesPhash{Input: pic.Phash, Distance: 10})
 		if err != nil {
@@ -288,15 +287,15 @@ func doPostAndCreateArtwork(
 			return ids
 		}())
 		text := fmt.Sprintf("检测到 %d 张与作品 <a href='%s'>%s 第 %d 张图片</a>相似的图片", len(sims), func() string {
-			if meta != nil && meta.ChannelAvailable() { // 非 telegram handler context 下 meta 可能为 nil
-				return meta.ChannelMessageURL(pic.TelegramInfo.Data().MessageID)
+			if meta.ChannelAvailable() { // 非 telegram handler context 下 meta 可能为 nil
+				return meta.ChannelMessageURL(pic.TelegramInfo.Data().MessageID(meta.ChannelChatID().ID))
 			}
 			return ent.SourceURL
 		}(), html.EscapeString(ent.Title), pic.OrderIndex)
 		for j, sim := range sims {
 			text += fmt.Sprintf("\n\n%d - <a href='%s'>%s_%d</a>", j+1, func() string {
-				if meta != nil && meta.ChannelAvailable() {
-					return meta.ChannelMessageURL(sim.TelegramInfo.Data().MessageID)
+				if meta.ChannelAvailable() {
+					return meta.ChannelMessageURL(sim.TelegramInfo.Data().MessageID(meta.ChannelChatID().ID))
 				}
 				return sim.Artwork.SourceURL
 			}(), html.EscapeString(sim.Artwork.Title), sim.OrderIndex)
@@ -310,6 +309,7 @@ type postArtworkJob struct {
 	ctx        context.Context
 	bot        *telego.Bot
 	serv       *service.Service
+	meta       *metautil.MetaData
 	artwork    *entity.CachedArtworkData
 	fromChatID telego.ChatID
 	toChatID   telego.ChatID
@@ -334,7 +334,7 @@ func init() {
 
 func artworkPoster(id int) {
 	for j := range postArtworkTaskQueue {
-		err := doPostAndCreateArtwork(j.ctx, j.bot, j.serv, j.artwork, j.fromChatID, j.toChatID, j.messageID)
+		err := doPostAndCreateArtwork(j.ctx, j.bot, j.serv, j.meta, j.artwork, j.fromChatID, j.toChatID, j.messageID)
 		if j.done != nil {
 			j.done <- err
 		}
@@ -345,6 +345,7 @@ func PostAndCreateArtwork(
 	ctx context.Context,
 	bot *telego.Bot,
 	serv *service.Service,
+	meta *metautil.MetaData,
 	artwork *entity.CachedArtworkData,
 	fromChatID telego.ChatID,
 	toChatID telego.ChatID,
@@ -355,6 +356,7 @@ func PostAndCreateArtwork(
 		ctx:        ctx,
 		bot:        bot,
 		serv:       serv,
+		meta:       meta,
 		artwork:    artwork,
 		fromChatID: fromChatID,
 		toChatID:   toChatID,

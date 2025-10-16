@@ -60,11 +60,19 @@ func Init(ctx context.Context, serv *service.Service, cfg runtimecfg.TelegramCon
 		return nil, oops.Errorf("Error when creating bot: %s", err)
 	}
 	var channelChatID telego.ChatID
-	if cfg.Username != "" {
-		channelChatID = telegoutil.Username(cfg.Username)
-	} else {
+	if cfg.ChatID != 0 {
 		channelChatID = telegoutil.ID(cfg.ChatID)
+	} else if cfg.Username != "" {
+		channelChatID = telegoutil.Username(cfg.Username)
+		chatFull, err := bot.GetChat(ctx, &telego.GetChatParams{ChatID: channelChatID})
+		if err != nil {
+			return nil, oops.Errorf("Error when getting chat info: %s", err)
+		}
+		channelChatID.ID = chatFull.ID
+	} else {
+		return nil, oops.New("Either ChatID or Username must be set in config")
 	}
+
 	var groupChatID telego.ChatID
 	if cfg.GroupID != 0 {
 		groupChatID = telegoutil.ID(cfg.GroupID)
@@ -197,10 +205,16 @@ func Init(ctx context.Context, serv *service.Service, cfg runtimecfg.TelegramCon
 		}
 	}()
 
+	metaopts := []metautil.Option{}
+	if cfg.GroupID != 0 {
+		metaopts = append(metaopts, metautil.WithGroupChatID(groupChatID))
+	}
+	metaopts = append(metaopts, metautil.WithBotID(int64(botId)))
+	meta := metautil.NewMetaData(channelChatID, botUsername, metaopts...)
 	return &BotApp{
 		bot:  bot,
 		serv: serv,
-		meta: metautil.NewMetaData(channelChatID, botUsername, metautil.WithGroupChatID(groupChatID)),
+		meta: meta,
 		cfg:  cfg,
 	}, nil
 }

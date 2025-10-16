@@ -40,7 +40,7 @@ func RandomPicture(ctx *telegohandler.Context, message telego.Message) error {
 			R18:      r18Type,
 			Keywords: textArray,
 		},
-		Paginate: query.Paginate{ 
+		Paginate: query.Paginate{
 			Offset: 0,
 			Limit:  1,
 		},
@@ -61,7 +61,8 @@ func RandomPicture(ctx *telegohandler.Context, message telego.Message) error {
 	pictures := artwork[0].Pictures
 	picIndex := rand.Intn(len(pictures))
 	picture := pictures[picIndex]
-	file, err := utils.GetPicturePhotoInputFile(ctx, serv, picture)
+	meta := metautil.MustFromContext(ctx)
+	file, err := utils.GetPicturePhotoInputFile(ctx, serv, meta, picture)
 	if err != nil {
 		utils.ReplyMessage(ctx, message, "获取图片失败")
 		return oops.Wrapf(err, "failed to get picture input file")
@@ -87,7 +88,7 @@ func RandomPicture(ctx *telegohandler.Context, message telego.Message) error {
 	if photoMessage != nil {
 		fileId := photoMessage.Photo[len(photoMessage.Photo)-1].FileID
 		tginfo := picture.TelegramInfo.Data()
-		tginfo.PhotoFileID = fileId
+		tginfo.SetFileID(meta.BotID(), shared.TelegramMediaTypePhoto, fileId)
 		if err := serv.UpdatePictureTelegramInfo(ctx, picture.ID, &tginfo); err != nil {
 			return oops.Wrapf(err, "failed to update picture telegram info")
 		}
@@ -241,11 +242,12 @@ func SearchSimilarArtworks(ctx *telegohandler.Context, message telego.Message) e
 
 func handleSendResultArtworks(ctx context.Context, artworks []*entity.Artwork, message telego.Message, bot *telego.Bot) error {
 	inputMedias := make([]telego.InputMedia, 0, len(artworks))
+	meta := metautil.MustFromContext(ctx)
 	for _, artwork := range artworks {
 		picture := artwork.Pictures[0]
 		var file telego.InputFile
-		if picture.TelegramInfo.Data().PhotoFileID != "" {
-			file = telegoutil.FileFromID(picture.TelegramInfo.Data().PhotoFileID)
+		if fileId := picture.TelegramInfo.Data().FileID(meta.BotID(), shared.TelegramMediaTypePhoto); fileId != "" {
+			file = telegoutil.FileFromID(fileId)
 		} else {
 			photoURL := fmt.Sprintf("%s/?url=%s&w=2560&h=2560&we&output=jpg", runtimecfg.Get().Wsrv.URL, picture.Original)
 			file = telegoutil.FileFromURL(photoURL)

@@ -18,28 +18,6 @@ import (
 	"github.com/samber/oops"
 )
 
-// import (
-// 	"bytes"
-// 	"context"
-// 	"errors"
-// 	"fmt"
-// 	"path"
-// 	"strings"
-
-// 	"github.com/PuerkitoBio/goquery"
-// 	"github.com/krau/ManyACG/common"
-// 	"github.com/krau/ManyACG/common/imgtool"
-// 	"github.com/krau/ManyACG/config"
-
-// 	"github.com/krau/ManyACG/internal/service"
-// 	"github.com/krau/ManyACG/telegram/utils"
-
-// 	"github.com/mymmrac/telego"
-// 	"github.com/mymmrac/telego/telegohandler"
-// 	"github.com/mymmrac/telego/telegoutil"
-// 	"go.mongodb.org/mongo-driver/bson/primitive"
-// )
-
 func SearchPicture(ctx *telegohandler.Context, message telego.Message) error {
 	if message.ReplyToMessage == nil {
 		helpText := `
@@ -112,8 +90,8 @@ func getDBSearchResultText(ctx context.Context, serv *service.Service, meta *met
 			html.EscapeString(picture.Artwork.GetTitle()),
 			picture.OrderIndex+1,
 		)
-		if meta.ChannelAvailable() && picture.TelegramInfo.Data().MessageID != 0 {
-			text += fmt.Sprintf("<a href=\"%s\">频道消息</a>\n", meta.ChannelMessageURL(picture.TelegramInfo.Data().MessageID))
+		if meta.ChannelAvailable() && picture.TelegramInfo.Data().MessageID(meta.ChannelChatID().ID) != 0 {
+			text += fmt.Sprintf("<a href=\"%s\">频道消息</a>\n", meta.ChannelMessageURL(picture.TelegramInfo.Data().MessageID(meta.ChannelChatID().ID)))
 		}
 		if meta.SiteURL() != "" {
 			text += fmt.Sprintf("<a href=\"%s\">ManyACG</a>\n\n", meta.SiteURL()+"/artwork/"+picture.ArtworkID.Hex())

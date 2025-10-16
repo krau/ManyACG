@@ -23,6 +23,7 @@ func Start(ctx *telegohandler.Context, message telego.Message) error {
 	if len(args) > 0 {
 		log.Debug("received start", "args", args)
 		serv := service.FromContext(ctx)
+		meta := metautil.MustFromContext(ctx)
 		action := strings.Split(args[0], "_")[0]
 		switch action {
 		case "file": // for compatibility we keep "file" action to get single picture by id
@@ -37,7 +38,7 @@ func Start(ctx *telegohandler.Context, message telego.Message) error {
 				utils.ReplyMessage(ctx, message, "获取失败")
 				return oops.Wrapf(err, "failed to get picture by id %s", pictureIDStr)
 			}
-			file, err := utils.GetPictureDocumentInputFile(ctx, serv, picture.Artwork, picture)
+			file, err := utils.GetPictureDocumentInputFile(ctx, serv, meta, picture.Artwork, picture)
 			if err != nil {
 				utils.ReplyMessage(ctx, message, "获取失败")
 				return oops.Wrapf(err, "failed to get picture document input file by id %s", pictureIDStr)
@@ -73,7 +74,7 @@ func Start(ctx *telegohandler.Context, message telego.Message) error {
 			} else {
 				artwork = created
 			}
-			return getArtworkFiles(ctx, serv, metautil.FromContext(ctx), message, artwork)
+			return getArtworkFiles(ctx, serv, meta, message, artwork)
 		case "info":
 			dataID := args[0][5:]
 			sourceURL, err := cache.Get[string](ctx, dataID)
@@ -86,7 +87,7 @@ func Start(ctx *telegohandler.Context, message telego.Message) error {
 				utils.ReplyMessage(ctx, message, "获取作品信息失败")
 				return oops.Wrapf(err, "failed to get or fetch cached artwork by url: %s", sourceURL)
 			}
-			results, err := utils.SendArtworkMediaGroup(ctx, ctx.Bot(), serv, message.Chat.ChatID(), artwork)
+			results, err := utils.SendArtworkMediaGroup(ctx, ctx.Bot(), serv, meta, message.Chat.ChatID(), artwork)
 			if err != nil {
 				utils.ReplyMessage(ctx, message, "发送作品信息失败")
 				return oops.Wrapf(err, "failed to send artwork media group")
@@ -98,13 +99,13 @@ func Start(ctx *telegohandler.Context, message telego.Message) error {
 						log.Warn("ugoira index out of range", "index", res.UgoiraIndex, "len", len(data.UgoiraMetas), "title", artwork.GetTitle(), "url", artwork.GetSourceURL())
 						continue
 					}
-					data.UgoiraMetas[res.UgoiraIndex].TelegramInfo.PhotoFileID = res.FileID
+					data.UgoiraMetas[res.UgoiraIndex].TelegramInfo.SetFileID(meta.BotID(), shared.TelegramMediaTypeVideo, res.FileID)
 				} else if res.PictureIndex >= 0 {
 					if len(data.Pictures) <= res.PictureIndex {
 						log.Warn("picture index out of range", "index", res.PictureIndex, "len", len(data.Pictures), "title", artwork.GetTitle(), "url", artwork.GetSourceURL())
 						continue
 					}
-					data.Pictures[res.PictureIndex].TelegramInfo.PhotoFileID = res.FileID
+					data.Pictures[res.PictureIndex].TelegramInfo.SetFileID(meta.BotID(), shared.TelegramMediaTypePhoto, res.FileID)
 				}
 			}
 			if err := serv.UpdateCachedArtwork(ctx, data); err != nil {

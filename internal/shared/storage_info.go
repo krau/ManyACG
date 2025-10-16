@@ -6,19 +6,6 @@ import (
 	"github.com/krau/ManyACG/pkg/strutil"
 )
 
-type TelegramInfo struct {
-	PhotoFileID    string `json:"photo_file_id"`
-	DocumentFileID string `json:"document_file_id"`
-	MessageID      int    `json:"message_id"`
-	MediaGroupID   string `json:"media_group_id"`
-}
-
-var ZeroTelegramInfo = TelegramInfo{}
-
-func (t TelegramInfo) IsZero() bool {
-	return t == ZeroTelegramInfo
-}
-
 type StorageInfo struct {
 	Original *StorageDetail `json:"original"`
 	Regular  *StorageDetail `json:"regular"`

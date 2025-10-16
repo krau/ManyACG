@@ -99,7 +99,7 @@ func getArtworkFiles(ctx *telegohandler.Context,
 	for i, picture := range artwork.GetPictures() {
 		err := func() error {
 			buildDocument := func() (*telego.SendDocumentParams, func() error, error) {
-				file, err := utils.GetPictureDocumentInputFile(ctx, serv, artwork, picture)
+				file, err := utils.GetPictureDocumentInputFile(ctx, serv, meta, artwork, picture)
 				if err != nil {
 					return nil, nil, oops.Wrapf(err, "failed to get picture document input file")
 				}
@@ -107,9 +107,9 @@ func getArtworkFiles(ctx *telegohandler.Context,
 					WithReplyParameters(&telego.ReplyParameters{
 						MessageID: message.MessageID,
 					}).WithCaption(artwork.GetTitle() + "_" + strconv.Itoa(i+1)).WithDisableContentTypeDetection()
-				if meta.ChannelAvailable() && picture.GetTelegramInfo().MessageID != 0 {
+				if meta.ChannelAvailable() && picture.GetTelegramInfo().MessageID(meta.ChannelChatID().ID) != 0 {
 					document.WithReplyMarkup(telegoutil.InlineKeyboard([]telego.InlineKeyboardButton{
-						telegoutil.InlineKeyboardButton("详情").WithURL(meta.ChannelMessageURL(picture.GetTelegramInfo().MessageID)),
+						telegoutil.InlineKeyboardButton("详情").WithURL(meta.ChannelMessageURL(picture.GetTelegramInfo().MessageID(meta.ChannelChatID().ID))),
 					}))
 				} else {
 					document.WithReplyMarkup(telegoutil.InlineKeyboard([]telego.InlineKeyboardButton{
@@ -139,7 +139,7 @@ func getArtworkFiles(ctx *telegohandler.Context,
 				switch pic := picture.(type) {
 				case *entity.Picture:
 					tginfo := pic.GetTelegramInfo()
-					tginfo.DocumentFileID = documentMessage.Document.FileID
+					tginfo.SetFileID(meta.BotID(), shared.TelegramMediaTypeDocument, documentMessage.Document.FileID)
 					return serv.UpdatePictureTelegramInfo(ctx, pic.ID, &tginfo)
 				case *entity.CachedPicture:
 					cached, err := serv.GetCachedArtworkByURL(ctx, artwork.GetSourceURL())
@@ -150,7 +150,7 @@ func getArtworkFiles(ctx *telegohandler.Context,
 					for _, p := range data.Pictures {
 						if p.Original == pic.GetOriginal() {
 							tginfo := pic.GetTelegramInfo()
-							tginfo.DocumentFileID = documentMessage.Document.FileID
+							tginfo.SetFileID(meta.BotID(), shared.TelegramMediaTypeDocument, documentMessage.Document.FileID)
 							p.TelegramInfo = tginfo
 							return serv.UpdateCachedArtwork(ctx, data)
 						}
@@ -172,7 +172,7 @@ func getArtworkFiles(ctx *telegohandler.Context,
 	for i, ugoira := range awUgoira.GetUgoiraMetas() {
 		err := func() error {
 			buildDocument := func() (*telego.SendDocumentParams, func() error, error) {
-				file, err := utils.GetUgoiraVideoDocumentInputFile(ctx, serv, awUgoira, ugoira)
+				file, err := utils.GetUgoiraVideoDocumentInputFile(ctx, serv, meta, awUgoira, ugoira)
 				if err != nil {
 					return nil, nil, oops.Wrapf(err, "failed to get ugoira video document input file")
 				}
@@ -180,9 +180,9 @@ func getArtworkFiles(ctx *telegohandler.Context,
 					WithReplyParameters(&telego.ReplyParameters{
 						MessageID: message.MessageID,
 					}).WithCaption(artwork.GetTitle() + "_" + strconv.Itoa(i+1)).WithDisableContentTypeDetection()
-				if meta.ChannelAvailable() && ugoira.GetTelegramInfo().MessageID != 0 {
+				if meta.ChannelAvailable() && ugoira.GetTelegramInfo().MessageID(meta.ChannelChatID().ID) != 0 {
 					document.WithReplyMarkup(telegoutil.InlineKeyboard([]telego.InlineKeyboardButton{
-						telegoutil.InlineKeyboardButton("详情").WithURL(meta.ChannelMessageURL(ugoira.GetTelegramInfo().MessageID)),
+						telegoutil.InlineKeyboardButton("详情").WithURL(meta.ChannelMessageURL(ugoira.GetTelegramInfo().MessageID(meta.ChannelChatID().ID))),
 					}))
 				} else {
 					document.WithReplyMarkup(telegoutil.InlineKeyboard([]telego.InlineKeyboardButton{
@@ -211,7 +211,7 @@ func getArtworkFiles(ctx *telegohandler.Context,
 				switch ugo := ugoira.(type) {
 				case *entity.UgoiraMeta:
 					tginfo := ugo.GetTelegramInfo()
-					tginfo.DocumentFileID = documentMessage.Document.FileID
+					tginfo.SetFileID(meta.BotID(), shared.TelegramMediaTypeDocument, documentMessage.Document.FileID)
 					return serv.UpdateUgoiraTelegramInfo(ctx, ugo.ID, &tginfo)
 				case *entity.CachedUgoiraMeta:
 					cached, err := serv.GetCachedArtworkByURL(ctx, artwork.GetSourceURL())
@@ -222,7 +222,7 @@ func getArtworkFiles(ctx *telegohandler.Context,
 					for _, u := range data.UgoiraMetas {
 						if u.MetaData.OriginalZip == ugo.MetaData.OriginalZip {
 							tginfo := ugo.GetTelegramInfo()
-							tginfo.DocumentFileID = documentMessage.Document.FileID
+							tginfo.SetFileID(meta.BotID(), shared.TelegramMediaTypeDocument, documentMessage.Document.FileID)
 							u.TelegramInfo = tginfo
 							return serv.UpdateCachedArtwork(ctx, data)
 						}

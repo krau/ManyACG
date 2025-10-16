@@ -9,10 +9,11 @@ import (
 )
 
 type MetaData struct {
-	channelChatID    telego.ChatID
-	botUsername      string
-	siteUrl          string
-	groupChatID      telego.ChatID
+	channelChatID telego.ChatID
+	botUsername   string
+	botId         int64
+	siteUrl       string
+	groupChatID   telego.ChatID
 	// should not set manually
 	channelAvailable bool
 }
@@ -33,6 +34,10 @@ func (m *MetaData) SiteURL() string {
 	return m.siteUrl
 }
 
+func (m *MetaData) BotID() int64 {
+	return m.botId
+}
+
 type MetaDataCtxKey struct{}
 
 var contextKey = MetaDataCtxKey{}
@@ -48,6 +53,12 @@ func WithSiteURL(url string) Option {
 func WithGroupChatID(id telego.ChatID) Option {
 	return func(m *MetaData) {
 		m.groupChatID = id
+	}
+}
+
+func WithBotID(id int64) Option {
+	return func(m *MetaData) {
+		m.botId = id
 	}
 }
 

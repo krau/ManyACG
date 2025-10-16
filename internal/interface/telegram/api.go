@@ -20,7 +20,7 @@ func (b *BotApp) PostAndCreateArtwork(ctx context.Context, artwork *entity.Cache
 			adminId = telegoutil.ID(adminIds[0])
 		}
 	}
-	if err := utils.PostAndCreateArtwork(ctx, b.Bot(), b.serv, artwork, adminId, b.meta.ChannelChatID(), 0); err != nil {
+	if err := utils.PostAndCreateArtwork(ctx, b.Bot(), b.serv, b.meta, artwork, adminId, b.meta.ChannelChatID(), 0); err != nil {
 		return oops.Wrapf(err, "posting and creating artwork %s", artwork.SourceURL)
 	}
 	return nil

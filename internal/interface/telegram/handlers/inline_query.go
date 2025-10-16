@@ -36,8 +36,8 @@ func InlineQuery(ctx *telegohandler.Context, inlineQuery telego.InlineQuery) err
 		caption := utils.ArtworkHTMLCaption(artwork)
 		wsrvUrl := runtimecfg.Get().Wsrv.URL
 		for _, picture := range pics {
-			if picture.TelegramInfo.PhotoFileID != "" {
-				result := telegoutil.ResultCachedPhoto(objectuuid.New().Hex(), picture.TelegramInfo.PhotoFileID).WithCaption(caption).WithParseMode(telego.ModeHTML)
+			if picFileId := picture.TelegramInfo.FileID(meta.BotID(), shared.TelegramMediaTypePhoto); picFileId != "" {
+				result := telegoutil.ResultCachedPhoto(objectuuid.New().Hex(), picFileId).WithCaption(caption).WithParseMode(telego.ModeHTML)
 				results = append(results, result)
 				continue
 			}
@@ -82,12 +82,12 @@ func InlineQuery(ctx *telegohandler.Context, inlineQuery telego.InlineQuery) err
 	for _, artwork := range artworks {
 		pictureIndex := rand.Intn(len(artwork.Pictures))
 		picture := artwork.Pictures[pictureIndex]
-		if picture.TelegramInfo.Data().PhotoFileID == "" {
+		if picture.TelegramInfo.Data().FileID(meta.BotID(), shared.TelegramMediaTypePhoto) == "" {
 			continue
 		}
 		result := telegoutil.
 			ResultCachedPhoto(objectuuid.New().Hex(),
-				picture.TelegramInfo.Data().PhotoFileID).
+				picture.TelegramInfo.Data().FileID(meta.BotID(), shared.TelegramMediaTypePhoto)).
 			WithCaption(fmt.Sprintf("<a href=\"%s\">%s</a>", artwork.SourceURL, html.EscapeString(artwork.Title))).
 			WithParseMode(telego.ModeHTML).WithReplyMarkup(telegoutil.InlineKeyboard(utils.GetPostedArtworkInlineKeyboardButton(artwork, meta)))
 		results = append(results, result)

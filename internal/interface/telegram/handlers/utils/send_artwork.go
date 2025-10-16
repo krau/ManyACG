@@ -22,8 +22,8 @@ import (
 	"github.com/samber/oops"
 )
 
-func GetPicturePhotoInputFile(ctx context.Context, serv *service.Service, picture shared.PictureLike) (*ioutil.Closer[telego.InputFile], error) {
-	if id := picture.GetTelegramInfo().PhotoFileID; id != "" {
+func GetPicturePhotoInputFile(ctx context.Context, serv *service.Service, meta *metautil.MetaData, picture shared.PictureLike) (*ioutil.Closer[telego.InputFile], error) {
+	if id := picture.GetTelegramInfo().PhotoFileID(meta.BotID()); id != "" {
 		return ioutil.NewCloser(telegoutil.FileFromID(id), nil), nil
 	}
 	orgStorDetail := picture.GetStorageInfo().Original
@@ -192,7 +192,7 @@ func SendArtworkInfo(ctx context.Context,
 	if err != nil {
 		return oops.Wrapf(err, "failed to create artwork info reply markup")
 	}
-	inputFile, err := GetPicturePhotoInputFile(ctx, serv, artwork.GetPictures()[0])
+	inputFile, err := GetPicturePhotoInputFile(ctx, serv, meta, artwork.GetPictures()[0])
 	if err != nil {
 		return oops.Wrapf(err, "failed to get picture preview input file")
 	}
@@ -215,7 +215,7 @@ func SendArtworkInfo(ctx context.Context,
 			switch p := pic.(type) {
 			case *entity.Picture:
 				tginfo := p.GetTelegramInfo()
-				tginfo.PhotoFileID = fileId
+				tginfo.SetFileID(meta.BotID(), shared.TelegramMediaTypePhoto, fileId)
 				return serv.UpdatePictureTelegramInfo(ctx, p.ID, &tginfo)
 			case *entity.CachedPicture:
 				switch aw := artwork.(type) {
@@ -225,7 +225,7 @@ func SendArtworkInfo(ctx context.Context,
 							continue
 						}
 						tginfo := p.GetTelegramInfo()
-						tginfo.PhotoFileID = fileId
+						tginfo.SetFileID(meta.BotID(), shared.TelegramMediaTypePhoto, fileId)
 						p.TelegramInfo = tginfo
 						break
 					}
@@ -237,7 +237,7 @@ func SendArtworkInfo(ctx context.Context,
 							continue
 						}
 						tginfo := p.GetTelegramInfo()
-						tginfo.PhotoFileID = fileId
+						tginfo.SetFileID(meta.BotID(), shared.TelegramMediaTypePhoto, fileId)
 						p.TelegramInfo = tginfo
 						break
 					}
@@ -272,8 +272,8 @@ func SendArtworkInfo(ctx context.Context,
 	return updatePictureFileID(msg)
 }
 
-func GetPictureDocumentInputFile(ctx context.Context, serv *service.Service, artwork shared.ArtworkLike, picture shared.PictureLike) (*ioutil.Closer[telego.InputFile], error) {
-	if id := picture.GetTelegramInfo().DocumentFileID; id != "" {
+func GetPictureDocumentInputFile(ctx context.Context, serv *service.Service, meta *metautil.MetaData, artwork shared.ArtworkLike, picture shared.PictureLike) (*ioutil.Closer[telego.InputFile], error) {
+	if id := picture.GetTelegramInfo().DocumentFileID(meta.BotID()); id != "" {
 		return ioutil.NewCloser(telegoutil.FileFromID(id), func() error { return nil }), nil
 	}
 	orgStorDetail := picture.GetStorageInfo().Original
@@ -291,8 +291,8 @@ func GetPictureDocumentInputFile(ctx context.Context, serv *service.Service, art
 	return ioutil.NewCloser(telegoutil.File(telegoutil.NameReader(file, serv.PrettyFileName(artwork, picture))), func() error { return file.Close() }), nil
 }
 
-func GetUgoiraVideoDocumentInputFile(ctx context.Context, serv *service.Service, artwork shared.UgoiraArtworkLike, ugoira shared.UgoiraMetaLike) (*ioutil.Closer[telego.InputFile], error) {
-	if id := ugoira.GetTelegramInfo().DocumentFileID; id != "" {
+func GetUgoiraVideoDocumentInputFile(ctx context.Context, serv *service.Service, meta *metautil.MetaData, artwork shared.UgoiraArtworkLike, ugoira shared.UgoiraMetaLike) (*ioutil.Closer[telego.InputFile], error) {
+	if id := ugoira.GetTelegramInfo().DocumentFileID(meta.BotID()); id != "" {
 		return ioutil.NewCloser(telegoutil.FileFromID(id), func() error { return nil }), nil
 	}
 	data := ugoira.GetUgoiraMetaData()
