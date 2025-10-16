@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strconv"
+	"strings"
 
 	"github.com/krau/ManyACG/config"
 	"github.com/krau/ManyACG/dao/collections"
@@ -61,13 +63,13 @@ func Run(ctx context.Context, opt *Option) error {
 	if err := migrateArtworks(ctx, collectionArtwork, db); err != nil {
 		return fmt.Errorf("migrate artworks failed: %w", err)
 	}
-	if err := migratePictures(ctx, collectionPicture, db); err != nil {
+	if err := migratePictures(ctx, collectionPicture, db, opt.Cfg); err != nil {
 		return fmt.Errorf("migrate pictures failed: %w", err)
 	}
 	if err := migrateDeletedRecords(ctx, collectionDeleted, db); err != nil {
 		return fmt.Errorf("migrate deleted records failed: %w", err)
 	}
-	if err := migrateCachedArtworks(ctx, collectionCachedArtwork, db); err != nil {
+	if err := migrateCachedArtworks(ctx, collectionCachedArtwork, db, opt.Cfg); err != nil {
 		return fmt.Errorf("migrate cached artworks failed: %w", err)
 	}
 	if err := migrateApiKeys(ctx, collectionApiKey, db); err != nil {
@@ -205,13 +207,25 @@ func migrateArtworks(ctx context.Context, collection *mongo.Collection, db *gorm
 	return nil
 }
 
-func migratePictures(ctx context.Context, collection *mongo.Collection, db *gorm.DB) error {
+func migratePictures(ctx context.Context, collection *mongo.Collection, db *gorm.DB, cfg config.Config) error {
 	cursor, err := collection.Find(ctx, bson.M{})
 	if err != nil {
 		return err
 	}
 	defer cursor.Close(ctx)
 	batch := make([]*Picture, 0, 500)
+	botIdStr := strings.Split(cfg.Telegram.Token, ":")[0]
+	if botIdStr == "" {
+		return errors.New("invalid telegram bot token")
+	}
+	botId, err := strconv.ParseInt(botIdStr, 10, 64)
+	if err != nil {
+		return fmt.Errorf("invalid telegram bot token: %w", err)
+	}
+	channelId := cfg.Telegram.ChatID
+	if channelId == 0 {
+		return errors.New("invalid telegram channel id")
+	}
 	for cursor.Next(ctx) {
 		var pictureModel mongotypes.PictureModel
 		if err := cursor.Decode(&pictureModel); err != nil {
@@ -228,10 +242,22 @@ func migratePictures(ctx context.Context, collection *mongo.Collection, db *gorm
 			Phash:      pictureModel.Hash,
 			ThumbHash:  pictureModel.ThumbHash,
 			TelegramInfo: datatypes.NewJSONType(TelegramInfo{
-				PhotoFileID:    pictureModel.TelegramInfo.PhotoFileID,
-				DocumentFileID: pictureModel.TelegramInfo.DocumentFileID,
-				MessageID:      pictureModel.TelegramInfo.MessageID,
-				MediaGroupID:   pictureModel.TelegramInfo.MediaGroupID,
+				// PhotoFileID:    pictureModel.TelegramInfo.PhotoFileID,
+				// DocumentFileID: pictureModel.TelegramInfo.DocumentFileID,
+				// MessageID:      pictureModel.TelegramInfo.MessageID,
+				// MediaGroupID:   pictureModel.TelegramInfo.MediaGroupID,
+				FileIDs: map[int64]map[TelegramMediaType]string{
+					int64(botId): {
+						TelegramMediaTypeDocument: pictureModel.TelegramInfo.DocumentFileID,
+						TelegramMediaTypePhoto:    pictureModel.TelegramInfo.PhotoFileID,
+					},
+				},
+				Messages: map[int64]TelegramMessage{
+					channelId: {
+						MessageID:    pictureModel.TelegramInfo.MessageID,
+						MediaGroupID: pictureModel.TelegramInfo.MediaGroupID,
+					},
+				},
 			}),
 			StorageInfo: datatypes.NewJSONType(StorageInfo{
 				Original: func() *StorageDetail {
@@ -308,7 +334,7 @@ func migrateDeletedRecords(ctx context.Context, collection *mongo.Collection, db
 	return db.CreateInBatches(deletes, 250).Error
 }
 
-func migrateCachedArtworks(ctx context.Context, collection *mongo.Collection, db *gorm.DB) error {
+func migrateCachedArtworks(ctx context.Context, collection *mongo.Collection, db *gorm.DB, cfg config.Config) error {
 	findOpt := mongoopts.Find()
 	findOpt.SetSort(bson.D{{Key: "source_url", Value: 1}, {Key: "created_at", Value: -1}})
 	cursor, err := collection.Find(ctx, bson.M{}, findOpt)
@@ -317,6 +343,18 @@ func migrateCachedArtworks(ctx context.Context, collection *mongo.Collection, db
 	}
 	defer cursor.Close(ctx)
 	batch := make([]*CachedArtwork, 0, 500)
+	botIdStr := strings.Split(cfg.Telegram.Token, ":")[0]
+	if botIdStr == "" {
+		return errors.New("invalid telegram bot token")
+	}
+	botId, err := strconv.ParseInt(botIdStr, 10, 64)
+	if err != nil {
+		return fmt.Errorf("invalid telegram bot token: %w", err)
+	}
+	channelId := cfg.Telegram.ChatID
+	if channelId == 0 {
+		return errors.New("invalid telegram channel id")
+	}
 	var lastSourceURL string
 	for cursor.Next(ctx) {
 		var cachedModel mongotypes.CachedArtworksModel
@@ -364,10 +402,22 @@ func migrateCachedArtworks(ctx context.Context, collection *mongo.Collection, db
 								return TelegramInfo{}
 							}
 							return TelegramInfo{
-								PhotoFileID:    pic.TelegramInfo.PhotoFileID,
-								DocumentFileID: pic.TelegramInfo.DocumentFileID,
-								MessageID:      pic.TelegramInfo.MessageID,
-								MediaGroupID:   pic.TelegramInfo.MediaGroupID,
+								// PhotoFileID:    pic.TelegramInfo.PhotoFileID,
+								// DocumentFileID: pic.TelegramInfo.DocumentFileID,
+								// MessageID:      pic.TelegramInfo.MessageID,
+								// MediaGroupID:   pic.TelegramInfo.MediaGroupID,
+								FileIDs: map[int64]map[TelegramMediaType]string{
+									int64(botId): {
+										TelegramMediaTypeDocument: pic.TelegramInfo.DocumentFileID,
+										TelegramMediaTypePhoto:    pic.TelegramInfo.PhotoFileID,
+									},
+								},
+								Messages: map[int64]TelegramMessage{
+									channelId: {
+										MessageID:    pic.TelegramInfo.MessageID,
+										MediaGroupID: pic.TelegramInfo.MediaGroupID,
+									},
+								},
 							}
 						}(),
 					}
