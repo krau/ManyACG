@@ -118,8 +118,8 @@ type Picture struct {
 	Original   string `gorm:"type:text;index" json:"original"`
 	Width      uint   `json:"width"`
 	Height     uint   `json:"height"`
-	Phash      string `gorm:"type:varchar(32);index" json:"phash"` // phash
-	ThumbHash  string `gorm:"type:varchar(32)" json:"thumb_hash"`  // thumbhash
+	Phash      string `gorm:"type:text;index" json:"phash"` // phash
+	ThumbHash  string `gorm:"type:text" json:"thumb_hash"`  // thumbhash
 
 	TelegramInfo datatypes.JSONType[TelegramInfo] `gorm:"type:json" json:"telegram_info"` // original TelegramInfo struct as JSON
 	StorageInfo  datatypes.JSONType[StorageInfo]  `gorm:"type:json" json:"storage_info"`  // StorageInfo as JSON
