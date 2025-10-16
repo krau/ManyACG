@@ -25,6 +25,9 @@ jobs:
 
       - name: Create release
         uses: softprops/action-gh-release@v2
+        with:
+          name: ${{ github.ref_name }}${{ contains(github.ref_name, 'alpha') || contains(github.ref_name, 'beta') || contains(github.ref_name, 'rc') && ' (Pre-release)' || '' }}
+          prerelease: ${{ contains(github.ref_name, 'alpha') || contains(github.ref_name, 'beta') || contains(github.ref_name, 'rc') }}
 
       - name: Setup node for changelog
         uses: actions/setup-node@v4
