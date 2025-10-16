@@ -122,7 +122,7 @@ func HandleGetSizedPictureFileByID(ctx fiber.Ctx) error {
 			}
 
 			if !errors.Is(err, io.EOF) && !errors.Is(err, io.ErrUnexpectedEOF) {
-				return fiber.NewError(fiber.StatusInternalServerError, err.Error())
+				return err
 			}
 		}
 

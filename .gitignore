@@ -11,6 +11,7 @@ dist/
 *.db
 *.db-shm
 *.db-wal
+*.db-journal
 *.log
 imgcache/
 test.json

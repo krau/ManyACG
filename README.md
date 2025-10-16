@@ -44,29 +44,27 @@ ManyACG 是为收集与整理二次元插画作品而生的项目, 目前主要�
 - 基于图像哈希的去重与以图搜图
 - 带有逻辑控制的关键词搜图
 - 以 Telegram 所接受的最高质量发送图片
-- Web API
+- 支持 pixiv 动图
 - 基于 AI 的图片标签生成 -> [konatagger](https://github.com/krau/konatagger)
 - 集成 [MeiliSearch](https://www.meilisearch.com/) , 支持混合搜索与相似作品检索.
 - 轻量, 原生跨平台, 部署简单
 
 ## 部署
 
-### 安装依赖组件
+### 安装FFmpeg(可选)
 
-#### MongoDB
-
-项目需要启用了副本集的 MongoDB 作为数据库, [MongoDB Cloud](https://www.mongodb.com/) 提供的免费实例足够使用, 也可以选择自行搭建.
-
-你可以参考这个 repo 使用 docker compose 快速启动一个 MongoDB 副本集: [mongodb-rs-compose](https://github.com/krau/mongodb-rs-compose)
-
-#### FFmpeg(可选)
-
-项目使用 [FFmpeg](https://ffmpeg.org/) 进行一些图像处理, 请在自己的系统上安装, 以下是一些系统的安装示例:
+ManyACG 需要使用 FFmpeg 来从动图序列合成视频, 请在自己的系统上安装, 以下是一些系统的安装示例:
 
 Ubuntu/Debian:
 
 ```bash
 sudo apt install ffmpeg -y
+```
+
+Arch Linux:
+
+```bash
+sudo pacman -S ffmpeg --noconfirm
 ```
 
 [其他/任意 Linux 发行版安装 FFmepg 参考](https://krau.top/posts/linux-install-ffmpeg)
@@ -78,7 +76,7 @@ Windows:
 
 ### 从二进制文件部署 ManyACG
 
-完成数据库和 FFmpeg 的安装后, 需要为准备使用的 Bot 设置一个头像, 然后在 [release](https://github.com/krau/ManyACG/releases) 页面下载与自己系统和架构对应的文件, 解压.
+在 [release](https://github.com/krau/ManyACG/releases) 页面下载与自己系统和架构对应的文件, 解压.
 
 在与解压出的二进制文件的相同目录下创建 `config.toml` 文件, 修改各项配置.
 
@@ -87,18 +85,14 @@ Windows:
 如果你只需要将 ManyACG 作为一个 Telegram 频道的自动发图与管理 Bot 使用, 使用以下简单的配置即可:
 
 ```toml
-[database]
-database = "manyacg"
-uri = "mongodb://admin:password@localhost:27017"
-
 [telegram]
-token="token"
-admins = [123456789]
-channel = true
-username = "@moreacg"
+bot_token="token"
+admins = [123456789] # 你的 Telegram 用户 ID
+username = "@moreacg" # 频道用户名(如有)
+chat_id = -1001234567890 # 频道 ID, 与 username 二选一
 
-# 配置 pixiv cookies 可以提高大部分作品的爬取成功率
 [source.pixiv]
+# 建议配置 pixiv cookies, 可以提高作品的爬取成功率
 [[source.pixiv.cookies]]
 name = "PHPSESSID"
 value = ""
@@ -108,20 +102,12 @@ value = ""
 
 # 如果你不需要存储原图, 以下配置也可以删除
 [storage]
-original_type = "local"
-
-[storage.local]
+original_type = "telegram"
+[storage.telegram]
 enable = true
-path = "./downloads"
+token = "用于发送原图的 Bot 的 Token" # 可以与 telegram.bot_token 相同
+chat_id = -1001234567890 # 用于存储原图的频道 ID
 ```
-
-#### 完整配置
-
-如果你需要使用 ManyACG 的全部功能, 请参考 [config.all.toml](https://github.com/krau/ManyACG/blob/main/config.all.toml) 文件.
-
-更详细的配置可以参考 `config` 目录源码
-
----
 
 赋予二进制文件执行权限并运行即可:
 
@@ -152,6 +138,5 @@ WantedBy=multi-user.target
 ```
 
 ```bash
-systemctl enable manyacg
-systemctl start manyacg
+systemctl enable --now manyacg
 ```

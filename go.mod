@@ -165,3 +165,5 @@ require (
 	gorm.io/driver/postgres v1.6.0
 	gorm.io/gorm v1.31.0
 )
+
+replace github.com/mymmrac/telego => ../telego
