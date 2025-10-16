@@ -100,6 +100,7 @@ func loadConfig() Config {
 		"source.pixiv.img_proxy": "pximg.manyacg.top",
 
 		"cache.type":                   "ristretto",
+		"cache.bigcache.eviction":      3600, // in seconds
 		"cache.default_ttl":            60 * 60 * 4,
 		"cache.ristretto.num_counters": 1e5,
 		"cache.ristretto.max_cost":     1e6,

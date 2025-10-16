@@ -48,6 +48,7 @@ func Close() error {
 	return nil
 }
 
+// 使用 msgpack 序列化
 func Set(key string, value any) error {
 	db := getDefault()
 	val, err := msgpack.Marshal(value)

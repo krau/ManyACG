@@ -10,12 +10,16 @@ import (
 	"github.com/gofiber/fiber/v3"
 	"github.com/gofiber/fiber/v3/middleware/compress"
 	"github.com/gofiber/fiber/v3/middleware/cors"
+	"github.com/gofiber/fiber/v3/middleware/etag"
+	"github.com/gofiber/fiber/v3/middleware/helmet"
 	"github.com/gofiber/fiber/v3/middleware/limiter"
 	"github.com/gofiber/fiber/v3/middleware/logger"
+	recoverer "github.com/gofiber/fiber/v3/middleware/recover"
 	"github.com/krau/ManyACG/internal/infra/config/runtimecfg"
 	"github.com/krau/ManyACG/internal/interface/rest/common"
 	"github.com/krau/ManyACG/internal/interface/rest/handlers"
 	"github.com/krau/ManyACG/internal/service"
+
 	"github.com/samber/oops"
 )
 
@@ -81,7 +85,10 @@ func New(ctx context.Context, serv *service.Service, cfg runtimecfg.RestConfig, 
 		}))
 	}
 	app.Use(cors.New())
+	app.Use(etag.New())
+	app.Use(helmet.New())
 	app.Use(compress.New())
+	app.Use(recoverer.New())
 
 	loggerCfg := logger.ConfigDefault
 	loggerCfg.Format = "${time} | ${status} | ${latency} | ${ip} | ${method} | ${path} | ${queryParams} | ${error}\n"

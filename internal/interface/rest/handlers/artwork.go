@@ -21,17 +21,17 @@ type RequestRandomArtworks struct {
 }
 
 type ResponseArtworkItem struct {
-	ID          string             `json:"id"`
-	CreatedAt   string             `json:"created_at"`
-	Title       string             `json:"title"`
-	Description string             `json:"description"`
-	SourceURL   string             `json:"source_url"`
-	R18         bool               `json:"r18"`
-	LikeCount   uint               `json:"like_count"`
-	Tags        []string           `json:"tags"`
-	Artist      *ResponseArtist    `json:"artist"`
-	SourceType  shared.SourceType  `json:"source_type"`
-	Pictures    []*ResponsePicture `json:"pictures"`
+	ID          string            `json:"id"`
+	CreatedAt   string            `json:"created_at"`
+	Title       string            `json:"title"`
+	Description string            `json:"description"`
+	SourceURL   string            `json:"source_url"`
+	R18         bool              `json:"r18"`
+	LikeCount   uint              `json:"like_count"`
+	Tags        []string          `json:"tags"`
+	Artist      ResponseArtist    `json:"artist"`
+	SourceType  shared.SourceType `json:"source_type"`
+	Pictures    []ResponsePicture `json:"pictures"`
 }
 
 type ResponseArtist struct {
@@ -55,13 +55,13 @@ type ResponsePicture struct {
 	Regular   string `json:"regular"`
 }
 
-func artworksResponseFromEntity(ctx fiber.Ctx, artworks []*entity.Artwork, cfg runtimecfg.RestConfig, serv *service.Service) []*ResponseArtworkItem {
-	resp := make([]*ResponseArtworkItem, 0, len(artworks))
+func artworksResponseFromEntity(ctx fiber.Ctx, artworks []*entity.Artwork, cfg runtimecfg.RestConfig, serv *service.Service) []ResponseArtworkItem {
+	resp := make([]ResponseArtworkItem, 0, len(artworks))
 	for _, art := range artworks {
-		pics := make([]*ResponsePicture, 0, len(art.Pictures))
+		pics := make([]ResponsePicture, 0, len(art.Pictures))
 		for _, pic := range art.Pictures {
 			thumb, regular := utils.PictureResponseUrl(ctx, pic, cfg)
-			pics = append(pics, &ResponsePicture{
+			pics = append(pics, ResponsePicture{
 				ID:        pic.ID.Hex(),
 				Width:     pic.Width,
 				Height:    pic.Height,
@@ -74,7 +74,7 @@ func artworksResponseFromEntity(ctx fiber.Ctx, artworks []*entity.Artwork, cfg r
 				Regular:   regular,
 			})
 		}
-		resp = append(resp, &ResponseArtworkItem{
+		resp = append(resp, ResponseArtworkItem{
 			ID:          art.ID.Hex(),
 			CreatedAt:   art.CreatedAt.Format("2006-01-02 15:04:05"),
 			Title:       art.Title,
@@ -83,7 +83,7 @@ func artworksResponseFromEntity(ctx fiber.Ctx, artworks []*entity.Artwork, cfg r
 			R18:         art.R18,
 			LikeCount:   art.LikeCount,
 			Tags:        art.GetTags(),
-			Artist: &ResponseArtist{
+			Artist: ResponseArtist{
 				ID:       art.Artist.ID.Hex(),
 				Name:     art.Artist.Name,
 				Type:     art.Artist.Type,
@@ -143,6 +143,7 @@ func HandleListArtworks(ctx fiber.Ctx) error {
 	if err := ctx.Bind().All(req); err != nil {
 		return err
 	}
+
 	if req.PageSize <= 0 {
 		req.PageSize = 20
 	}
@@ -164,7 +165,6 @@ func HandleListArtworks(ctx fiber.Ctx) error {
 
 	var artworks []*entity.Artwork
 	var err error
-
 	if req.SimilarTarget != "" {
 		targetId, err := objectuuid.FromObjectIDHex(req.SimilarTarget)
 		if err != nil {

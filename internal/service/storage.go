@@ -10,7 +10,6 @@ import (
 	"strings"
 
 	"github.com/gabriel-vasile/mimetype"
-	"github.com/krau/ManyACG/internal/infra/cache"
 	"github.com/krau/ManyACG/internal/pkg/imgtool"
 	"github.com/krau/ManyACG/internal/shared"
 	"github.com/krau/ManyACG/pkg/osutil"
@@ -33,10 +32,10 @@ func (s *Service) storageApplyRule(ctx context.Context, detail shared.StorageDet
 	if currentType == "" || currentPath == "" {
 		return detail, nil
 	}
-	cacheKey := fmt.Sprintf("storage:apply_rule:%s", detail.Hash())
-	if cached, err := cache.Get[shared.StorageDetail](ctx, cacheKey); err == nil {
-		return cached, nil
-	}
+	// cacheKey := fmt.Sprintf("storage:apply_rule:%s", detail.Hash())
+	// if cached, err := cache.Get[shared.StorageDetail](ctx, cacheKey); err == nil {
+	// 	return cached, nil
+	// }
 
 	newValue := shared.StorageDetail{}
 	for _, rule := range s.storCfg.Rules {
@@ -60,11 +59,11 @@ func (s *Service) storageApplyRule(ctx context.Context, detail shared.StorageDet
 	}
 	if newValue.Type == "" {
 		// no rule applied
-		cache.Set(ctx, cacheKey, detail)
+		// cache.Set(ctx, cacheKey, detail)
 		return detail, nil
 	}
 	newValue.Mime = detail.Mime
-	cache.Set(ctx, cacheKey, newValue)
+	// cache.Set(ctx, cacheKey, newValue)
 	return newValue, nil
 
 }

@@ -3,16 +3,13 @@ package pixiv
 import (
 	"context"
 	"encoding/xml"
-	"fmt"
 	"strings"
 
 	"github.com/goccy/go-json"
 	"github.com/imroc/req/v3"
-	"github.com/samber/oops"
-
-	"github.com/krau/ManyACG/internal/infra/cache"
 	"github.com/krau/ManyACG/internal/model/dto"
 	"github.com/krau/ManyACG/pkg/reutil"
+	"github.com/samber/oops"
 )
 
 func getPid(url string) string {
@@ -24,13 +21,13 @@ func getPid(url string) string {
 	return id
 }
 
-func cacheKeyForAjaxResp(sourceURL string) string {
-	return fmt.Sprintf("pixiv:reqAjaxResp:%s", sourceURL)
-}
+// func cacheKeyForAjaxResp(sourceURL string) string {
+// 	return fmt.Sprintf("pixiv:reqAjaxResp:%s", sourceURL)
+// }
 
-func cacheKeyForIllustPages(sourceURL string) string {
-	return fmt.Sprintf("pixiv:reqIllustPages:%s", sourceURL)
-}
+// func cacheKeyForIllustPages(sourceURL string) string {
+// 	return fmt.Sprintf("pixiv:reqIllustPages:%s", sourceURL)
+// }
 
 func doReqAjaxResp(ctx context.Context, sourceURL string, client *req.Client) (*PixivAjaxResp, error) {
 	id := getPid(sourceURL)
@@ -51,15 +48,15 @@ func doReqAjaxResp(ctx context.Context, sourceURL string, client *req.Client) (*
 }
 
 func reqAjaxResp(ctx context.Context, sourceURL string, client *req.Client) (*PixivAjaxResp, error) {
-	value, err := cache.Get[PixivAjaxResp](ctx, cacheKeyForAjaxResp(sourceURL))
-	if err == nil {
-		return &value, nil
-	}
+	// value, err := cache.Get[PixivAjaxResp](ctx, cacheKeyForAjaxResp(sourceURL))
+	// if err == nil {
+	// 	return &value, nil
+	// }
 	resp, err := doReqAjaxResp(ctx, sourceURL, client)
 	if err != nil {
 		return nil, err
 	}
-	cache.Set(ctx, cacheKeyForAjaxResp(sourceURL), *resp)
+	// cache.Set(ctx, cacheKeyForAjaxResp(sourceURL), *resp)
 	return resp, nil
 }
 
@@ -78,15 +75,15 @@ func doReqIllustPages(ctx context.Context, sourceURL string, client *req.Client)
 }
 
 func reqIllustPages(ctx context.Context, sourceURL string, client *req.Client) (*PixivIllustPages, error) {
-	value, err := cache.Get[PixivIllustPages](ctx, cacheKeyForIllustPages(sourceURL))
-	if err == nil {
-		return &value, nil
-	}
+	// value, err := cache.Get[PixivIllustPages](ctx, cacheKeyForIllustPages(sourceURL))
+	// if err == nil {
+	// 	return &value, nil
+	// }
 	resp, err := doReqIllustPages(ctx, sourceURL, client)
 	if err != nil {
 		return nil, err
 	}
-	cache.Set(ctx, cacheKeyForIllustPages(sourceURL), *resp)
+	// cache.Set(ctx, cacheKeyForIllustPages(sourceURL), *resp)
 	return resp, nil
 }
 
@@ -105,15 +102,15 @@ func doReqUgoiraMeta(ctx context.Context, sourceURL string, client *req.Client) 
 }
 
 func reqUgoiraMeta(ctx context.Context, sourceURL string, client *req.Client) (*PixivUgoiraMeta, error) {
-	value, err := cache.Get[PixivUgoiraMeta](ctx, cacheKeyForIllustPages(sourceURL)+"-ugoira")
-	if err == nil {
-		return &value, nil
-	}
+	// value, err := cache.Get[PixivUgoiraMeta](ctx, cacheKeyForIllustPages(sourceURL)+"-ugoira")
+	// if err == nil {
+	// 	return &value, nil
+	// }
 	resp, err := doReqUgoiraMeta(ctx, sourceURL, client)
 	if err != nil {
 		return nil, err
 	}
-	cache.Set(ctx, cacheKeyForIllustPages(sourceURL)+"-ugoira", *resp)
+	// cache.Set(ctx, cacheKeyForIllustPages(sourceURL)+"-ugoira", *resp)
 	return resp, nil
 }
 

@@ -14,5 +14,5 @@ type CacheConfig struct {
 	} `toml:"ristretto" mapstructure:"ristretto" json:"ristretto" yaml:"ristretto"`
 	Redis struct {
 		InitAddress []string `toml:"init_address" mapstructure:"init_address" json:"init_address" yaml:"init_address"`
-	}
+	} `toml:"redis" mapstructure:"redis" json:"redis" yaml:"redis"`
 }

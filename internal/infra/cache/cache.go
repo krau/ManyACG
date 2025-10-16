@@ -42,7 +42,7 @@ func initCache(ctx context.Context) {
 		if err != nil {
 			log.Fatal("Failed to initialize cache", "err", err)
 		}
-		stor := ristrettostor.NewRistretto(client)
+		stor := ristrettostor.NewRistretto(client, store.WithSynchronousSet(), store.WithCost(1))
 		defaultCache = cache.New[any](stor)
 	case "redis":
 		client, err := rueidis.NewClient(rueidis.ClientOption{
@@ -62,7 +62,7 @@ func initCache(ctx context.Context) {
 		if err != nil {
 			log.Fatal("Failed to initialize cache", "err", err)
 		}
-		stor := ristrettostor.NewRistretto(client)
+		stor := ristrettostor.NewRistretto(client, store.WithSynchronousSet(), store.WithCost(1))
 		defaultCache = cache.New[any](stor)
 	}
 }
@@ -74,6 +74,7 @@ func getDefault(ctx context.Context) *cache.Cache[any] {
 	return defaultCache
 }
 
+// 只能缓存基本类型
 func Set(ctx context.Context, key string, value any) error {
 	return getDefault(ctx).Set(ctx, key, value, store.WithExpiration(time.Duration(runtimecfg.Get().Cache.DefaultTTL)*time.Second))
 }
