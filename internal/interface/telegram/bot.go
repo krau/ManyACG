@@ -2,10 +2,10 @@ package telegram
 
 import (
 	"context"
-	"crypto/sha256"
-	"encoding/hex"
 	"errors"
 	"fmt"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/krau/ManyACG/internal/infra/config/runtimecfg"
@@ -70,11 +70,14 @@ func Init(ctx context.Context, serv *service.Service, cfg runtimecfg.TelegramCon
 		groupChatID = telegoutil.ID(cfg.GroupID)
 	}
 
-	// key: telegram:bot:username:<token_hash>
+	// key: telegram:bot:username:<bot_id>
 	// value: bot username without @
-	// token_hash is the SHA256 hash of the bot token
-	tokenHash := hex.EncodeToString(sha256.New().Sum([]byte(cfg.BotToken)))
-	key := fmt.Sprintf("telegram:bot:username:%s", tokenHash)
+	botIdStr := strings.Split(cfg.BotToken, ":")[0]
+	botId, err := strconv.Atoi(botIdStr)
+	if err != nil {
+		return nil, oops.Errorf("Invalid bot token: %s", err)
+	}
+	key := fmt.Sprintf("telegram:bot:username:%d", botId)
 
 	botUsername, err := kvstor.Get[string](key)
 	if err != nil || botUsername == "" {
@@ -109,7 +112,7 @@ func Init(ctx context.Context, serv *service.Service, cfg runtimecfg.TelegramCon
 			log.Warnf("Error when calculating commands signature: %s", err)
 			return
 		}
-		sigKey := fmt.Sprintf("telegram:bot:commands:%s", tokenHash)
+		sigKey := fmt.Sprintf("telegram:bot:commands:%d", botId)
 		oldSig, err := kvstor.Get[string](sigKey)
 		if err != nil && !errors.Is(err, errs.ErrRecordNotFound) {
 			log.Warnf("Error when getting commands signature: %s", err)
