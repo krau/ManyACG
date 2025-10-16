@@ -26,6 +26,7 @@ func Init() {
 	if cfg.Disable {
 		return
 	}
+
 	source.Register(shared.SourceTypePixiv, func() source.ArtworkSource {
 		cfg := config.Get().Source.Pixiv
 		cookies := make([]*http.Cookie, 0)
@@ -37,6 +38,9 @@ func Init() {
 		}
 		c := req.C().ImpersonateChrome().SetCommonCookies(cookies...)
 		c = c.SetLogger(log.Default()).EnableDebugLog().SetCommonRetryCount(3)
+		if config.Get().Source.Proxy != "" {
+			c.SetProxyURL(config.Get().Source.Proxy)
+		}
 		return &Pixiv{
 			cfg:       cfg,
 			reqClient: c,

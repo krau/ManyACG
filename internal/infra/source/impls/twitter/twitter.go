@@ -25,10 +25,14 @@ func Init() {
 	if cfg.Disable {
 		return
 	}
+	client := req.C().SetCommonRetryCount(3)
+	if runtimecfg.Get().Source.Proxy != "" {
+		client.SetProxyURL(runtimecfg.Get().Source.Proxy)
+	}
 	source.Register(shared.SourceTypeTwitter, func() source.ArtworkSource {
 		return &Twitter{
 			cfg:       runtimecfg.Get().Source.Twitter,
-			reqClient: req.C(),
+			reqClient: client,
 		}
 	})
 }

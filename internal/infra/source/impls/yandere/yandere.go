@@ -24,10 +24,14 @@ func Init() {
 	if cfg.Disable {
 		return
 	}
+	client := req.C().ImpersonateChrome().SetCommonRetryCount(2)
+	if runtimecfg.Get().Source.Proxy != "" {
+		client.SetProxyURL(runtimecfg.Get().Source.Proxy)
+	}
 	source.Register(shared.SourceTypeYandere, func() source.ArtworkSource {
 		return &Yandere{
 			cfg:       runtimecfg.Get().Source.Yandere,
-			reqClient: req.C().ImpersonateChrome().SetCommonRetryCount(2),
+			reqClient: client,
 		}
 	})
 }

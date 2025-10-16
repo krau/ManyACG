@@ -22,10 +22,14 @@ func Init() {
 	if cfg.Disable {
 		return
 	}
+	client := req.C().ImpersonateChrome().SetCommonRetryCount(3)
+	if config.Get().Source.Proxy != "" {
+		client.SetProxyURL(config.Get().Source.Proxy)
+	}
 	source.Register(shared.SourceTypeNhentai, func() source.ArtworkSource {
 		return &Nhentai{
 			cfg:       config.Get().Source.Nhentai,
-			reqClient: req.C().ImpersonateChrome().SetCommonRetryCount(3),
+			reqClient: client,
 		}
 	})
 }

@@ -28,10 +28,14 @@ func Init() {
 		return
 	}
 	source.Register(shared.SourceTypeKemono, func() source.ArtworkSource {
+		client := req.C().SetCommonHeader("Accept", "text/css").EnableAutoDecompress().
+			SetCommonRetryCount(3).SetTLSHandshakeTimeout(20 * time.Second)
+		if config.Get().Source.Proxy != "" {
+			client.SetProxyURL(config.Get().Source.Proxy)
+		}
 		return &Kemono{
 			cfg: config.Get().Source.Kemono,
-			reqClient: req.C().SetCommonHeader("Accept", "text/css").EnableAutoDecompress().
-				SetCommonRetryCount(3).SetTLSHandshakeTimeout(20 * time.Second),
+			reqClient: client,
 		}
 	})
 }

@@ -24,10 +24,14 @@ func Init() {
 	if cfg.Disable {
 		return
 	}
+	client := req.C().SetCommonRetryCount(5).ImpersonateChrome()
+	if runtimecfg.Get().Source.Proxy != "" {
+		client.SetProxyURL(runtimecfg.Get().Source.Proxy)
+	}
 	source.Register(shared.SourceTypeBilibili, func() source.ArtworkSource {
 		return &Bilibili{
 			cfg:       runtimecfg.Get().Source.Bilibili,
-			reqClient: req.C().SetCommonRetryCount(3).ImpersonateChrome(),
+			reqClient: client,
 		}
 	})
 }
