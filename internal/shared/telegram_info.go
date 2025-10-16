@@ -1,5 +1,7 @@
 package shared
 
+import "maps"
+
 type TelegramInfo struct {
 	// PhotoFileID    string `json:"photo_file_id"`
 	// DocumentFileID string `json:"document_file_id"`
@@ -95,14 +97,10 @@ func (t *TelegramInfo) MergeFrom(other *TelegramInfo) {
 		if _, ok := t.FileIDs[botID]; !ok {
 			t.FileIDs[botID] = make(map[TelegramMediaType]string)
 		}
-		for mediaType, fileID := range botFiles {
-			t.FileIDs[botID][mediaType] = fileID
-		}
+		maps.Copy(t.FileIDs[botID], botFiles)
 	}
 	if t.Messages == nil {
 		t.Messages = make(map[int64]TelegramMessage)
 	}
-	for chatID, msg := range other.Messages {
-		t.Messages[chatID] = msg
-	}
+	maps.Copy(t.Messages, other.Messages)
 }

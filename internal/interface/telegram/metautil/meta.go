@@ -99,7 +99,7 @@ func (m *MetaData) BotDeepLink(cmd string, params ...string) string {
 
 func (m *MetaData) ChannelMessageURL(messageID int) string {
 	if m.channelChatID.Username != "" {
-		return fmt.Sprintf("https://t.me/%s/%d", strings.TrimPrefix(m.channelChatID.String(), "@"), messageID)
+		return fmt.Sprintf("https://t.me/%s/%d", strings.TrimPrefix(m.channelChatID.Username, "@"), messageID)
 	}
-	return fmt.Sprintf("https://t.me/c/%s/%d", strings.TrimPrefix(m.channelChatID.String(), "-100"), messageID)
+	return fmt.Sprintf("https://t.me/c/%s/%d", strings.TrimPrefix(fmt.Sprintf("%d", m.channelChatID.ID), "-100"), messageID)
 }

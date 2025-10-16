@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"errors"
 	"strconv"
 	"strings"
 
@@ -9,6 +10,7 @@ import (
 	"github.com/krau/ManyACG/internal/interface/telegram/metautil"
 	"github.com/krau/ManyACG/internal/service"
 	"github.com/krau/ManyACG/internal/shared"
+	"github.com/krau/ManyACG/internal/shared/errs"
 	"github.com/krau/ManyACG/pkg/log"
 	"github.com/krau/ManyACG/pkg/objectuuid"
 	"github.com/mymmrac/telego"
@@ -287,6 +289,10 @@ func RefreshArtwork(ctx *telegohandler.Context, message telego.Message) error {
 	}
 
 	artwork, err := serv.GetArtworkByURL(ctx, sourceURL)
+	if errors.Is(err, errs.ErrRecordNotFound) {
+		utils.ReplyMessage(ctx, message, "作品未发布, 缓存已删除")
+		return nil
+	}
 	if err != nil {
 		utils.ReplyMessage(ctx, message, "获取作品信息失败: "+err.Error())
 		return nil

@@ -60,17 +60,23 @@ func Init(ctx context.Context, serv *service.Service, cfg runtimecfg.TelegramCon
 		return nil, oops.Errorf("Error when creating bot: %s", err)
 	}
 	var channelChatID telego.ChatID
-	if cfg.ChatID != 0 {
+	if cfg.ChatID != 0 && cfg.Username != "" {
+		channelChatID = telegoutil.ID(cfg.ChatID)
+		channelChatID.Username = cfg.Username
+	} else if cfg.ChatID != 0 {
 		channelChatID = telegoutil.ID(cfg.ChatID)
 	} else if cfg.Username != "" {
 		channelChatID = telegoutil.Username(cfg.Username)
+	} else {
+		return nil, oops.New("Either ChatID or Username must be set in config")
+	}
+	if channelChatID.ID == 0 || channelChatID.Username == "" {
 		chatFull, err := bot.GetChat(ctx, &telego.GetChatParams{ChatID: channelChatID})
 		if err != nil {
 			return nil, oops.Errorf("Error when getting chat info: %s", err)
 		}
 		channelChatID.ID = chatFull.ID
-	} else {
-		return nil, oops.New("Either ChatID or Username must be set in config")
+		channelChatID.Username = chatFull.Username
 	}
 
 	var groupChatID telego.ChatID

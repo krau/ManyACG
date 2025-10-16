@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 
@@ -8,6 +9,7 @@ import (
 	"github.com/krau/ManyACG/internal/interface/telegram/metautil"
 	"github.com/krau/ManyACG/internal/service"
 	"github.com/krau/ManyACG/internal/shared"
+	"github.com/krau/ManyACG/internal/shared/errs"
 	"github.com/krau/ManyACG/pkg/log"
 	"github.com/mymmrac/telego"
 	"github.com/mymmrac/telego/telegohandler"
@@ -24,8 +26,11 @@ func GetArtworkInfo(ctx *telegohandler.Context, message telego.Message) error {
 	if ogch != nil && (ogch.Chat.ID == meta.ChannelChatID().ID || strings.EqualFold(ogch.Chat.Username, strings.TrimPrefix(meta.ChannelChatID().Username, "@"))) {
 		// handle the posted artwork in our channel
 		artwork, err := serv.GetArtworkByURL(ctx, sourceURL)
+		if errors.Is(err, errs.ErrRecordNotFound) {
+			return nil
+		}
 		if err != nil {
-			log.Errorf("failed to get posted artwork: %s", err)
+			log.Errorf("get artwork by url failed: %s", err)
 			return nil
 		}
 		ctx.Bot().SendMessage(ctx, telegoutil.Message(

@@ -293,15 +293,32 @@ func (s *Service) StorageSaveOriginal(ctx context.Context, file io.Reader, storD
 	if origStor == nil {
 		return nil, oops.Errorf("original storage type %s not found", s.storCfg.OriginalType)
 	}
+
 	origPath := path.Join(storDirPath, fileName)
 	originalDetail, err := origStor.Save(ctx, file, origPath)
 	if err != nil {
 		return nil, oops.Wrapf(err, "failed to save original file to storage %s", s.storCfg.OriginalType)
 	}
-	mimeType, err := mimetype.DetectFile(fileName)
-	if err != nil {
-		return nil, oops.Wrapf(err, "failed to detect mime type for original storage %s", s.storCfg.OriginalType)
+	if seeker, ok := file.(io.ReadSeeker); ok {
+		seeker.Seek(0, io.SeekStart)
+		mimeType, err := mimetype.DetectReader(seeker)
+		if err != nil {
+			return nil, oops.Wrapf(err, "failed to detect mime type for original storage %s", s.storCfg.OriginalType)
+		}
+		originalDetail.Mime = mimeType.String()
 	}
-	originalDetail.Mime = mimeType.String()
+	if originalDetail.Mime == "" {
+		got, err := s.StorageGetFile(ctx, *originalDetail)
+		if err != nil {
+			return nil, oops.Wrapf(err, "failed to get file for original storage %s", s.storCfg.OriginalType)
+		}
+		defer got.Close()
+		mimeType, err := mimetype.DetectReader(got)
+		if err != nil {
+			return nil, oops.Wrapf(err, "failed to detect mime type for original storage %s", s.storCfg.OriginalType)
+		}
+		originalDetail.Mime = mimeType.String()
+	}
+
 	return originalDetail, nil
 }
