@@ -7,12 +7,12 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"path"
 	"time"
 
 	config "github.com/krau/ManyACG/internal/infra/config/runtimecfg"
 	"github.com/krau/ManyACG/internal/infra/storage"
 	"github.com/krau/ManyACG/internal/shared"
-	"github.com/krau/ManyACG/pkg/objectuuid"
 	"github.com/mymmrac/telego"
 	"github.com/mymmrac/telego/telegoapi"
 	"github.com/mymmrac/telego/telegoutil"
@@ -59,7 +59,7 @@ func (t *TelegramStorage) Init(ctx context.Context) error {
 	return nil
 }
 
-func (t *TelegramStorage) Save(ctx context.Context, r io.Reader, _ string) (*shared.StorageDetail, error) {
+func (t *TelegramStorage) Save(ctx context.Context, r io.Reader, storPath string) (*shared.StorageDetail, error) {
 	var msg *telego.Message
 	var err error
 	// fileBytes, err := os.ReadFile(filePath)
@@ -67,7 +67,7 @@ func (t *TelegramStorage) Save(ctx context.Context, r io.Reader, _ string) (*sha
 	// 	return nil, ErrReadFile
 	// }
 	for i := range t.cfg.Retry.MaxAttempts {
-		msg, err = t.bot.SendDocument(ctx, telegoutil.Document(t.chatID, telegoutil.File(telegoutil.NameReader(r, objectuuid.New().Hex()))))
+		msg, err = t.bot.SendDocument(ctx, telegoutil.Document(t.chatID, telegoutil.File(telegoutil.NameReader(r, path.Base(storPath)))))
 		if err != nil {
 			var apiErr *telegoapi.Error
 			if errors.As(err, &apiErr) && apiErr.ErrorCode == 429 && apiErr.Parameters != nil {
