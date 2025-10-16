@@ -86,6 +86,9 @@ func ResponseUrlForStoragePath(ctx fiber.Ctx, detail shared.StorageDetail, rules
 	return ""
 }
 
+// 根据配置生成图片的访问 URL
+//
+// 返回值一定不为空, 无可用配置时会回落到 pic.Thumbnail
 func PictureResponseUrl(ctx fiber.Ctx, pic *entity.Picture, cfg runtimecfg.RestConfig) (thumbnail, regular string) {
 	data := pic.StorageInfo.Data()
 	if data == shared.ZeroStorageInfo {

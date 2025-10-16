@@ -134,6 +134,34 @@ func HandleRandomArtworks(ctx fiber.Ctx) error {
 	return ctx.JSON(common.NewSuccess(resp))
 }
 
+// 获得一个 artwork 并返回其第一张图片的 regular 直链, for compatibility
+func HandleRandomPreviewArtworks(ctx fiber.Ctx) error {
+	serv := common.MustGetState[*service.Service](ctx, common.StateKeyService)
+	req := new(RequestRandomArtworks)
+	if err := ctx.Bind().All(req); err != nil {
+		return err
+	}
+	artworks, err := serv.QueryArtworks(ctx, query.ArtworksDB{
+		ArtworksFilter: query.ArtworksFilter{
+			R18: shared.R18TypeFromInt(req.R18),
+		},
+		Random: true,
+		Paginate: query.Paginate{
+			Limit: 1,
+		},
+	})
+	if err != nil {
+		return err
+	}
+	if len(artworks) == 0 {
+		return common.NewError(fiber.StatusNotFound, "no artworks found")
+	}
+	cfg := common.MustGetState[runtimecfg.RestConfig](ctx, common.StateKeyConfig)
+	pic := artworks[0].Pictures[0]
+	_, regular := utils.PictureResponseUrl(ctx, pic, cfg)
+	return ctx.Redirect().To(regular)
+}
+
 type RequestListArtworks struct {
 	R18           int    `query:"r18" form:"r18" json:"r18" validate:"gte=0,lte=2" message:"r18 must be 0 (no R18), 1 (only R18) or 2 (both)"`
 	ArtistID      string `query:"artist_id" form:"artist_id" json:"artist_id" validate:"omitempty,objectid" message:"artist_id must be a valid ObjectID"`

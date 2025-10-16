@@ -16,6 +16,7 @@ import (
 	"github.com/krau/ManyACG/internal/interface/rest/utils"
 	"github.com/krau/ManyACG/internal/service"
 	"github.com/krau/ManyACG/internal/shared"
+	"github.com/krau/ManyACG/internal/shared/errs"
 	"github.com/krau/ManyACG/pkg/log"
 	"github.com/krau/ManyACG/pkg/objectuuid"
 	"gorm.io/datatypes"
@@ -70,6 +71,9 @@ func HandleGetSizedPictureFileByID(ctx fiber.Ctx) error {
 	}
 	serv := common.MustGetState[*service.Service](ctx, common.StateKeyService)
 	picture, err := serv.GetPictureByID(ctx, id)
+	if errors.Is(err, errs.ErrRecordNotFound) {
+		return common.NewError(fiber.StatusNotFound, "picture not found")
+	}
 	if err != nil {
 		return err
 	}
