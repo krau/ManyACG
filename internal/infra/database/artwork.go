@@ -64,6 +64,7 @@ func (d *DB) GetArtworkByURL(ctx context.Context, url string) (*entity.Artwork, 
 	return &artwork, nil
 }
 
+// [TODO] 优化性能
 func (d *DB) QueryArtworks(ctx context.Context, que query.ArtworksDB) ([]*entity.Artwork, error) {
 	query := d.db.WithContext(ctx).Model(&entity.Artwork{}).
 		Preload("Tags.Alias").

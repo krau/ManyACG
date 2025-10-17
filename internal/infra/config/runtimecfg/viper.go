@@ -98,7 +98,8 @@ func loadConfig() Config {
 		"storage.cache_dir":                    "./imgcache",
 		"storage.cache_ttl":                    60 * 60 * 4, // in seconds
 
-		"source.pixiv.img_proxy": "pximg.manyacg.top",
+		"source.pixiv.img_proxy":           "pximg.manyacg.top",
+		"source.twitter.fx_twitter_domain": "fxtwitter.com",
 
 		"cache.type":                   "ristretto",
 		"cache.bigcache.eviction":      3600, // in seconds
