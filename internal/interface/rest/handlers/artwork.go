@@ -166,7 +166,7 @@ type RequestListArtworks struct {
 	R18           int    `query:"r18" form:"r18" json:"r18" validate:"gte=0,lte=2" message:"r18 must be 0 (no R18), 1 (only R18) or 2 (both)"`
 	ArtistID      string `query:"artist_id" form:"artist_id" json:"artist_id" validate:"omitempty,objectid" message:"artist_id must be a valid ObjectID"`
 	Tag           string `query:"tag" form:"tag" json:"tag"`
-	Keyword       string `query:"keyword" form:"keyword" json:"keyword" validate:"max=100" message:"keyword max length is 100"`
+	Keyword       string `query:"keyword" form:"keyword" json:"keyword" validate:"max=50" message:"keyword max length is 50"`
 	Page          int64  `query:"page" form:"page" json:"page"`
 	PageSize      int64  `query:"page_size" form:"page_size" json:"page_size" validate:"omitempty,gte=0,lte=200" message:"page_size must be between 1 and 200"`
 	Hybrid        bool   `query:"hybrid" form:"hybrid" json:"hybrid"`

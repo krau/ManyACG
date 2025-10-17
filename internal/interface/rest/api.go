@@ -19,6 +19,7 @@ import (
 	"github.com/krau/ManyACG/internal/interface/rest/common"
 	"github.com/krau/ManyACG/internal/interface/rest/handlers"
 	"github.com/krau/ManyACG/internal/service"
+	"github.com/krau/ManyACG/internal/shared/errs"
 
 	"github.com/samber/oops"
 )
@@ -54,6 +55,9 @@ func New(ctx context.Context, serv *service.Service, cfg runtimecfg.RestConfig, 
 		var fe *fiber.Error
 		if errors.As(err, &fe) {
 			return c.Status(fe.Code).JSON(common.NewError(fe.Code, fe.Message).Response())
+		}
+		if errors.Is(err, errs.ErrRecordNotFound) {
+			return c.Status(fiber.StatusNotFound).JSON(common.NewError(fiber.StatusNotFound, "resource not found").Response())
 		}
 		log.Error("internal server error", "err", err, "url", c.OriginalURL())
 		code := fiber.StatusInternalServerError
