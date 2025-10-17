@@ -15,19 +15,20 @@ require (
 	github.com/dgraph-io/ristretto/v2 v2.3.0
 	github.com/duke-git/lancet/v2 v2.3.7
 	github.com/eko/gocache/lib/v4 v4.2.2
-	github.com/eko/gocache/store/bigcache/v4 v4.2.2
+	github.com/eko/gocache/store/bigcache/v4 v4.2.3
 	github.com/eko/gocache/store/rueidis/v4 v4.1.6
 	github.com/gabriel-vasile/mimetype v1.4.10
 	github.com/gen2brain/avif v0.4.4
-	github.com/go-playground/validator/v10 v10.27.0
+	github.com/go-playground/validator/v10 v10.28.0
 	github.com/goccy/go-json v0.10.5
 	github.com/gofiber/fiber/v3 v3.0.0-rc.2
 	github.com/google/uuid v1.6.0
 	github.com/krau/ffmpeg-go v0.6.0
 	github.com/krau/go-thumbhash v0.0.0-20250822034729-2df7c655859d
 	github.com/meilisearch/meilisearch-go v0.34.0
+	github.com/mymmrac/telego v1.3.1
 	github.com/ncruces/go-sqlite3 v0.29.1
-	github.com/redis/rueidis v1.0.66
+	github.com/redis/rueidis v1.0.67
 	github.com/rhysd/go-github-selfupdate v1.2.3
 	github.com/samber/oops v1.19.3
 	github.com/spf13/cobra v1.10.1
@@ -65,7 +66,7 @@ require (
 	github.com/gofiber/utils/v2 v2.0.0-rc.1 // indirect
 	github.com/golang-jwt/jwt/v4 v4.5.2 // indirect
 	github.com/golang/mock v1.6.0 // indirect
-	github.com/google/flatbuffers v25.2.10+incompatible // indirect
+	github.com/google/flatbuffers v25.9.23+incompatible // indirect
 	github.com/google/go-github/v30 v30.1.0 // indirect
 	github.com/google/go-querystring v1.1.0 // indirect
 	github.com/google/pprof v0.0.0-20251007162407-5df77e3f7d1d // indirect
@@ -93,7 +94,7 @@ require (
 	github.com/oklog/ulid/v2 v2.1.1 // indirect
 	github.com/onsi/ginkgo/v2 v2.26.0 // indirect
 	github.com/onsi/gomega v1.38.2 // indirect
-	github.com/oschwald/maxminddb-golang v1.13.0 // indirect
+	github.com/oschwald/maxminddb-golang v1.13.1 // indirect
 	github.com/philhofer/fwd v1.2.0 // indirect
 	github.com/prometheus/client_golang v1.23.2 // indirect
 	github.com/prometheus/client_model v0.6.2 // indirect
@@ -101,8 +102,8 @@ require (
 	github.com/prometheus/procfs v0.17.0 // indirect
 	github.com/quic-go/qpack v0.5.1 // indirect
 	github.com/quic-go/quic-go v0.55.0 // indirect
-	github.com/redis/rueidis/rueidiscompat v1.0.66 // indirect
-	github.com/refraction-networking/utls v1.8.0 // indirect
+	github.com/redis/rueidis/rueidiscompat v1.0.67 // indirect
+	github.com/refraction-networking/utls v1.8.1 // indirect
 	github.com/rivo/uniseg v0.4.7 // indirect
 	github.com/samber/lo v1.52.0 // indirect
 	github.com/tcnksm/go-gitconfig v0.1.2 // indirect
@@ -113,7 +114,7 @@ require (
 	github.com/valyala/fasthttp v1.67.0 // indirect
 	github.com/valyala/fastjson v1.6.4 // indirect
 	github.com/vmihailenco/tagparser/v2 v2.0.0 // indirect
-	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
+	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
 	go.opentelemetry.io/otel v1.38.0 // indirect
 	go.opentelemetry.io/otel/metric v1.38.0 // indirect
 	go.opentelemetry.io/otel/trace v1.38.0 // indirect
@@ -134,7 +135,6 @@ require (
 	github.com/fsnotify/fsnotify v1.9.0 // indirect
 	github.com/gorilla/feeds v1.2.0
 	github.com/imroc/req/v3 v3.55.0
-	github.com/mymmrac/telego v1.3.1-0.20251016070456-07edcd95e52f
 	github.com/ncruces/go-sqlite3/gormlite v0.24.0
 	github.com/oschwald/geoip2-golang v1.13.0
 	github.com/pelletier/go-toml/v2 v2.2.4 // indirect
