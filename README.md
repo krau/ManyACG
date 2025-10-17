@@ -139,3 +139,25 @@ WantedBy=multi-user.target
 ```bash
 systemctl enable --now manyacg
 ```
+
+---
+
+## 从 v0 迁移
+
+如果你之前使用的是 v0 版本的 ManyACG, 请下载最新的 v0.x 版本 release, 并修改配置文件, 添加迁移目标数据库配置:
+
+```toml
+[migrate]
+target = "sqlite" # pgsql/mysql/sqlite
+dsn = "file:manyacg_migrate.db" # 连接字符串
+# 示例: pgsql dsn
+# dsn = "host=localhost user=postgres password=yourpassword dbname=manyacg port=5432 sslmode=disable"
+```
+
+然后运行
+
+```bash
+./manyacg db migrate
+```
+
+数据迁移完成后, 将配置文件也改为使用新的配置格式, 详情参考上方的部署章节.
