@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -138,7 +139,7 @@ func (s *Service) StorageStreamFile(ctx context.Context, detail shared.StorageDe
 		}
 		defer func() {
 			cacheFile.Close()
-			if err != nil {
+			if err != nil && !errors.Is(err, io.EOF) {
 				osutil.RemoveNow(cacheFile.Name())
 			}
 		}()
