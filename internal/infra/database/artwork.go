@@ -26,6 +26,9 @@ func (d *DB) GetArtworkByID(ctx context.Context, id objectuuid.ObjectUUID) (*ent
 	var artwork entity.Artwork
 	err := d.db.WithContext(ctx).Model(&entity.Artwork{}).
 		Preload("Tags.Alias").
+		Preload("Pictures", func(db *gorm.DB) *gorm.DB {
+			return db.Order("order_index ASC")
+		}).
 		Preload(clause.Associations).
 		Where("id = ?", id).
 		First(&artwork).Error
@@ -42,6 +45,9 @@ func (d *DB) GetArtworksByIDs(ctx context.Context, ids []objectuuid.ObjectUUID) 
 	var artworks []*entity.Artwork
 	err := d.db.WithContext(ctx).Model(&entity.Artwork{}).
 		Preload("Tags.Alias").
+		Preload("Pictures", func(db *gorm.DB) *gorm.DB {
+			return db.Order("order_index ASC")
+		}).
 		Preload(clause.Associations).
 		Where("id IN ?", ids).
 		Find(&artworks).Error
@@ -55,6 +61,9 @@ func (d *DB) GetArtworkByURL(ctx context.Context, url string) (*entity.Artwork, 
 	var artwork entity.Artwork
 	err := d.db.WithContext(ctx).Model(&entity.Artwork{}).
 		Preload("Tags.Alias").
+		Preload("Pictures", func(db *gorm.DB) *gorm.DB {
+			return db.Order("order_index ASC")
+		}).
 		Preload(clause.Associations).
 		Where("source_url = ?", url).
 		First(&artwork).Error
@@ -156,7 +165,10 @@ func (d *DB) QueryArtworks(ctx context.Context, que query.ArtworksDB) ([]*entity
 		}
 	}
 
-	dataQuery = dataQuery.Preload("Tags.Alias").Preload(clause.Associations)
+	dataQuery = dataQuery.Preload("Tags.Alias").
+		Preload("Pictures", func(db *gorm.DB) *gorm.DB {
+			return db.Order("order_index ASC")
+		}).Preload(clause.Associations)
 	if que.Limit > 0 {
 		dataQuery = dataQuery.Limit(que.Limit)
 	}
