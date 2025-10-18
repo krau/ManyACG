@@ -9,7 +9,6 @@ import (
 
 	"github.com/gofiber/fiber/v3"
 	"github.com/gorilla/feeds"
-	"github.com/krau/ManyACG/internal/infra/cache"
 	"github.com/krau/ManyACG/internal/infra/config/runtimecfg"
 	"github.com/krau/ManyACG/internal/model/entity"
 	"github.com/krau/ManyACG/internal/shared"
@@ -70,10 +69,6 @@ func ResponseUrlForStoragePath(ctx fiber.Ctx, detail shared.StorageDetail, rules
 	if len(rules) == 0 {
 		return ""
 	}
-	cacheKey := fmt.Sprintf("rest:storage_path_rule_result:%s", detail.Hash())
-	if v, ok := cache.Get[string](cacheKey); ok && v != "" {
-		return v
-	}
 	for _, rule := range rules {
 		if strings.HasPrefix(detail.Path, rule.MatchPrefix) && (rule.StorageType == "" || rule.StorageType == detail.Type.String()) {
 			prefix := rule.JoinPrefix[rand.Intn(len(rule.JoinPrefix))]
@@ -82,7 +77,6 @@ func ResponseUrlForStoragePath(ctx fiber.Ctx, detail shared.StorageDetail, rules
 				log.Errorf("failed to join path: %v", err)
 				return ""
 			}
-			cache.Set(cacheKey, parsedUrl)
 			return parsedUrl
 		}
 	}

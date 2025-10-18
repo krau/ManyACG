@@ -7,20 +7,21 @@ import (
 	"github.com/krau/ManyACG/internal/infra/config/runtimecfg"
 	"github.com/krau/ManyACG/pkg/log"
 	"github.com/samber/oops"
+	"github.com/vmihailenco/msgpack/v5"
 )
 
 var (
-	ristrettoCache *ristretto.Cache[string, any]
+	ristrettoCache *ristretto.Cache[string, []byte]
 	defaultTTL     time.Duration
 )
 
 func Init() error {
 	cfg := runtimecfg.Get().Cache
-	c, err := ristretto.NewCache(&ristretto.Config[string, any]{
+	c, err := ristretto.NewCache(&ristretto.Config[string, []byte]{
 		NumCounters: cfg.Ristretto.NumCounters,
 		MaxCost:     cfg.Ristretto.MaxCost,
 		BufferItems: 64,
-		OnReject: func(item *ristretto.Item[any]) {
+		OnReject: func(item *ristretto.Item[[]byte]) {
 			log.Warnf("Cache item rejected: key=%d, value=%v", item.Key, item.Value)
 		},
 	})
@@ -32,7 +33,7 @@ func Init() error {
 	return nil
 }
 
-func Default() *ristretto.Cache[string, any] {
+func Default() *ristretto.Cache[string, []byte] {
 	return ristrettoCache
 }
 
@@ -45,7 +46,11 @@ func Close() error {
 
 // Set set a value with default TTL
 func Set(key string, value any) error {
-	ok := ristrettoCache.SetWithTTL(key, value, 0, defaultTTL)
+	val, err := msgpack.Marshal(value)
+	if err != nil {
+		return oops.Wrapf(err, "failed to marshal cache value for key %s", key)
+	}
+	ok := ristrettoCache.SetWithTTL(key, val, 0, defaultTTL)
 	if !ok {
 		return oops.Errorf("failed to set cache value for key %s", key)
 	}
@@ -54,7 +59,11 @@ func Set(key string, value any) error {
 }
 
 func SetWithoutTTL(key string, value any) error {
-	ok := ristrettoCache.Set(key, value, 0)
+	val, err := msgpack.Marshal(value)
+	if err != nil {
+		return oops.Wrapf(err, "failed to marshal cache value for key %s", key)
+	}
+	ok := ristrettoCache.Set(key, val, 0)
 	if !ok {
 		return oops.Errorf("failed to set cache value for key %s", key)
 	}
@@ -65,13 +74,12 @@ func SetWithoutTTL(key string, value any) error {
 func Get[T any](key string) (T, bool) {
 	v, ok := ristrettoCache.Get(key)
 	if !ok {
-		var zero T
-		return zero, false
+		return *new(T), false
 	}
-	vT, ok := v.(T)
-	if !ok {
-		var zero T
-		return zero, false
+	var value T
+	if err := msgpack.Unmarshal(v, &value); err != nil {
+		log.Errorf("failed to unmarshal cache value for key %s: %v", key, err)
+		return *new(T), false
 	}
-	return vT, true
+	return value, true
 }

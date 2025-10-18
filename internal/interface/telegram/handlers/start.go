@@ -24,7 +24,8 @@ func Start(ctx *telegohandler.Context, message telego.Message) error {
 		log.Debug("received start", "args", args)
 		serv := service.FromContext(ctx)
 		meta := metautil.MustFromContext(ctx)
-		action := strings.Split(args[0], "_")[0]
+		cmds := strings.Split(args[0], "_")
+		action := cmds[0]
 		switch action {
 		case "file": // for compatibility we keep "file" action to get single picture by id
 			pictureIDStr := args[0][5:]
