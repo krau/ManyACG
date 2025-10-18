@@ -31,17 +31,16 @@ func PostArtworkCallbackQuery(ctx *telegohandler.Context, query telego.CallbackQ
 	queryDataSlice := strings.Split(query.Data, " ")
 	reverseR18 := queryDataSlice[0] == "post_artwork_r18"
 	dataID := queryDataSlice[1]
-	sourceURL, err := cache.Get[string](ctx, dataID)
-	if err != nil {
+	sourceURL, ok := cache.Get[string](dataID)
+	if !ok {
 		ctx.Bot().AnswerCallbackQuery(ctx, &telego.AnswerCallbackQueryParams{
 			CallbackQueryID: query.ID,
-			Text:            "获取回调数据失败 " + err.Error(),
+			Text:            "获取回调数据失败",
 			ShowAlert:       true,
 			CacheTime:       60,
 		})
 		return nil
 	}
-
 	cachedArtwork, err := serv.GetOrFetchCachedArtwork(ctx, sourceURL)
 	if err != nil {
 		ctx.Bot().AnswerCallbackQuery(ctx, &telego.AnswerCallbackQueryParams{

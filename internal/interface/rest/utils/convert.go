@@ -67,8 +67,11 @@ func EntityArtworkToFeedItems(
 //
 // 否则空
 func ResponseUrlForStoragePath(ctx fiber.Ctx, detail shared.StorageDetail, rules []runtimecfg.StoragePathRule) string {
+	if len(rules) == 0 {
+		return ""
+	}
 	cacheKey := fmt.Sprintf("rest:storage_path_rule_result:%s", detail.Hash())
-	if v, err := cache.Get[string](ctx, cacheKey); err == nil && v != "" {
+	if v, ok := cache.Get[string](cacheKey); ok && v != "" {
 		return v
 	}
 	for _, rule := range rules {
@@ -79,7 +82,7 @@ func ResponseUrlForStoragePath(ctx fiber.Ctx, detail shared.StorageDetail, rules
 				log.Errorf("failed to join path: %v", err)
 				return ""
 			}
-			cache.Set(ctx, cacheKey, parsedUrl)
+			cache.Set(cacheKey, parsedUrl)
 			return parsedUrl
 		}
 	}

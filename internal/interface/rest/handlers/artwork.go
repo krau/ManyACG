@@ -227,6 +227,9 @@ func GetHandleListArtworks(serv *service.Service, cfg runtimecfg.RestConfig) fib
 			Cost: func(value common.Response[[]ResponseArtworkItem]) int64 {
 				return 1
 			},
+			OnReject: func(item *ristretto.Item[common.Response[[]ResponseArtworkItem]]) {
+				log.Warn("cache reject item", "key", item.Key)
+			},
 		})
 		if err != nil {
 			log.Fatalf("failed to create cache: %v", err)

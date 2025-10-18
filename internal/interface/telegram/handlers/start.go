@@ -60,10 +60,10 @@ func Start(ctx *telegohandler.Context, message telego.Message) error {
 				return oops.Wrapf(err, "failed to get artwork by id %s", artworkIDStr)
 			}
 			if created == nil {
-				sourceUrl, err := cache.Get[string](ctx, artworkIDStr)
-				if err != nil {
+				sourceUrl, ok := cache.Get[string](artworkIDStr)
+				if !ok {
 					utils.ReplyMessage(ctx, message, "获取失败")
-					return oops.Wrapf(err, "failed to get string data by id: %s", artworkIDStr)
+					return oops.Errorf("failed to get string data by id: %s", artworkIDStr)
 				}
 				cached, err := serv.GetOrFetchCachedArtwork(ctx, sourceUrl)
 				if err != nil {
@@ -77,10 +77,10 @@ func Start(ctx *telegohandler.Context, message telego.Message) error {
 			return getArtworkFiles(ctx, serv, meta, message, artwork)
 		case "info":
 			dataID := args[0][5:]
-			sourceURL, err := cache.Get[string](ctx, dataID)
-			if err != nil {
+			sourceURL, ok := cache.Get[string](dataID)
+			if !ok {
 				utils.ReplyMessage(ctx, message, "获取失败")
-				return oops.Wrapf(err, "failed to get string data by id: %s", dataID)
+				return oops.Errorf("failed to get string data by id: %s", dataID)
 			}
 			artwork, err := serv.GetOrFetchCachedArtwork(ctx, sourceURL)
 			if err != nil {

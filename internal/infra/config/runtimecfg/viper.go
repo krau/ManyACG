@@ -101,12 +101,9 @@ func loadConfig() Config {
 		"source.pixiv.img_proxy":           "pximg.manyacg.top",
 		"source.twitter.fx_twitter_domain": "fxtwitter.com",
 
-		"cache.type":                   "ristretto",
-		"cache.bigcache.eviction":      3600, // in seconds
-		"cache.default_ttl":            60 * 60 * 4,
+		"cache.default_ttl":            86400,
 		"cache.ristretto.num_counters": 1e5,
 		"cache.ristretto.max_cost":     1e6,
-		"cache.ristretto.buffer_items": 64,
 
 		"database.type": "sqlite",
 		"database.dsn":  `file:manyacg.db?_pragma=journal_mode(WAL)&_pragma=synchronous(NORMAL)&_pragma=busy_timeout(5000)&_txlock=deferred`,

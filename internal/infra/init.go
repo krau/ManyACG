@@ -4,6 +4,7 @@ import (
 	"context"
 	"time"
 
+	"github.com/krau/ManyACG/internal/infra/cache"
 	"github.com/krau/ManyACG/internal/infra/database"
 	"github.com/krau/ManyACG/internal/infra/kvstor"
 	"github.com/samber/oops"
@@ -22,6 +23,13 @@ func Init(ctx context.Context) (func() error, error) {
 		errs = append(errs, err)
 	}
 	database.Init(ctx)
+	if err := cache.Init(); err != nil {
+		errs = append(errs, err)
+	} else {
+		closerFuncs = append(closerFuncs, func() error {
+			return cache.Close()
+		})
+	}
 
 	return func() error {
 		var errs []error
