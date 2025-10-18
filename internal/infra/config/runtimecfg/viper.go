@@ -16,7 +16,6 @@ type Config struct {
 	HttpClient HttpClientConfig `toml:"http_client" mapstructure:"http_client" json:"http_client" yaml:"http_client"`
 
 	// infrastructures config
-	Cache    CacheConfig    `toml:"cache" mapstructure:"cache" json:"cache" yaml:"cache"`
 	KVDB     KVDBConfig     `toml:"kvdb" mapstructure:"kvdb" json:"kvdb" yaml:"kvdb"`
 	Search   SearchConfig   `toml:"search" mapstructure:"search" json:"search" yaml:"search"`
 	Tagging  TaggingConfig  `toml:"tagging" mapstructure:"tagging" json:"tagging" yaml:"tagging"`
@@ -32,7 +31,6 @@ type Config struct {
 }
 
 type KVDBConfig struct {
-	Type string `toml:"type" mapstructure:"type" json:"type" yaml:"type"` // "bbolt"
 	Path string `toml:"path" mapstructure:"path" json:"path" yaml:"path"`
 }
 
@@ -100,10 +98,6 @@ func loadConfig() Config {
 
 		"source.pixiv.img_proxy":           "pximg.manyacg.top",
 		"source.twitter.fx_twitter_domain": "fxtwitter.com",
-
-		"cache.default_ttl":            86400,
-		"cache.ristretto.num_counters": 1e5,
-		"cache.ristretto.max_cost":     1e6,
 
 		"database.type": "sqlite",
 		"database.dsn":  `file:manyacg.db?_pragma=journal_mode(WAL)&_pragma=synchronous(NORMAL)&_pragma=busy_timeout(5000)&_txlock=deferred`,
