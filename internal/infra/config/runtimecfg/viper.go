@@ -32,7 +32,7 @@ type Config struct {
 }
 
 type KVDBConfig struct {
-	Type string `toml:"type" mapstructure:"type" json:"type" yaml:"type"` // "badger"
+	Type string `toml:"type" mapstructure:"type" json:"type" yaml:"type"` // "bbolt"
 	Path string `toml:"path" mapstructure:"path" json:"path" yaml:"path"`
 }
 
