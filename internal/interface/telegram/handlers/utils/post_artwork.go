@@ -245,18 +245,28 @@ func doPostAndCreateArtwork(
 	log.Info("created artwork", "id", ent.ID, "url", ent.SourceURL, "title", ent.Title, "pics", len(ent.Pictures))
 
 	if serv.ShouldTagNewArtwork() {
-		log.Info("predicting artwork tags", "id", ent.ID, "title", ent.Title)
-		editReplyMarkupText("已发布到频道, 正在推理作品标签...")
-		if err := serv.PredictAndUpdateArtworkTags(ctx, ent.ID); err != nil {
-			log.Error("failed to predict and update artwork tags after create artwork", "id", ent.ID, "err", err)
-			editReplyMarkupText("推理作品标签失败, 作品已发布")
+		err := func() error {
+			log.Info("predicting artwork tags", "id", ent.ID, "title", ent.Title)
+			editReplyMarkupText("已发布到频道, 正在推理作品标签...")
+			if err := serv.PredictAndUpdateArtworkTags(ctx, ent.ID); err != nil {
+				return oops.Wrapf(err, "failed to predict and update artwork tags")
+			}
+			newEnt, err := serv.GetArtworkByURL(ctx, ent.SourceURL)
+			if err != nil {
+				return oops.Wrapf(err, "failed to get artwork by url after tagging")
+			}
+			caption := ArtworkHTMLCaption(newEnt)
+			bot.EditMessageCaption(ctx, telegoutil.
+				EditMessageCaption(toChatID,
+					ent.Pictures[0].TelegramInfo.Data().MessageID(meta.ChannelChatID().ID),
+					caption).
+				WithParseMode(telego.ModeHTML))
+			return nil
+		}()
+		if err != nil {
+			log.Error("failed to predict artwork tags", "err", err)
+			editReplyMarkupText("已发布到频道, 作品标签推理失败")
 		}
-		caption := ArtworkHTMLCaption(ent)
-		bot.EditMessageCaption(ctx, telegoutil.
-			EditMessageCaption(toChatID,
-				ent.Pictures[0].TelegramInfo.Data().MessageID(meta.ChannelChatID().ID),
-				caption).
-			WithParseMode(telego.ModeHTML))
 	}
 	editReplyMarkupText("已发布到频道, 正在检测重复图片...")
 	for i, pic := range ent.Pictures {
