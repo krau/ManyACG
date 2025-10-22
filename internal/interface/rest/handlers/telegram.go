@@ -8,7 +8,7 @@ import (
 )
 
 type RequestSendArtworkInfoByTelegramBot struct {
-	SourceURL     string `json:"source_url" query:"source_url" form:"source_url" validate:"required,url"`
+	SourceURL     string `json:"source_url" query:"source_url" form:"source_url" validate:"required"`
 	ChatID        int64  `json:"chat_id" query:"chat_id" form:"chat_id" validate:"required"`
 	AppendCaption string `json:"append_caption" query:"append_caption" form:"append_caption"`
 }

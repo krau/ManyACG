@@ -361,7 +361,7 @@ func HandleCountArtwork(ctx fiber.Ctx) error {
 }
 
 type RequestFetchArtwork struct {
-	URL string `query:"url" form:"url" json:"url" validate:"required,url" message:"url is required and must be a valid url"`
+	URL string `query:"url" form:"url" json:"url" validate:"required" message:"url is required and must be a valid url"`
 	// NoCache bool   `query:"no_cache" form:"no_cache" json:"no_cache"` // deprecated
 }
 
