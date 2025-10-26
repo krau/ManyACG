@@ -30,6 +30,8 @@ func SendArtworkMediaGroup(
 	chatID telego.ChatID,
 	artwork shared.ArtworkLike) ([]MediaGroupResultMessage, error) {
 
+	go bot.SendChatAction(ctx, telegoutil.ChatAction(chatID, telego.ChatActionUploadPhoto))
+
 	results := make([]MediaGroupResultMessage, 0)
 	photoMsgs, err := SendArtworkPhotoMediaGroup(ctx, bot, serv, meta, chatID, artwork)
 	if err != nil {

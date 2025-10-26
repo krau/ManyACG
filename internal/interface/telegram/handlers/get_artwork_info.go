@@ -45,6 +45,42 @@ func GetArtworkInfo(ctx *telegohandler.Context, message telego.Message) error {
 	}
 	hasPermission := utils.CheckPermissionInGroup(ctx, serv, message, shared.PermissionGetArtworkInfo)
 	if !hasPermission {
+		// 若没有权限, 只发送作品信息的 media group , 且作品图片数量不超过10张(避免刷屏)
+		cached, err := serv.GetOrFetchCachedArtwork(ctx, sourceURL)
+		if err != nil {
+			return oops.Wrapf(err, "get or fetch cached artwork failed: %s", sourceURL)
+		}
+		if len(message.Photo) > 0 || message.Document != nil || message.Video != nil {
+			// the user has already sent the artwork media
+			return nil
+		}
+		if len(cached.GetPictures()) > 10 {
+			// too many pictures
+			return nil
+		}
+		results, err := utils.SendArtworkMediaGroup(ctx, ctx.Bot(), serv, meta, message.Chat.ChatID(), cached)
+		if err != nil {
+			return oops.Wrapf(err, "send artwork media group failed: %s", cached.SourceURL)
+		}
+		data := cached.Artwork.Data()
+		for _, res := range results {
+			if res.UgoiraIndex >= 0 {
+				if len(data.UgoiraMetas) <= res.UgoiraIndex {
+					log.Warn("ugoira index out of range", "index", res.UgoiraIndex, "len", len(data.UgoiraMetas), "title", data.GetTitle(), "url", data.GetSourceURL())
+					continue
+				}
+				data.UgoiraMetas[res.UgoiraIndex].TelegramInfo.SetFileID(meta.BotID(), shared.TelegramMediaTypeVideo, res.FileID)
+			} else if res.PictureIndex >= 0 {
+				if len(data.Pictures) <= res.PictureIndex {
+					log.Warn("picture index out of range", "index", res.PictureIndex, "len", len(data.Pictures), "title", data.GetTitle(), "url", data.GetSourceURL())
+					continue
+				}
+				data.Pictures[res.PictureIndex].TelegramInfo.SetFileID(meta.BotID(), shared.TelegramMediaTypePhoto, res.FileID)
+			}
+		}
+		if err := serv.UpdateCachedArtwork(ctx, data); err != nil {
+			return oops.Wrapf(err, "failed to update cached artwork after send media group")
+		}
 		return nil
 	}
 	err := utils.SendArtworkInfo(ctx, ctx.Bot(), meta, serv, sourceURL, chatID, utils.SendArtworkInfoOptions{
