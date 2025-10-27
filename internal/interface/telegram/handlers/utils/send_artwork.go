@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/krau/ManyACG/internal/common/httpclient"
 	"github.com/krau/ManyACG/internal/infra/kvstor"
@@ -90,7 +91,7 @@ func CreateArtworkInfoReplyMarkup(ctx context.Context,
 		return telegoutil.InlineKeyboard(base), nil
 	}
 	cbId := objectuuid.New().Hex()
-	err := kvstor.Set(cbId, artwork.GetSourceURL())
+	err := kvstor.SetWithTTL(cbId, artwork.GetSourceURL(), time.Hour*24*7)
 	if err != nil {
 		return nil, oops.Wrapf(err, "failed to create callback data")
 	}
@@ -149,7 +150,7 @@ func SendArtworkInfo(ctx context.Context,
 		if artwork == nil {
 			// 既没有发布也没有缓存, 则尝试抓取
 			cbId := objectuuid.New().Hex()
-			err := kvstor.Set(cbId, sourceUrl)
+			err := kvstor.SetWithTTL(cbId, sourceUrl, time.Hour*24*7)
 			if err != nil {
 				return oops.Wrapf(err, "failed to create callback data")
 			}
