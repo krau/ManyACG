@@ -66,7 +66,7 @@ func Run() {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 	log.Info("Starting...")
-	closer, err := infra.Init(ctx)
+	closer, err := infra.Init(ctx, cfg)
 	if err != nil {
 		log.Fatal(err)
 	}

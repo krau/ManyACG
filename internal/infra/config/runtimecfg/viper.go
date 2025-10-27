@@ -31,7 +31,11 @@ type Config struct {
 }
 
 type KVDBConfig struct {
-	Path string `toml:"path" mapstructure:"path" json:"path" yaml:"path"`
+	Path           string `toml:"path" mapstructure:"path" json:"path" yaml:"path"`
+	Bucket         string `toml:"bucket" mapstructure:"bucket" json:"bucket" yaml:"bucket"`
+	TTLBucket      string `toml:"ttl_bucket" mapstructure:"ttl_bucket" json:"ttl_bucket" yaml:"ttl_bucket"`
+	TTLBatchLimit  int    `toml:"ttl_batch_limit" mapstructure:"ttl_batch_limit" json:"ttl_batch_limit" yaml:"ttl_batch_limit"`
+	TTLSweepPeriod uint   `toml:"ttl_sweep_period" mapstructure:"ttl_sweep_period" json:"ttl_sweep_period" yaml:"ttl_sweep_period"` // in seconds
 }
 
 type SchedulerConfig struct {
@@ -101,6 +105,12 @@ func loadConfig() Config {
 
 		"database.type": "sqlite",
 		"database.dsn":  `file:manyacg.db?_pragma=journal_mode(WAL)&_pragma=synchronous(NORMAL)&_pragma=busy_timeout(5000)&_txlock=deferred`,
+
+		"kvdb.path":             "data/kvdb.bbolt",
+		"kvdb.bucket":           "manyacg",
+		"kvdb.ttl_bucket":       "manyacg_ttl",
+		"kvdb.ttl_batch_limit":  1024,
+		"kvdb.ttl_sweep_period": 60, // in seconds
 	}
 
 	for key, value := range defaults {

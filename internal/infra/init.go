@@ -2,18 +2,18 @@ package infra
 
 import (
 	"context"
-	"time"
 
+	"github.com/krau/ManyACG/internal/infra/config/runtimecfg"
 	"github.com/krau/ManyACG/internal/infra/database"
 	"github.com/krau/ManyACG/internal/infra/kvstor"
 	"github.com/samber/oops"
 )
 
 // Init initializes the infra package, return the closer function and error if any.
-func Init(ctx context.Context) (func() error, error) {
+func Init(ctx context.Context, cfg runtimecfg.Config) (func() error, error) {
 	var errs []error
 	var closerFuncs []func() error
-	kvstor.Set("app:last_start_time", time.Now().Format(time.RFC3339)) // just for preheat
+	kvstor.Init(cfg.KVDB)
 	closerFuncs = append(closerFuncs, func() error {
 		return kvstor.Close()
 	})
