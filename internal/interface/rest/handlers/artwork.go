@@ -10,6 +10,7 @@ import (
 	"github.com/dgraph-io/ristretto/v2"
 	"github.com/gofiber/fiber/v3"
 	"github.com/krau/ManyACG/internal/infra/config/runtimecfg"
+	"github.com/krau/ManyACG/internal/infra/kvstor"
 	"github.com/krau/ManyACG/internal/interface/rest/common"
 	"github.com/krau/ManyACG/internal/interface/rest/utils"
 	"github.com/krau/ManyACG/internal/model/entity"
@@ -451,7 +452,11 @@ func HandleFetchArtwork(ctx fiber.Ctx) error {
 	if err != nil {
 		return err
 	}
-	return ctx.JSON(common.NewSuccess(fetchArtworkResponse(artwork.ID.Hex(), artwork.Artwork.Data(), serv)))
+	cacheid := objectuuid.New().Hex()
+	if err := kvstor.Set(cacheid, artwork.GetSourceURL()); err != nil {
+		log.Warn("failed to set cacheid", "data", artwork.GetSourceURL(), "err", err)
+	}
+	return ctx.JSON(common.NewSuccess(fetchArtworkResponse(cacheid, artwork.Artwork.Data(), serv)))
 }
 
 func HandleGetArtworkByID(ctx fiber.Ctx) error {
