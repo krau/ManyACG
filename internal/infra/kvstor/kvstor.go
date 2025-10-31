@@ -75,7 +75,7 @@ func Init(cfg runtimecfg.KVDBConfig) {
 			if err != nil {
 				log.Fatal("Failed to initialize redis kvdb", "err", err)
 			}
-			defaultDb = &redisDB{client: client}
+			defaultDb = &redisDB{client: client, prefix: rc.Prefix}
 		})
 	default:
 		dbPath := cfg.Path
