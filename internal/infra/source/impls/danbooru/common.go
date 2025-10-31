@@ -18,6 +18,7 @@ var (
 		Type:     shared.SourceTypeDanbooru,
 	}
 	ErrInvalidDanbooruPostURL = errors.New("invalid danbooru post url")
+	ErrDanbooruNoImage        = errors.New("danbooru post has no image")
 )
 
 func GetPostID(url string) string {

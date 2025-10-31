@@ -24,7 +24,10 @@ type DanbooruFailJsonResp struct {
 	Message string `json:"message"`
 }
 
-func (resp *DanbooruJsonResp) ToArtwork() *dto.FetchedArtwork {
+func (resp *DanbooruJsonResp) ToArtwork() (*dto.FetchedArtwork, error) {
+	if resp.LargeFileURL == "" || resp.FileURL == "" {
+		return nil, ErrDanbooruNoImage
+	}
 	tags := strings.Split(resp.TagString, " ")
 	pictures := make([]*dto.FetchedPicture, 0)
 	pictures = append(pictures, &dto.FetchedPicture{
@@ -44,5 +47,5 @@ func (resp *DanbooruJsonResp) ToArtwork() *dto.FetchedArtwork {
 		Tags:        tags,
 		Pictures:    pictures,
 	}
-	return artwork
+	return artwork, nil
 }

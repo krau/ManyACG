@@ -58,7 +58,7 @@ func (d *Danbooru) GetArtworkInfo(ctx context.Context, sourceURL string) (*dto.F
 	if danbooruResp.Error != "" {
 		return nil, oops.Errorf("danbooru api error: %s", danbooruResp.Message)
 	}
-	return danbooruResp.ToArtwork(), nil
+	return danbooruResp.ToArtwork()
 }
 
 func (d *Danbooru) MatchesSourceURL(text string) (string, bool) {
