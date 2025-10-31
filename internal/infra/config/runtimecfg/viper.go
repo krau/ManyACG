@@ -31,11 +31,27 @@ type Config struct {
 }
 
 type KVDBConfig struct {
+	Type           string `toml:"type" mapstructure:"type" json:"type" yaml:"type"` // bbolt, redis
 	Path           string `toml:"path" mapstructure:"path" json:"path" yaml:"path"`
 	Bucket         string `toml:"bucket" mapstructure:"bucket" json:"bucket" yaml:"bucket"`
 	TTLBucket      string `toml:"ttl_bucket" mapstructure:"ttl_bucket" json:"ttl_bucket" yaml:"ttl_bucket"`
 	TTLBatchLimit  int    `toml:"ttl_batch_limit" mapstructure:"ttl_batch_limit" json:"ttl_batch_limit" yaml:"ttl_batch_limit"`
 	TTLSweepPeriod uint   `toml:"ttl_sweep_period" mapstructure:"ttl_sweep_period" json:"ttl_sweep_period" yaml:"ttl_sweep_period"` // in seconds
+
+	Redis RedisConfig `toml:"redis" mapstructure:"redis" json:"redis" yaml:"redis"`
+}
+
+type RedisConfig struct {
+	// URL like redis://user:pass@host:port/db?addr=... for cluster/sentinel
+	URL    string `toml:"url" mapstructure:"url" json:"url" yaml:"url"`
+	Prefix string `toml:"prefix" mapstructure:"prefix" json:"prefix" yaml:"prefix"`
+	// Addrs for standalone or cluster
+	Addrs       []string `toml:"addrs" mapstructure:"addrs" json:"addrs" yaml:"addrs"`
+	Username    string   `toml:"username" mapstructure:"username" json:"username" yaml:"username"`
+	Password    string   `toml:"password" mapstructure:"password" json:"password" yaml:"password"`
+	DB          int      `toml:"db" mapstructure:"db" json:"db" yaml:"db"`
+	TLS         bool     `toml:"tls" mapstructure:"tls" json:"tls" yaml:"tls"`
+	TLSInsecure bool     `toml:"tls_insecure" mapstructure:"tls_insecure" json:"tls_insecure" yaml:"tls_insecure"`
 }
 
 type SchedulerConfig struct {
@@ -106,11 +122,13 @@ func loadConfig() Config {
 		"database.type": "sqlite",
 		"database.dsn":  `file:manyacg.db?_pragma=journal_mode(WAL)&_pragma=synchronous(NORMAL)&_pragma=busy_timeout(5000)&_txlock=deferred`,
 
+		"kvdb.type":             "bbolt",
 		"kvdb.path":             "data/kvdb.bbolt",
 		"kvdb.bucket":           "manyacg",
 		"kvdb.ttl_bucket":       "manyacg_ttl",
 		"kvdb.ttl_batch_limit":  1024,
 		"kvdb.ttl_sweep_period": 60, // in seconds
+		"kvdb.redis.prefix":     "manyacg:",
 	}
 
 	for key, value := range defaults {

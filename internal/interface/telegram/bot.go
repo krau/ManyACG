@@ -93,7 +93,7 @@ func Init(ctx context.Context, serv *service.Service, cfg runtimecfg.TelegramCon
 	}
 	key := fmt.Sprintf("telegram:bot:username:%d", botId)
 
-	botUsername, err := kvstor.Get[string](key)
+	botUsername, err := kvstor.Get[string](ctx, key)
 	if err != nil || botUsername == "" {
 		me, err := bot.GetMe(ctx)
 		if err != nil {
@@ -101,7 +101,7 @@ func Init(ctx context.Context, serv *service.Service, cfg runtimecfg.TelegramCon
 		}
 		botUsername = me.Username
 	}
-	kvstor.Set(key, botUsername)
+	kvstor.Set(ctx, key, botUsername)
 
 	admins := cfg.Admins
 	for _, adminID := range admins {
@@ -127,7 +127,7 @@ func Init(ctx context.Context, serv *service.Service, cfg runtimecfg.TelegramCon
 			return
 		}
 		sigKey := fmt.Sprintf("telegram:bot:commands:%d", botId)
-		oldSig, err := kvstor.Get[string](sigKey)
+		oldSig, err := kvstor.Get[string](ctx, sigKey)
 		if err != nil && !errors.Is(err, errs.ErrRecordNotFound) {
 			log.Warnf("Error when getting commands signature: %s", err)
 			return
@@ -204,7 +204,7 @@ func Init(ctx context.Context, serv *service.Service, cfg runtimecfg.TelegramCon
 			}
 		}
 
-		err = kvstor.Set(sigKey, sig)
+		err = kvstor.Set(ctx, sigKey, sig)
 		if err != nil {
 			log.Warnf("Error when setting commands signature: %s", err)
 			return

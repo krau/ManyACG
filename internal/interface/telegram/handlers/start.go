@@ -61,7 +61,7 @@ func Start(ctx *telegohandler.Context, message telego.Message) error {
 				return oops.Wrapf(err, "failed to get artwork by id %s", artworkIDStr)
 			}
 			if created == nil {
-				sourceUrl, err := kvstor.Get[string](artworkIDStr)
+				sourceUrl, err := kvstor.Get[string](ctx, artworkIDStr)
 				if err != nil {
 					utils.ReplyMessage(ctx, message, "获取失败")
 					return oops.Wrapf(err, "failed to get string data by id: %s", artworkIDStr)
@@ -78,7 +78,7 @@ func Start(ctx *telegohandler.Context, message telego.Message) error {
 			return getArtworkFiles(ctx, serv, meta, message, artwork)
 		case "info":
 			dataID := args[0][5:]
-			sourceURL, err := kvstor.Get[string](dataID)
+			sourceURL, err := kvstor.Get[string](ctx, dataID)
 			if err != nil {
 				utils.ReplyMessage(ctx, message, "获取失败")
 				return oops.Wrapf(err, "failed to get string data by id: %s", dataID)

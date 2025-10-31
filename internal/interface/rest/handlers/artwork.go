@@ -453,7 +453,7 @@ func HandleFetchArtwork(ctx fiber.Ctx) error {
 		return err
 	}
 	cacheid := objectuuid.New().Hex()
-	if err := kvstor.Set(cacheid, artwork.GetSourceURL()); err != nil {
+	if err := kvstor.Set(ctx, cacheid, artwork.GetSourceURL()); err != nil {
 		log.Warn("failed to set cacheid", "data", artwork.GetSourceURL(), "err", err)
 	}
 	return ctx.JSON(common.NewSuccess(fetchArtworkResponse(cacheid, artwork.Artwork.Data(), serv)))

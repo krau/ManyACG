@@ -31,7 +31,7 @@ func PostArtworkCallbackQuery(ctx *telegohandler.Context, query telego.CallbackQ
 	queryDataSlice := strings.Split(query.Data, " ")
 	reverseR18 := queryDataSlice[0] == "post_artwork_r18"
 	dataID := queryDataSlice[1]
-	sourceURL, err := kvstor.Get[string](dataID)
+	sourceURL, err := kvstor.Get[string](ctx, dataID)
 	if err != nil {
 		ctx.Bot().AnswerCallbackQuery(ctx, &telego.AnswerCallbackQueryParams{
 			CallbackQueryID: query.ID,

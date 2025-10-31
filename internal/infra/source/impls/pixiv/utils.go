@@ -106,7 +106,7 @@ func (p *Pixiv) fetchNewArtworksForRSSURL(ctx context.Context, rssURL string, li
 	fingerprint := hex.EncodeToString(rsssum[:])
 	cacheKey := pixivRSSCacheKey(rssURL)
 
-	if cacheEntry, err := kvstor.Get[pixivRSSCacheEntry](cacheKey); err == nil {
+	if cacheEntry, err := kvstor.Get[pixivRSSCacheEntry](ctx, cacheKey); err == nil {
 		if cacheEntry.Signature == fingerprint {
 			if limit > 0 && len(cacheEntry.Artworks) > limit {
 				return cacheEntry.Artworks[:limit], nil
@@ -138,7 +138,7 @@ func (p *Pixiv) fetchNewArtworksForRSSURL(ctx context.Context, rssURL string, li
 
 	if len(artworks) > 0 || len(pixivRss.Channel.Items) == 0 {
 		entry := pixivRSSCacheEntry{Signature: fingerprint, Artworks: artworks}
-		if err := kvstor.Set(cacheKey, entry); err != nil {
+		if err := kvstor.Set(ctx, cacheKey, entry); err != nil {
 			log.Warn("pixiv rss cache store failed", "url", rssURL, "err", err)
 		}
 	}

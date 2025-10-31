@@ -91,7 +91,7 @@ func CreateArtworkInfoReplyMarkup(ctx context.Context,
 		return telegoutil.InlineKeyboard(base), nil
 	}
 	cbId := objectuuid.New().Hex()
-	err := kvstor.SetWithTTL(cbId, artwork.GetSourceURL(), time.Hour*24*7)
+	err := kvstor.SetWithTTL(ctx, cbId, artwork.GetSourceURL(), time.Hour*24*7)
 	if err != nil {
 		return nil, oops.Wrapf(err, "failed to create callback data")
 	}
@@ -150,7 +150,7 @@ func SendArtworkInfo(ctx context.Context,
 		if artwork == nil {
 			// 既没有发布也没有缓存, 则尝试抓取
 			cbId := objectuuid.New().Hex()
-			err := kvstor.SetWithTTL(cbId, sourceUrl, time.Hour*24*7)
+			err := kvstor.SetWithTTL(ctx, cbId, sourceUrl, time.Hour*24*7)
 			if err != nil {
 				return oops.Wrapf(err, "failed to create callback data")
 			}
