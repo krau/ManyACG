@@ -14,7 +14,6 @@ var (
 )
 
 var (
-	ErrIndexOOB             = errors.New("index out of artwork pictures bounds")
 	ErrInvalidKemonoPostURL = errors.New("invalid kemono post url")
 	ErrNotPicture           = errors.New("kemono post files or attachments are not pictures")
 )

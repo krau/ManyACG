@@ -70,21 +70,22 @@ func (k *Kemono) convertToFetchedArtwork(ctx context.Context, resp *KemonoPostRe
 		picCdnMap[preview.Path] = preview.Server
 	}
 	pictures := make([]*dto.FetchedPicture, 0)
-	if isImage(postResp.File.Path) {
-		thumbnailUrl, err := url.JoinPath(thumbnailsBase, postResp.File.Path)
-		if err != nil {
-			return nil, fmt.Errorf("failed to join thumbnail path: %w", err)
-		}
-		originalUrl, err := url.JoinPath(picCdnMap[postResp.File.Path], "data", postResp.File.Path)
-		if err != nil {
-			return nil, fmt.Errorf("failed to join original path: %w", err)
-		}
-		pictures = append(pictures, &dto.FetchedPicture{
-			Index:     0,
-			Thumbnail: thumbnailUrl,
-			Original:  originalUrl,
-		})
-	}
+	// 不再处理 File, 因为它很多情况下是一张裁剪过的第一张图片
+	// if isImage(postResp.File.Path) {
+	// 	thumbnailUrl, err := url.JoinPath(thumbnailsBase, postResp.File.Path)
+	// 	if err != nil {
+	// 		return nil, fmt.Errorf("failed to join thumbnail path: %w", err)
+	// 	}
+	// 	originalUrl, err := url.JoinPath(picCdnMap[postResp.File.Path], "data", postResp.File.Path)
+	// 	if err != nil {
+	// 		return nil, fmt.Errorf("failed to join original path: %w", err)
+	// 	}
+	// 	pictures = append(pictures, &dto.FetchedPicture{
+	// 		Index:     0,
+	// 		Thumbnail: thumbnailUrl,
+	// 		Original:  originalUrl,
+	// 	})
+	// }
 	for i, attachment := range postResp.Attachments {
 		if !isImage(attachment.Path) {
 			continue
@@ -98,7 +99,7 @@ func (k *Kemono) convertToFetchedArtwork(ctx context.Context, resp *KemonoPostRe
 			return nil, fmt.Errorf("failed to join original path: %w", err)
 		}
 		pictures = append(pictures, &dto.FetchedPicture{
-			Index:     uint(i + 1),
+			Index:     uint(i),
 			Thumbnail: thumbnailUrl,
 			Original:  originalUrl,
 		})
