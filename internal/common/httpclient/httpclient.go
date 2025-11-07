@@ -63,9 +63,11 @@ func DownloadWithCache(ctx context.Context, url string, client *req.Client) (
 			SetOutputFile(cachePath).
 			Get(url)
 		if err != nil {
+			os.Remove(cachePath)
 			return nil, err
 		}
 		if resp.IsErrorState() {
+			os.Remove(cachePath)
 			return nil, fmt.Errorf("http error: %d", resp.GetStatusCode())
 		}
 		return nil, nil
