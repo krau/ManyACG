@@ -213,18 +213,18 @@ func (s *Service) StorageSaveAllSize(ctx context.Context, inputPath, storDirPath
 	if ext := filepath.Ext(fileName); ext != "" {
 		fileNameWithOutExt = fileName[:len(fileName)-len(ext)]
 	}
-	compressedPath := filepath.Join(s.storCfg.CacheDir, "compress", fmt.Sprintf("regular_%s.%s", fileNameWithOutExt, s.storCfg.RegularFormat))
-	err := imgtool.Compress(inputPath, compressedPath, s.storCfg.RegularFormat, s.storCfg.RegularLength)
-	if err != nil {
-		return nil, oops.Wrapf(err, "failed to compress image for regular storage %s", s.storCfg.RegularType)
-	}
-	compressedFile, err := os.Open(compressedPath)
-	if err != nil {
-		return nil, oops.Wrapf(err, "failed to open compressed file for regular storage %s", s.storCfg.RegularType)
-	}
-	defer os.Remove(compressedFile.Name())
-	defer compressedFile.Close()
 	if s.storCfg.RegularType != "" {
+		compressedPath := filepath.Join(s.storCfg.CacheDir, "compress", fmt.Sprintf("regular_%s.%s", fileNameWithOutExt, s.storCfg.RegularFormat))
+		err := imgtool.Compress(inputPath, compressedPath, s.storCfg.RegularFormat, s.storCfg.RegularLength)
+		if err != nil {
+			return nil, oops.Wrapf(err, "failed to compress image for regular storage %s", s.storCfg.RegularType)
+		}
+		compressedFile, err := os.Open(compressedPath)
+		if err != nil {
+			return nil, oops.Wrapf(err, "failed to open compressed file for regular storage %s", s.storCfg.RegularType)
+		}
+		defer os.Remove(compressedFile.Name())
+		defer compressedFile.Close()
 		regType, err := shared.ParseStorageType(s.storCfg.RegularType)
 		if err != nil {
 			return nil, oops.Wrapf(err, "parse storage type %s failed", s.storCfg.RegularType)
@@ -244,18 +244,18 @@ func (s *Service) StorageSaveAllSize(ctx context.Context, inputPath, storDirPath
 		}
 		regularDetail.Mime = mimeType.String()
 	}
-	compressedPath2 := filepath.Join(s.storCfg.CacheDir, "compress", fmt.Sprintf("thumb_%s.%s", fileNameWithOutExt, s.storCfg.ThumbFormat))
-	err = imgtool.Compress(inputPath, compressedPath2, s.storCfg.ThumbFormat, s.storCfg.ThumbLength)
-	if err != nil {
-		return nil, oops.Wrapf(err, "failed to compress image for thumb storage %s", s.storCfg.ThumbType)
-	}
-	compressedFile2, err := os.Open(compressedPath2)
-	if err != nil {
-		return nil, oops.Wrapf(err, "failed to open compressed file for thumb storage %s", s.storCfg.ThumbType)
-	}
-	defer os.Remove(compressedFile2.Name())
-	defer compressedFile2.Close()
 	if s.storCfg.ThumbType != "" {
+		compressedPath2 := filepath.Join(s.storCfg.CacheDir, "compress", fmt.Sprintf("thumb_%s.%s", fileNameWithOutExt, s.storCfg.ThumbFormat))
+		err := imgtool.Compress(inputPath, compressedPath2, s.storCfg.ThumbFormat, s.storCfg.ThumbLength)
+		if err != nil {
+			return nil, oops.Wrapf(err, "failed to compress image for thumb storage %s", s.storCfg.ThumbType)
+		}
+		compressedFile2, err := os.Open(compressedPath2)
+		if err != nil {
+			return nil, oops.Wrapf(err, "failed to open compressed file for thumb storage %s", s.storCfg.ThumbType)
+		}
+		defer os.Remove(compressedFile2.Name())
+		defer compressedFile2.Close()
 		thumbType, err := shared.ParseStorageType(s.storCfg.ThumbType)
 		if err != nil {
 			return nil, oops.Wrapf(err, "parse storage type %s failed", s.storCfg.ThumbType)
