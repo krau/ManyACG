@@ -3,7 +3,7 @@ module github.com/krau/ManyACG
 go 1.25.0
 
 require (
-	github.com/HugoSmits86/nativewebp v1.2.0
+	github.com/HugoSmits86/nativewebp v1.2.1
 	github.com/PuerkitoBio/goquery v1.10.3
 	github.com/blang/semver v3.5.1+incompatible
 	github.com/bytedance/sonic v1.14.2
@@ -20,7 +20,7 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/krau/ffmpeg-go v0.6.0
 	github.com/krau/go-thumbhash v0.0.0-20250822034729-2df7c655859d
-	github.com/meilisearch/meilisearch-go v0.34.1
+	github.com/meilisearch/meilisearch-go v0.34.2
 	github.com/mymmrac/telego v1.3.1
 	github.com/ncruces/go-sqlite3 v0.30.1
 	github.com/rhysd/go-github-selfupdate v1.2.3
