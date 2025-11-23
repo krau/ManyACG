@@ -20,15 +20,21 @@ func compressImageByFFmpeg(inputPath, outputPath string, maxEdgeLength int) erro
 		return err
 	}
 	var vfKwArg ffmpeg.KwArgs
-	if img.Width > int(maxEdgeLength) || img.Height > int(maxEdgeLength) {
-		if img.Width > img.Height {
-			vfKwArg = ffmpeg.KwArgs{"vf": fmt.Sprintf("scale=%d:-1:flags=lanczos", maxEdgeLength)}
-		} else {
-			vfKwArg = ffmpeg.KwArgs{"vf": fmt.Sprintf("scale=-1:%d:flags=lanczos", maxEdgeLength)}
+	if maxEdgeLength > 0 {
+		if img.Width > int(maxEdgeLength) || img.Height > int(maxEdgeLength) {
+			if img.Width > img.Height {
+				vfKwArg = ffmpeg.KwArgs{"vf": fmt.Sprintf("scale=%d:-1:flags=lanczos", maxEdgeLength)}
+			} else {
+				vfKwArg = ffmpeg.KwArgs{"vf": fmt.Sprintf("scale=-1:%d:flags=lanczos", maxEdgeLength)}
+			}
 		}
-	}
-	if err := ffmpeg.Input(inputPath).Output(outputPath, vfKwArg).OverWriteOutput().Run(); err != nil {
-		return fmt.Errorf("failed to compress image: %w", err)
+		if err := ffmpeg.Input(inputPath).Output(outputPath, vfKwArg).OverWriteOutput().Run(); err != nil {
+			return fmt.Errorf("failed to compress image: %w", err)
+		}
+	} else {
+		if err := ffmpeg.Input(inputPath).Output(outputPath).OverWriteOutput().Run(); err != nil {
+			return fmt.Errorf("failed to compress image: %w", err)
+		}
 	}
 	return nil
 }

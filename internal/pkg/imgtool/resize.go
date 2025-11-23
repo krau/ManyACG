@@ -71,6 +71,8 @@ func GetSizeFromReader(r io.Reader) (int, int, error) {
 // Compress compresses the image at inputPath and saves the result to outputPath.
 //
 // The input image will be resized so that its longest edge does not exceed maxEdgeLength,
+//
+// If the maxEdgeLength <= 0, no resizing will be performed.
 func Compress(inputPath, outputPath, format string, maxEdgeLength int) error {
 	if err := os.MkdirAll(filepath.Dir(outputPath), os.ModePerm); err != nil {
 		return err

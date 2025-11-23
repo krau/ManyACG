@@ -29,16 +29,17 @@ func compressImageNative(inputPath, outputPath, format string, maxEdgeLength int
 	height := srcImg.Bounds().Dy()
 
 	scale := 1.0
-	if width > height {
-		if width > maxEdgeLength {
-			scale = float64(maxEdgeLength) / float64(width)
-		}
-	} else {
-		if height > maxEdgeLength {
-			scale = float64(maxEdgeLength) / float64(height)
+	if maxEdgeLength > 0 {
+		if width > height {
+			if width > maxEdgeLength {
+				scale = float64(maxEdgeLength) / float64(width)
+			}
+		} else {
+			if height > maxEdgeLength {
+				scale = float64(maxEdgeLength) / float64(height)
+			}
 		}
 	}
-
 	var dstImg image.Image
 	if scale < 1.0 {
 		newWidth := int(float64(width) * scale)

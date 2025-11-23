@@ -39,13 +39,15 @@ func compressImageVIPS(inputPath, outputPath, format string, maxEdgeLength int) 
 	height := img.Height()
 
 	var scale float64 = 1.0
-	if width > height {
-		if width > maxEdgeLength {
-			scale = float64(maxEdgeLength) / float64(width)
-		}
-	} else {
-		if height > maxEdgeLength {
-			scale = float64(maxEdgeLength) / float64(height)
+	if maxEdgeLength > 0 {
+		if width > height {
+			if width > maxEdgeLength {
+				scale = float64(maxEdgeLength) / float64(width)
+			}
+		} else {
+			if height > maxEdgeLength {
+				scale = float64(maxEdgeLength) / float64(height)
+			}
 		}
 	}
 	if scale < 1.0 {
