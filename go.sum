@@ -168,8 +168,8 @@ github.com/microsoft/go-mssqldb v1.7.2 h1:CHkFJiObW7ItKTJfHo1QX7QBBD1iV+mn1eOyRP
 github.com/microsoft/go-mssqldb v1.7.2/go.mod h1:kOvZKUdrhhFQmxLZqbwUV0rHkNkZpthMITIb2Ko1IoA=
 github.com/muesli/termenv v0.16.0 h1:S5AlUN9dENB57rsbnkPyfdGuWIlkmzJjbFf0Tf5FWUc=
 github.com/muesli/termenv v0.16.0/go.mod h1:ZRfOIKPFDYQoDFF4Olj7/QJbW60Ol/kL1pU3VfY/Cnk=
-github.com/mymmrac/telego v1.3.2 h1:cyOZUU1L+Wiqy6RXUA4x+KjJ2two37ihCyODSXyw9o0=
-github.com/mymmrac/telego v1.3.2/go.mod h1:qhtKk/oVxiwTwFYNokhkQR832gWJojXSBo/mMmKAgy8=
+github.com/mymmrac/telego v1.3.1 h1:dI5D8LKWBw241W02LmJqoSLZXW3tuLokxVoNbIZUYQg=
+github.com/mymmrac/telego v1.3.1/go.mod h1:3D0h4jJ3OzubY/gI4xDIGx4jkY26fmcPyqx0Lq24+zI=
 github.com/ncruces/go-sqlite3 v0.30.3 h1:X/CgWW9GzmIAkEPrifhKqf0cC15DuOVxAJaHFTTAURQ=
 github.com/ncruces/go-sqlite3 v0.30.3/go.mod h1:AxKu9sRxkludimFocbktlY6LiYSkxiI5gTA8r+os/Nw=
 github.com/ncruces/go-sqlite3/gormlite v0.30.2 h1:FZ8mic14xTatssTkHCrelh9nPeFdXuzgMoNGkfuFbBU=
