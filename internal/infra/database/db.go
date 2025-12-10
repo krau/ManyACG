@@ -28,15 +28,6 @@ type DB struct {
 
 func Default() *DB {
 	if defaultDB == nil {
-		// initOnce.Do(func() {
-		// 	okCh := make(chan struct{})
-		// 	initDB(context.Background(), okCh)
-		// 	select {
-		// 	case <-context.Background().Done():
-		// 		log.Fatal("Database initialization canceled")
-		// 	case <-okCh:
-		// 	}
-		// })
 		log.Fatal("database not initialized, please call Init() first")
 	}
 	return defaultDB
@@ -103,9 +94,43 @@ func initDB(ctx context.Context, okCh chan struct{}) {
 	if err := sqlDB.PingContext(ctx); err != nil {
 		log.Fatal("failed to ping database", "err", err)
 	}
+	if err := optimizePgSQL(ctx, db); err != nil {
+		log.Fatal("failed to optimize pgsql database", "err", err)
+	}
 
 	defaultDB = &DB{db: db}
 	log.Info("Database initialized")
 
 	okCh <- struct{}{}
+}
+
+func optimizePgSQL(ctx context.Context, db *gorm.DB) error {
+	if db.Dialector.Name() != "postgres" {
+		return nil
+	}
+	log.Debug("Applying pg_trgm index optimizations...")
+
+	sqls := []string{
+		// Extensions
+		`CREATE EXTENSION IF NOT EXISTS pg_trgm;`,
+
+		// Trigram indexes
+		`CREATE INDEX IF NOT EXISTS idx_artworks_title_trgm ON artworks USING gin (title gin_trgm_ops);`,
+		`CREATE INDEX IF NOT EXISTS idx_artworks_description_trgm ON artworks USING gin (description gin_trgm_ops);`,
+		`CREATE INDEX IF NOT EXISTS idx_artists_name_trgm ON artists USING gin (name gin_trgm_ops);`,
+		`CREATE INDEX IF NOT EXISTS idx_tags_name_trgm ON tags USING gin (name gin_trgm_ops);`,
+		`CREATE INDEX IF NOT EXISTS idx_tag_alias_alias_trgm ON tag_aliases USING gin (alias gin_trgm_ops);`,
+
+		// Foreign key
+		`CREATE INDEX IF NOT EXISTS idx_artworks_artist_id ON artworks(artist_id);`,
+		`CREATE INDEX IF NOT EXISTS idx_artwork_tags_artwork_id ON artwork_tags(artwork_id);`,
+		`CREATE INDEX IF NOT EXISTS idx_artwork_tags_tag_id ON artwork_tags(tag_id);`,
+	}
+	for _, sql := range sqls {
+		if err := db.WithContext(ctx).Exec(sql).Error; err != nil {
+			return err
+		}
+	}
+	log.Debug("pg_trgm index optimizations applied")
+	return nil
 }

@@ -83,7 +83,12 @@ func (d *DB) QueryArtworks(ctx context.Context, que query.ArtworksDB) ([]*entity
 		base = base.Where("artist_id = ?", que.ArtistID)
 	}
 
-	// 3) Tags: each inner slice is OR (one-of), outer slice is AND (must satisfy each group)
+	mainQueryExpr := "(" +
+		"artworks.title LIKE ? OR artworks.description LIKE ? OR " +
+		"EXISTS (SELECT 1 FROM artists ar WHERE ar.id = artworks.artist_id AND ar.name LIKE ?) OR " +
+		"EXISTS (SELECT 1 FROM artwork_tags at JOIN tags t ON at.tag_id = t.id LEFT JOIN tag_aliases ta ON t.id = ta.tag_id WHERE at.artwork_id = artworks.id AND (t.name LIKE ? OR ta.alias LIKE ?))" +
+		")"
+	// Tags: each inner slice is OR (one-of), outer slice is AND (must satisfy each group)
 	if len(que.Tags) > 0 {
 		for _, orTags := range que.Tags {
 			if len(orTags) == 0 {
@@ -103,13 +108,7 @@ func (d *DB) QueryArtworks(ctx context.Context, que query.ArtworksDB) ([]*entity
 			for _, kw := range orKeywords {
 				like := "%" + strings.ReplaceAll(strings.ReplaceAll(kw, "%", "\\%"), "_", "\\_") + "%"
 
-				expr := "(" +
-					"artworks.title LIKE ? OR artworks.description LIKE ? OR " +
-					"EXISTS (SELECT 1 FROM artists ar WHERE ar.id = artworks.artist_id AND ar.name LIKE ?) OR " +
-					"EXISTS (SELECT 1 FROM artwork_tags at JOIN tags t ON at.tag_id = t.id LEFT JOIN tag_aliases ta ON t.id = ta.tag_id WHERE at.artwork_id = artworks.id AND (t.name LIKE ? OR ta.alias LIKE ?))" +
-					")"
-
-				perKWExpr = append(perKWExpr, expr)
+				perKWExpr = append(perKWExpr, mainQueryExpr)
 				perKWArgs = append(perKWArgs, like, like, like, like, like)
 			}
 
@@ -152,12 +151,7 @@ func (d *DB) QueryArtworks(ctx context.Context, que query.ArtworksDB) ([]*entity
 			var perKWArgs []any
 			for _, kw := range orKeywords {
 				like := "%" + strings.ReplaceAll(strings.ReplaceAll(kw, "%", "\\%"), "_", "\\_") + "%"
-				expr := "(" +
-					"artworks.title LIKE ? OR artworks.description LIKE ? OR " +
-					"EXISTS (SELECT 1 FROM artists ar WHERE ar.id = artworks.artist_id AND ar.name LIKE ?) OR " +
-					"EXISTS (SELECT 1 FROM artwork_tags at JOIN tags t ON at.tag_id = t.id LEFT JOIN tag_aliases ta ON t.id = ta.tag_id WHERE at.artwork_id = artworks.id AND (t.name LIKE ? OR ta.alias LIKE ?))" +
-					")"
-				perKWExpr = append(perKWExpr, expr)
+				perKWExpr = append(perKWExpr, mainQueryExpr)
 				perKWArgs = append(perKWArgs, like, like, like, like, like)
 			}
 			groupSQL := strings.Join(perKWExpr, " OR ")
