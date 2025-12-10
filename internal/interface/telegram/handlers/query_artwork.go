@@ -103,7 +103,7 @@ func HybridSearchArtworks(ctx *telegohandler.Context, message telego.Message) er
 		helpText := `
 <b>使用 /hybrid 命令并提供查询参数, 将使用混合搜索引擎搜索相关图片</b>
 
-命令语法: /hybrid <搜索内容> [语义比例]
+命令语法: /hybrid 搜索内容 [语义比例]
 
 语义比例为0-1的浮点数, 应位于参数列表最后, 越大越趋向于基于语义搜索, 若不提供, 使用默认值0.8
 
