@@ -21,7 +21,7 @@ require (
 	github.com/krau/ffmpeg-go v0.6.0
 	github.com/krau/go-thumbhash v0.0.0-20250822034729-2df7c655859d
 	github.com/meilisearch/meilisearch-go v0.34.2
-	github.com/mymmrac/telego v1.3.1
+	github.com/mymmrac/telego v1.3.3
 	github.com/ncruces/go-sqlite3 v0.30.3
 	github.com/rhysd/go-github-selfupdate v1.2.3
 	github.com/samber/oops v1.19.4
@@ -97,7 +97,7 @@ require (
 	github.com/twitchyliquid64/golang-asm v0.15.1 // indirect
 	github.com/ulikunitz/xz v0.5.15 // indirect
 	github.com/valyala/fasthttp v1.68.0 // indirect
-	github.com/valyala/fastjson v1.6.4 // indirect
+	github.com/valyala/fastjson v1.6.5 // indirect
 	github.com/vmihailenco/tagparser/v2 v2.0.0 // indirect
 	go.opentelemetry.io/otel v1.39.0 // indirect
 	go.opentelemetry.io/otel/trace v1.39.0 // indirect

@@ -70,7 +70,6 @@ func (d *DB) GetArtworkByURL(ctx context.Context, url string) (*entity.Artwork, 
 	return &artwork, nil
 }
 
-
 func (d *DB) DeleteArtworkByID(ctx context.Context, id objectuuid.ObjectUUID) error {
 	n, err := gorm.G[entity.Artwork](d.db).
 		Where("id = ?", id).
