@@ -164,15 +164,16 @@ func doPostAndCreateArtwork(
 
 	editReplyMarkupText("正在发布到频道...")
 
-	msgs, err := SendArtworkMediaGroup(ctx, bot, serv, meta, toChatID, artwork)
+	results, err := SendArtworkMediaGroup(ctx, bot, serv, meta, toChatID, artwork)
 	if err != nil {
 		return oops.Wrapf(err, "failed to send artwork media group")
 	}
-	if len(msgs) == 0 {
+	if len(results) == 0 {
 		return oops.New("no messages sent")
 	}
 	// 更新 cached artwork 的 TelegramInfo
-	for _, msg := range msgs {
+	// 这里不用 UpdateCachedArtworkFileID , 因为还需要更新 message 信息
+	for _, msg := range results {
 		tginfo := shared.TelegramInfo{}
 		tginfo.SetMessage(meta.ChannelChatID().ID, msg.Message.MessageID, msg.Message.MediaGroupID)
 		if msg.UgoiraIndex >= 0 {

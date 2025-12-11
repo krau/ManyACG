@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/krau/ManyACG/internal/common/httpclient"
+	"github.com/krau/ManyACG/internal/infra/config/runtimecfg"
 	"github.com/krau/ManyACG/internal/infra/kvstor"
 	"github.com/krau/ManyACG/internal/interface/telegram/metautil"
 	"github.com/krau/ManyACG/internal/model/entity"
@@ -101,7 +102,7 @@ func CreateArtworkInfoReplyMarkup(ctx context.Context,
 }
 
 func ArtworkPostKeyboard(meta *metautil.MetaData, cbId string) [][]telego.InlineKeyboardButton {
-	return [][]telego.InlineKeyboardButton{
+	base := [][]telego.InlineKeyboardButton{
 		{
 			telegoutil.InlineKeyboardButton("发布").WithCallbackData(fmt.Sprintf("post_artwork %s", cbId)),
 			telegoutil.InlineKeyboardButton("发布(反转R18)").WithCallbackData(fmt.Sprintf("post_artwork_r18 %s", cbId)),
@@ -111,6 +112,23 @@ func ArtworkPostKeyboard(meta *metautil.MetaData, cbId string) [][]telego.Inline
 			telegoutil.InlineKeyboardButton("预览").WithURL(meta.BotDeepLink("info", cbId)),
 		},
 	}
+	if extra := runtimecfg.Get().Telegram.ExtraTarget; len(extra) > 0 {
+		row := []telego.InlineKeyboardButton{}
+		for _, target := range extra {
+			// 两个一行
+			btn := telegoutil.InlineKeyboardButton(fmt.Sprintf("发到 %s", target.Title))
+			btn = btn.WithCallbackData(fmt.Sprintf("sendto %s %d", cbId, target.ChatID))
+			row = append(row, btn)
+			if len(row) >= 2 {
+				base = append(base, row)
+				row = []telego.InlineKeyboardButton{}
+			}
+		}
+		if len(row) > 0 {
+			base = append(base, row)
+		}
+	}
+	return base
 }
 
 // SendArtworkInfo 将作品信息附带操作按钮发送到指定聊天, 用于提供给管理员发布或修改作品

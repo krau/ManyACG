@@ -55,6 +55,7 @@ func (m HandlerManager) Register(hg *telegohandler.HandlerGroup) {
 	hg.HandleCallbackQuery(SearchPictureCallbackQuery, telegohandler.CallbackDataPrefix("search_picture"))
 	hg.HandleCallbackQuery(EditArtworkR18, telegohandler.CallbackDataPrefix("edit_artwork r18"))
 	hg.HandleCallbackQuery(DeleteArtworkCallbackQuery, telegohandler.CallbackDataPrefix("delete_artwork"))
+	hg.HandleCallbackQuery(SendtoArtworkCallbackQuery, telegohandler.CallbackDataPrefix("sendto"))
 
 	hg.HandleInlineQuery(InlineQuery)
 	hg.Use(func(ctx *telegohandler.Context, update telego.Update) error {
