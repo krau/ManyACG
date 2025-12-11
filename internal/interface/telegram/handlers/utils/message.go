@@ -89,6 +89,8 @@ type ArtworkCaptionData struct {
 	ArtistName  string
 	Description template.HTML
 	Tags        template.HTML
+	// 用于对未发布到频道的作品的标记
+	IsCache bool
 }
 
 func ArtworkHTMLCaption(artwork shared.ArtworkLike) string {
@@ -117,10 +119,17 @@ func ArtworkHTMLCaption(artwork shared.ArtworkLike) string {
 		tags += "#" + strings.TrimSpace(html.EscapeString(tag)) + " "
 	}
 
+	cached, ok1 := artwork.(*entity.CachedArtwork)
+	if ok1 {
+		ok1 = cached.Status == shared.ArtworkStatusCached
+	}
+	_, ok2 := artwork.(*entity.CachedArtworkData)
+	isCache := ok1 || ok2
 	data := ArtworkCaptionData{
 		SourceURL:  sourceUrl,
 		Title:      title,
 		ArtistName: artistName,
+		IsCache:    isCache,
 	}
 	if description != "" {
 		data.Description = template.HTML(description)

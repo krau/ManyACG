@@ -312,6 +312,20 @@ func doPostAndCreateArtwork(
 		}
 		replyWaitMsg(text)
 	}
+	// recaption the posted message
+	ent, err = serv.GetArtworkByURL(ctx, artwork.SourceURL)
+	if err != nil {
+		return oops.Wrapf(err, "failed to get artwork by url for recaption")
+	}
+	caption := ArtworkHTMLCaption(ent)
+	_, err = bot.EditMessageCaption(ctx, telegoutil.
+		EditMessageCaption(toChatID,
+			ent.Pictures[0].TelegramInfo.Data().MessageID(meta.ChannelChatID().ID),
+			caption).
+		WithParseMode(telego.ModeHTML))
+	if err != nil {
+		log.Warn("failed to recaption posted artwork message", "err", err)
+	}
 	return nil
 }
 
@@ -337,12 +351,12 @@ func init() {
 		queueSize   = 17
 	)
 	postArtworkTaskQueue = make(chan *postArtworkJob, queueSize)
-	for i := 0; i < workerCount; i++ {
-		go artworkPoster(i)
+	for range workerCount {
+		go artworkPoster()
 	}
 }
 
-func artworkPoster(id int) {
+func artworkPoster() {
 	for j := range postArtworkTaskQueue {
 		err := doPostAndCreateArtwork(j.ctx, j.bot, j.serv, j.meta, j.artwork, j.fromChatID, j.toChatID, j.messageID)
 		if j.done != nil {
