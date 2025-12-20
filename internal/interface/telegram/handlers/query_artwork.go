@@ -37,8 +37,9 @@ func RandomPicture(ctx *telegohandler.Context, message telego.Message) error {
 	serv := service.FromContext(ctx)
 	artwork, err := serv.QueryArtworks(ctx, query.ArtworksDB{
 		ArtworksFilter: query.ArtworksFilter{
-			R18:      r18Type,
-			Keywords: textArray,
+			R18:        r18Type,
+			Keywords:   textArray,
+			HasPicture: true,
 		},
 		Paginate: query.Paginate{
 			Offset: 0,

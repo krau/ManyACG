@@ -117,7 +117,8 @@ func HandleRandomArtworks(ctx fiber.Ctx) error {
 	}
 	artworks, err := serv.QueryArtworks(ctx, query.ArtworksDB{
 		ArtworksFilter: query.ArtworksFilter{
-			R18: shared.R18TypeFromInt(req.R18),
+			R18:        shared.R18TypeFromInt(req.R18),
+			HasPicture: true,
 		},
 		Random: true,
 		Paginate: query.Paginate{
@@ -144,7 +145,8 @@ func HandleRandomPreviewArtworks(ctx fiber.Ctx) error {
 	}
 	artworks, err := serv.QueryArtworks(ctx, query.ArtworksDB{
 		ArtworksFilter: query.ArtworksFilter{
-			R18: shared.R18TypeFromInt(req.R18),
+			R18:        shared.R18TypeFromInt(req.R18),
+			HasPicture: true,
 		},
 		Random: true,
 		Paginate: query.Paginate{
@@ -311,7 +313,8 @@ func GetHandleListArtworks(serv *service.Service, cfg runtimecfg.RestConfig) fib
 			keywords := strutil.ParseTo2DArray(req.Keyword, ",", "|")
 			dbQuery := query.ArtworksDB{
 				ArtworksFilter: query.ArtworksFilter{
-					R18: shared.R18TypeFromInt(req.R18),
+					R18:        shared.R18TypeFromInt(req.R18),
+					HasPicture: true,
 				},
 				Paginate: query.Paginate{
 					Limit:  int(req.PageSize),

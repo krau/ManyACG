@@ -61,8 +61,9 @@ func InlineQuery(ctx *telegohandler.Context, inlineQuery telego.InlineQuery) err
 	texts := strutil.ParseTo2DArray(queryText, "|", " ")
 	artworks, err := serv.QueryArtworks(ctx, query.ArtworksDB{
 		ArtworksFilter: query.ArtworksFilter{
-			R18:      shared.R18TypeAll,
-			Keywords: texts,
+			R18:        shared.R18TypeAll,
+			Keywords:   texts,
+			HasPicture: true,
 		},
 		Paginate: query.Paginate{
 			Limit:  48,

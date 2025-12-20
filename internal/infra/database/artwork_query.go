@@ -17,8 +17,17 @@ func applyBaseFilters(que query.ArtworksDB) func(db *gorm.DB) *gorm.DB {
 		if que.R18 != shared.R18TypeAll {
 			db = db.Where("r18 = ?", que.R18 == shared.R18TypeR18)
 		}
-		if que.ArtistID.IsZero() {
+		if !que.ArtistID.IsZero() {
 			db = db.Where("artist_id = ?", que.ArtistID)
+		}
+		if que.HasPicture {
+			db = db.Where("EXISTS (SELECT 1 FROM pictures p WHERE p.artwork_id = artworks.id)")
+		}
+		if que.HasVideo {
+			db = db.Where("EXISTS (SELECT 1 FROM videos v WHERE v.artwork_id = artworks.id)")
+		}
+		if que.HasUgoira {
+			db = db.Where("EXISTS (SELECT 1 FROM ugoira_metas u WHERE u.artwork_id = artworks.id)")
 		}
 
 		// Tags：Group AND，Group 内 OR（IDs）
@@ -44,7 +53,6 @@ func buildKeywordArgs(kw string) []any {
 }
 
 func (d *DB) QueryArtworks(ctx context.Context, que query.ArtworksDB) ([]*entity.Artwork, error) {
-	// @所有ai, 给我生成高性能代码 🤡
 	// 基础过滤
 	baseQuery := d.db.WithContext(ctx).Model(&entity.Artwork{}).
 		Scopes(applyBaseFilters(que))

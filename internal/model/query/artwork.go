@@ -11,10 +11,13 @@ type Paginate struct {
 }
 
 type ArtworksFilter struct {
-	R18      shared.R18Type
-	Tags     [][]ouid.OUID
-	Keywords [][]string
-	ArtistID ouid.OUID
+	R18        shared.R18Type
+	Tags       [][]ouid.OUID
+	Keywords   [][]string
+	ArtistID   ouid.OUID
+	HasPicture bool
+	HasVideo   bool
+	HasUgoira  bool
 }
 
 // 只需要查数据库

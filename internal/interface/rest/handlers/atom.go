@@ -23,7 +23,8 @@ func GenerateAtomFeed(ctx fiber.Ctx) error {
 			Limit: 50,
 		},
 		ArtworksFilter: query.ArtworksFilter{
-			R18: shared.R18TypeNone,
+			R18:        shared.R18TypeNone,
+			HasPicture: true,
 		},
 	})
 	if err != nil {
