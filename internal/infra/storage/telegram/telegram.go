@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"path"
@@ -16,6 +15,7 @@ import (
 	"github.com/mymmrac/telego"
 	"github.com/mymmrac/telego/telegoapi"
 	"github.com/mymmrac/telego/telegoutil"
+	"github.com/samber/oops"
 )
 
 type TelegramStorage struct {
@@ -66,21 +66,14 @@ func (t *TelegramStorage) Save(ctx context.Context, r io.Reader, storPath string
 	// if err != nil {
 	// 	return nil, ErrReadFile
 	// }
-	for i := range t.cfg.Retry.MaxAttempts {
-		msg, err = t.bot.SendDocument(ctx, telegoutil.Document(t.chatID, telegoutil.File(telegoutil.NameReader(r, path.Base(storPath)))))
-		if err != nil {
-			var apiErr *telegoapi.Error
-			if errors.As(err, &apiErr) && apiErr.ErrorCode == 429 && apiErr.Parameters != nil {
-				retryAfter := apiErr.Parameters.RetryAfter + (i * int(t.cfg.Retry.StartDelay))
-				time.Sleep(time.Duration(retryAfter) * time.Second)
-				continue
-			}
-			return nil, fmt.Errorf("failed to send document: %w", err)
-		}
-		break
-	}
+	msg, err = t.bot.SendDocument(ctx,
+		telegoutil.Document(t.chatID,
+			telegoutil.File(telegoutil.NameReader(r, path.Base(storPath)))).WithDisableContentTypeDetection())
 	if err != nil {
 		return nil, fmt.Errorf("failed to send document: %w", err)
+	}
+	if msg == nil || msg.Document == nil || msg.MessageID == 0 || msg.Document.FileID == "" {
+		return nil, oops.Errorf("invalid telegram document message returned: %+v", msg)
 	}
 	fileMessage := &fileMessage{
 		ChatID:     t.chatID.ID,
