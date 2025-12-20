@@ -79,10 +79,6 @@ func (s *Service) StorageGetFile(ctx context.Context, detail shared.StorageDetai
 	}
 
 	cachePath := s.storageCachePath(detail)
-	ext := filepath.Ext(detail.Path)
-	if ext != "" {
-		cachePath += ext
-	}
 	if stor, ok := s.storages[detail.Type]; ok {
 		// 先检查缓存
 		if cacheFile, err := osutil.OpenCache(cachePath); err == nil {

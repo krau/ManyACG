@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"path/filepath"
 	"time"
 
 	"github.com/krau/ManyACG/internal/common/httpclient"
@@ -314,15 +315,17 @@ func GetUgoiraVideoDocumentInputFile(ctx context.Context, serv *service.Service,
 	if id := ugoira.GetTelegramInfo().DocumentFileID(meta.BotID()); id != "" {
 		return ioutil.NewCloser(telegoutil.FileFromID(id), func() error { return nil }), nil
 	}
+
 	data := ugoira.GetUgoiraMetaData()
-	orgStorDetail := ugoira.GetOriginalStorage()
-	if orgStorDetail != shared.ZeroStorageDetail {
-		file, err := serv.StorageGetFile(ctx, orgStorDetail)
-		if err != nil {
-			return nil, oops.Wrapf(err, "failed to get ugoira file from storage")
-		}
+
+	buildInput := func(file interface {
+		Name() string
+		Close() error
+	}) (*ioutil.Closer[telego.InputFile], error) {
 		defer file.Close()
-		videoPath, err := mediatool.UgoiraZipToMp4(file.Name(), data.Frames, file.Name()+".mp4")
+
+		outputPath := file.Name()[0:len(file.Name())-len(filepath.Ext(file.Name()))] + ".mp4"
+		videoPath, err := mediatool.UgoiraZipToMp4(file.Name(), data.Frames, outputPath)
 		if err != nil {
 			return nil, oops.Wrapf(err, "failed to convert ugoira to mp4")
 		}
@@ -332,20 +335,21 @@ func GetUgoiraVideoDocumentInputFile(ctx context.Context, serv *service.Service,
 		}
 		return ioutil.NewCloser(telegoutil.File(videoFile), func() error { return videoFile.Close() }), nil
 	}
+
+	orgStorDetail := ugoira.GetOriginalStorage()
+	if orgStorDetail != shared.ZeroStorageDetail {
+		file, err := serv.StorageGetFile(ctx, orgStorDetail)
+		if err != nil {
+			return nil, oops.Wrapf(err, "failed to get ugoira file from storage")
+		}
+		return buildInput(file)
+	}
+
 	file, err := httpclient.DownloadWithCache(ctx, data.OriginalZip, nil)
 	if err != nil {
 		return nil, oops.Wrapf(err, "failed to download ugoira file: %s", data.OriginalZip)
 	}
-	defer file.Close()
-	videoPath, err := mediatool.UgoiraZipToMp4(file.Name(), data.Frames, file.Name()+".mp4")
-	if err != nil {
-		return nil, oops.Wrapf(err, "failed to convert ugoira to mp4")
-	}
-	videoFile, err := osutil.OpenTemp(videoPath)
-	if err != nil {
-		return nil, oops.Wrapf(err, "failed to open temp video file")
-	}
-	return ioutil.NewCloser(telegoutil.File(videoFile), func() error { return videoFile.Close() }), nil
+	return buildInput(file)
 }
 
 func GetVideoDocumentInputFile(ctx context.Context, serv *service.Service, meta *metautil.MetaData, artwork shared.ArtworkLike, video shared.VideoLike) (*ioutil.Closer[telego.InputFile], error) {

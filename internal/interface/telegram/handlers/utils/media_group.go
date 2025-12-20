@@ -30,6 +30,16 @@ type MediaGroupResultMessage struct {
 	Index   int
 }
 
+// MediaItem represents a photo, ugoira or video for unified processing
+type MediaItem struct {
+	Type         MediaResultType
+	Index        int // original index in pictures, ugoiras or videos array
+	Picture      shared.PictureLike
+	Ugoira       shared.UgoiraMetaLike
+	Video        shared.VideoLike
+	TelegramInfo shared.TelegramInfo
+}
+
 func SendArtworkMediaGroup(
 	ctx context.Context,
 	bot *telego.Bot,
@@ -40,103 +50,53 @@ func SendArtworkMediaGroup(
 
 	go bot.SendChatAction(ctx, telegoutil.ChatAction(chatID, telego.ChatActionUploadPhoto))
 
-	results := make([]MediaGroupResultMessage, 0)
-	photoMsgs, err := SendArtworkPhotoMediaGroup(ctx, bot, serv, meta, chatID, artwork)
-	if err != nil {
-		return nil, oops.Wrapf(err, "failed to send artwork photo media group")
-	}
-	// collect photo file ids
-	for i, msg := range photoMsgs {
-		if len(msg.Photo) == 0 {
-			continue
-		}
-		results = append(results, MediaGroupResultMessage{
-			Message: msg,
-			FileID:  msg.Photo[len(msg.Photo)-1].FileID, // get the highest resolution photo
-			Index:   i,
-			Type:    MediaResultTypePhoto,
-		})
-	}
-	if mediatool.FFmpegAvailable() && len(artwork.GetUgoiraMetas()) > 0 {
-		sendOption := &SendOption{}
-		if len(results) > 0 {
-			sendOption.ReplyTo = results[0].Message.MessageID
-		}
-		ugoiraMsgs, err := SendArtworkUgoiraMediaGroup(ctx, bot, serv, meta, chatID, artwork, sendOption)
-		if err != nil {
-			return nil, oops.Wrapf(err, "failed to send artwork ugoira media group")
-		}
-		// collect ugoira file ids
-		for i, msg := range ugoiraMsgs {
-			if msg.Video == nil {
-				continue
-			}
-			results = append(results, MediaGroupResultMessage{
-				Message: msg,
-				FileID:  msg.Video.FileID,
-				Type:    MediaResultTypeUgoira,
-				Index:   i,
-			})
-		}
-	}
-	if len(artwork.GetVideos()) > 0 {
-		sendOption := &SendOption{}
-		if len(results) > 0 {
-			sendOption.ReplyTo = results[0].Message.MessageID
-		}
-		videoMsgs, err := SendArtworkVideoMediaGroup(ctx, bot, serv, meta, chatID, artwork, sendOption)
-		if err != nil {
-			return nil, oops.Wrapf(err, "failed to send artwork video media group")
-		}
-		// collect video file ids
-		for i, msg := range videoMsgs {
-			if msg.Video == nil {
-				continue
-			}
-			results = append(results, MediaGroupResultMessage{
-				Message: msg,
-				FileID:  msg.Video.FileID,
-				Type:    MediaResultTypeVideo,
-				Index:   i,
-			})
-		}
+	// https://core.telegram.org/bots/api#sendmediagroup
+	// Photos and videos can be mixed in the same media group
+	includeUgoira := mediatool.FFmpegAvailable() && len(artwork.GetUgoiraMetas()) > 0
+	items := buildMediaItems(artwork, includeUgoira)
+	if len(items) == 0 {
+		return nil, oops.New("no media found in artwork")
 	}
 
-	return results, nil
-}
-
-func SendArtworkPhotoMediaGroup(
-	ctx context.Context,
-	bot *telego.Bot,
-	serv *service.Service,
-	meta *metautil.MetaData,
-	chatID telego.ChatID,
-	artwork shared.ArtworkLike) ([]telego.Message, error) {
-
-	pics := artwork.GetPictures()
 	caption := ArtworkHTMLCaption(artwork)
+	results := make([]MediaGroupResultMessage, 0, len(items))
 
-	if len(pics) <= 10 {
-		inputs, err := ArtworkInputMediaPhotos(ctx, serv, meta, artwork, caption, 0, len(pics))
+	if len(items) <= 10 {
+		inputs, err := ArtworkInputMedias(ctx, serv, meta, artwork, caption, items, 0, len(items))
 		if err != nil {
-			return nil, oops.Wrapf(err, "failed to create input media photos")
+			return nil, oops.Wrapf(err, "failed to create input medias")
 		}
 		defer inputs.Close()
-		// Send the media group
-		return bot.SendMediaGroup(ctx, telegoutil.MediaGroup(
-			chatID,
-			inputs.Value...,
-		))
-	}
-	messages := make([]telego.Message, len(pics))
-	for i := 0; i < len(pics); i += 10 {
-		end := i + 10
-		if end > len(pics) {
-			end = len(pics)
-		}
-		inputs, err := ArtworkInputMediaPhotos(ctx, serv, meta, artwork, caption, i, end)
+		msgs, err := bot.SendMediaGroup(ctx, telegoutil.MediaGroup(chatID, inputs.Value...))
 		if err != nil {
-			return nil, oops.Wrapf(err, "failed to create input media photos")
+			return nil, oops.Wrapf(err, "failed to send media group")
+		}
+		for i, msg := range msgs {
+			result := MediaGroupResultMessage{
+				Message: msg,
+				Type:    items[i].Type,
+				Index:   items[i].Index,
+			}
+			if items[i].Type == MediaResultTypePhoto && len(msg.Photo) > 0 {
+				result.FileID = msg.Photo[len(msg.Photo)-1].FileID
+			} else if msg.Video != nil {
+				result.FileID = msg.Video.FileID
+			}
+			results = append(results, result)
+		}
+		return results, nil
+	}
+
+	// Send in batches of 10
+	messages := make([]telego.Message, len(items))
+	for i := 0; i < len(items); i += 10 {
+		end := i + 10
+		if end > len(items) {
+			end = len(items)
+		}
+		inputs, err := ArtworkInputMedias(ctx, serv, meta, artwork, caption, items, i, end)
+		if err != nil {
+			return nil, oops.Wrapf(err, "failed to create input medias")
 		}
 		defer inputs.Close()
 		mediaGroup := telegoutil.MediaGroup(chatID, inputs.Value...)
@@ -152,190 +112,141 @@ func SendArtworkPhotoMediaGroup(
 		}
 		copy(messages[i:], msgs)
 	}
-	return messages, nil
-}
 
-func ArtworkInputMediaPhotos(
-	ctx context.Context,
-	serv *service.Service,
-	meta *metautil.MetaData,
-	artwork shared.ArtworkLike,
-	caption string,
-	start, end int) (*ioutil.Closer[[]telego.InputMedia], error) {
-	inputMediaPhotos := make([]telego.InputMedia, end-start)
-	awPics := artwork.GetPictures()
-	if start < 0 || end > len(awPics) || start >= end {
-		return nil, oops.Errorf("invalid start or end index: %d, %d, len=%d", start, end, len(awPics))
-	}
-
-	closers := make([]func() error, 0, end-start)
-
-	for i := start; i < end; i++ {
-		picture := awPics[i]
-		err := func() error {
-			var photo *telego.InputMediaPhoto
-			if id := picture.GetTelegramInfo().PhotoFileID(meta.BotID()); id != "" {
-				photo = telegoutil.MediaPhoto(telegoutil.FileFromID(id))
-			} else {
-				if picture.GetStorageInfo() != shared.ZeroStorageInfo && picture.GetStorageInfo().Original != nil {
-					// download from storage
-					file, err := serv.StorageGetFile(ctx, *picture.GetStorageInfo().Original)
-					if err != nil {
-						return oops.Wrapf(err, "failed to get file from storage")
-					}
-					defer file.Close()
-					compressed, err := mediatool.CompressForTelegramFromFile(file.Name())
-					if err != nil {
-						return oops.Wrapf(err, "failed to compress image")
-					}
-					photo = telegoutil.MediaPhoto(telegoutil.File(compressed))
-					closers = append(closers, func() error { return compressed.Close() })
-				} else {
-					file, err := httpclient.DownloadWithCache(ctx, picture.GetOriginal(), nil)
-					if err != nil {
-						return oops.Wrapf(err, "failed to download file: %s", picture.GetOriginal())
-					}
-					defer file.Close()
-					compressed, err := mediatool.CompressForTelegramFromFile(file.Name())
-					if err != nil {
-						return oops.Wrapf(err, "failed to compress image")
-					}
-					photo = telegoutil.MediaPhoto(telegoutil.File(compressed))
-					closers = append(closers, func() error { return compressed.Close() })
-				}
-			}
-			if photo == nil {
-				return oops.New("failed to create input media photo")
-			}
-			if i == 0 {
-				photo = photo.WithCaption(caption).WithParseMode(telego.ModeHTML)
-			}
-			if artwork.GetR18() {
-				photo = photo.WithHasSpoiler()
-			}
-			inputMediaPhotos[i-start] = photo
-			return nil
-		}()
-		if err != nil {
-			var closeErrs []error
-			for _, closer := range closers {
-				if err := closer(); err != nil {
-					closeErrs = append(closeErrs, err)
-				}
-			}
-			return nil, oops.Wrapf(err, "failed to create input media photo, close errs: %v", oops.Join(closeErrs...))
+	for i, msg := range messages {
+		result := MediaGroupResultMessage{
+			Message: msg,
+			Type:    items[i].Type,
+			Index:   items[i].Index,
 		}
+		if items[i].Type == MediaResultTypePhoto && len(msg.Photo) > 0 {
+			result.FileID = msg.Photo[len(msg.Photo)-1].FileID
+		} else if msg.Video != nil {
+			result.FileID = msg.Video.FileID
+		}
+		results = append(results, result)
 	}
-	return &ioutil.Closer[[]telego.InputMedia]{
-		Value: inputMediaPhotos,
-		CloseFunc: func() error {
-			var errs []error
-			for _, closer := range closers {
-				if err := closer(); err != nil {
-					errs = append(errs, err)
-				}
-			}
-			return oops.Join(errs...)
-		},
-	}, nil
+
+	return results, nil
 }
 
 type SendOption struct {
 	ReplyTo int
 }
 
-func SendArtworkUgoiraMediaGroup(
-	ctx context.Context,
-	bot *telego.Bot,
-	serv *service.Service,
-	meta *metautil.MetaData,
-	chatID telego.ChatID,
-	artwork shared.ArtworkLike,
-	opt *SendOption,
-) ([]telego.Message, error) {
+// buildMediaItems creates a combined list of MediaItems from pictures, ugoiras and videos
+func buildMediaItems(artwork shared.ArtworkLike, includeUgoira bool) []MediaItem {
+	items := make([]MediaItem, 0)
 
-	ugoiras := artwork.GetUgoiraMetas()
-	caption := ArtworkHTMLCaption(artwork)
-	if len(ugoiras) <= 10 {
-		inputs, err := ArtworkInputMediaVideos(ctx, serv, meta, artwork, caption, 0, len(ugoiras))
-		if err != nil {
-			return nil, oops.Wrapf(err, "failed to create input media videos")
-		}
-		defer inputs.Close()
-		mediaGroup := telegoutil.MediaGroup(
-			chatID,
-			inputs.Value...,
-		)
-		if opt != nil && opt.ReplyTo != 0 {
-			mediaGroup = mediaGroup.WithReplyParameters(&telego.ReplyParameters{
-				ChatID:    chatID,
-				MessageID: opt.ReplyTo,
-			})
-		}
-		return bot.SendMediaGroup(ctx, mediaGroup)
+	// Add pictures first
+	for i, pic := range artwork.GetPictures() {
+		items = append(items, MediaItem{
+			Type:         MediaResultTypePhoto,
+			Index:        i,
+			Picture:      pic,
+			TelegramInfo: pic.GetTelegramInfo(),
+		})
 	}
 
-	messages := make([]telego.Message, len(ugoiras))
-	for i := 0; i < len(ugoiras); i += 10 {
-		end := i + 10
-		if end > len(ugoiras) {
-			end = len(ugoiras)
-		}
-		inputs, err := ArtworkInputMediaVideos(ctx, serv, meta, artwork, caption, i, end)
-		if err != nil {
-			return nil, oops.Wrapf(err, "failed to create input media videos")
-		}
-		defer inputs.Close()
-		mediaGroup := telegoutil.MediaGroup(chatID, inputs.Value...)
-		if opt != nil && opt.ReplyTo != 0 && i == 0 {
-			mediaGroup = mediaGroup.WithReplyParameters(&telego.ReplyParameters{
-				ChatID:    chatID,
-				MessageID: opt.ReplyTo,
+	// Add ugoiras (converted to video)
+	if includeUgoira {
+		for i, ugoira := range artwork.GetUgoiraMetas() {
+			items = append(items, MediaItem{
+				Type:         MediaResultTypeUgoira,
+				Index:        i,
+				Ugoira:       ugoira,
+				TelegramInfo: ugoira.GetTelegramInfo(),
 			})
 		}
-		if i > 0 {
-			mediaGroup = mediaGroup.WithReplyParameters(&telego.ReplyParameters{
-				ChatID:    chatID,
-				MessageID: messages[i-1].MessageID,
-			})
-		}
-		msgs, err := bot.SendMediaGroup(ctx, mediaGroup)
-		if err != nil {
-			return nil, oops.Wrapf(err, "failed to send media group")
-		}
-		copy(messages[i:], msgs)
 	}
-	return messages, nil
+
+	// Add videos
+	for i, video := range artwork.GetVideos() {
+		items = append(items, MediaItem{
+			Type:         MediaResultTypeVideo,
+			Index:        i,
+			Video:        video,
+			TelegramInfo: video.GetTelegramInfo(),
+		})
+	}
+
+	return items
 }
 
-func ArtworkInputMediaVideos(ctx context.Context,
+// ArtworkInputMedias creates input medias from MediaItems (supports mixed photos and videos)
+func ArtworkInputMedias(
+	ctx context.Context,
 	serv *service.Service,
 	meta *metautil.MetaData,
 	artwork shared.ArtworkLike,
 	caption string,
-	start, end int) (*ioutil.Closer[[]telego.InputMedia], error) {
-
-	if start < 0 || start >= end {
-		return nil, oops.Errorf("invalid start or end index: %d, %d", start, end)
+	items []MediaItem,
+	start, end int,
+) (*ioutil.Closer[[]telego.InputMedia], error) {
+	if start < 0 || end > len(items) || start >= end {
+		return nil, oops.Errorf("invalid start or end index: %d, %d, len=%d", start, end, len(items))
 	}
+
 	inputMedias := make([]telego.InputMedia, end-start)
 	closers := make([]func() error, 0, end-start)
 
-	if ugoiras := artwork.GetUgoiraMetas(); len(ugoiras) > 0 {
-		if end > len(ugoiras) {
-			return nil, oops.Errorf("invalid start or end index: %d, %d, len=%d", start, end, len(ugoiras))
-		}
+	for i := start; i < end; i++ {
+		item := items[i]
+		err := func() error {
+			var inputMedia telego.InputMedia
 
-		for i := start; i < end; i++ {
-			ugoira := ugoiras[i]
-			err := func() error {
+			switch item.Type {
+			case MediaResultTypePhoto:
+				picture := item.Picture
+				var photo *telego.InputMediaPhoto
+				if id := item.TelegramInfo.PhotoFileID(meta.BotID()); id != "" {
+					photo = telegoutil.MediaPhoto(telegoutil.FileFromID(id))
+				} else {
+					if picture.GetStorageInfo() != shared.ZeroStorageInfo && picture.GetStorageInfo().Original != nil {
+						file, err := serv.StorageGetFile(ctx, *picture.GetStorageInfo().Original)
+						if err != nil {
+							return oops.Wrapf(err, "failed to get file from storage")
+						}
+						defer file.Close()
+						compressed, err := mediatool.CompressForTelegramFromFile(file.Name())
+						if err != nil {
+							return oops.Wrapf(err, "failed to compress image")
+						}
+						photo = telegoutil.MediaPhoto(telegoutil.File(compressed))
+						closers = append(closers, func() error { return compressed.Close() })
+					} else {
+						file, err := httpclient.DownloadWithCache(ctx, picture.GetOriginal(), nil)
+						if err != nil {
+							return oops.Wrapf(err, "failed to download file: %s", picture.GetOriginal())
+						}
+						defer file.Close()
+						compressed, err := mediatool.CompressForTelegramFromFile(file.Name())
+						if err != nil {
+							return oops.Wrapf(err, "failed to compress image")
+						}
+						photo = telegoutil.MediaPhoto(telegoutil.File(compressed))
+						closers = append(closers, func() error { return compressed.Close() })
+					}
+				}
+				if photo == nil {
+					return oops.New("failed to create input media photo")
+				}
+				if i == start {
+					photo = photo.WithCaption(caption).WithParseMode(telego.ModeHTML)
+				}
+				if artwork.GetR18() {
+					photo = photo.WithHasSpoiler()
+				}
+				inputMedia = photo
+
+			case MediaResultTypeUgoira:
+				ugoira := item.Ugoira
 				var video *telego.InputMediaVideo
-				if id := ugoira.GetTelegramInfo().VideoFileID(meta.BotID()); id != "" {
+				if id := item.TelegramInfo.VideoFileID(meta.BotID()); id != "" {
 					video = telegoutil.MediaVideo(telegoutil.FileFromID(id))
 				} else {
 					storDetail := ugoira.GetOriginalStorage()
 					if storDetail != shared.ZeroStorageDetail {
-						// download from storage
 						file, err := serv.StorageGetFile(ctx, storDetail)
 						if err != nil {
 							return oops.Wrapf(err, "failed to get file from storage")
@@ -343,7 +254,7 @@ func ArtworkInputMediaVideos(ctx context.Context,
 						defer file.Close()
 						videoPath, err := mediatool.UgoiraZipToMp4(file.Name(), ugoira.GetUgoiraMetaData().Frames, file.Name()+".mp4")
 						if err != nil {
-							return oops.Wrapf(err, "failed to compress image")
+							return oops.Wrapf(err, "failed to convert ugoira to mp4")
 						}
 						videoFile, err := osutil.OpenTemp(videoPath)
 						if err != nil {
@@ -359,7 +270,7 @@ func ArtworkInputMediaVideos(ctx context.Context,
 						defer file.Close()
 						videoPath, err := mediatool.UgoiraZipToMp4(file.Name(), ugoira.GetUgoiraMetaData().Frames, file.Name()+".mp4")
 						if err != nil {
-							return oops.Wrapf(err, "failed to compress image")
+							return oops.Wrapf(err, "failed to convert ugoira to mp4")
 						}
 						videoFile, err := osutil.OpenTemp(videoPath)
 						if err != nil {
@@ -370,163 +281,70 @@ func ArtworkInputMediaVideos(ctx context.Context,
 					}
 				}
 				if video == nil {
-					return oops.New("failed to create input media video")
+					return oops.New("failed to create input media video for ugoira")
 				}
-				if i == 0 {
+				if i == start {
 					video = video.WithCaption(caption).WithParseMode(telego.ModeHTML)
 				}
 				if artwork.GetR18() {
 					video = video.WithHasSpoiler()
 				}
-				inputMedias[i-start] = video
-				return nil
-			}()
-			if err != nil {
-				var closeErrs []error
-				for _, close := range closers {
-					if err := close(); err != nil {
-						closeErrs = append(closeErrs, err)
-					}
-				}
-				return nil, oops.Wrapf(err, "failed to create input media photo, close errs: %v", oops.Join(closeErrs...))
-			}
-		}
-		return &ioutil.Closer[[]telego.InputMedia]{
-			Value: inputMedias,
-			CloseFunc: func() error {
-				var errs []error
-				for _, close := range closers {
-					if err := close(); err != nil {
-						errs = append(errs, err)
-					}
-				}
-				return oops.Join(errs...)
-			},
-		}, nil
-	}
+				inputMedia = video
 
-	if videos := artwork.GetVideos(); len(videos) > 0 {
-		if end > len(videos) {
-			return nil, oops.Errorf("invalid start or end index: %d, %d, len=%d", start, end, len(videos))
-		}
-
-		for i := start; i < end; i++ {
-			video := videos[i]
-			err := func() error {
-				var mediaVideo *telego.InputMediaVideo
-				if id := video.GetTelegramInfo().VideoFileID(meta.BotID()); id != "" {
-					mediaVideo = telegoutil.MediaVideo(telegoutil.FileFromID(id))
+			case MediaResultTypeVideo:
+				v := item.Video
+				var video *telego.InputMediaVideo
+				if id := item.TelegramInfo.VideoFileID(meta.BotID()); id != "" {
+					video = telegoutil.MediaVideo(telegoutil.FileFromID(id))
 				} else {
-					file, err := httpclient.DownloadWithCache(ctx, video.GetURL(), nil)
+					file, err := httpclient.DownloadWithCache(ctx, v.GetURL(), nil)
 					if err != nil {
-						return oops.Wrapf(err, "failed to download file: %s", video.GetURL())
+						return oops.Wrapf(err, "failed to download file: %s", v.GetURL())
 					}
 					defer file.Close()
 					videoFile, err := osutil.OpenTemp(file.Name())
 					if err != nil {
 						return oops.Wrapf(err, "failed to open video file")
 					}
-					mediaVideo = telegoutil.MediaVideo(telegoutil.File(videoFile))
+					video = telegoutil.MediaVideo(telegoutil.File(videoFile))
 					closers = append(closers, func() error { return videoFile.Close() })
 				}
-				if mediaVideo == nil {
+				if video == nil {
 					return oops.New("failed to create input media video")
 				}
-				if i == 0 {
-					mediaVideo = mediaVideo.WithCaption(caption).WithParseMode(telego.ModeHTML)
+				if i == start {
+					video = video.WithCaption(caption).WithParseMode(telego.ModeHTML)
 				}
 				if artwork.GetR18() {
-					mediaVideo = mediaVideo.WithHasSpoiler()
+					video = video.WithHasSpoiler()
 				}
-				inputMedias[i-start] = mediaVideo
-				return nil
-			}()
-			if err != nil {
-				var closeErrs []error
-				for _, close := range closers {
-					if err := close(); err != nil {
-						closeErrs = append(closeErrs, err)
-					}
-				}
-				return nil, oops.Wrapf(err, "failed to create input media video, close errs: %v", oops.Join(closeErrs...))
+				inputMedia = video
 			}
-		}
-		return &ioutil.Closer[[]telego.InputMedia]{
-			Value: inputMedias,
-			CloseFunc: func() error {
-				var errs []error
-				for _, close := range closers {
-					if err := close(); err != nil {
-						errs = append(errs, err)
-					}
+
+			inputMedias[i-start] = inputMedia
+			return nil
+		}()
+		if err != nil {
+			var closeErrs []error
+			for _, closer := range closers {
+				if err := closer(); err != nil {
+					closeErrs = append(closeErrs, err)
 				}
-				return oops.Join(errs...)
-			},
-		}, nil
+			}
+			return nil, oops.Wrapf(err, "failed to create input media, close errs: %v", oops.Join(closeErrs...))
+		}
 	}
-	return nil, oops.New("no ugoira or video found")
-}
 
-// [TODO] this seems duplicated with SendArtworkUgoiraMediaGroup
-func SendArtworkVideoMediaGroup(
-	ctx context.Context,
-	bot *telego.Bot,
-	serv *service.Service,
-	meta *metautil.MetaData,
-	chatID telego.ChatID,
-	artwork shared.ArtworkLike,
-	opt *SendOption,
-) ([]telego.Message, error) {
-	videos := artwork.GetVideos()
-	caption := ArtworkHTMLCaption(artwork)
-
-	if len(videos) <= 10 {
-		inputs, err := ArtworkInputMediaVideos(ctx, serv, meta, artwork, caption, 0, len(videos))
-		if err != nil {
-			return nil, oops.Wrapf(err, "failed to create input media videos")
-		}
-		defer inputs.Close()
-		mediaGroup := telegoutil.MediaGroup(
-			chatID,
-			inputs.Value...,
-		)
-		if opt != nil && opt.ReplyTo != 0 {
-			mediaGroup = mediaGroup.WithReplyParameters(&telego.ReplyParameters{
-				ChatID:    chatID,
-				MessageID: opt.ReplyTo,
-			})
-		}
-		return bot.SendMediaGroup(ctx, mediaGroup)
-	}
-	messages := make([]telego.Message, len(videos))
-	for i := 0; i < len(videos); i += 10 {
-		end := i + 10
-		if end > len(videos) {
-			end = len(videos)
-		}
-		inputs, err := ArtworkInputMediaVideos(ctx, serv, meta, artwork, caption, i, end)
-		if err != nil {
-			return nil, oops.Wrapf(err, "failed to create input media videos")
-		}
-		defer inputs.Close()
-		mediaGroup := telegoutil.MediaGroup(chatID, inputs.Value...)
-		if opt != nil && opt.ReplyTo != 0 && i == 0 {
-			mediaGroup = mediaGroup.WithReplyParameters(&telego.ReplyParameters{
-				ChatID:    chatID,
-				MessageID: opt.ReplyTo,
-			})
-		}
-		if i > 0 {
-			mediaGroup = mediaGroup.WithReplyParameters(&telego.ReplyParameters{
-				ChatID:    chatID,
-				MessageID: messages[i-1].MessageID,
-			})
-		}
-		msgs, err := bot.SendMediaGroup(ctx, mediaGroup)
-		if err != nil {
-			return nil, oops.Wrapf(err, "failed to send media group")
-		}
-		copy(messages[i:], msgs)
-	}
-	return messages, nil
+	return &ioutil.Closer[[]telego.InputMedia]{
+		Value: inputMedias,
+		CloseFunc: func() error {
+			var errs []error
+			for _, closer := range closers {
+				if err := closer(); err != nil {
+					errs = append(errs, err)
+				}
+			}
+			return oops.Join(errs...)
+		},
+	}, nil
 }
