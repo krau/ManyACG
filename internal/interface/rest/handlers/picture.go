@@ -99,7 +99,7 @@ func HandleGetSizedPictureFileByID(ctx fiber.Ctx) error {
 		}
 
 		pr, pw := io.Pipe()
-		streamCtx, cancel := context.WithCancel(ctx.Context())
+		streamCtx, cancel := context.WithCancel(context.Background())
 		defer cancel()
 
 		errChan := make(chan error, 1)
