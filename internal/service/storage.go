@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	"github.com/gabriel-vasile/mimetype"
+	"github.com/krau/ManyACG/internal/model/entity"
 	"github.com/krau/ManyACG/internal/pkg/mediatool"
 	"github.com/krau/ManyACG/internal/shared"
 	"github.com/krau/ManyACG/pkg/osutil"
@@ -317,4 +318,28 @@ func (s *Service) StorageSaveOriginal(ctx context.Context, file io.Reader, storD
 	}
 
 	return originalDetail, nil
+}
+
+// 删除作品的全部文件, 用于删除作品后调用
+func (s *Service) StorageDeleteArtworkFiles(ctx context.Context, artwork *entity.Artwork) error {
+	var errs []error
+	for _, picture := range artwork.Pictures {
+		if err := s.StorageDeleteByInfo(ctx, picture.StorageInfo.Data()); err != nil {
+			errs = append(errs, oops.Wrapf(err, "delete picture %s files failed", picture.ID.String()))
+		}
+	}
+	for _, ugoira := range artwork.UgoiraMetas {
+		if err := s.StorageDelete(ctx, ugoira.OriginalStorage.Data()); err != nil {
+			errs = append(errs, oops.Wrapf(err, "delete ugoira %s files failed", ugoira.ID.String()))
+		}
+	}
+	for _, video := range artwork.Videos {
+		if err := s.StorageDelete(ctx, video.OriginalStorage.Data()); err != nil {
+			errs = append(errs, oops.Wrapf(err, "delete video %s files failed", video.ID.String()))
+		}
+	}
+	if len(errs) > 0 {
+		return oops.Join(errs...)
+	}
+	return nil
 }

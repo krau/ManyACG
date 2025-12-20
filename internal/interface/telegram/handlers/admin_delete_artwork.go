@@ -50,10 +50,8 @@ func DeleteArtwork(ctx *telegohandler.Context, message telego.Message) error {
 			return nil
 		}
 		utils.ReplyMessageWithHTML(ctx, message, "在数据库中已删除该作品")
-		for _, picture := range artwork.Pictures {
-			if err := serv.StorageDeleteByInfo(ctx, picture.StorageInfo.Data()); err != nil {
-				log.Errorf("删除图片失败: %s", err)
-			}
+		if err := serv.StorageDeleteArtworkFiles(ctx, artwork); err != nil {
+			log.Errorf("删除作品文件失败: %s", err)
 		}
 		return nil
 	}
@@ -125,10 +123,8 @@ func DeleteArtworkCallbackQuery(ctx *telegohandler.Context, query telego.Callbac
 
 	ctx.Bot().AnswerCallbackQuery(ctx, telegoutil.CallbackQuery(query.ID).WithText("在数据库中已删除该作品").WithCacheTime(60))
 
-	for _, picture := range artwork.Pictures {
-		if err := serv.StorageDeleteByInfo(ctx, picture.StorageInfo.Data()); err != nil {
-			log.Warnf("删除图片失败: %s", err)
-		}
+	if err := serv.StorageDeleteArtworkFiles(ctx, artwork); err != nil {
+		log.Warnf("删除作品文件失败: %s", err)
 	}
 	return nil
 }
