@@ -27,6 +27,7 @@ type KemonoPostResp struct {
 		Attachments []KemonoPostAttachment `json:"attachments"`
 	} `json:"post"`
 	Previews []KemonoPreview `json:"previews"`
+	Videos   []KemonoVideo   `json:"videos"`
 }
 
 type KemonoPostAttachment struct {
@@ -46,6 +47,14 @@ type KemonoPreview struct {
 	Server string `json:"server"` // cdn server, e.g. "https://n4.kemono.cr"
 	Name   string `json:"name"`   // file name, 好像没啥用
 	Path   string `json:"path"`   // file path, 和原图一致
+}
+
+type KemonoVideo struct {
+	Index     int    `json:"index"`
+	Path      string `json:"path"`
+	Name      string `json:"name"`
+	Extension string `json:"extension"`
+	Server    string `json:"server"` // cdn server, e.g. "https://n1.kemono.cr"
 }
 
 var htmlRe = regexp.MustCompile("<[^>]+>")
@@ -104,15 +113,30 @@ func (k *Kemono) convertToFetchedArtwork(ctx context.Context, resp *KemonoPostRe
 			Original:  originalUrl,
 		})
 	}
-	if len(pictures) == 0 {
-		return nil, ErrNotPicture
-	}
 	pictures = slice.UniqueByComparator(pictures, func(item, other *dto.FetchedPicture) bool {
 		return item.Original == other.Original
 	})
 	for i, pic := range pictures {
 		pic.Index = uint(i)
 	}
+	if len(pictures) == 0 {
+		// [TODO] consider only videos posts
+		return nil, ErrNotPicture
+	}
+
+	// 处理视频
+	videos := make([]*dto.FetchedVideo, 0, len(resp.Videos))
+	for _, v := range resp.Videos {
+		videoURL, err := url.JoinPath(v.Server, "data", v.Path)
+		if err != nil {
+			continue
+		}
+		videos = append(videos, &dto.FetchedVideo{
+			Index: uint(v.Index),
+			URL:   videoURL,
+		})
+	}
+
 	artwork := &dto.FetchedArtwork{
 		Title:       postResp.Title,
 		Description: htmlRe.ReplaceAllString(strings.ReplaceAll(postResp.Content, "<br/>", "\n"), ""),
@@ -122,6 +146,7 @@ func (k *Kemono) convertToFetchedArtwork(ctx context.Context, resp *KemonoPostRe
 		Artist:      artist,
 		Tags:        postResp.Tags,
 		Pictures:    pictures,
+		Videos:      videos,
 	}
 	return artwork, nil
 }
