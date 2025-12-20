@@ -11,7 +11,7 @@ import (
 	"github.com/krau/ManyACG/internal/infra/kvstor"
 	"github.com/krau/ManyACG/internal/interface/telegram/metautil"
 	"github.com/krau/ManyACG/internal/model/entity"
-	"github.com/krau/ManyACG/internal/pkg/imgtool"
+	"github.com/krau/ManyACG/internal/pkg/mediatool"
 	"github.com/krau/ManyACG/internal/service"
 	"github.com/krau/ManyACG/internal/shared"
 	"github.com/krau/ManyACG/internal/shared/errs"
@@ -35,7 +35,7 @@ func GetPicturePhotoInputFile(ctx context.Context, serv *service.Service, meta *
 			return nil, oops.Wrapf(err, "failed to get file from storage")
 		}
 		defer file.Close()
-		compressed, err := imgtool.CompressForTelegramFromFile(file.Name())
+		compressed, err := mediatool.CompressForTelegramFromFile(file.Name())
 		if err != nil {
 			return nil, oops.Wrapf(err, "failed to compress image")
 		}
@@ -46,7 +46,7 @@ func GetPicturePhotoInputFile(ctx context.Context, serv *service.Service, meta *
 		return nil, oops.Wrapf(err, "failed to download file: %s", picture.GetOriginal())
 	}
 	defer file.Close()
-	compressed, err := imgtool.CompressForTelegramFromFile(file.Name())
+	compressed, err := mediatool.CompressForTelegramFromFile(file.Name())
 	if err != nil {
 		return nil, oops.Wrapf(err, "failed to compress image")
 	}
@@ -322,7 +322,7 @@ func GetUgoiraVideoDocumentInputFile(ctx context.Context, serv *service.Service,
 			return nil, oops.Wrapf(err, "failed to get ugoira file from storage")
 		}
 		defer file.Close()
-		videoPath, err := imgtool.UgoiraZipToMp4(file.Name(), data.Frames, file.Name()+".mp4")
+		videoPath, err := mediatool.UgoiraZipToMp4(file.Name(), data.Frames, file.Name()+".mp4")
 		if err != nil {
 			return nil, oops.Wrapf(err, "failed to convert ugoira to mp4")
 		}
@@ -337,7 +337,7 @@ func GetUgoiraVideoDocumentInputFile(ctx context.Context, serv *service.Service,
 		return nil, oops.Wrapf(err, "failed to download ugoira file: %s", data.OriginalZip)
 	}
 	defer file.Close()
-	videoPath, err := imgtool.UgoiraZipToMp4(file.Name(), data.Frames, file.Name()+".mp4")
+	videoPath, err := mediatool.UgoiraZipToMp4(file.Name(), data.Frames, file.Name()+".mp4")
 	if err != nil {
 		return nil, oops.Wrapf(err, "failed to convert ugoira to mp4")
 	}

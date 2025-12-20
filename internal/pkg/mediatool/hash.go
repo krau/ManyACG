@@ -1,4 +1,4 @@
-package imgtool
+package mediatool
 
 import (
 	"encoding/base64"

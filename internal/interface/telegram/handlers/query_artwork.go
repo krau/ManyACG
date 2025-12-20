@@ -226,7 +226,7 @@ func SearchSimilarArtworks(ctx *telegohandler.Context, message telego.Message) e
 // 	if err != nil {
 // 		return "", nil, err
 // 	}
-// 	hash, err := imgtool.GetImagePhashFromReader(bytes.NewReader(file))
+// 	hash, err := mediatool.GetImagePhashFromReader(bytes.NewReader(file))
 // 	if err != nil {
 // 		return "", file, err
 // 	}

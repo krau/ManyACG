@@ -9,7 +9,7 @@ import (
 	"github.com/krau/ManyACG/internal/interface/telegram/handlers/utils"
 	"github.com/krau/ManyACG/internal/interface/telegram/metautil"
 	"github.com/krau/ManyACG/internal/model/query"
-	"github.com/krau/ManyACG/internal/pkg/imgtool"
+	"github.com/krau/ManyACG/internal/pkg/mediatool"
 	"github.com/krau/ManyACG/internal/service"
 	"github.com/krau/ManyACG/pkg/log"
 	"github.com/mymmrac/telego"
@@ -68,7 +68,7 @@ func SearchPicture(ctx *telegohandler.Context, message telego.Message) error {
 }
 
 func getDBSearchResultText(ctx context.Context, serv *service.Service, meta *metautil.MetaData, file []byte) (string, bool, error) {
-	hash, err := imgtool.GetImagePhashFromReader(bytes.NewReader(file))
+	hash, err := mediatool.GetImagePhashFromReader(bytes.NewReader(file))
 	if err != nil {
 		return "", false, oops.Wrapf(err, "fail to calculate image hash")
 	}

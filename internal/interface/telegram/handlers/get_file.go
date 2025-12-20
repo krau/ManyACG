@@ -11,7 +11,7 @@ import (
 	"github.com/krau/ManyACG/internal/interface/telegram/metautil"
 	"github.com/krau/ManyACG/internal/model/entity"
 	"github.com/krau/ManyACG/internal/model/query"
-	"github.com/krau/ManyACG/internal/pkg/imgtool"
+	"github.com/krau/ManyACG/internal/pkg/mediatool"
 	"github.com/krau/ManyACG/internal/service"
 	"github.com/krau/ManyACG/internal/shared"
 	"github.com/krau/ManyACG/internal/shared/errs"
@@ -40,7 +40,7 @@ func GetArtworkFiles(ctx *telegohandler.Context, message telego.Message) error {
 			if err != nil {
 				return nil
 			}
-			hash, err := imgtool.GetImagePhashFromReader(bytes.NewReader(file))
+			hash, err := mediatool.GetImagePhashFromReader(bytes.NewReader(file))
 			if err != nil {
 				return nil
 			}

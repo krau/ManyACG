@@ -12,7 +12,7 @@ import (
 	"github.com/krau/ManyACG/internal/model/command"
 	"github.com/krau/ManyACG/internal/model/entity"
 	"github.com/krau/ManyACG/internal/model/query"
-	"github.com/krau/ManyACG/internal/pkg/imgtool"
+	"github.com/krau/ManyACG/internal/pkg/mediatool"
 	"github.com/krau/ManyACG/internal/service"
 	"github.com/krau/ManyACG/internal/shared"
 	"github.com/krau/ManyACG/pkg/log"
@@ -93,14 +93,14 @@ func doPostAndCreateArtwork(
 				return oops.Wrapf(err, "failed to decode picture %d", i)
 			}
 			if pic.Phash == "" {
-				phash, err := imgtool.GetImagePhash(img)
+				phash, err := mediatool.GetImagePhash(img)
 				if err != nil {
 					return oops.Wrapf(err, "failed to get phash of picture %d", i)
 				}
 				pic.Phash = phash
 			}
 			if pic.Width == 0 || pic.Height == 0 {
-				w, h, err := imgtool.GetSize(img)
+				w, h, err := mediatool.GetSize(img)
 				if err != nil {
 					return oops.Wrapf(err, "failed to get size of picture %d", i)
 				}
@@ -108,7 +108,7 @@ func doPostAndCreateArtwork(
 				pic.Height = uint(h)
 			}
 			if pic.ThumbHash == "" {
-				thumbHash, err := imgtool.GetImageThumbHash(img)
+				thumbHash, err := mediatool.GetImageThumbHash(img)
 				if err != nil {
 					return oops.Wrapf(err, "failed to get thumb hash of picture %d", i)
 				}

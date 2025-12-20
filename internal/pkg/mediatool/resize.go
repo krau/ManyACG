@@ -1,4 +1,4 @@
-package imgtool
+package mediatool
 
 import (
 	"archive/zip"
@@ -108,14 +108,14 @@ func CompressForTelegram(input []byte) ([]byte, error) {
 	if _, ok := vipsFormat["jpeg"]; ok {
 		return compressImageForTelegramByVIPS(input)
 	}
-	tmpFile, err := os.CreateTemp(runtimecfg.Get().Storage.CacheDir, "imgtool_*.png")
+	tmpFile, err := os.CreateTemp(runtimecfg.Get().Storage.CacheDir, "mediatool_*.png")
 	if err != nil {
 		return nil, fmt.Errorf("failed to create temp file: %w", err)
 	}
 	defer os.Remove(tmpFile.Name())
 	defer tmpFile.Close()
 
-	distFile, err := os.CreateTemp(runtimecfg.Get().Storage.CacheDir, "imgtool_*.jpg")
+	distFile, err := os.CreateTemp(runtimecfg.Get().Storage.CacheDir, "mediatool_*.jpg")
 	if err != nil {
 		return nil, fmt.Errorf("failed to create temp file: %w", err)
 	}

@@ -5,7 +5,7 @@ import (
 
 	"github.com/krau/ManyACG/internal/common/httpclient"
 	"github.com/krau/ManyACG/internal/interface/telegram/metautil"
-	"github.com/krau/ManyACG/internal/pkg/imgtool"
+	"github.com/krau/ManyACG/internal/pkg/mediatool"
 	"github.com/krau/ManyACG/internal/service"
 	"github.com/krau/ManyACG/internal/shared"
 	"github.com/krau/ManyACG/pkg/ioutil"
@@ -49,7 +49,7 @@ func SendArtworkMediaGroup(
 			UgoiraIndex:  -1,
 		})
 	}
-	if ugoiraArt, ok := artwork.(shared.UgoiraArtworkLike); ok && imgtool.FFmpegAvailable() && len(ugoiraArt.GetUgoiraMetas()) > 0 {
+	if ugoiraArt, ok := artwork.(shared.UgoiraArtworkLike); ok && mediatool.FFmpegAvailable() && len(ugoiraArt.GetUgoiraMetas()) > 0 {
 		sendOption := &SendOption{}
 		if len(results) > 0 {
 			sendOption.ReplyTo = results[0].Message.MessageID
@@ -153,7 +153,7 @@ func ArtworkInputMediaPhotos(
 						return oops.Wrapf(err, "failed to get file from storage")
 					}
 					defer file.Close()
-					compressed, err := imgtool.CompressForTelegramFromFile(file.Name())
+					compressed, err := mediatool.CompressForTelegramFromFile(file.Name())
 					if err != nil {
 						return oops.Wrapf(err, "failed to compress image")
 					}
@@ -165,7 +165,7 @@ func ArtworkInputMediaPhotos(
 						return oops.Wrapf(err, "failed to download file: %s", picture.GetOriginal())
 					}
 					defer file.Close()
-					compressed, err := imgtool.CompressForTelegramFromFile(file.Name())
+					compressed, err := mediatool.CompressForTelegramFromFile(file.Name())
 					if err != nil {
 						return oops.Wrapf(err, "failed to compress image")
 					}
@@ -307,7 +307,7 @@ func ArtworkInputMediaVideos(ctx context.Context,
 						return oops.Wrapf(err, "failed to get file from storage")
 					}
 					defer file.Close()
-					videoPath, err := imgtool.UgoiraZipToMp4(file.Name(), ugoira.GetUgoiraMetaData().Frames, file.Name()+".mp4")
+					videoPath, err := mediatool.UgoiraZipToMp4(file.Name(), ugoira.GetUgoiraMetaData().Frames, file.Name()+".mp4")
 					if err != nil {
 						return oops.Wrapf(err, "failed to compress image")
 					}
@@ -323,7 +323,7 @@ func ArtworkInputMediaVideos(ctx context.Context,
 						return oops.Wrapf(err, "failed to download file: %s", ugoira.GetUgoiraMetaData().OriginalZip)
 					}
 					defer file.Close()
-					videoPath, err := imgtool.UgoiraZipToMp4(file.Name(), ugoira.GetUgoiraMetaData().Frames, file.Name()+".mp4")
+					videoPath, err := mediatool.UgoiraZipToMp4(file.Name(), ugoira.GetUgoiraMetaData().Frames, file.Name()+".mp4")
 					if err != nil {
 						return oops.Wrapf(err, "failed to compress image")
 					}

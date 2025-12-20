@@ -1,6 +1,6 @@
 //go:build !linux || !amd64 || without_vips
 
-package imgtool
+package mediatool
 
 import "fmt"
 
