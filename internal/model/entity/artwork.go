@@ -33,6 +33,8 @@ type Artwork struct {
 	// https://www.pixiv.help/hc/en-us/articles/235584628-What-are-Ugoira
 	// one-to-many ugoira meta, usually only one
 	UgoiraMetas []*UgoiraMeta `gorm:"foreignKey:ArtworkID;constraint:OnDelete:CASCADE" json:"ugoira_meta,omitempty"`
+	// one-to-many videos
+	Videos []*Video `gorm:"foreignKey:ArtworkID;constraint:OnDelete:CASCADE" json:"videos"`
 }
 
 // GetType implements shared.ArtworkLike.

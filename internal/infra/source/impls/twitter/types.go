@@ -33,13 +33,17 @@ type Author struct {
 
 type Media struct {
 	Photos []MediaItem `json:"photos"`
+	Videos []MediaItem `json:"videos"`
 }
 
 type MediaItem struct {
-	Type   string `json:"type"`
-	URL    string `json:"url"` // Direct link to the media
-	Width  int    `json:"width"`
-	Height int    `json:"height"`
+	Type         string  `json:"type"`
+	URL          string  `json:"url"` // Direct link to the media
+	Width        int     `json:"width"`
+	Height       int     `json:"height"`
+	Duration     float64 `json:"duration,omitempty"`      // in seconds, for videos only
+	Format       string  `json:"format,omitempty"`        // video's mime type or format, e.g. "video/mp4", "gif"
+	ThumbnailUrl string  `json:"thumbnail_url,omitempty"` // for videos poster image
 }
 
 var (
@@ -60,7 +64,7 @@ func (resp *FxTwitterApiResp) ToArtwork() (*dto.FetchedArtwork, error) {
 		return nil, ErrInvalidURL
 	}
 	media := tweet.Media
-	if len(media.Photos) == 0 {
+	if media == nil || (len(media.Photos) == 0 && len(media.Videos) == 0) {
 		return nil, ErrInvalidURL
 	}
 
@@ -73,6 +77,30 @@ func (resp *FxTwitterApiResp) ToArtwork() (*dto.FetchedArtwork, error) {
 			Original:  picUrl + "?name=orig",
 			Width:     uint(photo.Width),
 			Height:    uint(photo.Height),
+		})
+	}
+	videos := make([]*dto.FetchedVideo, 0)
+	for i, video := range media.Videos {
+		videoUrl := strings.Split(video.URL, "?")[0]
+		posterUrl := ""
+		if video.ThumbnailUrl != "" {
+			posterUrl = strings.Split(video.ThumbnailUrl, "?")[0]
+		}
+		mime := ""
+		switch video.Format {
+		case "gif":
+			mime = "image/gif"
+		default:
+			mime = video.Format
+		}
+		videos = append(videos, &dto.FetchedVideo{
+			Index:    uint(i),
+			URL:      videoUrl,
+			Width:    uint(video.Width),
+			Height:   uint(video.Height),
+			Duration: uint(video.Duration * 1000), // convert to milliseconds
+			Poster:   posterUrl,
+			MimeType: mime,
 		})
 	}
 
@@ -101,6 +129,7 @@ func (resp *FxTwitterApiResp) ToArtwork() (*dto.FetchedArtwork, error) {
 			UID:      tweet.Author.ID,
 		},
 		Pictures: pictures,
+		Videos:   videos,
 		Tags:     tags,
 	}, nil
 }

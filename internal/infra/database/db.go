@@ -79,6 +79,7 @@ func initDB(ctx context.Context, okCh chan struct{}) {
 		&entity.Artwork{},
 		&entity.Picture{},
 		&entity.UgoiraMeta{},
+		&entity.Video{},
 		&entity.CachedArtwork{},
 		&entity.DeletedRecord{},
 		&entity.ApiKey{},

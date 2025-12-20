@@ -8,6 +8,9 @@ import (
 	"gorm.io/gorm"
 )
 
+// 只是为了兼容...
+//
+// V1 里或许永远用不上
 type User struct {
 	ID         ouid.OUID      `gorm:"primaryKey;type:uuid" json:"id"`
 	Username   string         `gorm:"type:text;uniqueIndex" json:"username"`

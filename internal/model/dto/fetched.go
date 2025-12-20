@@ -15,6 +15,7 @@ type FetchedArtwork struct {
 	Tags        []string             `json:"tags"`
 	Pictures    []*FetchedPicture    `json:"pictures"`
 	UgoiraMetas []*FetchedUgoiraMeta `json:"ugoira_metas,omitempty"`
+	Videos      []*FetchedVideo      `json:"videos,omitempty"`
 }
 
 // GetType implements shared.ArtworkLike.
@@ -137,4 +138,14 @@ var _ shared.PictureLike = (*FetchedPicture)(nil)
 type FetchedUgoiraMeta struct {
 	Index uint                  `json:"index"`
 	Data  shared.UgoiraMetaData `json:"data"`
+}
+
+type FetchedVideo struct {
+	Index    uint   `json:"index"`
+	URL      string `json:"url"`
+	Width    uint   `json:"width"`
+	Height   uint   `json:"height"`
+	Duration uint   `json:"duration"` // in milliseconds
+	Poster   string `json:"poster"`
+	MimeType string `json:"mime_type"`
 }

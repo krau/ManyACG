@@ -24,6 +24,7 @@ type CachedArtworkData struct {
 	Tags        []string            `json:"tags"`
 	Pictures    []*CachedPicture    `json:"pictures"`
 	UgoiraMetas []*CachedUgoiraMeta `json:"ugoira_metas,omitempty"`
+	Videos      []*CachedVideo      `json:"videos,omitempty"`
 
 	Version int `json:"version"` // for future schema changes
 }
@@ -39,6 +40,20 @@ func (c *CachedArtworkData) GetUgoiraMetas() []shared.UgoiraMetaLike {
 		metas = append(metas, m)
 	}
 	return metas
+}
+
+type CachedVideo struct {
+	ID           string              `json:"id"`
+	ArtworkID    string              `json:"artwork_id"`
+	OrderIndex   uint                `json:"index"`
+	Poster       string              `json:"poster"`
+	URL          string              `json:"original"`
+	Width        uint                `json:"width"`
+	Height       uint                `json:"height"`
+	Duration     uint                `json:"duration"` // in milliseconds
+	MimeType     string              `json:"mime_type"`
+	StorageInfo  shared.StorageInfo  `json:"storage_info"`
+	TelegramInfo shared.TelegramInfo `json:"telegram_info"`
 }
 
 type CachedUgoiraMeta struct {
