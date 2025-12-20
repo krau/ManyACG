@@ -149,6 +149,10 @@ func HybridSearchArtworks(ctx *telegohandler.Context, message telego.Message) er
 		utils.ReplyMessage(ctx, message, "未找到相关图片")
 		return nil
 	}
+	// [TODO] 处理无图作品
+	artworks = slice.Filter(artworks, func(i int, item *entity.Artwork) bool {
+		return len(item.Pictures) > 0
+	})
 
 	if len(artworks) > 10 {
 		artworks = slice.Shuffle(artworks)[:10]

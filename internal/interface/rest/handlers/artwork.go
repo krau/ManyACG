@@ -67,6 +67,10 @@ type ResponsePicture struct {
 func artworksResponseFromEntity(ctx fiber.Ctx, artworks []*entity.Artwork, cfg runtimecfg.RestConfig, serv *service.Service) []ResponseArtworkItem {
 	resp := make([]ResponseArtworkItem, 0, len(artworks))
 	for _, art := range artworks {
+		if len(art.Pictures) == 0 {
+			// [TODO] 处理无图作品
+			continue
+		}
 		pics := make([]ResponsePicture, 0, len(art.Pictures))
 		for _, pic := range art.Pictures {
 			thumb, regular := utils.PictureResponseUrl(ctx, pic, cfg)

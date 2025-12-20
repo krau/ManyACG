@@ -119,12 +119,7 @@ func (k *Kemono) convertToFetchedArtwork(ctx context.Context, resp *KemonoPostRe
 	for i, pic := range pictures {
 		pic.Index = uint(i)
 	}
-	if len(pictures) == 0 {
-		// [TODO] consider only videos posts
-		return nil, ErrNotPicture
-	}
 
-	// 处理视频
 	videos := make([]*dto.FetchedVideo, 0, len(resp.Videos))
 	for _, v := range resp.Videos {
 		videoURL, err := url.JoinPath(v.Server, "data", v.Path)
@@ -135,6 +130,9 @@ func (k *Kemono) convertToFetchedArtwork(ctx context.Context, resp *KemonoPostRe
 			Index: uint(v.Index),
 			URL:   videoURL,
 		})
+	}
+	if len(pictures) == 0 && len(videos) == 0 {
+		return nil, ErrInvalidKemonoPostURL
 	}
 
 	artwork := &dto.FetchedArtwork{
