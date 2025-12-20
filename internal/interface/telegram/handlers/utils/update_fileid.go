@@ -16,18 +16,27 @@ func UpdateCachedArtworkFileID(ctx context.Context,
 	meta *metautil.MetaData,
 	artwork *entity.CachedArtworkData) error {
 	for _, msg := range results {
-		if msg.UgoiraIndex >= 0 {
-			if len(artwork.UgoiraMetas) <= msg.UgoiraIndex {
-				log.Warnf("ugoira index out of range: %d/%d", msg.UgoiraIndex, len(artwork.UgoiraMetas))
+		switch msg.Type {
+		case MediaResultTypePhoto:
+			if len(artwork.Pictures) <= msg.Index {
+				log.Warnf("picture index out of range: %d/%d", msg.Index, len(artwork.Pictures))
 				continue
 			}
-			artwork.UgoiraMetas[msg.UgoiraIndex].TelegramInfo.SetFileID(meta.BotID(), shared.TelegramMediaTypeVideo, msg.FileID)
-		} else if msg.PictureIndex >= 0 {
-			if len(artwork.Pictures) <= msg.PictureIndex {
-				log.Warnf("picture index out of range: %d/%d", msg.PictureIndex, len(artwork.Pictures))
+			artwork.Pictures[msg.Index].TelegramInfo.SetFileID(meta.BotID(), shared.TelegramMediaTypePhoto, msg.FileID)
+		case MediaResultTypeUgoira:
+			if len(artwork.UgoiraMetas) <= msg.Index {
+				log.Warnf("ugoira index out of range: %d/%d", msg.Index, len(artwork.UgoiraMetas))
 				continue
 			}
-			artwork.Pictures[msg.PictureIndex].TelegramInfo.SetFileID(meta.BotID(), shared.TelegramMediaTypePhoto, msg.FileID)
+			artwork.UgoiraMetas[msg.Index].TelegramInfo.SetFileID(meta.BotID(), shared.TelegramMediaTypeVideo, msg.FileID)
+		case MediaResultTypeVideo:
+			if len(artwork.Videos) <= msg.Index {
+				log.Warnf("video index out of range: %d/%d", msg.Index, len(artwork.Videos))
+				continue
+			}
+			artwork.Videos[msg.Index].TelegramInfo.SetFileID(meta.BotID(), shared.TelegramMediaTypeVideo, msg.FileID)
+		default:
+			log.Errorf("unknown media result type: %d", msg.Type)
 		}
 	}
 	return serv.UpdateCachedArtwork(ctx, artwork)

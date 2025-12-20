@@ -29,6 +29,23 @@ type CachedArtworkData struct {
 	Version int `json:"version"` // for future schema changes
 }
 
+// GetVideos implements [shared.ArtworkLike].
+func (c *CachedArtworkData) GetVideos() []shared.VideoLike {
+	var videos []shared.VideoLike
+	for _, v := range c.Videos {
+		videos = append(videos, v)
+	}
+	return videos
+}
+
+// MediasCount implements [shared.ArtworkLike].
+func (c *CachedArtworkData) MediasCount() int {
+	count := len(c.Pictures)
+	count += len(c.Videos)
+	count += len(c.UgoiraMetas)
+	return count
+}
+
 func (c *CachedArtworkData) GetType() shared.SourceType {
 	return c.SourceType
 }
@@ -42,18 +59,67 @@ func (c *CachedArtworkData) GetUgoiraMetas() []shared.UgoiraMetaLike {
 	return metas
 }
 
+var _ shared.UgoiraMetaLike = (*CachedUgoiraMeta)(nil)
+var _ shared.PictureLike = (*CachedPicture)(nil)
+var _ shared.VideoLike = (*CachedVideo)(nil)
+
 type CachedVideo struct {
-	ID           string              `json:"id"`
-	ArtworkID    string              `json:"artwork_id"`
-	OrderIndex   uint                `json:"index"`
-	Poster       string              `json:"poster"`
-	URL          string              `json:"original"`
-	Width        uint                `json:"width"`
-	Height       uint                `json:"height"`
-	Duration     uint                `json:"duration"` // in milliseconds
-	MimeType     string              `json:"mime_type"`
-	StorageInfo  shared.StorageInfo  `json:"storage_info"`
-	TelegramInfo shared.TelegramInfo `json:"telegram_info"`
+	ID              string               `json:"id"`
+	ArtworkID       string               `json:"artwork_id"`
+	OrderIndex      uint                 `json:"index"`
+	Poster          string               `json:"poster"`
+	URL             string               `json:"original"`
+	Width           uint                 `json:"width"`
+	Height          uint                 `json:"height"`
+	Duration        uint                 `json:"duration"` // in milliseconds
+	MimeType        string               `json:"mime_type"`
+	OriginalStorage shared.StorageDetail `json:"original_storage"`
+	TelegramInfo    shared.TelegramInfo  `json:"telegram_info"`
+}
+
+// GetDuration implements [shared.VideoLike].
+func (c *CachedVideo) GetDuration() uint {
+	return c.Duration
+}
+
+// GetHeight implements [shared.VideoLike].
+func (c *CachedVideo) GetHeight() uint {
+	return c.Height
+}
+
+// GetIndex implements [shared.VideoLike].
+func (c *CachedVideo) GetIndex() uint {
+	return c.OrderIndex
+}
+
+// GetMimeType implements [shared.VideoLike].
+func (c *CachedVideo) GetMimeType() string {
+	return c.MimeType
+}
+
+// GetPoster implements [shared.VideoLike].
+func (c *CachedVideo) GetPoster() string {
+	return c.Poster
+}
+
+// GetStorageInfo implements [shared.VideoLike].
+func (c *CachedVideo) GetOriginalStorage() shared.StorageDetail {
+	return c.OriginalStorage
+}
+
+// GetTelegramInfo implements [shared.VideoLike].
+func (c *CachedVideo) GetTelegramInfo() shared.TelegramInfo {
+	return c.TelegramInfo
+}
+
+// GetURL implements [shared.VideoLike].
+func (c *CachedVideo) GetURL() string {
+	return c.URL
+}
+
+// GetWidth implements [shared.VideoLike].
+func (c *CachedVideo) GetWidth() uint {
+	return c.Width
 }
 
 type CachedUgoiraMeta struct {
@@ -221,6 +287,11 @@ type CachedArtwork struct {
 	Status    shared.ArtworkStatus                   `gorm:"type:text;index" json:"status"`
 }
 
+// GetVideos implements [shared.ArtworkLike].
+func (c *CachedArtwork) GetVideos() []shared.VideoLike {
+	return c.Artwork.Data().GetVideos()
+}
+
 // GetType implements shared.ArtworkLike.
 func (c *CachedArtwork) GetType() shared.SourceType {
 	return c.Artwork.Data().GetType()
@@ -262,6 +333,13 @@ func (c *CachedArtwork) GetR18() bool {
 
 func (c *CachedArtwork) GetID() string {
 	return c.ID.Hex()
+}
+
+func (c *CachedArtwork) MediasCount() int {
+	count := len(c.Artwork.Data().Pictures)
+	count += len(c.Artwork.Data().Videos)
+	count += len(c.Artwork.Data().UgoiraMetas)
+	return count
 }
 
 // GetUgoiraMetas implements shared.UgoiraArtworkLike.

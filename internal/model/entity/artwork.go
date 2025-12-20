@@ -37,6 +37,23 @@ type Artwork struct {
 	Videos []*Video `gorm:"foreignKey:ArtworkID;constraint:OnDelete:CASCADE" json:"videos"`
 }
 
+// GetVideos implements [shared.ArtworkLike].
+func (a *Artwork) GetVideos() []shared.VideoLike {
+	var videos []shared.VideoLike
+	for _, v := range a.Videos {
+		videos = append(videos, v)
+	}
+	return videos
+}
+
+// MediasCount implements [shared.ArtworkLike].
+func (a *Artwork) MediasCount() int {
+	count := len(a.Pictures)
+	count += len(a.Videos)
+	count += len(a.UgoiraMetas)
+	return count
+}
+
 // GetType implements shared.ArtworkLike.
 func (a *Artwork) GetType() shared.SourceType {
 	return a.SourceType

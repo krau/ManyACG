@@ -51,6 +51,11 @@ func (d *DB) Tag() repo.Tag {
 	return d
 }
 
+// Video implements [repo.Repositories].
+func (d *DB) Video() repo.Video {
+	return d
+}
+
 // Transaction implements repo.Repositories.
 func (d *DB) Transaction(ctx context.Context, fn func(repos repo.Repositories) error) error {
 	return d.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {

@@ -110,7 +110,9 @@ func (s *Service) CreateArtwork(ctx context.Context, cmd *command.ArtworkCreatio
 			})
 		}
 		awEnt.Pictures = pics
+
 		if len(cmd.UgoiraMetas) > 0 {
+			// Ugoira metas
 			for _, ugoira := range cmd.UgoiraMetas {
 				ugoiraData := &entity.UgoiraMeta{
 					OrderIndex:      ugoira.Index,
@@ -119,6 +121,23 @@ func (s *Service) CreateArtwork(ctx context.Context, cmd *command.ArtworkCreatio
 					TelegramInfo:    datatypes.NewJSONType(ugoira.TelegramInfo),
 				}
 				awEnt.UgoiraMetas = append(awEnt.UgoiraMetas, ugoiraData)
+			}
+		}
+		if len(cmd.Videos) > 0 {
+			// Videos
+			for _, video := range cmd.Videos {
+				videoData := &entity.Video{
+					OrderIndex:      video.Index,
+					URL:             video.URL,
+					Width:           video.Width,
+					Height:          video.Height,
+					Duration:        video.DurationMs,
+					Poster:          video.Poster,
+					MimeType:        video.MimeType,
+					TelegramInfo:    datatypes.NewJSONType(video.TelegramInfo),
+					OriginalStorage: datatypes.NewJSONType(video.OriginalStorage),
+				}
+				awEnt.Videos = append(awEnt.Videos, videoData)
 			}
 		}
 

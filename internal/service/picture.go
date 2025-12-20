@@ -89,6 +89,11 @@ func (s *Service) UpdateUgoiraTelegramInfo(ctx context.Context, id ouid.OUID, tg
 	return err
 }
 
+func (s *Service) UpdateVideoTelegramInfo(ctx context.Context, id ouid.OUID, tgInfo *shared.TelegramInfo) error {
+	_, err := s.repos.Video().UpdateVideoTelegramInfoByID(ctx, id, tgInfo)
+	return err
+}
+
 func (s *Service) RandomPictures(ctx context.Context, limit int) ([]*entity.Picture, error) {
 	return s.repos.Picture().RandomPictures(ctx, limit)
 }

@@ -131,7 +131,7 @@ func ArtworkPostKeyboard(meta *metautil.MetaData, cbId string) [][]telego.Inline
 	return base
 }
 
-// SendArtworkInfo 将作品信息附带操作按钮发送到指定聊天, 用于提供给管理员发布或修改作品
+// 将作品信息附带操作按钮发送到指定聊天, 用于提供给管理员发布或修改作品
 //
 // 需要区分已发布的作品, 已标记为删除的作品, 和未发布的作品
 func SendArtworkInfo(ctx context.Context,
@@ -197,7 +197,7 @@ func SendArtworkInfo(ctx context.Context,
 		return oops.New("no artwork found")
 	}
 	caption := ArtworkHTMLCaption(artwork)
-	caption += fmt.Sprintf("\n<i>该作品共有%d张图片</i>", len(artwork.GetPictures()))
+	caption += fmt.Sprintf("\n<i>该作品共有%d个媒体</i>", artwork.MediasCount())
 	if deleted != nil {
 		caption += fmt.Sprintf("\n<i>这是一个在 %s 被标记为删除的作品, 如果发布会取消删除</i>", deleted.DeletedAt.Format("2006-01-02 15:04:05"))
 	}
@@ -310,7 +310,7 @@ func GetPictureDocumentInputFile(ctx context.Context, serv *service.Service, met
 	return ioutil.NewCloser(telegoutil.File(telegoutil.NameReader(file, serv.PrettyFileName(artwork, picture))), func() error { return file.Close() }), nil
 }
 
-func GetUgoiraVideoDocumentInputFile(ctx context.Context, serv *service.Service, meta *metautil.MetaData, artwork shared.UgoiraArtworkLike, ugoira shared.UgoiraMetaLike) (*ioutil.Closer[telego.InputFile], error) {
+func GetUgoiraVideoDocumentInputFile(ctx context.Context, serv *service.Service, meta *metautil.MetaData, artwork shared.ArtworkLike, ugoira shared.UgoiraMetaLike) (*ioutil.Closer[telego.InputFile], error) {
 	if id := ugoira.GetTelegramInfo().DocumentFileID(meta.BotID()); id != "" {
 		return ioutil.NewCloser(telegoutil.FileFromID(id), func() error { return nil }), nil
 	}
@@ -346,4 +346,23 @@ func GetUgoiraVideoDocumentInputFile(ctx context.Context, serv *service.Service,
 		return nil, oops.Wrapf(err, "failed to open temp video file")
 	}
 	return ioutil.NewCloser(telegoutil.File(videoFile), func() error { return videoFile.Close() }), nil
+}
+
+func GetVideoDocumentInputFile(ctx context.Context, serv *service.Service, meta *metautil.MetaData, artwork shared.ArtworkLike, video shared.VideoLike) (*ioutil.Closer[telego.InputFile], error) {
+	if id := video.GetTelegramInfo().DocumentFileID(meta.BotID()); id != "" {
+		return ioutil.NewCloser(telegoutil.FileFromID(id), func() error { return nil }), nil
+	}
+	orgStorDetail := video.GetOriginalStorage()
+	if !orgStorDetail.IsZero() {
+		rsc, err := serv.StorageGetFile(ctx, orgStorDetail)
+		if err != nil {
+			return nil, oops.Wrapf(err, "failed to get video file from storage")
+		}
+		return ioutil.NewCloser(telegoutil.File(rsc), func() error { return rsc.Close() }), nil
+	}
+	file, err := httpclient.DownloadWithCache(ctx, video.GetURL(), nil)
+	if err != nil {
+		return nil, oops.Wrapf(err, "failed to download video file: %s", video.GetURL())
+	}
+	return ioutil.NewCloser(telegoutil.File(file), func() error { return file.Close() }), nil
 }

@@ -18,8 +18,12 @@ type ArtworkLike interface {
 	GetArtist() ArtistLike
 	GetDescription() string
 	GetTags() []string
-	GetPictures() []PictureLike
+	MediasCount() int
 	GetType() SourceType
+	// [TODO] should consider non-picture artworks in the future
+	GetPictures() []PictureLike
+	GetUgoiraMetas() []UgoiraMetaLike
+	GetVideos() []VideoLike
 }
 
 type ArtistLike interface {
@@ -28,9 +32,16 @@ type ArtistLike interface {
 	GetUID() string
 }
 
-type UgoiraArtworkLike interface {
-	ArtworkLike
-	GetUgoiraMetas() []UgoiraMetaLike
+type VideoLike interface {
+	GetIndex() uint
+	GetURL() string
+	GetWidth() uint
+	GetHeight() uint
+	GetDuration() uint
+	GetPoster() string
+	GetMimeType() string
+	GetOriginalStorage() StorageDetail
+	GetTelegramInfo() TelegramInfo
 }
 
 type UgoiraMetaLike interface {

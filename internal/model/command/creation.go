@@ -19,6 +19,7 @@ type ArtworkCreation struct {
 
 	Pictures    []ArtworkPictureCreation
 	UgoiraMetas []*ArtworkUgoiraCreation
+	Videos      []ArtworkVideoCreation
 }
 
 type ArtworkArtistCreation struct {
@@ -46,4 +47,17 @@ type ArtworkUgoiraCreation struct {
 	Data            shared.UgoiraMetaData
 	OriginalStorage shared.StorageDetail
 	TelegramInfo    shared.TelegramInfo
+}
+
+type ArtworkVideoCreation struct {
+	Index      uint
+	URL        string
+	Width      uint
+	Height     uint
+	DurationMs uint
+	Poster     string
+	MimeType   string
+
+	TelegramInfo    shared.TelegramInfo
+	OriginalStorage shared.StorageDetail
 }

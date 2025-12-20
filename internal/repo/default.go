@@ -12,6 +12,7 @@ type Repositories interface {
 	Tag() Tag
 	Picture() Picture
 	Ugoira() Ugoira
+	Video() Video
 	DeletedRecord() DeletedRecord
 	CachedArtwork() CachedArtwork
 	Transactional

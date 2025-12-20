@@ -77,13 +77,23 @@ func DtoFetchedArtworkToEntityCached(art *dto.FetchedArtwork) *entity.CachedArtw
 			Height:     pic.Height,
 		}
 	}
-	var ugoiras []*entity.CachedUgoiraMeta
-	if len(art.UgoiraMetas) > 0 {
-		for _, ugoiraMeta := range art.UgoiraMetas {
-			ugoiras = append(ugoiras, &entity.CachedUgoiraMeta{
-				OrderIndex: ugoiraMeta.Index,
-				MetaData:   ugoiraMeta.Data,
-			})
+	ugoiras := make([]*entity.CachedUgoiraMeta, len(art.UgoiraMetas))
+	for i, ugoiraMeta := range art.UgoiraMetas {
+		ugoiras[i] = &entity.CachedUgoiraMeta{
+			OrderIndex: ugoiraMeta.Index,
+			MetaData:   ugoiraMeta.Data,
+		}
+	}
+	videos := make([]*entity.CachedVideo, len(art.Videos))
+	for i, video := range art.Videos {
+		videos[i] = &entity.CachedVideo{
+			OrderIndex: video.Index,
+			URL:        video.URL,
+			Width:      video.Width,
+			Height:     video.Height,
+			Duration:   video.Duration,
+			Poster:     video.Poster,
+			MimeType:   video.MimeType,
 		}
 	}
 	ent := &entity.CachedArtwork{
@@ -105,6 +115,7 @@ func DtoFetchedArtworkToEntityCached(art *dto.FetchedArtwork) *entity.CachedArtw
 			},
 			Pictures:    pics,
 			UgoiraMetas: ugoiras,
+			Videos:      videos,
 			Version:     1,
 		}),
 	}

@@ -54,7 +54,7 @@ func GetArtworkInfo(ctx *telegohandler.Context, message telego.Message) error {
 			// the user has already sent the artwork media
 			return nil
 		}
-		if len(cached.GetPictures()) > 10 {
+		if cached.MediasCount() > 10 {
 			// too many pictures
 			return nil
 		}

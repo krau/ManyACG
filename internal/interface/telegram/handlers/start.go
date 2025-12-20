@@ -94,22 +94,7 @@ func Start(ctx *telegohandler.Context, message telego.Message) error {
 				return oops.Wrapf(err, "failed to send artwork media group")
 			}
 			data := artwork.Artwork.Data()
-			for _, res := range results {
-				if res.UgoiraIndex >= 0 {
-					if len(data.UgoiraMetas) <= res.UgoiraIndex {
-						log.Warn("ugoira index out of range", "index", res.UgoiraIndex, "len", len(data.UgoiraMetas), "title", artwork.GetTitle(), "url", artwork.GetSourceURL())
-						continue
-					}
-					data.UgoiraMetas[res.UgoiraIndex].TelegramInfo.SetFileID(meta.BotID(), shared.TelegramMediaTypeVideo, res.FileID)
-				} else if res.PictureIndex >= 0 {
-					if len(data.Pictures) <= res.PictureIndex {
-						log.Warn("picture index out of range", "index", res.PictureIndex, "len", len(data.Pictures), "title", artwork.GetTitle(), "url", artwork.GetSourceURL())
-						continue
-					}
-					data.Pictures[res.PictureIndex].TelegramInfo.SetFileID(meta.BotID(), shared.TelegramMediaTypePhoto, res.FileID)
-				}
-			}
-			if err := serv.UpdateCachedArtwork(ctx, data); err != nil {
+			if err := utils.UpdateCachedArtworkFileID(ctx, results, serv, meta, data); err != nil {
 				return oops.Wrapf(err, "failed to update cached artwork after send media group")
 			}
 			return nil

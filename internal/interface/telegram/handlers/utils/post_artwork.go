@@ -137,28 +137,55 @@ func doPostAndCreateArtwork(
 			return err
 		}
 	}
-	isUgoira := len(artwork.UgoiraMetas) > 0
-	if isUgoira {
-		// 处理 ugoira 的 original
-		for _, ugoira := range artwork.UgoiraMetas {
-			err := func() error {
-				origZip := ugoira.MetaData.OriginalZip
-				file, err := httpclient.DownloadWithCache(ctx, origZip, nil)
-				if err != nil {
-					return oops.Wrapf(err, "failed to download ugoira original zip")
-				}
-				defer file.Close()
-				filename := fmt.Sprintf("%s.zip", strutil.MD5Hash(origZip))
-				info, err := serv.StorageSaveOriginal(ctx, file, fmt.Sprintf("/%s/%s/ugoira", artwork.SourceType, artwork.Artist.UID), filename)
-				if err != nil {
-					return oops.Wrapf(err, "failed to save ugoira original zip")
-				}
-				ugoira.OriginalStorage = *info
-				return nil
-			}()
+	// 处理 ugoira 的 original
+	for _, ugoira := range artwork.UgoiraMetas {
+		err := func() error {
+			origZip := ugoira.MetaData.OriginalZip
+			file, err := httpclient.DownloadWithCache(ctx, origZip, nil)
 			if err != nil {
-				return err
+				return oops.Wrapf(err, "failed to download ugoira original zip")
 			}
+			defer file.Close()
+			filename := fmt.Sprintf("%s.zip", strutil.MD5Hash(origZip))
+			info, err := serv.StorageSaveOriginal(ctx, file, fmt.Sprintf("/%s/%s/ugoira", artwork.SourceType, artwork.Artist.UID), filename)
+			if err != nil {
+				return oops.Wrapf(err, "failed to save ugoira original zip")
+			}
+			ugoira.OriginalStorage = *info
+			return nil
+		}()
+		if err != nil {
+			return err
+		}
+	}
+	for _, video := range artwork.Videos {
+		// 下载并存储视频
+		err := func() error {
+			file, err := httpclient.DownloadWithCache(ctx, video.URL, nil)
+			if err != nil {
+				return oops.Wrapf(err, "failed to download video")
+			}
+			defer file.Close()
+			ext, err := strutil.GetFileExtFromURL(video.URL)
+			if err != nil {
+				mtype, err := mimetype.DetectFile(file.Name())
+				if err != nil {
+					return oops.Wrapf(err, "failed to detect mime type for video")
+				}
+				ext = mtype.Extension()
+			}
+			filename := fmt.Sprintf("%s%s", strutil.MD5Hash(video.URL), ext)
+			info, err := serv.StorageSaveOriginal(ctx, file, fmt.Sprintf("/%s/%s/video", artwork.SourceType, artwork.Artist.UID), filename)
+			if err != nil {
+				return oops.Wrapf(err, "failed to save video")
+			}
+			if info != nil {
+				video.OriginalStorage = *info
+			}
+			return nil
+		}()
+		if err != nil {
+			return err
 		}
 	}
 
@@ -176,14 +203,18 @@ func doPostAndCreateArtwork(
 	for _, msg := range results {
 		tginfo := shared.TelegramInfo{}
 		tginfo.SetMessage(meta.ChannelChatID().ID, msg.Message.MessageID, msg.Message.MediaGroupID)
-		if msg.UgoiraIndex >= 0 {
-			tginfo.SetFileID(meta.BotID(), shared.TelegramMediaTypeVideo, msg.FileID)
-			artwork.UgoiraMetas[msg.UgoiraIndex].TelegramInfo = tginfo
-		} else if msg.PictureIndex >= 0 {
+		switch msg.Type {
+		case MediaResultTypePhoto:
 			tginfo.SetFileID(meta.BotID(), shared.TelegramMediaTypePhoto, msg.FileID)
-			artwork.Pictures[msg.PictureIndex].TelegramInfo = tginfo
-		} else {
-			log.Warn("message has neither picture index nor ugoira index", "message_id", msg.Message.MessageID)
+			artwork.Pictures[msg.Index].TelegramInfo = tginfo
+		case MediaResultTypeUgoira:
+			tginfo.SetFileID(meta.BotID(), shared.TelegramMediaTypeVideo, msg.FileID)
+			artwork.UgoiraMetas[msg.Index].TelegramInfo = tginfo
+		case MediaResultTypeVideo:
+			tginfo.SetFileID(meta.BotID(), shared.TelegramMediaTypeVideo, msg.FileID)
+			artwork.Videos[msg.Index].TelegramInfo = tginfo
+		default:
+			log.Error("message has unknown media result type", "message_id", msg.Message.MessageID, "type", msg.Type)
 		}
 	}
 	if err := serv.UpdateCachedArtwork(ctx, artwork); err != nil {
@@ -208,9 +239,6 @@ func doPostAndCreateArtwork(
 		SourceURL: artwork.SourceURL,
 		Tags:      artwork.Tags,
 		UgoiraMetas: func() []*command.ArtworkUgoiraCreation {
-			if !isUgoira {
-				return nil
-			}
 			ugos := make([]*command.ArtworkUgoiraCreation, len(artwork.UgoiraMetas))
 			for i, ugoira := range artwork.UgoiraMetas {
 				ugos[i] = &command.ArtworkUgoiraCreation{
@@ -238,6 +266,23 @@ func doPostAndCreateArtwork(
 				}
 			}
 			return pics
+		}(),
+		Videos: func() []command.ArtworkVideoCreation {
+			videos := make([]command.ArtworkVideoCreation, len(artwork.Videos))
+			for i, video := range artwork.Videos {
+				videos[i] = command.ArtworkVideoCreation{
+					Index:           video.OrderIndex,
+					URL:             video.URL,
+					Width:           video.Width,
+					Height:          video.Height,
+					DurationMs:      video.Duration,
+					Poster:          video.Poster,
+					MimeType:        video.MimeType,
+					TelegramInfo:    video.TelegramInfo,
+					OriginalStorage: video.OriginalStorage,
+				}
+			}
+			return videos
 		}(),
 	})
 	if err != nil {

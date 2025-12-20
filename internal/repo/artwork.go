@@ -257,10 +257,16 @@ type WithArtworkEventImpl struct {
 	TagRepo     Tag
 	PictureRepo Picture
 	UgoiraRepo  Ugoira
+	VideoRepo   Video
 	DeletedRepo DeletedRecord
 	CachedRepo  CachedArtwork
 
 	ArtworkBus EventBus[*dto.ArtworkEventItem]
+}
+
+// Video implements [Repositories].
+func (r *WithArtworkEventImpl) Video() Video {
+	return r.VideoRepo
 }
 
 func NewWithArtworkEventImpl(tx Transactional,
@@ -271,6 +277,7 @@ func NewWithArtworkEventImpl(tx Transactional,
 	tag Tag,
 	picture Picture,
 	ugoira Ugoira,
+	video Video,
 	deleted DeletedRecord,
 	cached CachedArtwork,
 	bus EventBus[*dto.ArtworkEventItem]) *WithArtworkEventImpl {
@@ -283,6 +290,7 @@ func NewWithArtworkEventImpl(tx Transactional,
 		TagRepo:     tag,
 		PictureRepo: picture,
 		UgoiraRepo:  ugoira,
+		VideoRepo:   video,
 		DeletedRepo: deleted,
 		CachedRepo:  cached,
 		ArtworkBus:  bus,

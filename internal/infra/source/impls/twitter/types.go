@@ -102,6 +102,15 @@ func (resp *FxTwitterApiResp) ToArtwork() (*dto.FetchedArtwork, error) {
 			Poster:   posterUrl,
 			MimeType: mime,
 		})
+		if len(pictures) == 0 && posterUrl != "" {
+			// use video poster as picture if no pictures available
+			// this is for the temporary compatibility as we assume artworks always have pictures
+			pictures = append(pictures, &dto.FetchedPicture{
+				Index:     uint(i),
+				Thumbnail: posterUrl,
+				Original:  posterUrl,
+			})
+		}
 	}
 
 	title := fmt.Sprintf("%s/%s", tweet.Author.Username, tweet.ID)

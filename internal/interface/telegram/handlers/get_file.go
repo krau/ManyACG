@@ -165,14 +165,10 @@ func getArtworkFiles(ctx *telegohandler.Context,
 			errs = append(errs, oops.Wrapf(err, "failed to send picture %d file", i+1))
 		}
 	}
-	awUgoira, ok := artwork.(shared.UgoiraArtworkLike)
-	if !ok || awUgoira.GetUgoiraMetas() == nil {
-		return oops.Join(errs...)
-	}
-	for i, ugoira := range awUgoira.GetUgoiraMetas() {
+	for i, ugoira := range artwork.GetUgoiraMetas() {
 		err := func() error {
 			buildDocument := func() (*telego.SendDocumentParams, func() error, error) {
-				file, err := utils.GetUgoiraVideoDocumentInputFile(ctx, serv, meta, awUgoira, ugoira)
+				file, err := utils.GetUgoiraVideoDocumentInputFile(ctx, serv, meta, artwork, ugoira)
 				if err != nil {
 					return nil, nil, oops.Wrapf(err, "failed to get ugoira video document input file")
 				}
@@ -235,6 +231,74 @@ func getArtworkFiles(ctx *telegohandler.Context,
 		}()
 		if err != nil {
 			errs = append(errs, oops.Wrapf(err, "failed to send ugoira %d file", i+1))
+		}
+	}
+	for i, video := range artwork.GetVideos() {
+		err := func() error {
+			buildDocument := func() (*telego.SendDocumentParams, func() error, error) {
+				file, err := utils.GetVideoDocumentInputFile(ctx, serv, meta, artwork, video)
+				if err != nil {
+					return nil, nil, oops.Wrapf(err, "failed to get video document input file")
+				}
+				document := telegoutil.Document(message.Chat.ChatID(), file.Value).
+					WithReplyParameters(&telego.ReplyParameters{
+						MessageID: message.MessageID,
+					}).WithCaption(artwork.GetTitle() + "_" + strconv.Itoa(i+1)).WithDisableContentTypeDetection()
+				if meta.ChannelAvailable() && video.GetTelegramInfo().MessageID(meta.ChannelChatID().ID) != 0 {
+					document.WithReplyMarkup(telegoutil.InlineKeyboard([]telego.InlineKeyboardButton{
+						telegoutil.InlineKeyboardButton("详情").WithURL(meta.ChannelMessageURL(video.GetTelegramInfo().MessageID(meta.ChannelChatID().ID))),
+					}))
+				} else {
+					document.WithReplyMarkup(telegoutil.InlineKeyboard([]telego.InlineKeyboardButton{
+						telegoutil.InlineKeyboardButton("详情").WithURL(artwork.GetSourceURL()),
+					}))
+				}
+				return document, file.Close, nil
+			}
+			document, close, err := buildDocument()
+			if err != nil {
+				return oops.Wrapf(err, "failed to build document")
+			}
+			defer close()
+			documentMessage, err := ctx.Bot().SendDocument(ctx, document)
+			if err != nil {
+				ctx.Bot().SendMessage(ctx, telegoutil.Messagef(
+					message.Chat.ChatID(),
+					"发送第 %d 个视频时失败",
+					i+1,
+				).WithReplyParameters(&telego.ReplyParameters{
+					MessageID: message.MessageID,
+				}))
+				return oops.Wrapf(err, "failed to send document")
+			}
+			if documentMessage != nil && documentMessage.Document != nil {
+				switch vid := video.(type) {
+				case *entity.Video:
+					tginfo := vid.GetTelegramInfo()
+					tginfo.SetFileID(meta.BotID(), shared.TelegramMediaTypeDocument, documentMessage.Document.FileID)
+					return serv.UpdateVideoTelegramInfo(ctx, vid.ID, &tginfo)
+				case *entity.CachedVideo:
+					cached, err := serv.GetCachedArtworkByURL(ctx, artwork.GetSourceURL())
+					if err != nil {
+						return oops.Wrapf(err, "failed to get cached artwork by url: %s", artwork.GetSourceURL())
+					}
+					data := cached.Artwork.Data()
+					for _, v := range data.Videos {
+						if v.URL == vid.URL {
+							tginfo := vid.GetTelegramInfo()
+							tginfo.SetFileID(meta.BotID(), shared.TelegramMediaTypeDocument, documentMessage.Document.FileID)
+							v.TelegramInfo = tginfo
+							return serv.UpdateCachedArtwork(ctx, data)
+						}
+					}
+				default:
+					log.Warnf("unknown video type: %T", vid)
+				}
+			}
+			return nil
+		}()
+		if err != nil {
+			errs = append(errs, oops.Wrapf(err, "failed to send video %d file", i+1))
 		}
 	}
 	return oops.Join(errs...)
