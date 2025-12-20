@@ -5,12 +5,12 @@ import (
 
 	"github.com/krau/ManyACG/internal/model/entity"
 	"github.com/krau/ManyACG/internal/shared"
-	"github.com/krau/ManyACG/pkg/objectuuid"
+	"github.com/unvgo/ouid"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
 
-func (d *DB) CreateArtwork(ctx context.Context, artwork *entity.Artwork) (*objectuuid.ObjectUUID, error) {
+func (d *DB) CreateArtwork(ctx context.Context, artwork *entity.Artwork) (*ouid.OUID, error) {
 	result := gorm.WithResult()
 	err := gorm.G[entity.Artwork](d.db, result).Create(ctx, artwork)
 	if err != nil {
@@ -19,7 +19,7 @@ func (d *DB) CreateArtwork(ctx context.Context, artwork *entity.Artwork) (*objec
 	return &artwork.ID, nil
 }
 
-func (d *DB) GetArtworkByID(ctx context.Context, id objectuuid.ObjectUUID) (*entity.Artwork, error) {
+func (d *DB) GetArtworkByID(ctx context.Context, id ouid.OUID) (*entity.Artwork, error) {
 	var artwork entity.Artwork
 	err := d.db.WithContext(ctx).Model(&entity.Artwork{}).
 		Preload("Tags.Alias").
@@ -35,7 +35,7 @@ func (d *DB) GetArtworkByID(ctx context.Context, id objectuuid.ObjectUUID) (*ent
 	return &artwork, nil
 }
 
-func (d *DB) GetArtworksByIDs(ctx context.Context, ids []objectuuid.ObjectUUID) ([]*entity.Artwork, error) {
+func (d *DB) GetArtworksByIDs(ctx context.Context, ids []ouid.OUID) ([]*entity.Artwork, error) {
 	if len(ids) == 0 {
 		return []*entity.Artwork{}, nil
 	}
@@ -70,7 +70,7 @@ func (d *DB) GetArtworkByURL(ctx context.Context, url string) (*entity.Artwork, 
 	return &artwork, nil
 }
 
-func (d *DB) DeleteArtworkByID(ctx context.Context, id objectuuid.ObjectUUID) error {
+func (d *DB) DeleteArtworkByID(ctx context.Context, id ouid.OUID) error {
 	n, err := gorm.G[entity.Artwork](d.db).
 		Where("id = ?", id).
 		Delete(ctx)
@@ -98,7 +98,7 @@ func (d *DB) DeleteArtworkByURL(ctx context.Context, url string) error {
 
 // UpdateArtwork updates non-zero fields in the patch.
 func (d *DB) UpdateArtwork(ctx context.Context, patch *entity.Artwork) error {
-	if patch.ID == objectuuid.Nil {
+	if patch.ID.IsZero() {
 		return gorm.ErrInvalidData
 	}
 	_, err := gorm.G[entity.Artwork](d.db).Where("id = ?", patch.ID).Updates(ctx, *patch)
@@ -106,8 +106,8 @@ func (d *DB) UpdateArtwork(ctx context.Context, patch *entity.Artwork) error {
 }
 
 // UpdateArtworkByMap updates all given fields in the patch map.
-func (d *DB) UpdateArtworkByMap(ctx context.Context, id objectuuid.ObjectUUID, patch map[string]any) error {
-	if id == objectuuid.Nil {
+func (d *DB) UpdateArtworkByMap(ctx context.Context, id ouid.OUID, patch map[string]any) error {
+	if id.IsZero() {
 		return gorm.ErrInvalidData
 	}
 	if len(patch) == 0 {
@@ -116,8 +116,8 @@ func (d *DB) UpdateArtworkByMap(ctx context.Context, id objectuuid.ObjectUUID, p
 	return d.db.WithContext(ctx).Model(&entity.Artwork{}).Where("id = ?", id).Updates(patch).Error
 }
 
-func (d *DB) UpdateArtworkPictures(ctx context.Context, id objectuuid.ObjectUUID, pics []*entity.Picture) error {
-	if id == objectuuid.Nil {
+func (d *DB) UpdateArtworkPictures(ctx context.Context, id ouid.OUID, pics []*entity.Picture) error {
+	if id.IsZero() {
 		return gorm.ErrInvalidData
 	}
 	if len(pics) == 0 {
@@ -133,8 +133,8 @@ func (d *DB) UpdateArtworkPictures(ctx context.Context, id objectuuid.ObjectUUID
 	return d.db.WithContext(ctx).Model(&existing).Association("Pictures").Replace(pics)
 }
 
-func (d *DB) UpdateArtworkTags(ctx context.Context, id objectuuid.ObjectUUID, tags []*entity.Tag) error {
-	if id == objectuuid.Nil {
+func (d *DB) UpdateArtworkTags(ctx context.Context, id ouid.OUID, tags []*entity.Tag) error {
+	if id.IsZero() {
 		return gorm.ErrInvalidData
 	}
 	var existing entity.Artwork

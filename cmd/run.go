@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/duke-git/lancet/v2/retry"
+	"github.com/goccy/go-json"
 	"github.com/krau/ManyACG/internal/common/version"
 	"github.com/krau/ManyACG/internal/infra"
 	"github.com/krau/ManyACG/internal/infra/config/runtimecfg"
@@ -28,8 +29,8 @@ import (
 	"github.com/krau/ManyACG/internal/repo"
 	"github.com/krau/ManyACG/internal/service"
 	"github.com/krau/ManyACG/pkg/log"
-	"github.com/krau/ManyACG/pkg/objectuuid"
 	"github.com/krau/ManyACG/pkg/osutil"
+	"github.com/unvgo/ouid"
 )
 
 const banner = `
@@ -48,6 +49,9 @@ Kawaii is All You Need! ᕕ(◠ڼ◠)ᕗ
 
 func Run() {
 	fmt.Printf(banner, version.BuildTime, version.Version, version.Commit[:7])
+	ouid.MarshalJSON = json.Marshal
+	ouid.UnmarshalJSON = json.Unmarshal
+
 	cfg := runtimecfg.Get()
 
 	log.SetDefault(log.New(log.Config{
@@ -149,7 +153,7 @@ func Run() {
 
 func registerArtworkEventSearcherHandlers(ctx context.Context, bus repo.EventBus[*dto.ArtworkEventItem], searcher search.Searcher) {
 	filter := func(payload *dto.ArtworkEventItem) bool {
-		return payload != nil && payload.ID != objectuuid.Nil
+		return payload != nil && payload.ID.IsZero()
 	}
 	bus.Subscribe(repo.EventTypeArtworkCreate, func(payload *dto.ArtworkEventItem) {
 		retry.Retry(func() error {

@@ -5,12 +5,12 @@ import (
 	"fmt"
 
 	"github.com/goccy/go-json"
+	"github.com/unvgo/ouid"
 
 	"github.com/krau/ManyACG/internal/infra/config/runtimecfg"
 	"github.com/krau/ManyACG/internal/model/dto"
 	"github.com/krau/ManyACG/internal/model/query"
 	"github.com/krau/ManyACG/internal/shared"
-	"github.com/krau/ManyACG/pkg/objectuuid"
 	"github.com/meilisearch/meilisearch-go"
 )
 
@@ -77,9 +77,9 @@ func (m *SearcherMeilisearch) SearchArtworks(ctx context.Context, que *query.Art
 	if err != nil {
 		return nil, fmt.Errorf("meilisearch unmarshal hits failed: %w", err)
 	}
-	oids := make([]objectuuid.ObjectUUID, 0, len(docs))
+	oids := make([]ouid.OUID, 0, len(docs))
 	for _, doc := range docs {
-		oid, err := objectuuid.FromObjectIDHex(doc.ID)
+		oid, err := ouid.FromObjectIDHex(doc.ID)
 		if err != nil {
 			return nil, fmt.Errorf("meilisearch parse objectid failed: %w", err)
 		}
@@ -119,9 +119,9 @@ func (m *SearcherMeilisearch) FindSimilarArtworks(ctx context.Context, que *quer
 	if err != nil {
 		return nil, fmt.Errorf("meilisearch unmarshal hits failed: %w", err)
 	}
-	oids := make([]objectuuid.ObjectUUID, 0, len(docs))
+	oids := make([]ouid.OUID, 0, len(docs))
 	for _, doc := range docs {
-		oid, err := objectuuid.FromObjectIDHex(doc.ID)
+		oid, err := ouid.FromObjectIDHex(doc.ID)
 		if err != nil {
 			return nil, fmt.Errorf("meilisearch parse objectid failed: %w", err)
 		}

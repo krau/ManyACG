@@ -9,20 +9,20 @@ import (
 	"github.com/krau/ManyACG/internal/model/entity"
 	"github.com/krau/ManyACG/internal/model/query"
 	"github.com/krau/ManyACG/internal/shared"
-	"github.com/krau/ManyACG/pkg/objectuuid"
+	"github.com/unvgo/ouid"
 )
 
 type Artwork interface {
-	GetArtworkByID(ctx context.Context, id objectuuid.ObjectUUID) (*entity.Artwork, error)
+	GetArtworkByID(ctx context.Context, id ouid.OUID) (*entity.Artwork, error)
 	GetArtworkByURL(ctx context.Context, url string) (*entity.Artwork, error)
-	CreateArtwork(ctx context.Context, artwork *entity.Artwork) (*objectuuid.ObjectUUID, error)
-	UpdateArtworkByMap(ctx context.Context, id objectuuid.ObjectUUID, patch map[string]any) error
-	UpdateArtworkTags(ctx context.Context, id objectuuid.ObjectUUID, tags []*entity.Tag) error
-	UpdateArtworkPictures(ctx context.Context, id objectuuid.ObjectUUID, pictures []*entity.Picture) error
-	ReorderArtworkPicturesByID(ctx context.Context, id objectuuid.ObjectUUID) error
-	DeleteArtworkByID(ctx context.Context, id objectuuid.ObjectUUID) error
+	CreateArtwork(ctx context.Context, artwork *entity.Artwork) (*ouid.OUID, error)
+	UpdateArtworkByMap(ctx context.Context, id ouid.OUID, patch map[string]any) error
+	UpdateArtworkTags(ctx context.Context, id ouid.OUID, tags []*entity.Tag) error
+	UpdateArtworkPictures(ctx context.Context, id ouid.OUID, pictures []*entity.Picture) error
+	ReorderArtworkPicturesByID(ctx context.Context, id ouid.OUID) error
+	DeleteArtworkByID(ctx context.Context, id ouid.OUID) error
 	QueryArtworks(ctx context.Context, que query.ArtworksDB) ([]*entity.Artwork, error)
-	GetArtworksByIDs(ctx context.Context, ids []objectuuid.ObjectUUID) ([]*entity.Artwork, error)
+	GetArtworksByIDs(ctx context.Context, ids []ouid.OUID) ([]*entity.Artwork, error)
 	CountArtworks(ctx context.Context, r18 shared.R18Type) (int64, error)
 }
 
@@ -39,7 +39,7 @@ func (a *ArtworkWithEvent) CountArtworks(ctx context.Context, r18 shared.R18Type
 var _ Artwork = (*ArtworkWithEvent)(nil)
 
 // CreateArtwork implements Artwork.
-func (a *ArtworkWithEvent) CreateArtwork(ctx context.Context, artwork *entity.Artwork) (*objectuuid.ObjectUUID, error) {
+func (a *ArtworkWithEvent) CreateArtwork(ctx context.Context, artwork *entity.Artwork) (*ouid.OUID, error) {
 	id, err := a.inner.CreateArtwork(ctx, artwork)
 	if err != nil {
 		return nil, err
@@ -53,7 +53,7 @@ func (a *ArtworkWithEvent) CreateArtwork(ctx context.Context, artwork *entity.Ar
 }
 
 // DeleteArtworkByID implements Artwork.
-func (a *ArtworkWithEvent) DeleteArtworkByID(ctx context.Context, id objectuuid.ObjectUUID) error {
+func (a *ArtworkWithEvent) DeleteArtworkByID(ctx context.Context, id ouid.OUID) error {
 	ent, err := a.GetArtworkByID(ctx, id)
 	if err != nil {
 		return err
@@ -66,7 +66,7 @@ func (a *ArtworkWithEvent) DeleteArtworkByID(ctx context.Context, id objectuuid.
 }
 
 // UpdateArtworkByMap implements Artwork.
-func (a *ArtworkWithEvent) UpdateArtworkByMap(ctx context.Context, id objectuuid.ObjectUUID, patch map[string]any) error {
+func (a *ArtworkWithEvent) UpdateArtworkByMap(ctx context.Context, id ouid.OUID, patch map[string]any) error {
 	err := a.inner.UpdateArtworkByMap(ctx, id, patch)
 	if err != nil {
 		return err
@@ -80,7 +80,7 @@ func (a *ArtworkWithEvent) UpdateArtworkByMap(ctx context.Context, id objectuuid
 }
 
 // UpdateArtworkPictures implements Artwork.
-func (a *ArtworkWithEvent) UpdateArtworkPictures(ctx context.Context, id objectuuid.ObjectUUID, pictures []*entity.Picture) error {
+func (a *ArtworkWithEvent) UpdateArtworkPictures(ctx context.Context, id ouid.OUID, pictures []*entity.Picture) error {
 	err := a.inner.UpdateArtworkPictures(ctx, id, pictures)
 	if err != nil {
 		return err
@@ -94,7 +94,7 @@ func (a *ArtworkWithEvent) UpdateArtworkPictures(ctx context.Context, id objectu
 }
 
 // UpdateArtworkTags implements Artwork.
-func (a *ArtworkWithEvent) UpdateArtworkTags(ctx context.Context, id objectuuid.ObjectUUID, tags []*entity.Tag) error {
+func (a *ArtworkWithEvent) UpdateArtworkTags(ctx context.Context, id ouid.OUID, tags []*entity.Tag) error {
 	err := a.inner.UpdateArtworkTags(ctx, id, tags)
 	if err != nil {
 		return err
@@ -108,7 +108,7 @@ func (a *ArtworkWithEvent) UpdateArtworkTags(ctx context.Context, id objectuuid.
 }
 
 // GetArtworkByID implements Artwork.
-func (a *ArtworkWithEvent) GetArtworkByID(ctx context.Context, id objectuuid.ObjectUUID) (*entity.Artwork, error) {
+func (a *ArtworkWithEvent) GetArtworkByID(ctx context.Context, id ouid.OUID) (*entity.Artwork, error) {
 	return a.inner.GetArtworkByID(ctx, id)
 }
 
@@ -118,7 +118,7 @@ func (a *ArtworkWithEvent) GetArtworkByURL(ctx context.Context, url string) (*en
 }
 
 // GetArtworksByIDs implements Artwork.
-func (a *ArtworkWithEvent) GetArtworksByIDs(ctx context.Context, ids []objectuuid.ObjectUUID) ([]*entity.Artwork, error) {
+func (a *ArtworkWithEvent) GetArtworksByIDs(ctx context.Context, ids []ouid.OUID) ([]*entity.Artwork, error) {
 	return a.inner.GetArtworksByIDs(ctx, ids)
 }
 
@@ -128,7 +128,7 @@ func (a *ArtworkWithEvent) QueryArtworks(ctx context.Context, que query.Artworks
 }
 
 // ReorderArtworkPicturesByID implements Artwork.
-func (a *ArtworkWithEvent) ReorderArtworkPicturesByID(ctx context.Context, id objectuuid.ObjectUUID) error {
+func (a *ArtworkWithEvent) ReorderArtworkPicturesByID(ctx context.Context, id ouid.OUID) error {
 	return a.inner.ReorderArtworkPicturesByID(ctx, id)
 }
 
@@ -157,7 +157,7 @@ func (a *ArtworkWithRecorder) CountArtworks(ctx context.Context, r18 shared.R18T
 
 var _ Artwork = (*ArtworkWithRecorder)(nil)
 
-func (a *ArtworkWithRecorder) CreateArtwork(ctx context.Context, artwork *entity.Artwork) (*objectuuid.ObjectUUID, error) {
+func (a *ArtworkWithRecorder) CreateArtwork(ctx context.Context, artwork *entity.Artwork) (*ouid.OUID, error) {
 	id, err := a.inner.CreateArtwork(ctx, artwork)
 	if err != nil {
 		return nil, err
@@ -172,7 +172,7 @@ func (a *ArtworkWithRecorder) CreateArtwork(ctx context.Context, artwork *entity
 	return id, nil
 }
 
-func (a *ArtworkWithRecorder) DeleteArtworkByID(ctx context.Context, id objectuuid.ObjectUUID) error {
+func (a *ArtworkWithRecorder) DeleteArtworkByID(ctx context.Context, id ouid.OUID) error {
 	ent, err := a.inner.GetArtworkByID(ctx, id)
 	if err != nil {
 		return err
@@ -186,7 +186,7 @@ func (a *ArtworkWithRecorder) DeleteArtworkByID(ctx context.Context, id objectuu
 	return nil
 }
 
-func (a *ArtworkWithRecorder) UpdateArtworkByMap(ctx context.Context, id objectuuid.ObjectUUID, patch map[string]any) error {
+func (a *ArtworkWithRecorder) UpdateArtworkByMap(ctx context.Context, id ouid.OUID, patch map[string]any) error {
 	if err := a.inner.UpdateArtworkByMap(ctx, id, patch); err != nil {
 		return err
 	}
@@ -200,7 +200,7 @@ func (a *ArtworkWithRecorder) UpdateArtworkByMap(ctx context.Context, id objectu
 	return nil
 }
 
-func (a *ArtworkWithRecorder) UpdateArtworkPictures(ctx context.Context, id objectuuid.ObjectUUID, pictures []*entity.Picture) error {
+func (a *ArtworkWithRecorder) UpdateArtworkPictures(ctx context.Context, id ouid.OUID, pictures []*entity.Picture) error {
 	if err := a.inner.UpdateArtworkPictures(ctx, id, pictures); err != nil {
 		return err
 	}
@@ -214,7 +214,7 @@ func (a *ArtworkWithRecorder) UpdateArtworkPictures(ctx context.Context, id obje
 	return nil
 }
 
-func (a *ArtworkWithRecorder) UpdateArtworkTags(ctx context.Context, id objectuuid.ObjectUUID, tags []*entity.Tag) error {
+func (a *ArtworkWithRecorder) UpdateArtworkTags(ctx context.Context, id ouid.OUID, tags []*entity.Tag) error {
 	if err := a.inner.UpdateArtworkTags(ctx, id, tags); err != nil {
 		return err
 	}
@@ -228,7 +228,7 @@ func (a *ArtworkWithRecorder) UpdateArtworkTags(ctx context.Context, id objectuu
 	return nil
 }
 
-func (a *ArtworkWithRecorder) GetArtworkByID(ctx context.Context, id objectuuid.ObjectUUID) (*entity.Artwork, error) {
+func (a *ArtworkWithRecorder) GetArtworkByID(ctx context.Context, id ouid.OUID) (*entity.Artwork, error) {
 	return a.inner.GetArtworkByID(ctx, id)
 }
 
@@ -236,7 +236,7 @@ func (a *ArtworkWithRecorder) GetArtworkByURL(ctx context.Context, url string) (
 	return a.inner.GetArtworkByURL(ctx, url)
 }
 
-func (a *ArtworkWithRecorder) GetArtworksByIDs(ctx context.Context, ids []objectuuid.ObjectUUID) ([]*entity.Artwork, error) {
+func (a *ArtworkWithRecorder) GetArtworksByIDs(ctx context.Context, ids []ouid.OUID) ([]*entity.Artwork, error) {
 	return a.inner.GetArtworksByIDs(ctx, ids)
 }
 
@@ -244,7 +244,7 @@ func (a *ArtworkWithRecorder) QueryArtworks(ctx context.Context, que query.Artwo
 	return a.inner.QueryArtworks(ctx, que)
 }
 
-func (a *ArtworkWithRecorder) ReorderArtworkPicturesByID(ctx context.Context, id objectuuid.ObjectUUID) error {
+func (a *ArtworkWithRecorder) ReorderArtworkPicturesByID(ctx context.Context, id ouid.OUID) error {
 	return a.inner.ReorderArtworkPicturesByID(ctx, id)
 }
 

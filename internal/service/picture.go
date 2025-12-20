@@ -8,8 +8,8 @@ import (
 	"github.com/krau/ManyACG/internal/model/query"
 	"github.com/krau/ManyACG/internal/repo"
 	"github.com/krau/ManyACG/internal/shared"
-	"github.com/krau/ManyACG/pkg/objectuuid"
 	"github.com/samber/oops"
+	"github.com/unvgo/ouid"
 	"gorm.io/datatypes"
 )
 
@@ -24,7 +24,7 @@ func (s *Service) SavePicture(ctx context.Context, pic *entity.Picture) error {
 	return s.repos.Picture().SavePicture(ctx, pic)
 }
 
-func (s *Service) UpdatePictureTelegramInfo(ctx context.Context, id objectuuid.ObjectUUID, tgInfo *shared.TelegramInfo) error {
+func (s *Service) UpdatePictureTelegramInfo(ctx context.Context, id ouid.OUID, tgInfo *shared.TelegramInfo) error {
 	_, err := s.repos.Picture().UpdatePictureTelegramInfoByID(ctx, id, tgInfo)
 	return err
 }
@@ -36,7 +36,7 @@ func (s *Service) QueryPicturesByPhash(ctx context.Context, que query.PicturesPh
 // 删除单张图片, 如果删除后对应的 artwork 中没有图片, 则也删除 artwork
 //
 // 删除后对 artwork 的 pictures 的 index 进行重整, 并在 cached_artwork 中将对应的图片标记为隐藏
-func (s *Service) DeletePictureByID(ctx context.Context, id objectuuid.ObjectUUID) error {
+func (s *Service) DeletePictureByID(ctx context.Context, id ouid.OUID) error {
 	toDelete, err := s.repos.Picture().GetPictureByID(ctx, id)
 	if err != nil {
 		return err
@@ -80,11 +80,11 @@ func (s *Service) DeletePictureByID(ctx context.Context, id objectuuid.ObjectUUI
 	return err
 }
 
-func (s *Service) GetPictureByID(ctx context.Context, id objectuuid.ObjectUUID) (*entity.Picture, error) {
+func (s *Service) GetPictureByID(ctx context.Context, id ouid.OUID) (*entity.Picture, error) {
 	return s.repos.Picture().GetPictureByID(ctx, id)
 }
 
-func (s *Service) UpdateUgoiraTelegramInfo(ctx context.Context, id objectuuid.ObjectUUID, tgInfo *shared.TelegramInfo) error {
+func (s *Service) UpdateUgoiraTelegramInfo(ctx context.Context, id ouid.OUID, tgInfo *shared.TelegramInfo) error {
 	_, err := s.repos.Ugoira().UpdateUgoiraTelegramInfoByID(ctx, id, tgInfo)
 	return err
 }

@@ -16,11 +16,11 @@ import (
 	"github.com/krau/ManyACG/internal/service"
 	"github.com/krau/ManyACG/internal/shared"
 	"github.com/krau/ManyACG/pkg/log"
-	"github.com/krau/ManyACG/pkg/objectuuid"
 	"github.com/krau/ManyACG/pkg/strutil"
 	"github.com/mymmrac/telego"
 	"github.com/mymmrac/telego/telegoutil"
 	"github.com/samber/oops"
+	"github.com/unvgo/ouid"
 )
 
 func doPostAndCreateArtwork(
@@ -190,9 +190,9 @@ func doPostAndCreateArtwork(
 		return oops.Wrapf(err, "failed to update cached artwork after sending")
 	}
 	// 创建 artwork
-	awId, err := objectuuid.FromObjectIDHex(artwork.ID)
+	awId, err := ouid.FromObjectIDHex(artwork.ID)
 	if err != nil {
-		awId = objectuuid.New()
+		awId = ouid.New()
 	}
 	ent, err := serv.CreateArtwork(ctx, &command.ArtworkCreation{
 		ID:          awId,

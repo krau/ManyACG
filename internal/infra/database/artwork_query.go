@@ -8,7 +8,6 @@ import (
 	"github.com/krau/ManyACG/internal/model/entity"
 	"github.com/krau/ManyACG/internal/model/query"
 	"github.com/krau/ManyACG/internal/shared"
-	"github.com/krau/ManyACG/pkg/objectuuid"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
@@ -18,7 +17,7 @@ func applyBaseFilters(que query.ArtworksDB) func(db *gorm.DB) *gorm.DB {
 		if que.R18 != shared.R18TypeAll {
 			db = db.Where("r18 = ?", que.R18 == shared.R18TypeR18)
 		}
-		if que.ArtistID != objectuuid.Nil {
+		if que.ArtistID.IsZero() {
 			db = db.Where("artist_id = ?", que.ArtistID)
 		}
 

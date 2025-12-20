@@ -19,8 +19,8 @@ import (
 	"github.com/krau/ManyACG/internal/shared"
 	"github.com/krau/ManyACG/internal/shared/errs"
 	"github.com/krau/ManyACG/pkg/log"
-	"github.com/krau/ManyACG/pkg/objectuuid"
 	"github.com/krau/ManyACG/pkg/strutil"
+	"github.com/unvgo/ouid"
 )
 
 type RequestRandomArtworks struct {
@@ -257,9 +257,9 @@ func GetHandleListArtworks(serv *service.Service, cfg runtimecfg.RestConfig) fib
 			req.Page = 1
 		}
 
-		var artistID objectuuid.ObjectUUID
+		var artistID ouid.OUID
 		if req.ArtistID != "" {
-			parsed, err := objectuuid.FromObjectIDHex(req.ArtistID)
+			parsed, err := ouid.FromObjectIDHex(req.ArtistID)
 			if err != nil {
 				return err
 			}
@@ -269,7 +269,7 @@ func GetHandleListArtworks(serv *service.Service, cfg runtimecfg.RestConfig) fib
 		var artworks []*entity.Artwork
 		var err error
 		if req.SimilarTarget != "" {
-			targetId, err := objectuuid.FromObjectIDHex(req.SimilarTarget)
+			targetId, err := ouid.FromObjectIDHex(req.SimilarTarget)
 			if err != nil {
 				return err
 			}
@@ -299,7 +299,7 @@ func GetHandleListArtworks(serv *service.Service, cfg runtimecfg.RestConfig) fib
 				return err
 			}
 		} else {
-			var tagId objectuuid.ObjectUUID
+			var tagId ouid.OUID
 			if req.Tag != "" {
 				tag, err := serv.GetTagByNameWithAlias(ctx, req.Tag)
 				if err != nil {
@@ -318,11 +318,11 @@ func GetHandleListArtworks(serv *service.Service, cfg runtimecfg.RestConfig) fib
 					Offset: int((req.Page - 1) * req.PageSize),
 				},
 			}
-			if artistID != objectuuid.Nil {
+			if artistID != ouid.Nil {
 				dbQuery.ArtistID = artistID
 			}
-			if tagId != objectuuid.Nil {
-				dbQuery.Tags = [][]objectuuid.ObjectUUID{{tagId}}
+			if tagId != ouid.Nil {
+				dbQuery.Tags = [][]ouid.OUID{{tagId}}
 			}
 			if len(keywords) > 0 {
 				dbQuery.Keywords = keywords
@@ -452,7 +452,7 @@ func HandleFetchArtwork(ctx fiber.Ctx) error {
 	if err != nil {
 		return err
 	}
-	cacheid := objectuuid.New().Hex()
+	cacheid := ouid.New().Hex()
 	if err := kvstor.Set(ctx, cacheid, artwork.GetSourceURL()); err != nil {
 		log.Warn("failed to set cacheid", "data", artwork.GetSourceURL(), "err", err)
 	}
@@ -464,7 +464,7 @@ func HandleGetArtworkByID(ctx fiber.Ctx) error {
 	if artworkId == "" {
 		return common.NewError(fiber.StatusBadRequest, "artwork id is required")
 	}
-	artworkUUID, err := objectuuid.FromObjectIDHex(artworkId)
+	artworkUUID, err := ouid.FromObjectIDHex(artworkId)
 	if err != nil {
 		return common.NewError(fiber.StatusBadRequest, "invalid artwork id")
 	}

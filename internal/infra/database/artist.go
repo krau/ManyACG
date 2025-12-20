@@ -5,11 +5,11 @@ import (
 
 	"github.com/krau/ManyACG/internal/model/entity"
 	"github.com/krau/ManyACG/internal/shared"
-	"github.com/krau/ManyACG/pkg/objectuuid"
+	"github.com/unvgo/ouid"
 	"gorm.io/gorm"
 )
 
-func (d *DB) GetArtistByID(ctx context.Context, id objectuuid.ObjectUUID) (*entity.Artist, error) {
+func (d *DB) GetArtistByID(ctx context.Context, id ouid.OUID) (*entity.Artist, error) {
 	artist, err := gorm.G[entity.Artist](d.db).Where("id = ?", id).First(ctx)
 	if err != nil {
 		return nil, err
@@ -30,7 +30,7 @@ func (d *DB) UpdateArtist(ctx context.Context, patch *entity.Artist) error {
 	return err
 }
 
-func (d *DB) CreateArtist(ctx context.Context, artist *entity.Artist) (*objectuuid.ObjectUUID, error) {
+func (d *DB) CreateArtist(ctx context.Context, artist *entity.Artist) (*ouid.OUID, error) {
 	result := gorm.WithResult()
 	err := gorm.G[entity.Artist](d.db, result).Create(ctx, artist)
 	if err != nil {

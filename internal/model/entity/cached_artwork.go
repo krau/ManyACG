@@ -4,7 +4,7 @@ import (
 	"time"
 
 	"github.com/krau/ManyACG/internal/shared"
-	"github.com/krau/ManyACG/pkg/objectuuid"
+	"github.com/unvgo/ouid"
 	"gorm.io/datatypes"
 	"gorm.io/gorm"
 )
@@ -199,7 +199,7 @@ func (c *CachedPicture) GetThumbnail() string {
 }
 
 type CachedArtwork struct {
-	ID        objectuuid.ObjectUUID                  `gorm:"primaryKey;type:uuid" json:"id"`
+	ID        ouid.OUID                              `gorm:"primaryKey;type:uuid" json:"id"`
 	SourceURL string                                 `gorm:"type:text;uniqueIndex" json:"source_url"`
 	CreatedAt time.Time                              `gorm:"autoCreateTime" json:"created_at"`
 	Artwork   datatypes.JSONType[*CachedArtworkData] `gorm:"type:json" json:"artwork"`
@@ -255,8 +255,8 @@ func (c *CachedArtwork) GetUgoiraMetas() []shared.UgoiraMetaLike {
 }
 
 func (c *CachedArtwork) BeforeCreate(tx *gorm.DB) (err error) {
-	if c.ID == objectuuid.Nil {
-		c.ID = objectuuid.New()
+	if c.ID.IsZero() {
+		c.ID = ouid.New()
 	}
 	if c.Artwork.Data().ID == "" {
 		data := c.Artwork.Data()

@@ -4,7 +4,7 @@ import (
 	"github.com/krau/ManyACG/internal/model/dto"
 	"github.com/krau/ManyACG/internal/model/entity"
 	"github.com/krau/ManyACG/internal/shared"
-	"github.com/krau/ManyACG/pkg/objectuuid"
+	"github.com/unvgo/ouid"
 	"gorm.io/datatypes"
 )
 
@@ -90,7 +90,7 @@ func DtoFetchedArtworkToEntityCached(art *dto.FetchedArtwork) *entity.CachedArtw
 		SourceURL: art.SourceURL,
 		Status:    shared.ArtworkStatusCached,
 		Artwork: datatypes.NewJSONType(&entity.CachedArtworkData{
-			ID:          objectuuid.New().Hex(),
+			ID:          ouid.New().Hex(),
 			Title:       art.Title,
 			Description: art.Description,
 			R18:         art.R18,

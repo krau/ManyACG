@@ -18,7 +18,7 @@ import (
 	"github.com/krau/ManyACG/internal/shared"
 	"github.com/krau/ManyACG/internal/shared/errs"
 	"github.com/krau/ManyACG/pkg/log"
-	"github.com/krau/ManyACG/pkg/objectuuid"
+	"github.com/unvgo/ouid"
 	"gorm.io/datatypes"
 )
 
@@ -27,7 +27,7 @@ func HandleGetPictureFileByID(ctx fiber.Ctx) error {
 	if pictureID == "" {
 		return fiber.NewError(fiber.StatusBadRequest, "missing picture ID")
 	}
-	id, err := objectuuid.FromObjectIDHex(pictureID)
+	id, err := ouid.FromObjectIDHex(pictureID)
 	if err != nil {
 		return fiber.NewError(fiber.StatusBadRequest, "invalid picture ID")
 	}
@@ -65,7 +65,7 @@ func HandleGetSizedPictureFileByID(ctx fiber.Ctx) error {
 	if pictureID == "" {
 		return fiber.NewError(fiber.StatusBadRequest, "missing picture ID")
 	}
-	id, err := objectuuid.FromObjectIDHex(pictureID)
+	id, err := ouid.FromObjectIDHex(pictureID)
 	if err != nil {
 		return fiber.NewError(fiber.StatusBadRequest, "invalid picture ID")
 	}

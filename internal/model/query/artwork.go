@@ -2,7 +2,7 @@ package query
 
 import (
 	"github.com/krau/ManyACG/internal/shared"
-	"github.com/krau/ManyACG/pkg/objectuuid"
+	"github.com/unvgo/ouid"
 )
 
 type Paginate struct {
@@ -12,9 +12,9 @@ type Paginate struct {
 
 type ArtworksFilter struct {
 	R18      shared.R18Type
-	Tags     [][]objectuuid.ObjectUUID
+	Tags     [][]ouid.OUID
 	Keywords [][]string
-	ArtistID objectuuid.ObjectUUID
+	ArtistID ouid.OUID
 }
 
 // 只需要查数据库
@@ -35,7 +35,7 @@ type ArtworkSearch struct {
 }
 
 type ArtworkSimilar struct {
-	ArtworkID objectuuid.ObjectUUID
+	ArtworkID ouid.OUID
 	R18       shared.R18Type
 	Paginate
 }

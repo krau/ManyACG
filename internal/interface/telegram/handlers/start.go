@@ -11,11 +11,11 @@ import (
 	"github.com/krau/ManyACG/internal/shared"
 	"github.com/krau/ManyACG/internal/shared/errs"
 	"github.com/krau/ManyACG/pkg/log"
-	"github.com/krau/ManyACG/pkg/objectuuid"
 	"github.com/mymmrac/telego"
 	"github.com/mymmrac/telego/telegohandler"
 	"github.com/mymmrac/telego/telegoutil"
 	"github.com/samber/oops"
+	"github.com/unvgo/ouid"
 )
 
 func Start(ctx *telegohandler.Context, message telego.Message) error {
@@ -29,7 +29,7 @@ func Start(ctx *telegohandler.Context, message telego.Message) error {
 		switch action {
 		case "file": // for compatibility we keep "file" action to get single picture by id
 			pictureIDStr := args[0][5:]
-			pictureID, err := objectuuid.FromObjectIDHex(pictureIDStr)
+			pictureID, err := ouid.FromObjectIDHex(pictureIDStr)
 			if err != nil {
 				utils.ReplyMessage(ctx, message, "无效的ID")
 				return nil
@@ -49,7 +49,7 @@ func Start(ctx *telegohandler.Context, message telego.Message) error {
 			return err
 		case "files":
 			artworkIDStr := args[0][6:]
-			artworkID, err := objectuuid.FromObjectIDHex(artworkIDStr)
+			artworkID, err := ouid.FromObjectIDHex(artworkIDStr)
 			if err != nil {
 				utils.ReplyMessage(ctx, message, "无效的ID")
 				return nil

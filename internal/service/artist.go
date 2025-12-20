@@ -4,9 +4,9 @@ import (
 	"context"
 
 	"github.com/krau/ManyACG/internal/model/entity"
-	"github.com/krau/ManyACG/pkg/objectuuid"
+	"github.com/unvgo/ouid"
 )
 
-func (s *Service) GetArtistByID(ctx context.Context, id objectuuid.ObjectUUID) (*entity.Artist, error) {
+func (s *Service) GetArtistByID(ctx context.Context, id ouid.OUID) (*entity.Artist, error) {
 	return s.repos.Artist().GetArtistByID(ctx, id)
 }

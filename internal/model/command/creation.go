@@ -2,11 +2,11 @@ package command
 
 import (
 	"github.com/krau/ManyACG/internal/shared"
-	"github.com/krau/ManyACG/pkg/objectuuid"
+	"github.com/unvgo/ouid"
 )
 
 type ArtworkCreation struct {
-	ID          objectuuid.ObjectUUID
+	ID          ouid.OUID
 	Title       string
 	Description string
 	R18         bool

@@ -12,11 +12,11 @@ import (
 	"github.com/krau/ManyACG/internal/shared"
 	"github.com/krau/ManyACG/internal/shared/errs"
 	"github.com/krau/ManyACG/pkg/log"
-	"github.com/krau/ManyACG/pkg/objectuuid"
 	"github.com/mymmrac/telego"
 	"github.com/mymmrac/telego/telegohandler"
 	"github.com/mymmrac/telego/telegoutil"
 	"github.com/samber/oops"
+	"github.com/unvgo/ouid"
 )
 
 func ToggleArtworkR18(ctx *telegohandler.Context, message telego.Message) error {
@@ -168,7 +168,7 @@ func EditArtworkR18(ctx *telegohandler.Context, query telego.CallbackQuery) erro
 		)
 		return nil
 	}
-	artworkID, err := objectuuid.FromObjectIDHex(args[2])
+	artworkID, err := ouid.FromObjectIDHex(args[2])
 	if err != nil {
 		ctx.Bot().AnswerCallbackQuery(ctx,
 			&telego.AnswerCallbackQueryParams{

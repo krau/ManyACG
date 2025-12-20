@@ -15,7 +15,7 @@ import (
 	"github.com/krau/ManyACG/internal/repo"
 	"github.com/krau/ManyACG/internal/shared"
 	"github.com/krau/ManyACG/internal/shared/errs"
-	"github.com/krau/ManyACG/pkg/objectuuid"
+	"github.com/unvgo/ouid"
 	"gorm.io/datatypes"
 )
 
@@ -36,7 +36,7 @@ func (s *Service) CreateArtwork(ctx context.Context, cmd *command.ArtworkCreatio
 		if err != nil && !errors.Is(err, errs.ErrRecordNotFound) {
 			return err
 		}
-		var artistID objectuuid.ObjectUUID
+		var artistID ouid.OUID
 		if atsEnt != nil {
 			atsEnt.Name = cmd.Artist.Name
 			atsEnt.Username = cmd.Artist.Username
@@ -157,7 +157,7 @@ func (s *Service) UpdateArtworkR18ByURL(ctx context.Context, sourceURL string, r
 	return s.repos.Artwork().UpdateArtworkByMap(ctx, awEnt.ID, map[string]any{"r18": r18})
 }
 
-func (s *Service) UpdateArtworkR18ByID(ctx context.Context, id objectuuid.ObjectUUID, r18 bool) error {
+func (s *Service) UpdateArtworkR18ByID(ctx context.Context, id ouid.OUID, r18 bool) error {
 	return s.repos.Artwork().UpdateArtworkByMap(ctx, id, map[string]any{"r18": r18})
 }
 
@@ -223,11 +223,11 @@ func (s *Service) DeleteArtworkByURL(ctx context.Context, sourceURL string) erro
 	return err
 }
 
-func (s *Service) GetArtworkByID(ctx context.Context, id objectuuid.ObjectUUID) (*entity.Artwork, error) {
+func (s *Service) GetArtworkByID(ctx context.Context, id ouid.OUID) (*entity.Artwork, error) {
 	return s.repos.Artwork().GetArtworkByID(ctx, id)
 }
 
-func (s *Service) DeleteArtworkByID(ctx context.Context, id objectuuid.ObjectUUID) error {
+func (s *Service) DeleteArtworkByID(ctx context.Context, id ouid.OUID) error {
 	awEnt, err := s.repos.Artwork().GetArtworkByID(ctx, id)
 	if err != nil {
 		return err

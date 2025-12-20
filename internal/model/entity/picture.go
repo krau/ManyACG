@@ -4,15 +4,15 @@ import (
 	"time"
 
 	"github.com/krau/ManyACG/internal/shared"
-	"github.com/krau/ManyACG/pkg/objectuuid"
+	"github.com/unvgo/ouid"
 	"gorm.io/datatypes"
 	"gorm.io/gorm"
 )
 
 type Picture struct {
-	ID        objectuuid.ObjectUUID `gorm:"primaryKey;type:uuid" json:"id"`
-	ArtworkID objectuuid.ObjectUUID `gorm:"type:uuid;index" json:"artwork_id"`
-	Artwork   *Artwork              `gorm:"foreignKey:ArtworkID;references:ID;constraint:OnDelete:CASCADE" json:"-"`
+	ID        ouid.OUID `gorm:"primaryKey;type:uuid" json:"id"`
+	ArtworkID ouid.OUID `gorm:"type:uuid;index" json:"artwork_id"`
+	Artwork   *Artwork  `gorm:"foreignKey:ArtworkID;references:ID;constraint:OnDelete:CASCADE" json:"-"`
 
 	OrderIndex uint   `gorm:"column:order_index;not null;default:0;index:idx_picture_artwork_index,priority:1" json:"index"`
 	Thumbnail  string `gorm:"type:text" json:"thumbnail"`
@@ -65,16 +65,16 @@ func (p *Picture) GetThumbnail() string {
 }
 
 func (p *Picture) BeforeCreate(tx *gorm.DB) (err error) {
-	if p.ID == objectuuid.Nil {
-		p.ID = objectuuid.New()
+	if p.ID.IsZero() {
+		p.ID = ouid.New()
 	}
 	return
 }
 
 type UgoiraMeta struct {
-	ID        objectuuid.ObjectUUID `gorm:"primaryKey;type:uuid" json:"id"`
-	ArtworkID objectuuid.ObjectUUID `gorm:"type:uuid;index" json:"artwork_id"`
-	Artwork   *Artwork              `gorm:"foreignKey:ArtworkID;references:ID;constraint:OnDelete:CASCADE" json:"-"`
+	ID        ouid.OUID `gorm:"primaryKey;type:uuid" json:"id"`
+	ArtworkID ouid.OUID `gorm:"type:uuid;index" json:"artwork_id"`
+	Artwork   *Artwork  `gorm:"foreignKey:ArtworkID;references:ID;constraint:OnDelete:CASCADE" json:"-"`
 
 	OrderIndex uint                                      `gorm:"column:order_index;not null;default:0;index:idx_ugoira_artwork_index,priority:1" json:"index"`
 	Data       datatypes.JSONType[shared.UgoiraMetaData] `json:"data"`
@@ -107,8 +107,8 @@ func (u *UgoiraMeta) GetUgoiraMetaData() shared.UgoiraMetaData {
 }
 
 func (u *UgoiraMeta) BeforeCreate(tx *gorm.DB) (err error) {
-	if u.ID == objectuuid.Nil {
-		u.ID = objectuuid.New()
+	if u.ID.IsZero() {
+		u.ID = ouid.New()
 	}
 	return
 }

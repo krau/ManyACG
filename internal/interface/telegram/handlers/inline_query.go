@@ -12,9 +12,9 @@ import (
 	"github.com/krau/ManyACG/internal/service"
 	"github.com/krau/ManyACG/internal/shared"
 	"github.com/krau/ManyACG/pkg/log"
-	"github.com/krau/ManyACG/pkg/objectuuid"
 	"github.com/krau/ManyACG/pkg/strutil"
 	"github.com/samber/oops"
+	"github.com/unvgo/ouid"
 
 	"github.com/mymmrac/telego"
 	"github.com/mymmrac/telego/telegohandler"
@@ -28,7 +28,7 @@ func InlineQuery(ctx *telegohandler.Context, inlineQuery telego.InlineQuery) err
 	if url := serv.FindSourceURL(queryText); url != "" {
 		artwork, err := serv.GetOrFetchCachedArtwork(ctx, url)
 		if err != nil {
-			ctx.Bot().AnswerInlineQuery(ctx, telegoutil.InlineQuery(inlineQuery.ID, telegoutil.ResultArticle(objectuuid.New().Hex(), "获取作品失败", telegoutil.TextMessage(url))))
+			ctx.Bot().AnswerInlineQuery(ctx, telegoutil.InlineQuery(inlineQuery.ID, telegoutil.ResultArticle(ouid.New().Hex(), "获取作品失败", telegoutil.TextMessage(url))))
 			return nil
 		}
 		pics := artwork.Artwork.Data().Pictures
@@ -37,14 +37,14 @@ func InlineQuery(ctx *telegohandler.Context, inlineQuery telego.InlineQuery) err
 		wsrvUrl := runtimecfg.Get().Wsrv.URL
 		for _, picture := range pics {
 			if picFileId := picture.TelegramInfo.FileID(meta.BotID(), shared.TelegramMediaTypePhoto); picFileId != "" {
-				result := telegoutil.ResultCachedPhoto(objectuuid.New().Hex(), picFileId).WithCaption(caption).WithParseMode(telego.ModeHTML)
+				result := telegoutil.ResultCachedPhoto(ouid.New().Hex(), picFileId).WithCaption(caption).WithParseMode(telego.ModeHTML)
 				results = append(results, result)
 				continue
 			}
 			if wsrvUrl == "" {
 				continue
 			}
-			result := telegoutil.ResultPhoto(objectuuid.New().Hex(),
+			result := telegoutil.ResultPhoto(ouid.New().Hex(),
 				fmt.Sprintf("%s/?url=%s&w=2560&h=2560&we&output=jpg", wsrvUrl,
 					picture.Original), picture.Thumbnail).WithCaption(caption).WithParseMode(telego.ModeHTML)
 			results = append(results, result)
@@ -72,7 +72,7 @@ func InlineQuery(ctx *telegohandler.Context, inlineQuery telego.InlineQuery) err
 	})
 	if err != nil || len(artworks) == 0 {
 		log.Errorf("获取图片失败: %s", err)
-		ctx.Bot().AnswerInlineQuery(ctx, telegoutil.InlineQuery(inlineQuery.ID, telegoutil.ResultArticle(objectuuid.New().Hex(), "未找到相关图片", telegoutil.TextMessage(fmt.Sprintf(`
+		ctx.Bot().AnswerInlineQuery(ctx, telegoutil.InlineQuery(inlineQuery.ID, telegoutil.ResultArticle(ouid.New().Hex(), "未找到相关图片", telegoutil.TextMessage(fmt.Sprintf(`
 未找到相关图片 (搜索: %s)
 
 <b>在任意聊天框中输入 @%s [关键词参数] 来查找相关图片</b>`, html.EscapeString(queryText), html.EscapeString(meta.BotUsername()))).WithParseMode(telego.ModeHTML))))
@@ -86,7 +86,7 @@ func InlineQuery(ctx *telegohandler.Context, inlineQuery telego.InlineQuery) err
 			continue
 		}
 		result := telegoutil.
-			ResultCachedPhoto(objectuuid.New().Hex(),
+			ResultCachedPhoto(ouid.New().Hex(),
 				picture.TelegramInfo.Data().FileID(meta.BotID(), shared.TelegramMediaTypePhoto)).
 			WithCaption(fmt.Sprintf("<a href=\"%s\">%s</a>", artwork.SourceURL, html.EscapeString(artwork.Title))).
 			WithParseMode(telego.ModeHTML).WithReplyMarkup(telegoutil.InlineKeyboard(utils.GetPostedArtworkInlineKeyboardButton(artwork, meta)))

@@ -5,7 +5,7 @@ import (
 
 	"github.com/duke-git/lancet/v2/slice"
 	"github.com/krau/ManyACG/internal/shared"
-	"github.com/krau/ManyACG/pkg/objectuuid"
+	"github.com/unvgo/ouid"
 	"gorm.io/gorm"
 )
 
@@ -13,18 +13,18 @@ var _ shared.ArtworkLike = (*Artwork)(nil)
 
 type Artwork struct {
 	// keep ObjectID as 24-hex string
-	ID          objectuuid.ObjectUUID `gorm:"primaryKey;type:uuid" json:"id"`
-	Title       string                `gorm:"type:text;not null;index:idx_artwork_title,sort:asc" json:"title"`
-	Description string                `gorm:"type:text" json:"description"`
-	R18         bool                  `gorm:"not null;default:false;index:idx_artwork_r18" json:"r18"`
-	CreatedAt   time.Time             `gorm:"not null;autoCreateTime;index:idx_artwork_created_at,sort:desc" json:"created_at"`
-	UpdatedAt   time.Time             `gorm:"not null;autoUpdateTime" json:"updated_at"`
-	SourceType  shared.SourceType     `gorm:"type:text;not null;index:idx_artwork_source_type" json:"source_type"`
-	SourceURL   string                `gorm:"type:text;not null;uniqueIndex" json:"source_url"`
-	LikeCount   uint                  `gorm:"not null;default:0" json:"like_count"`
+	ID          ouid.OUID         `gorm:"primaryKey;type:uuid" json:"id"`
+	Title       string            `gorm:"type:text;not null;index:idx_artwork_title,sort:asc" json:"title"`
+	Description string            `gorm:"type:text" json:"description"`
+	R18         bool              `gorm:"not null;default:false;index:idx_artwork_r18" json:"r18"`
+	CreatedAt   time.Time         `gorm:"not null;autoCreateTime;index:idx_artwork_created_at,sort:desc" json:"created_at"`
+	UpdatedAt   time.Time         `gorm:"not null;autoUpdateTime" json:"updated_at"`
+	SourceType  shared.SourceType `gorm:"type:text;not null;index:idx_artwork_source_type" json:"source_type"`
+	SourceURL   string            `gorm:"type:text;not null;uniqueIndex" json:"source_url"`
+	LikeCount   uint              `gorm:"not null;default:0" json:"like_count"`
 
-	ArtistID objectuuid.ObjectUUID `gorm:"type:uuid;index" json:"artist_id"`
-	Artist   *Artist               `gorm:"foreignKey:ArtistID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:SET NULL" json:"artist"`
+	ArtistID ouid.OUID `gorm:"type:uuid;index" json:"artist_id"`
+	Artist   *Artist   `gorm:"foreignKey:ArtistID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:SET NULL" json:"artist"`
 
 	// many2many relationship with tags
 	Tags []*Tag `gorm:"many2many:artwork_tags;constraint:OnDelete:CASCADE" json:"tags"`
@@ -107,8 +107,8 @@ func (a *Artwork) GetID() string {
 }
 
 func (a *Artwork) BeforeCreate(tx *gorm.DB) (err error) {
-	if a.ID == objectuuid.Nil {
-		a.ID = objectuuid.New()
+	if a.ID.IsZero() {
+		a.ID = ouid.New()
 	}
 	return nil
 }

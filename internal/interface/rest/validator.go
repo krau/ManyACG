@@ -6,7 +6,7 @@ import (
 
 	"github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v3"
-	"github.com/krau/ManyACG/pkg/objectuuid"
+	"github.com/unvgo/ouid"
 )
 
 type ValidationError struct {
@@ -53,7 +53,7 @@ func NewStructValidator() *structValidator {
 	validate := validator.New()
 	validate.RegisterValidation("objectid", func(fl validator.FieldLevel) bool {
 		s := fl.Field().String()
-		return objectuuid.Validate(s) == nil
+		return ouid.Validate(s) == nil
 	})
 	return &structValidator{validate: validate}
 }

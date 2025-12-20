@@ -7,12 +7,12 @@ import (
 	"github.com/krau/ManyACG/internal/model/entity"
 	"github.com/krau/ManyACG/internal/model/query"
 	"github.com/krau/ManyACG/internal/shared"
-	"github.com/krau/ManyACG/pkg/objectuuid"
+	"github.com/unvgo/ouid"
 	"gorm.io/datatypes"
 	"gorm.io/gorm"
 )
 
-func (d *DB) GetPictureByID(ctx context.Context, id objectuuid.ObjectUUID) (*entity.Picture, error) {
+func (d *DB) GetPictureByID(ctx context.Context, id ouid.OUID) (*entity.Picture, error) {
 	pic, err := gorm.G[entity.Picture](d.db).
 		Where("id = ?", id).
 		Preload("Artwork", nil).
@@ -24,7 +24,7 @@ func (d *DB) GetPictureByID(ctx context.Context, id objectuuid.ObjectUUID) (*ent
 }
 
 // 在数据库删除单张图片, 不做任何额外操作
-func (d *DB) DeletePictureByID(ctx context.Context, id objectuuid.ObjectUUID) error {
+func (d *DB) DeletePictureByID(ctx context.Context, id ouid.OUID) error {
 	n, err := gorm.G[entity.Picture](d.db).Where("id = ?", id).Delete(ctx)
 	if err != nil {
 		return err
@@ -35,7 +35,7 @@ func (d *DB) DeletePictureByID(ctx context.Context, id objectuuid.ObjectUUID) er
 	return nil
 }
 
-func (d *DB) ReorderArtworkPicturesByID(ctx context.Context, artworkID objectuuid.ObjectUUID) error {
+func (d *DB) ReorderArtworkPicturesByID(ctx context.Context, artworkID ouid.OUID) error {
 	// 将 artwork 的 pictures 的 order_index 重设为连续的数字, 从 0 开始
 	var pictures []entity.Picture
 	err := d.db.WithContext(ctx).Model(&entity.Picture{}).Where("artwork_id = ?", artworkID).Order("order_index ASC").Find(&pictures).Error
@@ -93,7 +93,7 @@ func (d *DB) QueryPicturesByPhash(ctx context.Context, que query.PicturesPhash) 
 	return result, nil
 }
 
-func (d *DB) UpdatePictureTelegramInfoByID(ctx context.Context, id objectuuid.ObjectUUID, tgInfo *shared.TelegramInfo) (*entity.Picture, error) {
+func (d *DB) UpdatePictureTelegramInfoByID(ctx context.Context, id ouid.OUID, tgInfo *shared.TelegramInfo) (*entity.Picture, error) {
 	pic, err := d.GetPictureByID(ctx, id)
 	if err != nil {
 		return nil, err

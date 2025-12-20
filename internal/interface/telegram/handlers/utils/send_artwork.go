@@ -17,11 +17,11 @@ import (
 	"github.com/krau/ManyACG/internal/shared/errs"
 	"github.com/krau/ManyACG/pkg/ioutil"
 	"github.com/krau/ManyACG/pkg/log"
-	"github.com/krau/ManyACG/pkg/objectuuid"
 	"github.com/krau/ManyACG/pkg/osutil"
 	"github.com/mymmrac/telego"
 	"github.com/mymmrac/telego/telegoutil"
 	"github.com/samber/oops"
+	"github.com/unvgo/ouid"
 )
 
 func GetPicturePhotoInputFile(ctx context.Context, serv *service.Service, meta *metautil.MetaData, picture shared.PictureLike) (*ioutil.Closer[telego.InputFile], error) {
@@ -91,7 +91,7 @@ func CreateArtworkInfoReplyMarkup(ctx context.Context,
 		}
 		return telegoutil.InlineKeyboard(base), nil
 	}
-	cbId := objectuuid.New().Hex()
+	cbId := ouid.New().Hex()
 	err := kvstor.SetWithTTL(ctx, cbId, artwork.GetSourceURL(), time.Hour*24*7)
 	if err != nil {
 		return nil, oops.Wrapf(err, "failed to create callback data")
@@ -167,7 +167,7 @@ func SendArtworkInfo(ctx context.Context,
 		}
 		if artwork == nil {
 			// 既没有发布也没有缓存, 则尝试抓取
-			cbId := objectuuid.New().Hex()
+			cbId := ouid.New().Hex()
 			err := kvstor.SetWithTTL(ctx, cbId, sourceUrl, time.Hour*24*7)
 			if err != nil {
 				return oops.Wrapf(err, "failed to create callback data")

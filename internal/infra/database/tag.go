@@ -6,7 +6,7 @@ import (
 	"fmt"
 
 	"github.com/krau/ManyACG/internal/model/entity"
-	"github.com/krau/ManyACG/pkg/objectuuid"
+	"github.com/unvgo/ouid"
 	"gorm.io/gorm"
 )
 
@@ -31,7 +31,7 @@ func (d *DB) GetAliasTagByName(ctx context.Context, name string) (*entity.TagAli
 	return &alias, nil
 }
 
-func (d *DB) GetTagByID(ctx context.Context, id objectuuid.ObjectUUID) (*entity.Tag, error) {
+func (d *DB) GetTagByID(ctx context.Context, id ouid.OUID) (*entity.Tag, error) {
 	tag, err := gorm.G[entity.Tag](d.db).
 		Where("id = ?", id).
 		Preload("Alias", nil).
@@ -78,7 +78,7 @@ func (d *DB) CreateTag(ctx context.Context, tag *entity.Tag) (*entity.Tag, error
 	return tag, nil
 }
 
-func (d *DB) UpdateTagAlias(ctx context.Context, id objectuuid.ObjectUUID, alias []*entity.TagAlias) error {
+func (d *DB) UpdateTagAlias(ctx context.Context, id ouid.OUID, alias []*entity.TagAlias) error {
 	var tag entity.Tag
 	err := d.db.WithContext(ctx).Model(&entity.Tag{}).Where("id = ?", id).First(&tag).Error
 	if err != nil {
@@ -87,7 +87,7 @@ func (d *DB) UpdateTagAlias(ctx context.Context, id objectuuid.ObjectUUID, alias
 	return d.db.WithContext(ctx).Model(&tag).Association("Alias").Replace(alias)
 }
 
-func (d *DB) DeleteTagByID(ctx context.Context, id objectuuid.ObjectUUID) error {
+func (d *DB) DeleteTagByID(ctx context.Context, id ouid.OUID) error {
 	n, err := gorm.G[entity.Tag](d.db).Where("id = ?", id).Delete(ctx)
 	if err != nil {
 		return err
@@ -101,8 +101,8 @@ func (d *DB) DeleteTagByID(ctx context.Context, id objectuuid.ObjectUUID) error 
 // MigrateTagAlias 迁移别名标签到目标标签，并删除别名标签
 //
 // 返回受影响的 artwork ids
-func (d *DB) MigrateTagAlias(ctx context.Context, aliasTagID, targetTagID objectuuid.ObjectUUID) ([]objectuuid.ObjectUUID, error) {
-	var affected []objectuuid.ObjectUUID
+func (d *DB) MigrateTagAlias(ctx context.Context, aliasTagID, targetTagID ouid.OUID) ([]ouid.OUID, error) {
+	var affected []ouid.OUID
 
 	err := d.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		// 所有拥有 aliasTagID 的 artwork_id, 即受影响的 artworks
@@ -112,7 +112,7 @@ func (d *DB) MigrateTagAlias(ctx context.Context, aliasTagID, targetTagID object
 		}
 		defer rows.Close()
 		for rows.Next() {
-			var aid objectuuid.ObjectUUID
+			var aid ouid.OUID
 			if err := rows.Scan(&aid); err != nil {
 				return fmt.Errorf("scan artwork id: %w", err)
 			}
@@ -152,7 +152,7 @@ func (d *DB) MigrateTagAlias(ctx context.Context, aliasTagID, targetTagID object
 	return affected, nil
 }
 
-// func (d *DB) MigrateTagAlias(ctx context.Context, aliasTagID, targetTagID objectuuid.ObjectUUID) error {
+// func (d *DB) MigrateTagAlias(ctx context.Context, aliasTagID, targetTagID ouid.OUID) error {
 // 	return d.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 // 		// 迁移 aliasTagID 的作品引用到 targetTagID（去重）
 // 		if err := tx.Exec(`

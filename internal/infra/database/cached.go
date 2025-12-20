@@ -5,7 +5,7 @@ import (
 
 	"github.com/krau/ManyACG/internal/model/entity"
 	"github.com/krau/ManyACG/internal/shared"
-	"github.com/krau/ManyACG/pkg/objectuuid"
+	"github.com/unvgo/ouid"
 	"gorm.io/gorm"
 )
 
@@ -41,7 +41,7 @@ func (d *DB) DeleteCachedArtworkByURL(ctx context.Context, sourceUrl string) err
 	return nil
 }
 
-func (d *DB) DeleteCachedArtworkByID(ctx context.Context, id objectuuid.ObjectUUID) error {
+func (d *DB) DeleteCachedArtworkByID(ctx context.Context, id ouid.OUID) error {
 	n, err := gorm.G[entity.CachedArtwork](d.db).Where("id = ?", id).Delete(ctx)
 	if err != nil {
 		return err
@@ -65,7 +65,7 @@ func (d *DB) ResetPostingCachedArtworkStatus(ctx context.Context) error {
 }
 
 // GetCachedArtworkByID implements repo.CachedArtwork.
-func (d *DB) GetCachedArtworkByID(ctx context.Context, id objectuuid.ObjectUUID) (*entity.CachedArtwork, error) {
+func (d *DB) GetCachedArtworkByID(ctx context.Context, id ouid.OUID) (*entity.CachedArtwork, error) {
 	res, err := gorm.G[entity.CachedArtwork](d.db).Where("id = ?", id).First(ctx)
 	if err != nil {
 		return nil, err

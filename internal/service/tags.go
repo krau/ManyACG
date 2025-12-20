@@ -13,7 +13,7 @@ import (
 	"github.com/krau/ManyACG/internal/model/entity"
 	"github.com/krau/ManyACG/internal/repo"
 	"github.com/krau/ManyACG/internal/shared/errs"
-	"github.com/krau/ManyACG/pkg/objectuuid"
+	"github.com/unvgo/ouid"
 )
 
 func (s *Service) GetTagByNameWithAlias(ctx context.Context, name string) (*entity.Tag, error) {
@@ -27,7 +27,7 @@ func (s *Service) GetTagByName(ctx context.Context, name string) (*entity.Tag, e
 // 为已有 tag 添加别名
 //
 // 同时检查是否有其他 tag 的 name 为所指定的别名之一, 在添加完成后, 删除这些 tag, 并将其对应的 artwork 添加这个新的 tag (即传入的tagID)
-func (s *Service) AddTagAlias(ctx context.Context, tagID objectuuid.ObjectUUID, alias []string) (*entity.Tag, error) {
+func (s *Service) AddTagAlias(ctx context.Context, tagID ouid.OUID, alias []string) (*entity.Tag, error) {
 	tag, err := s.repos.Tag().GetTagByID(ctx, tagID)
 	if err != nil {
 		return nil, err
@@ -131,7 +131,7 @@ func (s *Service) AddTagAlias(ctx context.Context, tagID objectuuid.ObjectUUID, 
 	return s.repos.Tag().GetTagByID(ctx, tagID)
 }
 
-func (s *Service) PredictAndUpdateArtworkTags(ctx context.Context, artworkID objectuuid.ObjectUUID) error {
+func (s *Service) PredictAndUpdateArtworkTags(ctx context.Context, artworkID ouid.OUID) error {
 	if s.tagger == nil {
 		return errs.ErrTaggingNotEnabled
 	}

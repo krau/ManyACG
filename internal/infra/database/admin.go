@@ -3,9 +3,10 @@ package database
 import (
 	"context"
 
+	"github.com/unvgo/ouid"
+
 	"github.com/krau/ManyACG/internal/model/entity"
 	"github.com/krau/ManyACG/internal/shared"
-	"github.com/krau/ManyACG/pkg/objectuuid"
 	"gorm.io/datatypes"
 	"gorm.io/gorm"
 )
@@ -18,7 +19,7 @@ func (d *DB) GetAdminByTelegramID(ctx context.Context, telegramID int64) (*entit
 	return &res, err
 }
 
-func (d *DB) CreateAdmin(ctx context.Context, admin *entity.Admin) (*objectuuid.ObjectUUID, error) {
+func (d *DB) CreateAdmin(ctx context.Context, admin *entity.Admin) (*ouid.OUID, error) {
 	result := gorm.WithResult()
 	err := gorm.G[entity.Admin](d.db, result).Create(ctx, admin)
 	if err != nil {
@@ -46,6 +47,6 @@ func (d *DB) ListAdmins(ctx context.Context) ([]entity.Admin, error) {
 	return admins, nil
 }
 
-func (d *DB) UpdateAdminPermissions(ctx context.Context, id objectuuid.ObjectUUID, permissions []shared.Permission) error {
+func (d *DB) UpdateAdminPermissions(ctx context.Context, id ouid.OUID, permissions []shared.Permission) error {
 	return d.db.WithContext(ctx).Model(&entity.Admin{}).Where("id = ?", id).Update("permissions", datatypes.NewJSONSlice(permissions)).Error
 }

@@ -4,11 +4,11 @@ import (
 	"context"
 
 	"github.com/krau/ManyACG/internal/model/entity"
-	"github.com/krau/ManyACG/pkg/objectuuid"
+	"github.com/unvgo/ouid"
 	"gorm.io/gorm"
 )
 
-func (d *DB) CreateApiKey(ctx context.Context, apiKey *entity.ApiKey) (*objectuuid.ObjectUUID, error) {
+func (d *DB) CreateApiKey(ctx context.Context, apiKey *entity.ApiKey) (*ouid.OUID, error) {
 	result := gorm.WithResult()
 	err := gorm.G[entity.ApiKey](d.db, result).Create(ctx, apiKey)
 	if err != nil {

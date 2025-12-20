@@ -6,7 +6,7 @@ import (
 	"github.com/krau/ManyACG/internal/model/dto"
 	"github.com/krau/ManyACG/internal/model/query"
 	"github.com/krau/ManyACG/internal/repo"
-	"github.com/krau/ManyACG/pkg/objectuuid"
+	"github.com/unvgo/ouid"
 )
 
 // mock searcher using random artworks from repo, only for testing purposes
@@ -40,7 +40,7 @@ func (m *SearcherMock) SearchArtworks(ctx context.Context, que *query.ArtworkSea
 	if err != nil {
 		return nil, err
 	}
-	ids := make([]objectuuid.ObjectUUID, 0, que.Limit)
+	ids := make([]ouid.OUID, 0, que.Limit)
 	for _, aw := range res {
 		ids = append(ids, aw.ID)
 	}
@@ -59,7 +59,7 @@ func (m *SearcherMock) FindSimilarArtworks(ctx context.Context, que *query.Artwo
 	if err != nil {
 		return nil, err
 	}
-	ids := make([]objectuuid.ObjectUUID, 0, que.Limit)
+	ids := make([]ouid.OUID, 0, que.Limit)
 	for _, aw := range res {
 		ids = append(ids, aw.ID)
 	}

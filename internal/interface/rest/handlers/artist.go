@@ -4,7 +4,7 @@ import (
 	"github.com/gofiber/fiber/v3"
 	"github.com/krau/ManyACG/internal/interface/rest/common"
 	"github.com/krau/ManyACG/internal/service"
-	"github.com/krau/ManyACG/pkg/objectuuid"
+	"github.com/unvgo/ouid"
 )
 
 func HandleGetArtistByID(ctx fiber.Ctx) error {
@@ -12,7 +12,7 @@ func HandleGetArtistByID(ctx fiber.Ctx) error {
 	if artistID == "" {
 		return fiber.NewError(fiber.StatusBadRequest, "missing artist ID")
 	}
-	id, err := objectuuid.FromObjectIDHex(artistID)
+	id, err := ouid.FromObjectIDHex(artistID)
 	if err != nil {
 		return fiber.NewError(fiber.StatusBadRequest, "invalid artist ID")
 	}
