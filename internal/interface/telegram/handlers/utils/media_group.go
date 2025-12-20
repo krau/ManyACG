@@ -2,6 +2,7 @@ package utils
 
 import (
 	"context"
+	"io"
 
 	"github.com/krau/ManyACG/internal/common/httpclient"
 	"github.com/krau/ManyACG/internal/interface/telegram/metautil"
@@ -9,6 +10,7 @@ import (
 	"github.com/krau/ManyACG/internal/service"
 	"github.com/krau/ManyACG/internal/shared"
 	"github.com/krau/ManyACG/pkg/ioutil"
+	"github.com/krau/ManyACG/pkg/log"
 	"github.com/krau/ManyACG/pkg/osutil"
 	"github.com/mymmrac/telego"
 	"github.com/mymmrac/telego/telegoutil"
@@ -297,17 +299,32 @@ func ArtworkInputMedias(
 				if id := item.TelegramInfo.VideoFileID(meta.BotID()); id != "" {
 					video = telegoutil.MediaVideo(telegoutil.FileFromID(id))
 				} else {
-					file, err := httpclient.DownloadWithCache(ctx, v.GetURL(), nil)
-					if err != nil {
-						return oops.Wrapf(err, "failed to download file: %s", v.GetURL())
+					storDetail := v.GetOriginalStorage()
+					if storDetail != shared.ZeroStorageDetail {
+						file, err := serv.StorageGetFile(ctx, storDetail)
+						if err != nil {
+							return oops.Wrapf(err, "failed to get file from storage")
+						}
+						defer file.Close()
+						videoFile, err := osutil.OpenTemp(file.Name())
+						if err != nil {
+							return oops.Wrapf(err, "failed to open video file")
+						}
+						video = telegoutil.MediaVideo(telegoutil.File(videoFile))
+						closers = append(closers, func() error { return videoFile.Close() })
+					} else {
+						file, err := httpclient.DownloadWithCache(ctx, v.GetURL(), nil)
+						if err != nil {
+							return oops.Wrapf(err, "failed to download file: %s", v.GetURL())
+						}
+						defer file.Close()
+						videoFile, err := osutil.OpenTemp(file.Name())
+						if err != nil {
+							return oops.Wrapf(err, "failed to open video file")
+						}
+						video = telegoutil.MediaVideo(telegoutil.File(videoFile))
+						closers = append(closers, func() error { return videoFile.Close() })
 					}
-					defer file.Close()
-					videoFile, err := osutil.OpenTemp(file.Name())
-					if err != nil {
-						return oops.Wrapf(err, "failed to open video file")
-					}
-					video = telegoutil.MediaVideo(telegoutil.File(videoFile))
-					closers = append(closers, func() error { return videoFile.Close() })
 				}
 				if video == nil {
 					return oops.New("failed to create input media video")
@@ -317,6 +334,31 @@ func ArtworkInputMedias(
 				}
 				if artwork.GetR18() {
 					video = video.WithHasSpoiler()
+				}
+				rs, ok := video.Media.File.(io.ReadSeeker)
+				if ok {
+					// extract video metadata
+					var meta *mediatool.VideoMetadata
+					if mediatool.FFmpegAvailable() {
+						meta, _ = mediatool.GetVideoMetadata(rs)
+					} else {
+						meta, _ = mediatool.GetMP4Meta(rs)
+					}
+					if meta != nil {
+						video = video.WithWidth(int(meta.Width)).WithHeight(int(meta.Height)).WithDuration(int(meta.Duration / 1000))
+					}
+					// extract video cover
+					if mediatool.FFmpegAvailable() {
+						rs.Seek(0, io.SeekStart)
+						thumb, err := mediatool.ExtractVideoThumbFrame(rs)
+						if err == nil {
+							cover := telegoutil.FileFromBytes(thumb, "thumb.jpg")
+							video = video.WithCover(&cover)
+						} else {
+							log.Warnf("failed to extract video thumb frame: %v", err)
+						}
+					}
+					rs.Seek(0, io.SeekStart)
 				}
 				inputMedia = video
 			}
