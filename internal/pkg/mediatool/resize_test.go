@@ -19,7 +19,7 @@ func TestCompressImageForTelegramByVIPS(t *testing.T) {
 			if err != nil {
 				t.Fatalf("failed to read input file: %v", err)
 			}
-			result, err := CompressForTelegram(data)
+			result, err := CompressImgForTelegram(data)
 			if err != nil {
 				t.Fatalf("CompressImageForTelegramByVIPS() error = %v", err)
 			}

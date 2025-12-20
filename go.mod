@@ -27,6 +27,7 @@ require (
 	github.com/spf13/viper v1.21.0
 	github.com/studio-b12/gowebdav v0.11.0
 	github.com/unvgo/ouid v1.0.0
+	github.com/yapingcat/gomedia v0.0.0-20240906162731-17feea57090c
 	go.etcd.io/bbolt v1.4.3
 	golang.org/x/image v0.34.0
 	gorm.io/driver/mysql v1.6.0

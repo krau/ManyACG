@@ -208,7 +208,7 @@ func ArtworkInputMedias(
 							return oops.Wrapf(err, "failed to get file from storage")
 						}
 						defer file.Close()
-						compressed, err := mediatool.CompressForTelegramFromFile(file.Name())
+						compressed, err := mediatool.CompressImgForTelegramFromFile(file.Name())
 						if err != nil {
 							return oops.Wrapf(err, "failed to compress image")
 						}
@@ -220,7 +220,7 @@ func ArtworkInputMedias(
 							return oops.Wrapf(err, "failed to download file: %s", picture.GetOriginal())
 						}
 						defer file.Close()
-						compressed, err := mediatool.CompressForTelegramFromFile(file.Name())
+						compressed, err := mediatool.CompressImgForTelegramFromFile(file.Name())
 						if err != nil {
 							return oops.Wrapf(err, "failed to compress image")
 						}

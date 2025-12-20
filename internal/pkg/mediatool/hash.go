@@ -15,10 +15,6 @@ import (
 	"github.com/corona10/goimagehash"
 )
 
-func GetImagePhash(img image.Image) (string, error) {
-	return getImagePhash(img)
-}
-
 func GetImageThumbHash(img image.Image) (string, error) {
 	tbhs := thumbhash.EncodeImage(img)
 	if tbhs == nil {
@@ -33,10 +29,10 @@ func GetImagePhashFromReader(r io.Reader) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return getImagePhash(img)
+	return GetImagePhash(img)
 }
 
-func getImagePhash(img image.Image) (string, error) {
+func GetImagePhash(img image.Image) (string, error) {
 	hash, err := goimagehash.PerceptionHash(img)
 	if err != nil {
 		return "", err

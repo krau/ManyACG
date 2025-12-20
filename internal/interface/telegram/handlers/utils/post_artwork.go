@@ -100,7 +100,7 @@ func doPostAndCreateArtwork(
 				pic.Phash = phash
 			}
 			if pic.Width == 0 || pic.Height == 0 {
-				w, h, err := mediatool.GetSize(img)
+				w, h, err := mediatool.GetImgSize(img)
 				if err != nil {
 					return oops.Wrapf(err, "failed to get size of picture %d", i)
 				}
