@@ -54,6 +54,97 @@ func GetPicturePhotoInputFile(ctx context.Context, serv *service.Service, meta *
 	return ioutil.NewCloser(telegoutil.File(compressed), func() error { return compressed.Close() }), nil
 }
 
+func GetUgoiraVideoInputFile(ctx context.Context, serv *service.Service, meta *metautil.MetaData, ugoira shared.UgoiraMetaLike) (*ioutil.Closer[telego.InputFile], error) {
+	if id := ugoira.GetTelegramInfo().VideoFileID(meta.BotID()); id != "" {
+		return ioutil.NewCloser(telegoutil.FileFromID(id), func() error { return nil }), nil
+	}
+	storDetail := ugoira.GetOriginalStorage()
+	if storDetail != shared.ZeroStorageDetail {
+		file, err := serv.StorageGetFile(ctx, storDetail)
+		if err != nil {
+			return nil, oops.Wrapf(err, "failed to get file from storage")
+		}
+		defer file.Close()
+		videoPath, err := mediatool.UgoiraZipToMp4(file.Name(), ugoira.GetUgoiraMetaData().Frames, file.Name()+".mp4")
+		if err != nil {
+			return nil, oops.Wrapf(err, "failed to convert ugoira to mp4")
+		}
+		videoFile, err := osutil.OpenTemp(videoPath)
+		if err != nil {
+			return nil, oops.Wrapf(err, "failed to open mp4 file")
+		}
+		return ioutil.NewCloser(telegoutil.File(videoFile), func() error { return videoFile.Close() }), nil
+	}
+	file, err := httpclient.DownloadWithCache(ctx, ugoira.GetUgoiraMetaData().OriginalZip, nil)
+	if err != nil {
+		return nil, oops.Wrapf(err, "failed to download file: %s", ugoira.GetUgoiraMetaData().OriginalZip)
+	}
+	defer file.Close()
+	videoPath, err := mediatool.UgoiraZipToMp4(file.Name(), ugoira.GetUgoiraMetaData().Frames, file.Name()+".mp4")
+	if err != nil {
+		return nil, oops.Wrapf(err, "failed to convert ugoira to mp4")
+	}
+	videoFile, err := osutil.OpenTemp(videoPath)
+	if err != nil {
+		return nil, oops.Wrapf(err, "failed to open mp4 file")
+	}
+	return ioutil.NewCloser(telegoutil.File(videoFile), func() error { return videoFile.Close() }), nil
+}
+
+func GetVideoVideoInputFile(ctx context.Context, serv *service.Service, meta *metautil.MetaData, video shared.VideoLike) (*ioutil.Closer[telego.InputFile], error) {
+	if id := video.GetTelegramInfo().VideoFileID(meta.BotID()); id != "" {
+		return ioutil.NewCloser(telegoutil.FileFromID(id), func() error { return nil }), nil
+	}
+	orgStorDetail := video.GetOriginalStorage()
+	if orgStorDetail != shared.ZeroStorageDetail {
+		file, err := serv.StorageGetFile(ctx, orgStorDetail)
+		if err != nil {
+			return nil, oops.Wrapf(err, "failed to get file from storage")
+		}
+		return ioutil.NewCloser(telegoutil.File(file), func() error { return file.Close() }), nil
+	}
+	file, err := httpclient.DownloadWithCache(ctx, video.GetURL(), nil)
+	if err != nil {
+		return nil, oops.Wrapf(err, "failed to download file: %s", video.GetURL())
+	}
+	return ioutil.NewCloser(telegoutil.File(file), func() error { return file.Close() }), nil
+}
+
+// MediaLike 转换为对应的 InputMedia
+//
+// 第一个 Media 意为 MediaLike, 第二个 Media 意为tg的 MediaInputFile
+func GetMediaInputMedia(ctx context.Context,
+	serv *service.Service,
+	meta *metautil.MetaData,
+	artwork shared.ArtworkLike,
+	media shared.MediaLike) (*ioutil.Closer[telego.InputMedia], error) {
+	switch m := media.(type) {
+	case shared.PictureLike:
+		closer, err := GetPicturePhotoInputFile(ctx, serv, meta, m)
+		if err != nil {
+			return nil, err
+		}
+		media := telegoutil.MediaPhoto(closer.Value)
+		return ioutil.NewCloser(telego.InputMedia(media), func() error { return closer.Close() }), nil
+	case shared.UgoiraMetaLike:
+		closer, err := GetUgoiraVideoInputFile(ctx, serv, meta, m)
+		if err != nil {
+			return nil, err
+		}
+		media := telegoutil.MediaVideo(closer.Value)
+		return ioutil.NewCloser(telego.InputMedia(media), func() error { return closer.Close() }), nil
+	case shared.VideoLike:
+		closer, err := GetVideoVideoInputFile(ctx, serv, meta, m)
+		if err != nil {
+			return nil, err
+		}
+		media := telegoutil.MediaVideo(closer.Value)
+		return ioutil.NewCloser(telego.InputMedia(media), func() error { return closer.Close() }), nil
+	default:
+		return nil, oops.New("unsupported media type")
+	}
+}
+
 type SendArtworkInfoOptions struct {
 	AppendCaption   string
 	ReplyParameters *telego.ReplyParameters
@@ -212,24 +303,41 @@ func SendArtworkInfo(ctx context.Context,
 	if err != nil {
 		return oops.Wrapf(err, "failed to create artwork info reply markup")
 	}
-	inputFile, err := GetPicturePhotoInputFile(ctx, serv, meta, artwork.GetPictures()[0])
+	inputMedia, err := GetMediaInputMedia(ctx, serv, meta, artwork, artwork.FirstMedia())
 	if err != nil {
 		return oops.Wrapf(err, "failed to get picture preview input file")
 	}
 	defer func() {
-		err := inputFile.Close()
+		err := inputMedia.Close()
 		if err != nil {
 			log.Errorf("failed to close input file: %s", err)
 		}
 	}()
-	photo := telegoutil.MediaPhoto(inputFile.Value).
-		WithCaption(caption).WithParseMode(telego.ModeHTML)
-	if artwork.GetR18() {
-		photo = photo.WithHasSpoiler()
+	media := inputMedia.Value
+	// golang's type assertion is so annoying
+	var mediaPhoto *telego.InputMediaPhoto
+	var mediaVideo *telego.InputMediaVideo
+	switch m := media.(type) {
+	case *telego.InputMediaPhoto:
+		m.WithCaption(caption).WithParseMode(telego.ModeHTML)
+		if artwork.GetR18() {
+			m.WithHasSpoiler()
+		}
+		media = m
+		mediaPhoto = m
+	case *telego.InputMediaVideo:
+		m.WithCaption(caption).WithParseMode(telego.ModeHTML)
+		if artwork.GetR18() {
+			m.WithHasSpoiler()
+		}
+		media = m
+		mediaVideo = m
+	default:
+		return oops.New("unsupported media type")
 	}
 
-	updatePictureFileID := func(msg *telego.Message) error {
-		if msg != nil && msg.Photo != nil {
+	updateMediaFileID := func(msg *telego.Message) error {
+		if msg != nil && msg.Photo != nil && len(artwork.GetPictures()) > 0 {
 			fileId := msg.Photo[len(msg.Photo)-1].FileID
 			pic := artwork.GetPictures()[0]
 			switch p := pic.(type) {
@@ -267,29 +375,125 @@ func SendArtworkInfo(ctx context.Context,
 				}
 			}
 		}
+		if msg != nil && msg.Video != nil && (len(artwork.GetVideos()) > 0 || len(artwork.GetUgoiraMetas()) > 0) {
+			// 如果 artwork 有 ugoira 则这里应该是 ugoira, 详见各个 FirstMedia 实现
+			if len(artwork.GetUgoiraMetas()) > 0 {
+				ugoira := artwork.GetUgoiraMetas()[0]
+				switch v := ugoira.(type) {
+				case *entity.UgoiraMeta:
+					tginfo := v.GetTelegramInfo()
+					tginfo.SetFileID(meta.BotID(), shared.TelegramMediaTypeVideo, msg.Video.FileID)
+					return serv.UpdateUgoiraTelegramInfo(ctx, v.ID, &tginfo)
+				case *entity.CachedUgoiraMeta:
+					switch aw := artwork.(type) {
+					case *entity.CachedArtworkData:
+						for _, um := range aw.UgoiraMetas {
+							if um.GetUgoiraMetaData().OriginalZip != ugoira.GetUgoiraMetaData().OriginalZip {
+								continue
+							}
+							tginfo := um.GetTelegramInfo()
+							tginfo.SetFileID(meta.BotID(), shared.TelegramMediaTypeVideo, msg.Video.FileID)
+							um.TelegramInfo = tginfo
+							break
+						}
+						return serv.UpdateCachedArtwork(ctx, aw)
+					case *entity.CachedArtwork:
+						data := aw.Artwork.Data()
+						for _, um := range data.UgoiraMetas {
+							if um.GetUgoiraMetaData().OriginalZip != ugoira.GetUgoiraMetaData().OriginalZip {
+								continue
+							}
+							tginfo := um.GetTelegramInfo()
+							tginfo.SetFileID(meta.BotID(), shared.TelegramMediaTypeVideo, msg.Video.FileID)
+							um.TelegramInfo = tginfo
+							break
+						}
+						return serv.UpdateCachedArtwork(ctx, data)
+					default:
+						return oops.Errorf("unknown artwork type: %T", artwork)
+					}
+				}
+				return nil
+			}
+			video := artwork.GetVideos()[0]
+			switch v := video.(type) {
+			case *entity.Video:
+				tginfo := v.GetTelegramInfo()
+				tginfo.SetFileID(meta.BotID(), shared.TelegramMediaTypeVideo, msg.Video.FileID)
+				return serv.UpdateVideoTelegramInfo(ctx, v.ID, &tginfo)
+			case *entity.CachedVideo:
+				switch aw := artwork.(type) {
+				case *entity.CachedArtworkData:
+					for _, vid := range aw.Videos {
+						if vid.GetURL() != video.GetURL() {
+							continue
+						}
+						tginfo := vid.GetTelegramInfo()
+						tginfo.SetFileID(meta.BotID(), shared.TelegramMediaTypeVideo, msg.Video.FileID)
+						vid.TelegramInfo = tginfo
+						break
+					}
+					return serv.UpdateCachedArtwork(ctx, aw)
+				case *entity.CachedArtwork:
+					data := aw.Artwork.Data()
+					for _, vid := range data.Videos {
+						if vid.GetURL() != video.GetURL() {
+							continue
+						}
+						tginfo := vid.GetTelegramInfo()
+						tginfo.SetFileID(meta.BotID(), shared.TelegramMediaTypeVideo, msg.Video.FileID)
+						vid.TelegramInfo = tginfo
+						break
+					}
+					return serv.UpdateCachedArtwork(ctx, data)
+				default:
+					return oops.Errorf("unknown artwork type: %T", artwork)
+				}
+			}
+		}
 		return nil
 	}
 
 	if waitMsg != nil {
-		editReq := telegoutil.EditMessageMedia(chatID, waitMsg.MessageID, photo).WithReplyMarkup(replyMarkup)
+		editReq := telegoutil.EditMessageMedia(chatID, waitMsg.MessageID, media).WithReplyMarkup(replyMarkup)
 		msg, err := bot.EditMessageMedia(ctx, editReq)
+		if err != nil {
+			return oops.Wrapf(err, "failed to send artwork info media")
+		}
+		return updateMediaFileID(msg)
+	}
+	if mediaPhoto != nil {
+		sendPhoto := telegoutil.Photo(chatID, mediaPhoto.Media).
+			WithCaption(mediaPhoto.Caption).
+			WithParseMode(telego.ModeHTML).
+			WithReplyParameters(opts.ReplyParameters).
+			WithReplyMarkup(replyMarkup)
+		if artwork.GetR18() {
+			sendPhoto = sendPhoto.WithHasSpoiler()
+		}
+		msg, err := bot.SendPhoto(ctx, sendPhoto)
 		if err != nil {
 			return oops.Wrapf(err, "failed to send artwork info photo")
 		}
-		return updatePictureFileID(msg)
+		return updateMediaFileID(msg)
 	}
-	sendPhoto := telegoutil.Photo(chatID, inputFile.Value).
-		WithCaption(caption).WithParseMode(telego.ModeHTML).
-		WithReplyParameters(opts.ReplyParameters).
-		WithReplyMarkup(replyMarkup)
-	if artwork.GetR18() {
-		sendPhoto = sendPhoto.WithHasSpoiler()
+	if mediaVideo != nil {
+		sendVideo := telegoutil.Video(chatID, mediaVideo.Media).
+			WithCaption(mediaVideo.Caption).
+			WithParseMode(telego.ModeHTML).
+			WithReplyParameters(opts.ReplyParameters).
+			WithReplyMarkup(replyMarkup)
+		if artwork.GetR18() {
+			sendVideo = sendVideo.WithHasSpoiler()
+		}
+		msg, err := bot.SendVideo(ctx, sendVideo)
+		if err != nil {
+			return oops.Wrapf(err, "failed to send artwork info video")
+		}
+		return updateMediaFileID(msg)
 	}
-	msg, err := bot.SendPhoto(ctx, sendPhoto)
-	if err != nil {
-		return oops.Wrapf(err, "failed to send artwork info photo")
-	}
-	return updatePictureFileID(msg)
+
+	return nil
 }
 
 func GetPictureDocumentInputFile(ctx context.Context, serv *service.Service, meta *metautil.MetaData, artwork shared.ArtworkLike, picture shared.PictureLike) (*ioutil.Closer[telego.InputFile], error) {

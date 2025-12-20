@@ -130,7 +130,8 @@ func SetArtworkTags(ctx *telegohandler.Context, message telego.Message) error {
 		return nil
 	}
 	meta := metautil.MustFromContext(ctx)
-	if msgId := artwork.Pictures[0].TelegramInfo.Data().MessageID(meta.ChannelChatID().ID); msgId != 0 {
+
+	if msgId := artwork.FirstMedia().GetTelegramInfo().MessageID(meta.ChannelChatID().ID); msgId != 0 {
 		ctx.Bot().EditMessageCaption(ctx, &telego.EditMessageCaptionParams{
 			ChatID:    meta.ChannelChatID(),
 			MessageID: msgId,
@@ -252,7 +253,7 @@ func EditArtworkTitle(ctx *telegohandler.Context, message telego.Message) error 
 		return nil
 	}
 	meta := metautil.MustFromContext(ctx)
-	if msgId := artwork.Pictures[0].TelegramInfo.Data().MessageID(meta.ChannelChatID().ID); msgId != 0 {
+	if msgId := artwork.FirstMedia().GetTelegramInfo().MessageID(meta.ChannelChatID().ID); msgId != 0 {
 		ctx.Bot().EditMessageCaption(ctx, &telego.EditMessageCaptionParams{
 			ChatID:    meta.ChannelChatID(),
 			MessageID: msgId,
@@ -335,13 +336,13 @@ func ReCaptionArtwork(ctx *telegohandler.Context, message telego.Message) error 
 		return nil
 	}
 	meta := metautil.MustFromContext(ctx)
-	if artwork.Pictures[0].TelegramInfo.Data().MessageID(meta.ChannelChatID().ID) == 0 {
+	if artwork.FirstMedia().GetTelegramInfo().MessageID(meta.ChannelChatID().ID) == 0 {
 		utils.ReplyMessage(ctx, message, "该作品未在频道发布")
 		return nil
 	}
 	ctx.Bot().EditMessageCaption(ctx, &telego.EditMessageCaptionParams{
 		ChatID:    meta.ChannelChatID(),
-		MessageID: artwork.Pictures[0].TelegramInfo.Data().MessageID(meta.ChannelChatID().ID),
+		MessageID: artwork.FirstMedia().GetTelegramInfo().MessageID(meta.ChannelChatID().ID),
 		Caption:   utils.ArtworkHTMLCaption(artwork),
 		ParseMode: telego.ModeHTML,
 	})
@@ -400,7 +401,7 @@ func AutoTaggingArtwork(ctx *telegohandler.Context, message telego.Message) erro
 		return nil
 	}
 	meta := metautil.MustFromContext(ctx)
-	if msgId := newAw.Pictures[0].TelegramInfo.Data().MessageID(meta.ChannelChatID().ID); msgId != 0 {
+	if msgId := newAw.FirstMedia().GetTelegramInfo().MessageID(meta.ChannelChatID().ID); msgId != 0 {
 		caption := utils.ArtworkHTMLCaption(newAw)
 		ctx.Bot().EditMessageCaption(ctx, &telego.EditMessageCaptionParams{
 			ChatID:    meta.ChannelChatID(),

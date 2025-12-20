@@ -79,8 +79,11 @@ func InlineQuery(ctx *telegohandler.Context, inlineQuery telego.InlineQuery) err
 <b>在任意聊天框中输入 @%s [关键词参数] 来查找相关图片</b>`, html.EscapeString(queryText), html.EscapeString(meta.BotUsername()))).WithParseMode(telego.ModeHTML))))
 		return nil
 	}
-	results := make([]telego.InlineQueryResult, 0, len(artworks))
+	results := make([]telego.InlineQueryResult, 0)
 	for _, artwork := range artworks {
+		if len(artwork.Pictures) == 0 {
+			continue
+		}
 		pictureIndex := rand.Intn(len(artwork.Pictures))
 		picture := artwork.Pictures[pictureIndex]
 		if picture.TelegramInfo.Data().FileID(meta.BotID(), shared.TelegramMediaTypePhoto) == "" {

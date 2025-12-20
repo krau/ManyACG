@@ -29,6 +29,20 @@ type CachedArtworkData struct {
 	Version int `json:"version"` // for future schema changes
 }
 
+// FirstMedia implements [shared.ArtworkLike].
+func (c *CachedArtworkData) FirstMedia() shared.MediaLike {
+	if len(c.Pictures) > 0 {
+		return c.Pictures[0]
+	}
+	if len(c.UgoiraMetas) > 0 {
+		return c.UgoiraMetas[0]
+	}
+	if len(c.Videos) > 0 {
+		return c.Videos[0]
+	}
+	return nil
+}
+
 // GetVideos implements [shared.ArtworkLike].
 func (c *CachedArtworkData) GetVideos() []shared.VideoLike {
 	var videos []shared.VideoLike
@@ -285,6 +299,11 @@ type CachedArtwork struct {
 	CreatedAt time.Time                              `gorm:"autoCreateTime" json:"created_at"`
 	Artwork   datatypes.JSONType[*CachedArtworkData] `gorm:"type:json" json:"artwork"`
 	Status    shared.ArtworkStatus                   `gorm:"type:text;index" json:"status"`
+}
+
+// FirstMedia implements [shared.ArtworkLike].
+func (c *CachedArtwork) FirstMedia() shared.MediaLike {
+	return c.Artwork.Data().FirstMedia()
 }
 
 // GetVideos implements [shared.ArtworkLike].

@@ -304,7 +304,7 @@ func doPostAndCreateArtwork(
 			caption := ArtworkHTMLCaption(newEnt)
 			bot.EditMessageCaption(ctx, telegoutil.
 				EditMessageCaption(toChatID,
-					ent.Pictures[0].TelegramInfo.Data().MessageID(meta.ChannelChatID().ID),
+					ent.FirstMedia().GetTelegramInfo().MessageID(meta.ChannelChatID().ID),
 					caption).
 				WithParseMode(telego.ModeHTML))
 			return nil
@@ -366,7 +366,7 @@ func doPostAndCreateArtwork(
 	caption := ArtworkHTMLCaption(ent)
 	_, err = bot.EditMessageCaption(ctx, telegoutil.
 		EditMessageCaption(toChatID,
-			ent.Pictures[0].TelegramInfo.Data().MessageID(meta.ChannelChatID().ID),
+			ent.FirstMedia().GetTelegramInfo().MessageID(meta.ChannelChatID().ID),
 			caption).
 		WithParseMode(telego.ModeHTML))
 	if err != nil {

@@ -245,6 +245,9 @@ func handleSendResultArtworks(ctx context.Context, artworks []*entity.Artwork, m
 	inputMedias := make([]telego.InputMedia, 0, len(artworks))
 	meta := metautil.MustFromContext(ctx)
 	for _, artwork := range artworks {
+		if len(artwork.Pictures) == 0 {
+			continue
+		}
 		picture := artwork.Pictures[0]
 		var file telego.InputFile
 		if fileId := picture.TelegramInfo.Data().FileID(meta.BotID(), shared.TelegramMediaTypePhoto); fileId != "" {
@@ -255,6 +258,13 @@ func handleSendResultArtworks(ctx context.Context, artworks []*entity.Artwork, m
 		}
 		caption := fmt.Sprintf("<a href=\"%s\">%s</a>", artwork.SourceURL, html.EscapeString(artwork.Title))
 		inputMedias = append(inputMedias, telegoutil.MediaPhoto(file).WithCaption(caption).WithParseMode(telego.ModeHTML))
+	}
+	if len(inputMedias) == 0 {
+		bot.SendMessage(ctx, telegoutil.Message(message.Chat.ChatID(), "未找到相关图片").WithReplyParameters(&telego.ReplyParameters{
+			MessageID: message.MessageID,
+			ChatID:    message.Chat.ChatID(),
+		}))
+		return nil
 	}
 	mediaGroup := telegoutil.MediaGroup(message.Chat.ChatID(), inputMedias...).WithReplyParameters(&telego.ReplyParameters{
 		MessageID: message.MessageID,

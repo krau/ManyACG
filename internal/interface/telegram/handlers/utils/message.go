@@ -199,8 +199,8 @@ func GetPostedArtworkInlineKeyboardButton(artwork *entity.Artwork, meta *metauti
 		detailsURL = artwork.SourceURL
 	}
 	hasValidTelegramInfo := meta.ChannelChatID().ID != 0 || meta.ChannelChatID().Username != ""
-	if hasValidTelegramInfo && artwork.Pictures[0].TelegramInfo.Data().MessageID(meta.ChannelChatID().ID) != 0 {
-		detailsURL = meta.ChannelMessageURL(artwork.Pictures[0].TelegramInfo.Data().MessageID(meta.ChannelChatID().ID))
+	if hasValidTelegramInfo && artwork.FirstMedia().GetTelegramInfo().MessageID(meta.ChannelChatID().ID) != 0 {
+		detailsURL = meta.ChannelMessageURL(artwork.FirstMedia().GetTelegramInfo().MessageID(meta.ChannelChatID().ID))
 	}
 	return []telego.InlineKeyboardButton{
 		telegoutil.InlineKeyboardButton("详情").WithURL(detailsURL),

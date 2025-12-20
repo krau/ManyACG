@@ -160,6 +160,9 @@ func HandleRandomPreviewArtworks(ctx fiber.Ctx) error {
 		return common.NewError(fiber.StatusNotFound, "no artworks found")
 	}
 	cfg := common.MustGetState[runtimecfg.RestConfig](ctx, common.StateKeyConfig)
+	if artworks[0] == nil || len(artworks[0].Pictures) == 0 {
+		return common.NewError(fiber.StatusNotFound, "no pictures found for artwork")
+	}
 	pic := artworks[0].Pictures[0]
 	_, regular := utils.PictureResponseUrl(ctx, pic, cfg)
 	return ctx.Redirect().To(regular)
@@ -397,6 +400,7 @@ type ResponseFetchedPicture struct {
 }
 
 func fetchArtworkResponse(cacheID string, art shared.ArtworkLike, serv *service.Service) *ResponseFetchArtwork {
+	// [TODO] handle non-picture artworks
 	pics := make([]*ResponseFetchedPicture, 0, len(art.GetPictures()))
 	for _, pic := range art.GetPictures() {
 		width, height := pic.GetSize()
@@ -459,7 +463,11 @@ func HandleFetchArtwork(ctx fiber.Ctx) error {
 	if err := kvstor.Set(ctx, cacheid, artwork.GetSourceURL()); err != nil {
 		log.Warn("failed to set cacheid", "data", artwork.GetSourceURL(), "err", err)
 	}
-	return ctx.JSON(common.NewSuccess(fetchArtworkResponse(cacheid, artwork.Artwork.Data(), serv)))
+	resp := fetchArtworkResponse(cacheid, artwork, serv)
+	if len(resp.Pictures) == 0 {
+		return common.NewError(fiber.StatusNotFound, "no pictures found for artwork")
+	}
+	return ctx.JSON(common.NewSuccess(resp))
 }
 
 func HandleGetArtworkByID(ctx fiber.Ctx) error {
