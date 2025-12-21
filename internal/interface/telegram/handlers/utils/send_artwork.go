@@ -558,7 +558,7 @@ func GetUgoiraVideoDocumentInputFile(ctx context.Context, serv *service.Service,
 
 func GetVideoDocumentInputFile(ctx context.Context, serv *service.Service, meta *metautil.MetaData, artwork shared.ArtworkLike, video shared.VideoLike) (*ioutil.Closer[telego.InputFile], error) {
 	if id := video.GetTelegramInfo().DocumentFileID(meta.BotID()); id != "" {
-		return ioutil.NewCloser(telegoutil.FileFromID(id), func() error { return nil }), nil
+		return ioutil.NewNoopCloser(telegoutil.FileFromID(id)), nil
 	}
 	orgStorDetail := video.GetOriginalStorage()
 	if !orgStorDetail.IsZero() {

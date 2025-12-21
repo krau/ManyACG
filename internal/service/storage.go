@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"mime"
 	"os"
 	"path"
 	"path/filepath"
@@ -23,6 +24,8 @@ func (s *Service) storageCachePath(detail shared.StorageDetail) string {
 	ext := filepath.Ext(detail.Path)
 	if ext != "" {
 		cachePath += ext
+	} else if mimeExts, err := mime.ExtensionsByType(detail.Mime); err == nil && len(mimeExts) > 0 {
+		cachePath += mimeExts[0]
 	}
 	return cachePath
 }

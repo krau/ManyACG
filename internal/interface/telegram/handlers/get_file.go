@@ -243,7 +243,8 @@ func getArtworkFiles(ctx *telegohandler.Context,
 				document := telegoutil.Document(message.Chat.ChatID(), file.Value).
 					WithReplyParameters(&telego.ReplyParameters{
 						MessageID: message.MessageID,
-					}).WithCaption(artwork.GetTitle() + "_" + strconv.Itoa(i+1)).WithDisableContentTypeDetection()
+					}).WithCaption(artwork.GetTitle() + "_" + strconv.Itoa(i+1)).
+					WithDisableContentTypeDetection()
 				if meta.ChannelAvailable() && video.GetTelegramInfo().MessageID(meta.ChannelChatID().ID) != 0 {
 					document.WithReplyMarkup(telegoutil.InlineKeyboard([]telego.InlineKeyboardButton{
 						telegoutil.InlineKeyboardButton("详情").WithURL(meta.ChannelMessageURL(video.GetTelegramInfo().MessageID(meta.ChannelChatID().ID))),
