@@ -167,7 +167,7 @@ func Run() {
 
 func registerArtworkEventSearcherHandlers(ctx context.Context, bus repo.EventBus[*dto.ArtworkEventItem], searcher search.Searcher) {
 	filter := func(payload *dto.ArtworkEventItem) bool {
-		return payload != nil && payload.ID.IsZero()
+		return payload != nil && !payload.ID.IsZero()
 	}
 	bus.Subscribe(repo.EventTypeArtworkCreate, func(payload *dto.ArtworkEventItem) {
 		retry.Retry(func() error {

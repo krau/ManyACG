@@ -6,6 +6,7 @@ import (
 	"github.com/krau/ManyACG/internal/model/dto"
 	"github.com/krau/ManyACG/internal/model/query"
 	"github.com/krau/ManyACG/internal/repo"
+	"github.com/krau/ManyACG/pkg/log"
 	"github.com/unvgo/ouid"
 )
 
@@ -16,11 +17,13 @@ type SearcherMock struct {
 
 // AddDocuments implements search.Searcher.
 func (m *SearcherMock) AddDocuments(ctx context.Context, docs []*dto.ArtworkSearchDocument) error {
+	log.Debug("[MockSearch] AddDocuments called with %d documents", len(docs))
 	return nil
 }
 
 // DeleteDocuments implements search.Searcher.
 func (m *SearcherMock) DeleteDocuments(ctx context.Context, ids []string) error {
+	log.Debug("[MockSearch] DeleteDocuments called with %d ids", len(ids))
 	return nil
 }
 
@@ -31,6 +34,7 @@ func NewSearcher(awRepo repo.Artwork) *SearcherMock {
 }
 
 func (m *SearcherMock) SearchArtworks(ctx context.Context, que *query.ArtworkSearch) (*dto.ArtworkSearchResult, error) {
+	log.Debug("[MockSearch] SearchArtworks called with query: %+v", que)
 	res, err := m.repo.QueryArtworks(ctx, query.ArtworksDB{
 		Paginate: query.Paginate{
 			Limit: que.Limit,
@@ -50,6 +54,7 @@ func (m *SearcherMock) SearchArtworks(ctx context.Context, que *query.ArtworkSea
 }
 
 func (m *SearcherMock) FindSimilarArtworks(ctx context.Context, que *query.ArtworkSimilar) (*dto.ArtworkSearchResult, error) {
+	log.Debug("[MockSearch] FindSimilarArtworks called with query: %+v", que)
 	res, err := m.repo.QueryArtworks(ctx, query.ArtworksDB{
 		Paginate: query.Paginate{
 			Limit: que.Limit,
