@@ -335,6 +335,7 @@ func ArtworkInputMedias(
 				if artwork.GetR18() {
 					video = video.WithHasSpoiler()
 				}
+				video.WithSupportsStreaming()
 				rs, ok := video.Media.File.(io.ReadSeeker)
 				if ok {
 					// extract video metadata

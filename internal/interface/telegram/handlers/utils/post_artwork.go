@@ -78,7 +78,7 @@ func doPostAndCreateArtwork(
 		}
 	}
 
-	editReplyMarkupText("正在存储图片...")
+	editReplyMarkupText("正在存储资源...")
 
 	for i, pic := range artwork.Pictures {
 		// 下载并存储图片, 同时计算 phash, thumbhash, width, height

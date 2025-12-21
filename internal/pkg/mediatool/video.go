@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/krau/ffmpeg-go"
+	"github.com/samber/oops"
 	"github.com/yapingcat/gomedia/go-mp4"
 )
 
@@ -99,40 +100,33 @@ func GetVideoMetadata(rs io.ReadSeeker) (*VideoMetadata, error) {
 	return meta, nil
 }
 
-func ExtractVideoThumbFrame(rs io.ReadSeeker) ([]byte, error) {
-	data, err := extractVideoFrameAt(rs, 1.0)
+func ExtractVideoThumbFrame(r io.Reader) ([]byte, error) {
+	data, err := extractVideoFrameAt(r, 1.0)
 	if err == nil && len(data) > 0 {
 		return data, nil
 	}
-	return extractVideoFrameAt(rs, 0.0)
+	return extractVideoFrameAt(r, 0.0)
 }
 
-func extractVideoFrameAt(rs io.ReadSeeker, timestamp float64) ([]byte, error) {
-	pipeReader, pipeWriter := io.Pipe()
-
-	go func() {
-		defer pipeWriter.Close()
-		rs.Seek(0, io.SeekStart)
-		io.Copy(pipeWriter, rs)
-	}()
-
+func extractVideoFrameAt(r io.Reader, timestamp float64) ([]byte, error) {
 	var out bytes.Buffer
+	var errBuf bytes.Buffer
 
 	err := ffmpeg.
-		Input("pipe:0", ffmpeg.KwArgs{
-			"ss": fmt.Sprintf("%.3f", timestamp),
-		}).
+		Input("pipe:0").
 		Output("pipe:1", ffmpeg.KwArgs{
+			"ss":      fmt.Sprintf("%.3f", timestamp),
 			"vframes": 1,
 			"f":       "mjpeg",
 		}).
-		WithInput(pipeReader).
+		WithInput(r).
 		WithOutput(&out).
 		OverWriteOutput().
+		WithErrorOutput(&errBuf).
 		Run()
 
 	if err != nil {
-		return nil, err
+		return nil, oops.Wrapf(err, "ffmpeg error: %s", errBuf.String())
 	}
 
 	return out.Bytes(), nil

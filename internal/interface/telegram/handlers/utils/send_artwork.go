@@ -330,6 +330,7 @@ func SendArtworkInfo(ctx context.Context,
 		if artwork.GetR18() {
 			m.WithHasSpoiler()
 		}
+		m.WithSupportsStreaming()
 		media = m
 		mediaVideo = m
 	default:
@@ -482,7 +483,8 @@ func SendArtworkInfo(ctx context.Context,
 			WithCaption(mediaVideo.Caption).
 			WithParseMode(telego.ModeHTML).
 			WithReplyParameters(opts.ReplyParameters).
-			WithReplyMarkup(replyMarkup)
+			WithReplyMarkup(replyMarkup).
+			WithSupportsStreaming()
 		if artwork.GetR18() {
 			sendVideo = sendVideo.WithHasSpoiler()
 		}
