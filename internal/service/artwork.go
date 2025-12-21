@@ -10,6 +10,8 @@ import (
 	"github.com/duke-git/lancet/v2/validator"
 	"github.com/krau/ManyACG/internal/infra/search"
 	"github.com/krau/ManyACG/internal/model/command"
+	"github.com/krau/ManyACG/internal/model/converter"
+	"github.com/krau/ManyACG/internal/model/dto"
 	"github.com/krau/ManyACG/internal/model/entity"
 	"github.com/krau/ManyACG/internal/model/query"
 	"github.com/krau/ManyACG/internal/repo"
@@ -309,6 +311,26 @@ func (s *Service) SearchArtworks(ctx context.Context, que *query.ArtworkSearch) 
 		return nil, fmt.Errorf("get artworks by ids failed: %w", err)
 	}
 	return artworks, nil
+}
+
+func (s *Service) ReIndexArtworks(ctx context.Context, ids []ouid.OUID) error {
+	if s.searcher == nil {
+		return search.ErrNotEnabled
+	}
+	artworks, err := s.repos.Artwork().GetArtworksByIDs(ctx, ids)
+	if err != nil {
+		return fmt.Errorf("get artworks by ids failed: %w", err)
+	}
+	docs := make([]*dto.ArtworkSearchDocument, 0, len(artworks))
+	for _, aw := range artworks {
+		doc := converter.EntityArtworkToSearchDocument(aw)
+		docs = append(docs, doc)
+	}
+	err = s.searcher.AddDocuments(ctx, docs)
+	if err != nil {
+		return fmt.Errorf("add documents to searcher failed: %w", err)
+	}
+	return nil
 }
 
 func (s *Service) CountArtworks(ctx context.Context, r18 shared.R18Type) (int64, error) {

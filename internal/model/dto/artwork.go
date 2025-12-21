@@ -35,6 +35,7 @@ type ArtworkEventItem struct {
 	ArtistUID      string             `json:"artist_uid"`
 	Tags           []string           `json:"tags"`
 	Pictures       []PictureEventItem `json:"pictures"`
+	// [TODO] other media types
 }
 
 type PictureEventItem struct {

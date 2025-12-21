@@ -52,6 +52,24 @@ func EntityArtworkToDtoEventItem(ent *entity.Artwork) *dto.ArtworkEventItem {
 	return item
 }
 
+func EntityArtworkToSearchDocument(ent *entity.Artwork) *dto.ArtworkSearchDocument {
+	if ent == nil {
+		return nil
+	}
+	doc := &dto.ArtworkSearchDocument{
+		ID:          ent.ID.Hex(),
+		Title:       ent.Title,
+		Artist:      "",
+		Description: ent.Description,
+		Tags:        ent.GetTagsWithAlias(),
+		R18:         ent.R18,
+	}
+	if ent.Artist != nil {
+		doc.Artist = ent.Artist.Name
+	}
+	return doc
+}
+
 func DtoArtworkEventItemToSearchDocument(item *dto.ArtworkEventItem) *dto.ArtworkSearchDocument {
 	if item == nil {
 		return nil

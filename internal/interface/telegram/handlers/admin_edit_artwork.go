@@ -417,3 +417,38 @@ func AutoTaggingArtwork(ctx *telegohandler.Context, message telego.Message) erro
 	})
 	return nil
 }
+
+func ReindexArtworks(ctx *telegohandler.Context, message telego.Message) error {
+	serv := service.FromContext(ctx)
+	if !utils.CheckPermissionInGroup(ctx, serv, message, shared.PermissionEditArtwork) {
+		utils.ReplyMessage(ctx, message, "你没有编辑作品的权限")
+		return nil
+	}
+	var sourceURL string
+	if message.ReplyToMessage != nil {
+		sourceURL = utils.FindSourceURLInMessage(serv, message.ReplyToMessage)
+	} else {
+		sourceURL = serv.FindSourceURL(message.Text)
+	}
+	if sourceURL == "" {
+		helpText := `
+[管理员] <b>使用 /reindex 命令回复一条包含作品链接的消息, 或在参数中提供作品链接, 将重新索引该作品到搜索引擎</b>
+
+命令语法: /reindex [作品链接]
+`
+		utils.ReplyMessageWithHTML(ctx, message, helpText)
+		return nil
+	}
+
+	artwork, err := serv.GetArtworkByURL(ctx, sourceURL)
+	if err != nil {
+		utils.ReplyMessage(ctx, message, "获取作品信息失败: "+err.Error())
+		return nil
+	}
+	if err := serv.ReIndexArtworks(ctx, []ouid.OUID{artwork.ID}); err != nil {
+		utils.ReplyMessage(ctx, message, "重新索引作品失败: "+err.Error())
+		return nil
+	}
+	utils.ReplyMessage(ctx, message, "已重新索引该作品")
+	return nil
+}
