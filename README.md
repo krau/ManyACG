@@ -36,14 +36,14 @@ ManyACG 是为收集与整理二次元插画作品而生的项目, 目前主要�
   - [x] [Kemono](https://www.kemono.cr/)
   - [x] [Yandere](https://yande.re/)
   - [x] [Nhentai](https://nhentai.net/)
-- **可选的存储原图**, 多存储端支持
+- **原图多存储端支持**
   - [x] 本地存储
   - [x] WebDAV
   - [x] Telegram
 - 基于图像哈希的去重与以图搜图
 - 带有逻辑控制的关键词搜图
 - 以 Telegram 所接受的最高质量发送图片
-- 支持 pixiv 动图
+- 支持动图和视频
 - 基于 AI 的图片标签生成 -> [konatagger](https://github.com/krau/konatagger)
 - 集成 [MeiliSearch](https://www.meilisearch.com/) , 支持混合搜索与相似作品检索.
 - 轻量, 原生跨平台, 部署简单
