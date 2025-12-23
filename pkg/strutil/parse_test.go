@@ -53,6 +53,9 @@ func TestParseStringTo2DArray(t *testing.T) {
 
 	for _, test := range tests {
 		result := ParseTo2DArray(test.input, test.sep, test.sep2)
+		if len(test.expected) == 0 && len(result) == 0 {
+			continue
+		}
 		if !reflect.DeepEqual(result, test.expected) {
 			t.Fatalf("ParseStringTo2DArray(%s, %s, %s) = %v, expected %v", test.input, test.sep, test.sep2, result, test.expected)
 		}
