@@ -249,102 +249,14 @@ func (a *ArtworkWithRecorder) ReorderArtworkPicturesByID(ctx context.Context, id
 }
 
 type WithArtworkEventImpl struct {
-	Tx          Transactional
-	AdminRepo   Admin
-	ApiKeyRepo  APIKey
-	ArtistRepo  Artist
-	ArtworkRepo Artwork
-	TagRepo     Tag
-	PictureRepo Picture
-	UgoiraRepo  Ugoira
-	VideoRepo   Video
-	DeletedRepo DeletedRecord
-	CachedRepo  CachedArtwork
-
+	inner      Repositories
 	ArtworkBus EventBus[*dto.ArtworkEventItem]
-}
-
-// Video implements [Repositories].
-func (r *WithArtworkEventImpl) Video() Video {
-	return r.VideoRepo
-}
-
-func NewWithArtworkEventImpl(tx Transactional,
-	admin Admin,
-	apiKey APIKey,
-	artist Artist,
-	artwork Artwork,
-	tag Tag,
-	picture Picture,
-	ugoira Ugoira,
-	video Video,
-	deleted DeletedRecord,
-	cached CachedArtwork,
-	bus EventBus[*dto.ArtworkEventItem]) *WithArtworkEventImpl {
-	return &WithArtworkEventImpl{
-		Tx:          tx,
-		AdminRepo:   admin,
-		ApiKeyRepo:  apiKey,
-		ArtistRepo:  artist,
-		ArtworkRepo: artwork,
-		TagRepo:     tag,
-		PictureRepo: picture,
-		UgoiraRepo:  ugoira,
-		VideoRepo:   video,
-		DeletedRepo: deleted,
-		CachedRepo:  cached,
-		ArtworkBus:  bus,
-	}
-}
-
-// APIKey implements Repositories.
-func (r *WithArtworkEventImpl) APIKey() APIKey {
-	return r.ApiKeyRepo
-}
-
-// Admin implements Repositories.
-func (r *WithArtworkEventImpl) Admin() Admin {
-	return r.AdminRepo
-}
-
-// Artist implements Repositories.
-func (r *WithArtworkEventImpl) Artist() Artist {
-	return r.ArtistRepo
-}
-
-// Artwork implements Repositories.
-func (r *WithArtworkEventImpl) Artwork() Artwork {
-	return r.ArtworkRepo
-}
-
-// CachedArtwork implements Repositories.
-func (r *WithArtworkEventImpl) CachedArtwork() CachedArtwork {
-	return r.CachedRepo
-}
-
-// DeletedRecord implements Repositories.
-func (r *WithArtworkEventImpl) DeletedRecord() DeletedRecord {
-	return r.DeletedRepo
-}
-
-// Picture implements Repositories.
-func (r *WithArtworkEventImpl) Picture() Picture {
-	return r.PictureRepo
-}
-
-func (r *WithArtworkEventImpl) Ugoira() Ugoira {
-	return r.UgoiraRepo
-}
-
-// Tag implements Repositories.
-func (r *WithArtworkEventImpl) Tag() Tag {
-	return r.TagRepo
 }
 
 func (r *WithArtworkEventImpl) Transaction(ctx context.Context, fn func(repos Repositories) error) error {
 	var events []artworkEventItem
 	var eventsMu sync.Mutex
-	err := r.Tx.Transaction(ctx, func(txRepos Repositories) error {
+	err := r.inner.Transaction(ctx, func(txRepos Repositories) error {
 		rec := func(typ EventType, item *dto.ArtworkEventItem) {
 			eventsMu.Lock()
 			if item != nil {
@@ -356,18 +268,9 @@ func (r *WithArtworkEventImpl) Transaction(ctx context.Context, fn func(repos Re
 			eventsMu.Unlock()
 		}
 
-		txWrapper := &WithArtworkEventImpl{
-			Tx:          txRepos,
-			AdminRepo:   txRepos.Admin(),
-			ApiKeyRepo:  txRepos.APIKey(),
-			ArtistRepo:  txRepos.Artist(),
-			ArtworkRepo: &ArtworkWithRecorder{inner: txRepos.Artwork(), recorder: rec},
-			TagRepo:     txRepos.Tag(),
-			PictureRepo: txRepos.Picture(),
-			DeletedRepo: txRepos.DeletedRecord(),
-			CachedRepo:  txRepos.CachedArtwork(),
-
-			ArtworkBus: r.ArtworkBus,
+		txWrapper := &txReposWithRecorder{
+			inner:    txRepos,
+			recorder: rec,
 		}
 
 		return fn(txWrapper)
@@ -387,3 +290,106 @@ func (r *WithArtworkEventImpl) Transaction(ctx context.Context, fn func(repos Re
 }
 
 var _ Repositories = (*WithArtworkEventImpl)(nil)
+
+// NewWithArtworkEventImpl wraps base repositories with artwork event support.
+// It keeps all existing behaviours, but decorates Artwork operations so they
+// publish/search-index events via the provided EventBus.
+func NewWithArtworkEventImpl(inner Repositories, bus EventBus[*dto.ArtworkEventItem]) *WithArtworkEventImpl {
+	return &WithArtworkEventImpl{
+		inner:      inner,
+		ArtworkBus: bus,
+	}
+}
+
+// Admin implements Repositories.
+func (r *WithArtworkEventImpl) Admin() Admin {
+	return r.inner.Admin()
+}
+
+// APIKey implements Repositories.
+func (r *WithArtworkEventImpl) APIKey() APIKey {
+	return r.inner.APIKey()
+}
+
+// Artist implements Repositories.
+func (r *WithArtworkEventImpl) Artist() Artist {
+	return r.inner.Artist()
+}
+
+// Artwork implements Repositories.
+// Outside of explicit transactions, operations publish events immediately.
+func (r *WithArtworkEventImpl) Artwork() Artwork {
+	return NewArtworkWithEvent(r.inner.Artwork(), r.ArtworkBus)
+}
+
+// Tag implements Repositories.
+func (r *WithArtworkEventImpl) Tag() Tag {
+	return r.inner.Tag()
+}
+
+// Picture implements Repositories.
+func (r *WithArtworkEventImpl) Picture() Picture {
+	return r.inner.Picture()
+}
+
+// Ugoira implements Repositories.
+func (r *WithArtworkEventImpl) Ugoira() Ugoira {
+	return r.inner.Ugoira()
+}
+
+// Video implements Repositories.
+func (r *WithArtworkEventImpl) Video() Video {
+	return r.inner.Video()
+}
+
+// DeletedRecord implements Repositories.
+func (r *WithArtworkEventImpl) DeletedRecord() DeletedRecord {
+	return r.inner.DeletedRecord()
+}
+
+// CachedArtwork implements Repositories.
+func (r *WithArtworkEventImpl) CachedArtwork() CachedArtwork {
+	return r.inner.CachedArtwork()
+}
+
+// txReposWithRecorder is used inside a transaction to decorate Artwork with
+// ArtworkWithRecorder while delegating other repos directly to the inner
+// implementation, so events are recorded and published only after commit.
+type txReposWithRecorder struct {
+	inner    Repositories
+	recorder func(typ EventType, item *dto.ArtworkEventItem)
+}
+
+func (t *txReposWithRecorder) Admin() Admin { return t.inner.Admin() }
+
+func (t *txReposWithRecorder) APIKey() APIKey { return t.inner.APIKey() }
+
+func (t *txReposWithRecorder) Artist() Artist { return t.inner.Artist() }
+
+func (t *txReposWithRecorder) Artwork() Artwork {
+	return &ArtworkWithRecorder{inner: t.inner.Artwork(), recorder: t.recorder}
+}
+
+func (t *txReposWithRecorder) Tag() Tag { return t.inner.Tag() }
+
+func (t *txReposWithRecorder) Picture() Picture { return t.inner.Picture() }
+
+func (t *txReposWithRecorder) Ugoira() Ugoira { return t.inner.Ugoira() }
+
+func (t *txReposWithRecorder) Video() Video { return t.inner.Video() }
+
+func (t *txReposWithRecorder) DeletedRecord() DeletedRecord { return t.inner.DeletedRecord() }
+
+func (t *txReposWithRecorder) CachedArtwork() CachedArtwork { return t.inner.CachedArtwork() }
+
+func (t *txReposWithRecorder) Transaction(ctx context.Context, fn func(repos Repositories) error) error {
+	// Delegate nested transactions to inner, but keep the same recorder so all
+	// events are collected and published after the outermost commit.
+	return t.inner.Transaction(ctx, func(nested Repositories) error {
+		nestedWrapper := &txReposWithRecorder{
+			inner:    nested,
+			recorder: t.recorder,
+		}
+		return fn(nestedWrapper)
+	})
+}

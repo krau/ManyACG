@@ -96,21 +96,8 @@ func Run() {
 		artworkBus := eventbus.New[*dto.ArtworkEventItem]()
 		searcher := search.Default(ctx)
 		registerArtworkEventSearcherHandlers(ctx, artworkBus, searcher)
-		repos = repo.NewWithArtworkEventImpl(
-			// wtf this looks ugly
-			dbRepo,
-			dbRepo,
-			dbRepo,
-			dbRepo,
-			repo.NewArtworkWithEvent(dbRepo, artworkBus),
-			dbRepo,
-			dbRepo,
-			dbRepo,
-			dbRepo,
-			dbRepo,
-			dbRepo,
-			artworkBus,
-		)
+		// Wrap base repositories with artwork event support (MeiliSearch sync).
+		repos = repo.NewWithArtworkEventImpl(dbRepo, artworkBus)
 	}
 
 	serv := service.NewService(
