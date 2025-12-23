@@ -87,8 +87,8 @@ require (
 	github.com/onsi/gomega v1.38.2 // indirect
 	github.com/oschwald/maxminddb-golang v1.13.1 // indirect
 	github.com/philhofer/fwd v1.2.0 // indirect
-	github.com/quic-go/qpack v0.5.1 // indirect
-	github.com/quic-go/quic-go v0.56.0 // indirect
+	github.com/quic-go/qpack v0.6.0 // indirect
+	github.com/quic-go/quic-go v0.58.0 // indirect
 	github.com/refraction-networking/utls v1.8.1 // indirect
 	github.com/rivo/uniseg v0.4.7 // indirect
 	github.com/rogpeppe/go-internal v1.14.1 // indirect
@@ -114,7 +114,7 @@ require (
 	github.com/charmbracelet/log v0.4.2
 	github.com/fsnotify/fsnotify v1.9.0 // indirect
 	github.com/gorilla/feeds v1.2.0
-	github.com/imroc/req/v3 v3.56.0
+	github.com/imroc/req/v3 v3.57.0
 	github.com/ncruces/go-sqlite3/gormlite v0.30.2
 	github.com/oschwald/geoip2-golang v1.13.0
 	github.com/pelletier/go-toml/v2 v2.2.4 // indirect
