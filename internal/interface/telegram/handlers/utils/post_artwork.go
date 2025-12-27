@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"html"
 	"image"
+	"strings"
 
 	"github.com/gabriel-vasile/mimetype"
 	"github.com/krau/ManyACG/internal/common/httpclient"
@@ -342,21 +343,22 @@ func doPostAndCreateArtwork(
 			}
 			return ids
 		}())
-		text := fmt.Sprintf("检测到 %d 张与作品 <a href='%s'>%s 第 %d 张图片</a>相似的图片", len(sims), func() string {
+		var text strings.Builder
+		text.WriteString(fmt.Sprintf("检测到 %d 张与作品 <a href='%s'>%s 第 %d 张图片</a>相似的图片", len(sims), func() string {
 			if meta.ChannelAvailable() { // 非 telegram handler context 下 meta 可能为 nil
 				return meta.ChannelMessageURL(pic.TelegramInfo.Data().MessageID(meta.ChannelChatID().ID))
 			}
 			return ent.SourceURL
-		}(), html.EscapeString(ent.Title), pic.OrderIndex)
+		}(), html.EscapeString(ent.Title), pic.OrderIndex))
 		for j, sim := range sims {
-			text += fmt.Sprintf("\n\n%d - <a href='%s'>%s_%d</a>", j+1, func() string {
+			text.WriteString(fmt.Sprintf("\n\n%d - <a href='%s'>%s_%d</a>", j+1, func() string {
 				if meta.ChannelAvailable() {
 					return meta.ChannelMessageURL(sim.TelegramInfo.Data().MessageID(meta.ChannelChatID().ID))
 				}
 				return sim.Artwork.SourceURL
-			}(), html.EscapeString(sim.Artwork.Title), sim.OrderIndex)
+			}(), html.EscapeString(sim.Artwork.Title), sim.OrderIndex))
 		}
-		replyWaitMsg(text)
+		replyWaitMsg(text.String())
 	}
 	// recaption the posted message
 	ent, err = serv.GetArtworkByURL(ctx, artwork.SourceURL)

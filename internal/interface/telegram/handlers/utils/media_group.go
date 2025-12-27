@@ -92,10 +92,7 @@ func SendArtworkMediaGroup(
 	// Send in batches of 10
 	messages := make([]telego.Message, len(items))
 	for i := 0; i < len(items); i += 10 {
-		end := i + 10
-		if end > len(items) {
-			end = len(items)
-		}
+		end := min(i+10, len(items))
 		inputs, err := ArtworkInputMedias(ctx, serv, meta, artwork, caption, items, i, end)
 		if err != nil {
 			return nil, oops.Wrapf(err, "failed to create input medias")

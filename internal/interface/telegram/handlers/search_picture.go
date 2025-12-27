@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"html"
+	"strings"
 
 	"github.com/krau/ManyACG/internal/interface/telegram/handlers/utils"
 	"github.com/krau/ManyACG/internal/interface/telegram/metautil"
@@ -83,21 +84,22 @@ func getDBSearchResultText(ctx context.Context, serv *service.Service, meta *met
 	if len(pictures) == 0 {
 		return "未在数据库中找到相似图片", false, nil
 	}
-	text := fmt.Sprintf("找到%d张相似的图片\n\n", len(pictures))
+	var text strings.Builder
+	text.WriteString(fmt.Sprintf("找到%d张相似的图片\n\n", len(pictures)))
 	for _, picture := range pictures {
-		text += fmt.Sprintf("<a href=\"%s\">%s_%d</a>\n",
+		text.WriteString(fmt.Sprintf("<a href=\"%s\">%s_%d</a>\n",
 			picture.Artwork.GetSourceURL(),
 			html.EscapeString(picture.Artwork.GetTitle()),
 			picture.OrderIndex+1,
-		)
+		))
 		if meta.ChannelAvailable() && picture.TelegramInfo.Data().MessageID(meta.ChannelChatID().ID) != 0 {
-			text += fmt.Sprintf("<a href=\"%s\">频道消息</a>\n", meta.ChannelMessageURL(picture.TelegramInfo.Data().MessageID(meta.ChannelChatID().ID)))
+			text.WriteString(fmt.Sprintf("<a href=\"%s\">频道消息</a>\n", meta.ChannelMessageURL(picture.TelegramInfo.Data().MessageID(meta.ChannelChatID().ID))))
 		}
 		if meta.SiteURL() != "" {
-			text += fmt.Sprintf("<a href=\"%s\">ManyACG</a>\n\n", meta.SiteURL()+"/artwork/"+picture.ArtworkID.Hex())
+			text.WriteString(fmt.Sprintf("<a href=\"%s\">ManyACG</a>\n\n", meta.SiteURL()+"/artwork/"+picture.ArtworkID.Hex()))
 		}
 	}
-	return text, true, nil
+	return text.String(), true, nil
 }
 
 func SearchPictureCallbackQuery(ctx *telegohandler.Context, query telego.CallbackQuery) error {

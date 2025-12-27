@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"errors"
+	"slices"
 
 	"github.com/krau/ManyACG/internal/model/entity"
 	"github.com/krau/ManyACG/internal/shared"
@@ -43,24 +44,12 @@ func (s *Service) CheckAdminPermissionByTgID(ctx context.Context, userID int64, 
 	if admin == nil {
 		return false
 	}
-	isSudo := false
-	for _, p := range admin.Permissions {
-		if p == shared.PermissionSudo {
-			isSudo = true
-			break
-		}
-	}
+	isSudo := slices.Contains(admin.Permissions, shared.PermissionSudo)
 	if isSudo {
 		return true
 	}
 	for _, p := range permissions {
-		has := false
-		for _, ap := range admin.Permissions {
-			if ap == p {
-				has = true
-				break
-			}
-		}
+		has := slices.Contains(admin.Permissions, p)
 		if !has {
 			return false
 		}
