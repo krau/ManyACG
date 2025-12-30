@@ -505,9 +505,6 @@ func HandleFetchArtwork(ctx fiber.Ctx) error {
 		log.Warn("failed to set cacheid", "data", artwork.GetSourceURL(), "err", err)
 	}
 	resp := fetchArtworkResponse(cacheid, artwork, serv)
-	if len(resp.Pictures) == 0 {
-		return common.NewError(fiber.StatusNotFound, "no pictures found for artwork")
-	}
 	return ctx.JSON(common.NewSuccess(resp))
 }
 
