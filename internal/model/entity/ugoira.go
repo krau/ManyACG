@@ -39,8 +39,8 @@ func (u *UgoiraMeta) GetTelegramInfo() shared.TelegramInfo {
 	return u.TelegramInfo.Data()
 }
 
-// GetUgoiraMetaData implements shared.UgoiraMetaLike.
-func (u *UgoiraMeta) GetUgoiraMetaData() shared.UgoiraMetaData {
+// GetData implements shared.UgoiraMetaLike.
+func (u *UgoiraMeta) GetData() shared.UgoiraMetaData {
 	return u.Data.Data()
 }
 

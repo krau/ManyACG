@@ -46,7 +46,7 @@ type VideoLike interface {
 
 type UgoiraMetaLike interface {
 	GetIndex() uint
-	GetUgoiraMetaData() UgoiraMetaData
+	GetData() UgoiraMetaData
 	GetOriginalStorage() StorageDetail
 	GetTelegramInfo() TelegramInfo
 }

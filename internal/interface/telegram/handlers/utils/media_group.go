@@ -251,7 +251,7 @@ func ArtworkInputMedias(
 							return oops.Wrapf(err, "failed to get file from storage")
 						}
 						defer file.Close()
-						videoPath, err := mediatool.UgoiraZipToMp4(file.Name(), ugoira.GetUgoiraMetaData().Frames, file.Name()+".mp4")
+						videoPath, err := mediatool.UgoiraZipToMp4(file.Name(), ugoira.GetData().Frames, file.Name()+".mp4")
 						if err != nil {
 							return oops.Wrapf(err, "failed to convert ugoira to mp4")
 						}
@@ -262,12 +262,12 @@ func ArtworkInputMedias(
 						video = telegoutil.MediaVideo(telegoutil.File(videoFile))
 						closers = append(closers, func() error { return videoFile.Close() })
 					} else {
-						file, err := httpclient.DownloadWithCache(ctx, ugoira.GetUgoiraMetaData().OriginalZip, nil)
+						file, err := httpclient.DownloadWithCache(ctx, ugoira.GetData().OriginalZip, nil)
 						if err != nil {
-							return oops.Wrapf(err, "failed to download file: %s", ugoira.GetUgoiraMetaData().OriginalZip)
+							return oops.Wrapf(err, "failed to download file: %s", ugoira.GetData().OriginalZip)
 						}
 						defer file.Close()
-						videoPath, err := mediatool.UgoiraZipToMp4(file.Name(), ugoira.GetUgoiraMetaData().Frames, file.Name()+".mp4")
+						videoPath, err := mediatool.UgoiraZipToMp4(file.Name(), ugoira.GetData().Frames, file.Name()+".mp4")
 						if err != nil {
 							return oops.Wrapf(err, "failed to convert ugoira to mp4")
 						}

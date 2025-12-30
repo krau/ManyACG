@@ -377,15 +377,17 @@ type RequestFetchArtwork struct {
 }
 
 type ResponseFetchArtwork struct {
-	CacheID     string                    `json:"cache_id"`
-	Title       string                    `json:"title"`
-	Description string                    `json:"description"`
-	SourceURL   string                    `json:"source_url"`
-	R18         bool                      `json:"r18"`
-	Tags        []string                  `json:"tags"`
-	Artist      *ResponseFetchedArtist    `json:"artist"`
-	SourceType  shared.SourceType         `json:"source_type"`
-	Pictures    []*ResponseFetchedPicture `json:"pictures"`
+	CacheID     string                       `json:"cache_id"`
+	Title       string                       `json:"title"`
+	Description string                       `json:"description"`
+	SourceURL   string                       `json:"source_url"`
+	R18         bool                         `json:"r18"`
+	Tags        []string                     `json:"tags"`
+	Artist      *ResponseFetchedArtist       `json:"artist"`
+	SourceType  shared.SourceType            `json:"source_type"`
+	Pictures    []*ResponseFetchedPicture    `json:"pictures"`
+	Videos      []*ResponseFetchedVideo      `json:"videos,omitempty"`
+	UgoiraMetas []*ResponseFetchedUgoiraMeta `json:"ugoira_metas,omitempty"`
 }
 
 type ResponseFetchedArtist struct {
@@ -403,8 +405,22 @@ type ResponseFetchedPicture struct {
 	FileName  string `json:"file_name"`
 }
 
+type ResponseFetchedVideo struct {
+	URL      string `json:"url"`
+	Poster   string `json:"poster"`
+	MimeType string `json:"mime_type"`
+	Index    uint   `json:"index"`
+	Width    uint   `json:"width"`
+	Height   uint   `json:"height"`
+	Duration uint   `json:"duration"`
+}
+
+type ResponseFetchedUgoiraMeta struct {
+	Data  shared.UgoiraMetaData `json:"data"`
+	Index uint                  `json:"index"`
+}
+
 func fetchArtworkResponse(cacheID string, art shared.ArtworkLike, serv *service.Service) *ResponseFetchArtwork {
-	// [TODO] handle non-picture artworks
 	pics := make([]*ResponseFetchedPicture, 0, len(art.GetPictures()))
 	for _, pic := range art.GetPictures() {
 		width, height := pic.GetSize()
@@ -415,6 +431,25 @@ func fetchArtworkResponse(cacheID string, art shared.ArtworkLike, serv *service.
 			Thumbnail: pic.GetThumbnail(),
 			Original:  pic.GetOriginal(),
 			FileName:  serv.PrettyFileName(art, pic),
+		})
+	}
+	ugoiraMetas := make([]*ResponseFetchedUgoiraMeta, 0, len(art.GetUgoiraMetas()))
+	for _, meta := range art.GetUgoiraMetas() {
+		ugoiraMetas = append(ugoiraMetas, &ResponseFetchedUgoiraMeta{
+			Data:  meta.GetData(),
+			Index: meta.GetIndex(),
+		})
+	}
+	videos := make([]*ResponseFetchedVideo, 0, len(art.GetVideos()))
+	for _, video := range art.GetVideos() {
+		videos = append(videos, &ResponseFetchedVideo{
+			URL:      video.GetURL(),
+			Poster:   video.GetPoster(),
+			MimeType: video.GetMimeType(),
+			Index:    video.GetIndex(),
+			Width:    video.GetWidth(),
+			Height:   video.GetHeight(),
+			Duration: video.GetDuration(),
 		})
 	}
 	return &ResponseFetchArtwork{
@@ -429,8 +464,10 @@ func fetchArtworkResponse(cacheID string, art shared.ArtworkLike, serv *service.
 			Username: art.GetArtist().GetUserName(),
 			UID:      art.GetArtist().GetUID(),
 		},
-		SourceType: art.GetType(),
-		Pictures:   pics,
+		SourceType:  art.GetType(),
+		Pictures:    pics,
+		Videos:      videos,
+		UgoiraMetas: ugoiraMetas,
 	}
 }
 

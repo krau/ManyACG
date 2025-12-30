@@ -160,8 +160,8 @@ func (c *CachedUgoiraMeta) GetTelegramInfo() shared.TelegramInfo {
 	return c.TelegramInfo
 }
 
-// GetUgoiraMetaData implements shared.UgoiraMetaLike.
-func (c *CachedUgoiraMeta) GetUgoiraMetaData() shared.UgoiraMetaData {
+// GetData implements shared.UgoiraMetaLike.
+func (c *CachedUgoiraMeta) GetData() shared.UgoiraMetaData {
 	return c.MetaData
 }
 

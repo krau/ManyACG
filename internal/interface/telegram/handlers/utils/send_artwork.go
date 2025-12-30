@@ -65,7 +65,7 @@ func GetUgoiraVideoInputFile(ctx context.Context, serv *service.Service, meta *m
 			return nil, oops.Wrapf(err, "failed to get file from storage")
 		}
 		defer file.Close()
-		videoPath, err := mediatool.UgoiraZipToMp4(file.Name(), ugoira.GetUgoiraMetaData().Frames, file.Name()+".mp4")
+		videoPath, err := mediatool.UgoiraZipToMp4(file.Name(), ugoira.GetData().Frames, file.Name()+".mp4")
 		if err != nil {
 			return nil, oops.Wrapf(err, "failed to convert ugoira to mp4")
 		}
@@ -75,12 +75,12 @@ func GetUgoiraVideoInputFile(ctx context.Context, serv *service.Service, meta *m
 		}
 		return ioutil.NewCloser(telegoutil.File(videoFile), func() error { return videoFile.Close() }), nil
 	}
-	file, err := httpclient.DownloadWithCache(ctx, ugoira.GetUgoiraMetaData().OriginalZip, nil)
+	file, err := httpclient.DownloadWithCache(ctx, ugoira.GetData().OriginalZip, nil)
 	if err != nil {
-		return nil, oops.Wrapf(err, "failed to download file: %s", ugoira.GetUgoiraMetaData().OriginalZip)
+		return nil, oops.Wrapf(err, "failed to download file: %s", ugoira.GetData().OriginalZip)
 	}
 	defer file.Close()
-	videoPath, err := mediatool.UgoiraZipToMp4(file.Name(), ugoira.GetUgoiraMetaData().Frames, file.Name()+".mp4")
+	videoPath, err := mediatool.UgoiraZipToMp4(file.Name(), ugoira.GetData().Frames, file.Name()+".mp4")
 	if err != nil {
 		return nil, oops.Wrapf(err, "failed to convert ugoira to mp4")
 	}
@@ -389,7 +389,7 @@ func SendArtworkInfo(ctx context.Context,
 					switch aw := artwork.(type) {
 					case *entity.CachedArtworkData:
 						for _, um := range aw.UgoiraMetas {
-							if um.GetUgoiraMetaData().OriginalZip != ugoira.GetUgoiraMetaData().OriginalZip {
+							if um.GetData().OriginalZip != ugoira.GetData().OriginalZip {
 								continue
 							}
 							tginfo := um.GetTelegramInfo()
@@ -401,7 +401,7 @@ func SendArtworkInfo(ctx context.Context,
 					case *entity.CachedArtwork:
 						data := aw.Artwork.Data()
 						for _, um := range data.UgoiraMetas {
-							if um.GetUgoiraMetaData().OriginalZip != ugoira.GetUgoiraMetaData().OriginalZip {
+							if um.GetData().OriginalZip != ugoira.GetData().OriginalZip {
 								continue
 							}
 							tginfo := um.GetTelegramInfo()
@@ -522,7 +522,7 @@ func GetUgoiraVideoDocumentInputFile(ctx context.Context, serv *service.Service,
 		return ioutil.NewCloser(telegoutil.FileFromID(id), func() error { return nil }), nil
 	}
 
-	data := ugoira.GetUgoiraMetaData()
+	data := ugoira.GetData()
 
 	buildInput := func(file interface {
 		Name() string
