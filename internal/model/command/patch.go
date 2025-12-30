@@ -6,15 +6,15 @@ import (
 )
 
 type ArtworkBasicPatch struct {
-	ID          ouid.OUID `gorm:"-"`
 	Title       *string
 	Description *string
 	R18         *shared.R18Type
+	ID          ouid.OUID `gorm:"-"`
 }
 
 type ArtistPatch struct {
-	ID       ouid.OUID `gorm:"-"`
 	Name     *string
 	Username *string
 	UID      *string
+	ID       ouid.OUID `gorm:"-"`
 }

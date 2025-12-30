@@ -11,18 +11,18 @@ import (
 )
 
 type FxTwitterApiResp struct {
-	Code    int    `json:"code"`
-	Message string `json:"message"`
 	Tweet   *Tweet `json:"tweet"`
+	Message string `json:"message"`
+	Code    int    `json:"code"`
 }
 
 type Tweet struct {
+	Media             *Media `json:"media"`
+	Author            Author `json:"author"`
 	URL               string `json:"url"`
 	ID                string `json:"id"`
 	Text              string `json:"text"`
 	PossiblySensitive bool   `json:"possibly_sensitive"`
-	Author            Author `json:"author"`
-	Media             *Media `json:"media"`
 }
 
 type Author struct {
@@ -38,12 +38,12 @@ type Media struct {
 
 type MediaItem struct {
 	Type         string  `json:"type"`
-	URL          string  `json:"url"` // Direct link to the media
-	Width        int     `json:"width"`
-	Height       int     `json:"height"`
-	Duration     float64 `json:"duration,omitempty"`      // in seconds, for videos only
+	URL          string  `json:"url"`                     // Direct link to the media
 	Format       string  `json:"format,omitempty"`        // video's mime type or format, e.g. "video/mp4", "gif"
 	ThumbnailUrl string  `json:"thumbnail_url,omitempty"` // for videos poster image
+	Width        int     `json:"width"`
+	Height       int     `json:"height"`
+	Duration     float64 `json:"duration,omitempty"` // in seconds, for videos only
 }
 
 var (

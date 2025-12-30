@@ -11,9 +11,9 @@ type Paginate struct {
 }
 
 type ArtworksFilter struct {
-	R18        shared.R18Type
 	Tags       [][]ouid.OUID
 	Keywords   [][]string
+	R18        shared.R18Type
 	ArtistID   ouid.OUID
 	HasPicture bool
 	HasVideo   bool

@@ -16,8 +16,8 @@ import (
 )
 
 type Danbooru struct {
-	cfg       runtimecfg.SourceDanbooruConfig
 	reqClient *req.Client
+	cfg       runtimecfg.SourceDanbooruConfig
 }
 
 func Init() {

@@ -146,8 +146,8 @@ func GetMediaInputMedia(ctx context.Context,
 }
 
 type SendArtworkInfoOptions struct {
-	AppendCaption   string
 	ReplyParameters *telego.ReplyParameters
+	AppendCaption   string
 	HasPermission   bool
 }
 

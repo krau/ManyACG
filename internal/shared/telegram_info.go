@@ -14,8 +14,8 @@ type TelegramInfo struct {
 }
 
 type TelegramMessage struct {
-	MessageID    int    `json:"message_id"`
 	MediaGroupID string `json:"media_group_id,omitempty"`
+	MessageID    int    `json:"message_id"`
 }
 
 func (t TelegramInfo) MessageID(chatID int64) int {

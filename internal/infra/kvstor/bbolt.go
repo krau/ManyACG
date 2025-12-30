@@ -33,11 +33,11 @@ func newbboltItemWithTTL[T any](value T, ttl time.Duration) bboltItem[T] {
 
 type bboltDB struct {
 	db             *bbolt.DB
+	stop           chan struct{}
 	bucket         string
 	ttlBucket      string
 	ttlBatchLimit  int
 	ttlSweepPeriod time.Duration
-	stop           chan struct{}
 }
 
 // Close implements KVStore.

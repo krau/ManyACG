@@ -12,9 +12,9 @@ var (
 )
 
 type fileMessage struct {
+	FileID     string `json:"file_id"`
 	ChatID     int64  `json:"chat_id"`
 	MessaageID int    `json:"message_id"`
-	FileID     string `json:"file_id"`
 }
 
 func (f *fileMessage) String() string {

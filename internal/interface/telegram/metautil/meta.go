@@ -10,10 +10,10 @@ import (
 
 type MetaData struct {
 	channelChatID telego.ChatID
-	botUsername   string
-	botId         int64
-	siteUrl       string
 	groupChatID   telego.ChatID
+	botUsername   string
+	siteUrl       string
+	botId         int64
 	// should not set manually
 	channelAvailable bool
 }

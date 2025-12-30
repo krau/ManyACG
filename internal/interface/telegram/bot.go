@@ -26,9 +26,9 @@ import (
 
 type BotApp struct {
 	bot  *telego.Bot
-	cfg  runtimecfg.TelegramConfig
 	serv *service.Service
 	meta *metautil.MetaData
+	cfg  runtimecfg.TelegramConfig
 }
 
 func (app *BotApp) Bot() *telego.Bot {

@@ -32,8 +32,8 @@ func (c *taggerClient) Health() (string, error) {
 }
 
 type taggerPredictResponse struct {
-	PredictedTags []string           `json:"predicted_tags"`
 	Scores        map[string]float64 `json:"scores"`
+	PredictedTags []string           `json:"predicted_tags"`
 }
 
 func (c *taggerClient) Predict(ctx context.Context, file io.Reader) (map[string]float64, error) {

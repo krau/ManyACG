@@ -16,8 +16,8 @@ import (
 )
 
 type Twitter struct {
-	cfg       runtimecfg.SourceTwitterConfig
 	reqClient *req.Client
+	cfg       runtimecfg.SourceTwitterConfig
 }
 
 func Init() {

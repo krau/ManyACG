@@ -19,9 +19,9 @@ import (
 )
 
 type TelegramStorage struct {
-	cfg    config.StorageTelegramConfig
 	bot    *telego.Bot
 	chatID telego.ChatID
+	cfg    config.StorageTelegramConfig
 }
 
 func Init() {

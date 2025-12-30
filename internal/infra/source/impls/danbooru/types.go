@@ -9,19 +9,19 @@ import (
 )
 
 type DanbooruJsonResp struct {
-	ID           int    `json:"id"`
-	ImageWidth   int    `json:"image_width"`
-	ImageHeight  int    `json:"image_height"`
+	DanbooruFailJsonResp
 	TagString    string `json:"tag_string"`
 	FileURL      string `json:"file_url"`
 	LargeFileURL string `json:"large_file_url"`
-	DanbooruFailJsonResp
+	ID           int    `json:"id"`
+	ImageWidth   int    `json:"image_width"`
+	ImageHeight  int    `json:"image_height"`
 }
 
 type DanbooruFailJsonResp struct {
-	Success bool   `json:"success"`
 	Error   string `json:"error"`
 	Message string `json:"message"`
+	Success bool   `json:"success"`
 }
 
 func (resp *DanbooruJsonResp) ToArtwork() (*dto.FetchedArtwork, error) {

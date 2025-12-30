@@ -42,12 +42,12 @@ func GetPostID(url string) string {
 type YandereJsonResp []YanderePostJsonResp
 
 type YanderePostJsonResp struct {
-	ID        int    `json:"id"`
 	Tags      string `json:"tags"`
 	Author    string `json:"author"`
 	Source    string `json:"source"`     // title, maybe?
 	FileURL   string `json:"file_url"`   // original
 	SampleURL string `json:"sample_url"` // thumbnail
+	ID        int    `json:"id"`
 	Width     int    `json:"width"`
 	Height    int    `json:"height"`
 	ParentID  int    `json:"parent_id"`

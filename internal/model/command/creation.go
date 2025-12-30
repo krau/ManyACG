@@ -6,20 +6,17 @@ import (
 )
 
 type ArtworkCreation struct {
-	ID          ouid.OUID
+	Artist      ArtworkArtistCreation
 	Title       string
 	Description string
-	R18         bool
 	SourceType  shared.SourceType
 	SourceURL   string
-
-	Artist ArtworkArtistCreation
-
-	Tags []string
-
+	Tags        []string
 	Pictures    []ArtworkPictureCreation
 	UgoiraMetas []*ArtworkUgoiraCreation
 	Videos      []ArtworkVideoCreation
+	ID          ouid.OUID
+	R18         bool
 }
 
 type ArtworkArtistCreation struct {
@@ -29,35 +26,32 @@ type ArtworkArtistCreation struct {
 }
 
 type ArtworkPictureCreation struct {
-	Index     uint
-	Thumbnail string
-	Original  string
-
-	Width     uint
-	Height    uint
-	Phash     string
-	ThumbHash string
-
-	TelegramInfo shared.TelegramInfo
 	StorageInfo  shared.StorageInfo
+	TelegramInfo shared.TelegramInfo
+	Thumbnail    string
+	Original     string
+	Phash        string
+	ThumbHash    string
+	Index        uint
+	Width        uint
+	Height       uint
 }
 
 type ArtworkUgoiraCreation struct {
-	Index           uint
-	Data            shared.UgoiraMetaData
-	OriginalStorage shared.StorageDetail
 	TelegramInfo    shared.TelegramInfo
+	OriginalStorage shared.StorageDetail
+	Data            shared.UgoiraMetaData
+	Index           uint
 }
 
 type ArtworkVideoCreation struct {
-	Index      uint
-	URL        string
-	Width      uint
-	Height     uint
-	DurationMs uint
-	Poster     string
-	MimeType   string
-
 	TelegramInfo    shared.TelegramInfo
 	OriginalStorage shared.StorageDetail
+	URL             string
+	Poster          string
+	MimeType        string
+	Index           uint
+	Width           uint
+	Height          uint
+	DurationMs      uint
 }

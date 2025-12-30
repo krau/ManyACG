@@ -12,22 +12,23 @@ import (
 var _ shared.VideoLike = (*Video)(nil)
 
 type Video struct {
-	ID         ouid.OUID `gorm:"primaryKey;type:uuid" json:"id"`
-	ArtworkID  ouid.OUID `gorm:"type:uuid;index" json:"artwork_id"`
-	Artwork    *Artwork  `gorm:"foreignKey:ArtworkID;references:ID;constraint:OnDelete:CASCADE" json:"-"`
-	OrderIndex uint      `gorm:"column:order_index;not null;default:0;index:idx_video_artwork_index,priority:1" json:"index"`
-	Poster     string    `gorm:"type:text" json:"poster"` // poster image URL
-	Duration   uint      `json:"duration"`                // duration in ms
-	Width      uint      `json:"width"`
-	Height     uint      `json:"height"`
-	MimeType   string    `gorm:"type:text" json:"mime_type"`
-	URL        string    `gorm:"type:text;index" json:"url"` // video URL
-
-	TelegramInfo    datatypes.JSONType[shared.TelegramInfo]  `json:"telegram_info"`
-	OriginalStorage datatypes.JSONType[shared.StorageDetail] `json:"original_storage"`
-
 	CreatedAt time.Time `gorm:"autoCreateTime" json:"created_at"`
 	UpdatedAt time.Time `gorm:"autoUpdateTime" json:"updated_at"`
+
+	TelegramInfo    datatypes.JSONType[shared.TelegramInfo]  `json:"telegram_info"`
+	Artwork         *Artwork                                 `gorm:"foreignKey:ArtworkID;references:ID;constraint:OnDelete:CASCADE" json:"-"`
+	OriginalStorage datatypes.JSONType[shared.StorageDetail] `json:"original_storage"`
+
+	Poster   string `gorm:"type:text" json:"poster"` // poster image URL
+	MimeType string `gorm:"type:text" json:"mime_type"`
+	URL      string `gorm:"type:text;index" json:"url"` // video URL
+
+	OrderIndex uint      `gorm:"column:order_index;not null;default:0;index:idx_video_artwork_index,priority:1" json:"index"`
+	Duration   uint      `json:"duration"` // duration in ms
+	Width      uint      `json:"width"`
+	Height     uint      `json:"height"`
+	ID         ouid.OUID `gorm:"primaryKey;type:uuid" json:"id"`
+	ArtworkID  ouid.OUID `gorm:"type:uuid;index" json:"artwork_id"`
 }
 
 func (v *Video) BeforeCreate(tx *gorm.DB) (err error) {
@@ -36,6 +37,7 @@ func (v *Video) BeforeCreate(tx *gorm.DB) (err error) {
 	}
 	return nil
 }
+
 // GetDuration implements [shared.VideoLike].
 func (v *Video) GetDuration() uint {
 	return v.Duration

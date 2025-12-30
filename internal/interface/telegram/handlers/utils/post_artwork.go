@@ -383,10 +383,10 @@ type postArtworkJob struct {
 	serv       *service.Service
 	meta       *metautil.MetaData
 	artwork    *entity.CachedArtworkData
+	done       chan error
 	fromChatID telego.ChatID
 	toChatID   telego.ChatID
 	messageID  int
-	done       chan error
 }
 
 var (

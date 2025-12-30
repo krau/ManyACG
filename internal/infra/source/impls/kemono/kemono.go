@@ -18,8 +18,8 @@ import (
 )
 
 type Kemono struct {
-	cfg       config.SourceKemonoConfig
 	reqClient *req.Client
+	cfg       config.SourceKemonoConfig
 }
 
 func Init() {
@@ -34,7 +34,7 @@ func Init() {
 			client.SetProxyURL(config.Get().Source.Proxy)
 		}
 		return &Kemono{
-			cfg: config.Get().Source.Kemono,
+			cfg:       config.Get().Source.Kemono,
 			reqClient: client,
 		}
 	})

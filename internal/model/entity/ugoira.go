@@ -10,18 +10,18 @@ import (
 )
 
 type UgoiraMeta struct {
-	ID        ouid.OUID `gorm:"primaryKey;type:uuid" json:"id"`
-	ArtworkID ouid.OUID `gorm:"type:uuid;index" json:"artwork_id"`
-	Artwork   *Artwork  `gorm:"foreignKey:ArtworkID;references:ID;constraint:OnDelete:CASCADE" json:"-"`
-
-	OrderIndex uint                                      `gorm:"column:order_index;not null;default:0;index:idx_ugoira_artwork_index,priority:1" json:"index"`
-	Data       datatypes.JSONType[shared.UgoiraMetaData] `json:"data"`
-
 	CreatedAt time.Time `gorm:"autoCreateTime" json:"created_at"`
 	UpdatedAt time.Time `gorm:"autoUpdateTime" json:"updated_at"`
 
-	OriginalStorage datatypes.JSONType[shared.StorageDetail] `json:"original_storage"`
-	TelegramInfo    datatypes.JSONType[shared.TelegramInfo]  `json:"telegram_info"`
+	TelegramInfo datatypes.JSONType[shared.TelegramInfo] `json:"telegram_info"`
+	Artwork      *Artwork                                `gorm:"foreignKey:ArtworkID;references:ID;constraint:OnDelete:CASCADE" json:"-"`
+
+	OriginalStorage datatypes.JSONType[shared.StorageDetail]  `json:"original_storage"`
+	Data            datatypes.JSONType[shared.UgoiraMetaData] `json:"data"`
+
+	OrderIndex uint      `gorm:"column:order_index;not null;default:0;index:idx_ugoira_artwork_index,priority:1" json:"index"`
+	ID         ouid.OUID `gorm:"primaryKey;type:uuid" json:"id"`
+	ArtworkID  ouid.OUID `gorm:"type:uuid;index" json:"artwork_id"`
 }
 
 // GetIndex implements shared.UgoiraMetaLike.

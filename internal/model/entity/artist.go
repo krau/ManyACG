@@ -7,7 +7,6 @@ import (
 )
 
 type Artist struct {
-	ID       ouid.OUID         `gorm:"primaryKey;type:uuid" json:"id"`
 	Name     string            `gorm:"type:text;not null;index" json:"name"`
 	Type     shared.SourceType `gorm:"type:text;not null;index" json:"type"`
 	UID      string            `gorm:"type:text;not null;index" json:"uid"`
@@ -15,6 +14,7 @@ type Artist struct {
 
 	// reverse relation
 	Artworks []*Artwork `gorm:"foreignKey:ArtistID" json:"-"` // json ignore to avoid circular reference
+	ID       ouid.OUID  `gorm:"primaryKey;type:uuid" json:"id"`
 }
 
 // GetName implements shared.ArtistLike.

@@ -16,9 +16,9 @@ import (
 )
 
 type Webdav struct {
+	client   *gowebdav.Client
 	cfg      config.StorageWebdavConfig
 	basePath string
-	client   *gowebdav.Client
 }
 
 func Init() {

@@ -3,9 +3,9 @@ package runtimecfg
 import "errors"
 
 type SearchConfig struct {
-	Enable      bool              `toml:"enable" mapstructure:"enable" json:"enable" yaml:"enable"`
-	Engine      string            `toml:"engine" mapstructure:"engine" json:"engine" yaml:"engine"`
 	MeiliSearch MeiliSearchConfig `toml:"meilisearch" mapstructure:"meilisearch" json:"meilisearch" yaml:"meilisearch"`
+	Engine      string            `toml:"engine" mapstructure:"engine" json:"engine" yaml:"engine"`
+	Enable      bool              `toml:"enable" mapstructure:"enable" json:"enable" yaml:"enable"`
 }
 
 type MeiliSearchConfig struct {

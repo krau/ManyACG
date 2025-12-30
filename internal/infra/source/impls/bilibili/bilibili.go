@@ -15,8 +15,8 @@ import (
 )
 
 type Bilibili struct {
-	cfg       runtimecfg.SourceBilibiliConfig
 	reqClient *req.Client
+	cfg       runtimecfg.SourceBilibiliConfig
 }
 
 func Init() {

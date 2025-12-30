@@ -14,7 +14,6 @@ func (s *Service) CancelDeletedByURL(ctx context.Context, sourceURL string) erro
 	return s.repos.DeletedRecord().DeleteDeletedByURL(ctx, sourceURL)
 }
 
-
 func (s *Service) GetDeletedByURL(ctx context.Context, sourceURL string) (*entity.DeletedRecord, error) {
 	return s.repos.DeletedRecord().GetDeletedByURL(ctx, sourceURL)
 }

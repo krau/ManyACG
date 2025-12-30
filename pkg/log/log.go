@@ -20,14 +20,14 @@ type Logger interface {
 
 type Config struct {
 	Type         string // charm, zap
-	Level        Level
 	LogFile      string
+	Level        Level
 	FileLevel    Level
 	MaxSize      int
 	MaxBackups   int
 	MaxAge       int
-	Compress     bool
 	CallerOffset int
+	Compress     bool
 }
 
 type Level uint

@@ -21,33 +21,33 @@ type ArtworkSearchResult struct {
 }
 
 type ArtworkEventItem struct {
-	ID             ouid.OUID          `json:"id"`
-	Title          string             `json:"title"`
-	Description    string             `json:"description"`
-	R18            bool               `json:"r18"`
+	// [TODO] other media types
 	CreatedAt      time.Time          `json:"created_at"`
 	UpdatedAt      time.Time          `json:"updated_at"`
+	Title          string             `json:"title"`
+	Description    string             `json:"description"`
 	SourceType     shared.SourceType  `json:"source_type"`
 	SourceURL      string             `json:"source_url"`
-	ArtistID       ouid.OUID          `json:"artist_id"`
 	ArtistName     string             `json:"artist_name"`
 	ArtistUsername string             `json:"artist_username"`
 	ArtistUID      string             `json:"artist_uid"`
 	Tags           []string           `json:"tags"`
 	Pictures       []PictureEventItem `json:"pictures"`
-	// [TODO] other media types
+	ID             ouid.OUID          `json:"id"`
+	ArtistID       ouid.OUID          `json:"artist_id"`
+	R18            bool               `json:"r18"`
 }
 
 type PictureEventItem struct {
-	ID         ouid.OUID `json:"id"`
-	ArtworkID  ouid.OUID `json:"artwork_id"`
-	OrderIndex uint      `json:"index"`
-	Thumbnail  string    `json:"thumbnail"`
-	Original   string    `json:"original"`
-	Width      uint      `json:"width"`
-	Height     uint      `json:"height"`
-	Phash      string    `json:"phash"`      // phash
-	ThumbHash  string    `json:"thumb_hash"` // thumbhash
 	CreatedAt  time.Time `json:"created_at"`
 	UpdatedAt  time.Time `json:"updated_at"`
+	Thumbnail  string    `json:"thumbnail"`
+	Original   string    `json:"original"`
+	Phash      string    `json:"phash"`      // phash
+	ThumbHash  string    `json:"thumb_hash"` // thumbhash
+	OrderIndex uint      `json:"index"`
+	Width      uint      `json:"width"`
+	Height     uint      `json:"height"`
+	ID         ouid.OUID `json:"id"`
+	ArtworkID  ouid.OUID `json:"artwork_id"`
 }

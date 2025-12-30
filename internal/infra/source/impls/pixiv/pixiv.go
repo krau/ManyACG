@@ -17,8 +17,8 @@ import (
 )
 
 type Pixiv struct {
-	cfg       config.SourcePixivConfig
 	reqClient *req.Client
+	cfg       config.SourcePixivConfig
 }
 
 func Init() {

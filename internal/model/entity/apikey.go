@@ -10,12 +10,12 @@ import (
 )
 
 type ApiKey struct {
-	ID          ouid.OUID                              `gorm:"primaryKey;type:uuid" json:"id"`
 	Key         string                                 `gorm:"type:text;not null;uniqueIndex" json:"key"`
+	Description string                                 `gorm:"type:text" json:"description"`
+	Permissions datatypes.JSONSlice[shared.Permission] `gorm:"type:json" json:"permissions"`
 	Quota       int                                    `gorm:"not null;default:0" json:"quota"`
 	Used        int                                    `gorm:"not null;default:0" json:"used"`
-	Permissions datatypes.JSONSlice[shared.Permission] `gorm:"type:json" json:"permissions"`
-	Description string                                 `gorm:"type:text" json:"description"`
+	ID          ouid.OUID                              `gorm:"primaryKey;type:uuid" json:"id"`
 }
 
 func (a *ApiKey) BeforeCreate(tx *gorm.DB) (err error) {

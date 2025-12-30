@@ -10,45 +10,47 @@ import (
 )
 
 type Config struct {
-	App AppConfig `toml:"app" mapstructure:"app" json:"app" yaml:"app"`
-	// some common packages config
-	Log        LogConfig        `toml:"log" mapstructure:"log" json:"log" yaml:"log"`
+	Search     SearchConfig     `toml:"search" mapstructure:"search" json:"search" yaml:"search"`
 	HttpClient HttpClientConfig `toml:"http_client" mapstructure:"http_client" json:"http_client" yaml:"http_client"`
 
-	// infrastructures config
-	KVDB     KVDBConfig     `toml:"kvdb" mapstructure:"kvdb" json:"kvdb" yaml:"kvdb"`
-	Search   SearchConfig   `toml:"search" mapstructure:"search" json:"search" yaml:"search"`
-	Tagging  TaggingConfig  `toml:"tagging" mapstructure:"tagging" json:"tagging" yaml:"tagging"`
-	Database databaseConfig `toml:"database" mapstructure:"database" json:"database" yaml:"database"`
-	Source   SourceConfig   `toml:"source" mapstructure:"source" json:"source" yaml:"source"`
-	Storage  StorageConfig  `toml:"storage" mapstructure:"storage" json:"storage" yaml:"storage"`
-	Wsrv     WsrvConfig     `toml:"wsrv" mapstructure:"wsrv" json:"wsrv" yaml:"wsrv"`
+	Wsrv WsrvConfig `toml:"wsrv" mapstructure:"wsrv" json:"wsrv" yaml:"wsrv"`
 
 	// interfaces
-	Telegram  TelegramConfig  `toml:"telegram" mapstructure:"telegram" json:"telegram" yaml:"telegram"`
+	Telegram TelegramConfig `toml:"telegram" mapstructure:"telegram" json:"telegram" yaml:"telegram"`
+	Source   SourceConfig   `toml:"source" mapstructure:"source" json:"source" yaml:"source"`
+	Tagging  TaggingConfig  `toml:"tagging" mapstructure:"tagging" json:"tagging" yaml:"tagging"`
+	Database databaseConfig `toml:"database" mapstructure:"database" json:"database" yaml:"database"`
+	// some common packages config
+	Log  LogConfig  `toml:"log" mapstructure:"log" json:"log" yaml:"log"`
+	Rest RestConfig `toml:"rest" mapstructure:"rest" json:"rest" yaml:"rest"`
+
+	// infrastructures config
+	KVDB      KVDBConfig      `toml:"kvdb" mapstructure:"kvdb" json:"kvdb" yaml:"kvdb"`
+	Storage   StorageConfig   `toml:"storage" mapstructure:"storage" json:"storage" yaml:"storage"`
 	Scheduler SchedulerConfig `toml:"scheduler" mapstructure:"scheduler" json:"scheduler" yaml:"scheduler"`
-	Rest      RestConfig      `toml:"rest" mapstructure:"rest" json:"rest" yaml:"rest"`
+	App       AppConfig       `toml:"app" mapstructure:"app" json:"app" yaml:"app"`
 }
 
 type KVDBConfig struct {
-	Type           string `toml:"type" mapstructure:"type" json:"type" yaml:"type"` // bbolt, redis
-	Path           string `toml:"path" mapstructure:"path" json:"path" yaml:"path"`
-	Bucket         string `toml:"bucket" mapstructure:"bucket" json:"bucket" yaml:"bucket"`
-	TTLBucket      string `toml:"ttl_bucket" mapstructure:"ttl_bucket" json:"ttl_bucket" yaml:"ttl_bucket"`
-	TTLBatchLimit  int    `toml:"ttl_batch_limit" mapstructure:"ttl_batch_limit" json:"ttl_batch_limit" yaml:"ttl_batch_limit"`
-	TTLSweepPeriod uint   `toml:"ttl_sweep_period" mapstructure:"ttl_sweep_period" json:"ttl_sweep_period" yaml:"ttl_sweep_period"` // in seconds
+	Type      string `toml:"type" mapstructure:"type" json:"type" yaml:"type"` // bbolt, redis
+	Path      string `toml:"path" mapstructure:"path" json:"path" yaml:"path"`
+	Bucket    string `toml:"bucket" mapstructure:"bucket" json:"bucket" yaml:"bucket"`
+	TTLBucket string `toml:"ttl_bucket" mapstructure:"ttl_bucket" json:"ttl_bucket" yaml:"ttl_bucket"`
 
-	Redis RedisConfig `toml:"redis" mapstructure:"redis" json:"redis" yaml:"redis"`
+	Redis          RedisConfig `toml:"redis" mapstructure:"redis" json:"redis" yaml:"redis"`
+	TTLBatchLimit  int         `toml:"ttl_batch_limit" mapstructure:"ttl_batch_limit" json:"ttl_batch_limit" yaml:"ttl_batch_limit"`
+	TTLSweepPeriod uint        `toml:"ttl_sweep_period" mapstructure:"ttl_sweep_period" json:"ttl_sweep_period" yaml:"ttl_sweep_period"` // in seconds
+
 }
 
 type RedisConfig struct {
 	// URL like redis://user:pass@host:port/db?addr=... for cluster/sentinel
-	URL    string `toml:"url" mapstructure:"url" json:"url" yaml:"url"`
-	Prefix string `toml:"prefix" mapstructure:"prefix" json:"prefix" yaml:"prefix"`
+	URL      string `toml:"url" mapstructure:"url" json:"url" yaml:"url"`
+	Prefix   string `toml:"prefix" mapstructure:"prefix" json:"prefix" yaml:"prefix"`
+	Username string `toml:"username" mapstructure:"username" json:"username" yaml:"username"`
+	Password string `toml:"password" mapstructure:"password" json:"password" yaml:"password"`
 	// Addrs for standalone or cluster
 	Addrs       []string `toml:"addrs" mapstructure:"addrs" json:"addrs" yaml:"addrs"`
-	Username    string   `toml:"username" mapstructure:"username" json:"username" yaml:"username"`
-	Password    string   `toml:"password" mapstructure:"password" json:"password" yaml:"password"`
 	DB          int      `toml:"db" mapstructure:"db" json:"db" yaml:"db"`
 	TLS         bool     `toml:"tls" mapstructure:"tls" json:"tls" yaml:"tls"`
 	TLSInsecure bool     `toml:"tls_insecure" mapstructure:"tls_insecure" json:"tls_insecure" yaml:"tls_insecure"`

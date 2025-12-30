@@ -14,8 +14,8 @@ import (
 )
 
 type PredictResult struct {
-	PredictedTags []string           `json:"predicted_tags"`
 	Scores        map[string]float64 `json:"scores"`
+	PredictedTags []string           `json:"predicted_tags"`
 }
 
 type Tagger interface {

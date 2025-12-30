@@ -6,7 +6,6 @@ import (
 	"regexp"
 )
 
-
 func MD5Hash(data string) string {
 	sum := md5.Sum([]byte(data))
 	return hex.EncodeToString(sum[:])

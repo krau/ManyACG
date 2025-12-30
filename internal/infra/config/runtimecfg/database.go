@@ -7,7 +7,7 @@ type databaseConfig struct {
 }
 
 type pgsqlConfig struct {
-	PGroonga        bool `toml:"pgroonga" mapstructure:"pgroonga" json:"pgroonga" yaml:"pgroonga"`
+	PGroonga bool `toml:"pgroonga" mapstructure:"pgroonga" json:"pgroonga" yaml:"pgroonga"`
 	// PGroonga index isn't crash safe. You need to run REINDEX when your PGroonga index is broken by crash.
 	ReindexPGroonga bool `toml:"reindex_pgroonga" mapstructure:"reindex_pgroonga" json:"reindex_pgroonga" yaml:"reindex_pgroonga"`
 }

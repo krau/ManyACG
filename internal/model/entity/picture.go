@@ -10,23 +10,24 @@ import (
 )
 
 type Picture struct {
-	ID        ouid.OUID `gorm:"primaryKey;type:uuid" json:"id"`
-	ArtworkID ouid.OUID `gorm:"type:uuid;index" json:"artwork_id"`
-	Artwork   *Artwork  `gorm:"foreignKey:ArtworkID;references:ID;constraint:OnDelete:CASCADE" json:"-"`
-
-	OrderIndex uint   `gorm:"column:order_index;not null;default:0;index:idx_picture_artwork_index,priority:1" json:"index"`
-	Thumbnail  string `gorm:"type:text" json:"thumbnail"`
-	Original   string `gorm:"type:text;index" json:"original"`
-	Width      uint   `json:"width"`
-	Height     uint   `json:"height"`
-	Phash      string `gorm:"type:text;index" json:"phash"` // phash
-	ThumbHash  string `gorm:"type:text" json:"thumb_hash"`  // thumbhash
-
-	TelegramInfo datatypes.JSONType[shared.TelegramInfo] `json:"telegram_info"`
-	StorageInfo  datatypes.JSONType[shared.StorageInfo]  `json:"storage_info"`
+	StorageInfo datatypes.JSONType[shared.StorageInfo] `json:"storage_info"`
 
 	CreatedAt time.Time `gorm:"autoCreateTime" json:"created_at"`
 	UpdatedAt time.Time `gorm:"autoUpdateTime" json:"updated_at"`
+
+	TelegramInfo datatypes.JSONType[shared.TelegramInfo] `json:"telegram_info"`
+	Artwork      *Artwork                                `gorm:"foreignKey:ArtworkID;references:ID;constraint:OnDelete:CASCADE" json:"-"`
+
+	Thumbnail string `gorm:"type:text" json:"thumbnail"`
+	Original  string `gorm:"type:text;index" json:"original"`
+	Phash     string `gorm:"type:text;index" json:"phash"` // phash
+	ThumbHash string `gorm:"type:text" json:"thumb_hash"`  // thumbhash
+
+	OrderIndex uint      `gorm:"column:order_index;not null;default:0;index:idx_picture_artwork_index,priority:1" json:"index"`
+	Width      uint      `json:"width"`
+	Height     uint      `json:"height"`
+	ID         ouid.OUID `gorm:"primaryKey;type:uuid" json:"id"`
+	ArtworkID  ouid.OUID `gorm:"type:uuid;index" json:"artwork_id"`
 }
 
 // IsHide implements PictureLike.

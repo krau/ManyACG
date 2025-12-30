@@ -43,13 +43,13 @@ func GetMP4Meta(rs io.ReadSeeker) (*VideoMetadata, error) {
 }
 
 type ffmpegVideoMetadata struct {
+	Format struct {
+		Duration string `json:"duration"`
+	} `json:"format"`
 	Streams []struct {
 		Width  int `json:"width"`
 		Height int `json:"height"`
 	} `json:"streams"`
-	Format struct {
-		Duration string `json:"duration"`
-	} `json:"format"`
 }
 
 // GetVideoMetadata uses ffprobe to get video metadata

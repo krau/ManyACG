@@ -11,10 +11,10 @@ import (
 )
 
 type BilibiliWebDynamicApiResp struct {
-	Code    int                        `json:"code"`
-	Message string                     `json:"message"`
-	TTL     int                        `json:"ttl"`
 	Data    *BilibiliWebDynamicApiData `json:"data"`
+	Message string                     `json:"message"`
+	Code    int                        `json:"code"`
+	TTL     int                        `json:"ttl"`
 }
 
 type BilibiliWebDynamicApiData struct {
@@ -38,19 +38,19 @@ type BilibiliWebDynamicApiModuleAuthor struct {
 type BilibiliWebDynamicApiModuleDynamic struct {
 	Major *struct {
 		Opus *struct {
-			Pics    []*BilibiliWebDynamicApiPic   `json:"pics"`
 			Summary *BilibiliWebDynamicApiSummary `json:"summary"`
 			Title   string                        `json:"title"`
+			Pics    []*BilibiliWebDynamicApiPic   `json:"pics"`
 		} `json:"opus"`
 		Type string `json:"type"`
 	} `json:"major"`
 }
 
 type BilibiliWebDynamicApiPic struct {
+	Url    string  `json:"url"`
 	Height int     `json:"height"`
 	Width  int     `json:"width"`
 	Size   float64 `json:"size"`
-	Url    string  `json:"url"`
 }
 
 type BilibiliWebDynamicApiSummary struct {
@@ -120,11 +120,11 @@ func (resp *BilibiliWebDynamicApiResp) ToArtwork() (*dto.FetchedArtwork, error) 
 }
 
 type BilibiliDesktopDynamicApiResp struct {
-	Code    int    `json:"code"`
-	Message string `json:"message"`
-	Data    *struct {
+	Data *struct {
 		Item *BilibiliDesktopDynamicApiItem `json:"item"`
 	} `json:"data"`
+	Message string `json:"message"`
+	Code    int    `json:"code"`
 }
 
 type BilibiliDesktopDynamicApiItem struct {
@@ -134,52 +134,52 @@ type BilibiliDesktopDynamicApiItem struct {
 }
 
 type BilibiliDesktopDynamicApiModule struct {
-	ModuleType    string                            `json:"module_type"`
 	ModuleAuthor  *BilibiliDesktopDynamicApiAuthor  `json:"module_author,omitempty"`
 	ModuleDesc    *BilibiliDesktopDynamicApiDesc    `json:"module_desc,omitempty"`
 	ModuleDynamic *BilibiliDesktopDynamicApiDynamic `json:"module_dynamic,omitempty"`
+	ModuleType    string                            `json:"module_type"`
 }
 
 type BilibiliDesktopDynamicApiAuthor struct {
 	User *struct {
-		Mid  int    `json:"mid"`
 		Name string `json:"name"`
+		Mid  int    `json:"mid"`
 	} `json:"user"`
 }
 
 type BilibiliDesktopDynamicApiDesc struct {
-	RichTextNodes []*BilibiliDesktopDynamicApiRichTextNode `json:"rich_text_nodes"`
 	Text          string                                   `json:"text"`
+	RichTextNodes []*BilibiliDesktopDynamicApiRichTextNode `json:"rich_text_nodes"`
 }
 
 type BilibiliDesktopDynamicApiRichTextNode struct {
+	Emoji    *BilibiliDesktopDynamicApiEmoji `json:"emoji,omitempty"`
 	Type     string                          `json:"type"`
 	OrigText string                          `json:"orig_text"`
 	Text     string                          `json:"text"`
-	Emoji    *BilibiliDesktopDynamicApiEmoji `json:"emoji,omitempty"`
 }
 
 type BilibiliDesktopDynamicApiEmoji struct {
 	IconUrl string `json:"icon_url"`
-	Size    int    `json:"size"`
 	Text    string `json:"text"`
+	Size    int    `json:"size"`
 	Type    int    `json:"type"`
 }
 
 type BilibiliDesktopDynamicApiDynamic struct {
 	DynDraw *struct {
-		Id    int                                  `json:"id"`
 		Items []*BilibiliDesktopDynamicApiDrawItem `json:"items"`
+		Id    int                                  `json:"id"`
 	} `json:"dyn_draw"`
 	Type string `json:"type"`
 }
 
 type BilibiliDesktopDynamicApiDrawItem struct {
+	Src    string   `json:"src"`
+	Tags   []string `json:"tags"`
 	Height int      `json:"height"`
 	Width  int      `json:"width"`
 	Size   float64  `json:"size"`
-	Src    string   `json:"src"`
-	Tags   []string `json:"tags"`
 }
 
 func (resp *BilibiliDesktopDynamicApiResp) ToArtwork() (*dto.FetchedArtwork, error) {

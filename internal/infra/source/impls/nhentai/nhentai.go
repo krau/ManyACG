@@ -13,8 +13,8 @@ import (
 )
 
 type Nhentai struct {
-	cfg       config.SourceNhentaiConfig
 	reqClient *req.Client
+	cfg       config.SourceNhentaiConfig
 }
 
 func Init() {

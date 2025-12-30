@@ -1,15 +1,15 @@
 package runtimecfg
 
 type RestConfig struct {
-	Enable bool   `toml:"enable" mapstructure:"enable" json:"enable" yaml:"enable"`
-	Addr   string `toml:"addr" mapstructure:"addr" json:"addr" yaml:"addr"`
-	Base   string `toml:"base" mapstructure:"base" json:"base" yaml:"base"` // https://example.com/some-reserve-path
-	// rate limit
-	Limit            LimiterConfig     `toml:"limit" mapstructure:"limit" json:"limit" yaml:"limit"`
 	Site             SiteConfig        `toml:"site" mapstructure:"site" json:"site" yaml:"site"`
-	StoragePathRules []StoragePathRule `toml:"storage_path_rule" mapstructure:"storage_path_rule" json:"storage_path_rule" yaml:"storage_path_rule"`
+	Addr             string            `toml:"addr" mapstructure:"addr" json:"addr" yaml:"addr"`
+	Base             string            `toml:"base" mapstructure:"base" json:"base" yaml:"base"` // https://example.com/some-reserve-path
 	GeoIPDB          string            `toml:"geoip_db" mapstructure:"geoip_db" json:"geoip_db" yaml:"geoip_db"`
-	Cache            RestCacheConfig   `toml:"cache" mapstructure:"cache" json:"cache" yaml:"cache"`
+	StoragePathRules []StoragePathRule `toml:"storage_path_rule" mapstructure:"storage_path_rule" json:"storage_path_rule" yaml:"storage_path_rule"`
+	// rate limit
+	Limit  LimiterConfig   `toml:"limit" mapstructure:"limit" json:"limit" yaml:"limit"`
+	Cache  RestCacheConfig `toml:"cache" mapstructure:"cache" json:"cache" yaml:"cache"`
+	Enable bool            `toml:"enable" mapstructure:"enable" json:"enable" yaml:"enable"`
 }
 
 type RestCacheConfig struct {

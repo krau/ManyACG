@@ -10,9 +10,9 @@ import (
 )
 
 type Admin struct {
-	ID          ouid.OUID                              `gorm:"primaryKey;type:uuid" json:"id"`
-	TelegramID  int64                                  `gorm:"index" json:"telegram_id"`
 	Permissions datatypes.JSONSlice[shared.Permission] `json:"permissions"`
+	TelegramID  int64                                  `gorm:"index" json:"telegram_id"`
+	ID          ouid.OUID                              `gorm:"primaryKey;type:uuid" json:"id"`
 }
 
 func (a *Admin) BeforeCreate(tx *gorm.DB) (err error) {

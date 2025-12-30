@@ -15,8 +15,8 @@ import (
 )
 
 type Yandere struct {
-	cfg       runtimecfg.SourceYandereConfig
 	reqClient *req.Client
+	cfg       runtimecfg.SourceYandereConfig
 }
 
 func Init() {

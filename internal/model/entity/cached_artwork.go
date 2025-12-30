@@ -13,20 +13,20 @@ var _ shared.ArtworkLike = (*CachedArtwork)(nil)
 var _ shared.ArtworkLike = (*CachedArtworkData)(nil)
 
 type CachedArtworkData struct {
+	Artist      *CachedArtist     `json:"artist"`
 	ID          string            `json:"id"`
 	Title       string            `json:"title"`
 	Description string            `json:"description"`
-	R18         bool              `json:"r18"`
 	SourceType  shared.SourceType `json:"source_type"`
 	SourceURL   string            `json:"source_url"`
 
-	Artist      *CachedArtist       `json:"artist"`
 	Tags        []string            `json:"tags"`
 	Pictures    []*CachedPicture    `json:"pictures"`
 	UgoiraMetas []*CachedUgoiraMeta `json:"ugoira_metas,omitempty"`
 	Videos      []*CachedVideo      `json:"videos,omitempty"`
 
-	Version int `json:"version"` // for future schema changes
+	Version int  `json:"version"` // for future schema changes
+	R18     bool `json:"r18"`
 }
 
 // FirstMedia implements [shared.ArtworkLike].
@@ -78,17 +78,17 @@ var _ shared.PictureLike = (*CachedPicture)(nil)
 var _ shared.VideoLike = (*CachedVideo)(nil)
 
 type CachedVideo struct {
+	TelegramInfo    shared.TelegramInfo  `json:"telegram_info"`
+	OriginalStorage shared.StorageDetail `json:"original_storage"`
 	ID              string               `json:"id"`
 	ArtworkID       string               `json:"artwork_id"`
-	OrderIndex      uint                 `json:"index"`
 	Poster          string               `json:"poster"`
 	URL             string               `json:"original"`
+	MimeType        string               `json:"mime_type"`
+	OrderIndex      uint                 `json:"index"`
 	Width           uint                 `json:"width"`
 	Height          uint                 `json:"height"`
 	Duration        uint                 `json:"duration"` // in milliseconds
-	MimeType        string               `json:"mime_type"`
-	OriginalStorage shared.StorageDetail `json:"original_storage"`
-	TelegramInfo    shared.TelegramInfo  `json:"telegram_info"`
 }
 
 // GetDuration implements [shared.VideoLike].
@@ -137,12 +137,12 @@ func (c *CachedVideo) GetWidth() uint {
 }
 
 type CachedUgoiraMeta struct {
+	TelegramInfo    shared.TelegramInfo   `json:"telegram_info"`
+	OriginalStorage shared.StorageDetail  `json:"original_storage"`
 	ID              string                `json:"id"`
 	ArtworkID       string                `json:"artwork_id"`
-	OrderIndex      uint                  `json:"index"`
 	MetaData        shared.UgoiraMetaData `json:"data"`
-	OriginalStorage shared.StorageDetail  `json:"original_storage"`
-	TelegramInfo    shared.TelegramInfo   `json:"telegram_info"`
+	OrderIndex      uint                  `json:"index"`
 }
 
 // GetIndex implements shared.UgoiraMetaLike.
@@ -242,20 +242,21 @@ func (c *CachedArtist) GetUserName() string {
 }
 
 type CachedPicture struct {
-	ID         string `json:"id"`
-	ArtworkID  string `json:"artwork_id"`
-	OrderIndex uint   `json:"index"`
-	Thumbnail  string `json:"thumbnail"`
-	Original   string `json:"original"`
-	Hidden     bool   `json:"hidden"` // 设为 true 时不发布到 Artwork 中, 但仍在其他接口中返回
-
-	Width     uint   `json:"width"`
-	Height    uint   `json:"height"`
-	Phash     string `json:"phash"`      // phash
-	ThumbHash string `json:"thumb_hash"` // thumbhash
-
 	StorageInfo  shared.StorageInfo  `json:"storage_info"`
 	TelegramInfo shared.TelegramInfo `json:"telegram_info"`
+	ID           string              `json:"id"`
+	ArtworkID    string              `json:"artwork_id"`
+	Thumbnail    string              `json:"thumbnail"`
+	Original     string              `json:"original"`
+	Phash        string              `json:"phash"`      // phash
+	ThumbHash    string              `json:"thumb_hash"` // thumbhash
+
+	OrderIndex uint `json:"index"`
+
+	Width  uint `json:"width"`
+	Height uint `json:"height"`
+	Hidden bool `json:"hidden"` // 设为 true 时不发布到 Artwork 中, 但仍在其他接口中返回
+
 }
 
 // IsHide implements PictureLike.
@@ -294,11 +295,11 @@ func (c *CachedPicture) GetThumbnail() string {
 }
 
 type CachedArtwork struct {
-	ID        ouid.OUID                              `gorm:"primaryKey;type:uuid" json:"id"`
-	SourceURL string                                 `gorm:"type:text;uniqueIndex" json:"source_url"`
 	CreatedAt time.Time                              `gorm:"autoCreateTime" json:"created_at"`
 	Artwork   datatypes.JSONType[*CachedArtworkData] `gorm:"type:json" json:"artwork"`
+	SourceURL string                                 `gorm:"type:text;uniqueIndex" json:"source_url"`
 	Status    shared.ArtworkStatus                   `gorm:"type:text;index" json:"status"`
+	ID        ouid.OUID                              `gorm:"primaryKey;type:uuid" json:"id"`
 }
 
 // FirstMedia implements [shared.ArtworkLike].

@@ -50,11 +50,11 @@ type KemonoPreview struct {
 }
 
 type KemonoVideo struct {
-	Index     int    `json:"index"`
 	Path      string `json:"path"`
 	Name      string `json:"name"`
 	Extension string `json:"extension"`
 	Server    string `json:"server"` // cdn server, e.g. "https://n1.kemono.cr"
+	Index     int    `json:"index"`
 }
 
 var htmlRe = regexp.MustCompile("<[^>]+>")

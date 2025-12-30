@@ -140,8 +140,8 @@ func NewArtworkWithEvent(inner Artwork, eventBus EventBus[*dto.ArtworkEventItem]
 }
 
 type artworkEventItem struct {
-	typ EventType
 	ent *dto.ArtworkEventItem
+	typ EventType
 }
 
 // using in transaction, record events but not publish immediately

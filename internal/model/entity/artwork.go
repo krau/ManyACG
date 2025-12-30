@@ -12,19 +12,14 @@ import (
 var _ shared.ArtworkLike = (*Artwork)(nil)
 
 type Artwork struct {
-	// keep ObjectID as 24-hex string
-	ID          ouid.OUID         `gorm:"primaryKey;type:uuid" json:"id"`
+	CreatedAt time.Time `gorm:"not null;autoCreateTime;index:idx_artwork_created_at,sort:desc" json:"created_at"`
+	UpdatedAt time.Time `gorm:"not null;autoUpdateTime" json:"updated_at"`
+	Artist    *Artist   `gorm:"foreignKey:ArtistID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:SET NULL" json:"artist"`
+
 	Title       string            `gorm:"type:text;not null;index:idx_artwork_title,sort:asc" json:"title"`
 	Description string            `gorm:"type:text" json:"description"`
-	R18         bool              `gorm:"not null;default:false;index:idx_artwork_r18" json:"r18"`
-	CreatedAt   time.Time         `gorm:"not null;autoCreateTime;index:idx_artwork_created_at,sort:desc" json:"created_at"`
-	UpdatedAt   time.Time         `gorm:"not null;autoUpdateTime" json:"updated_at"`
 	SourceType  shared.SourceType `gorm:"type:text;not null;index:idx_artwork_source_type" json:"source_type"`
 	SourceURL   string            `gorm:"type:text;not null;uniqueIndex" json:"source_url"`
-	LikeCount   uint              `gorm:"not null;default:0" json:"like_count"`
-
-	ArtistID ouid.OUID `gorm:"type:uuid;index" json:"artist_id"`
-	Artist   *Artist   `gorm:"foreignKey:ArtistID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:SET NULL" json:"artist"`
 
 	// many2many relationship with tags
 	Tags []*Tag `gorm:"many2many:artwork_tags;constraint:OnDelete:CASCADE" json:"tags"`
@@ -34,7 +29,14 @@ type Artwork struct {
 	// one-to-many ugoira meta, usually only one
 	UgoiraMetas []*UgoiraMeta `gorm:"foreignKey:ArtworkID;constraint:OnDelete:CASCADE" json:"ugoira_meta,omitempty"`
 	// one-to-many videos
-	Videos []*Video `gorm:"foreignKey:ArtworkID;constraint:OnDelete:CASCADE" json:"videos"`
+	Videos    []*Video `gorm:"foreignKey:ArtworkID;constraint:OnDelete:CASCADE" json:"videos"`
+	LikeCount uint     `gorm:"not null;default:0" json:"like_count"`
+
+	// keep ObjectID as 24-hex string
+	ID ouid.OUID `gorm:"primaryKey;type:uuid" json:"id"`
+
+	ArtistID ouid.OUID `gorm:"type:uuid;index" json:"artist_id"`
+	R18      bool      `gorm:"not null;default:false;index:idx_artwork_r18" json:"r18"`
 }
 
 func (a *Artwork) FirstMedia() shared.MediaLike {

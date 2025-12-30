@@ -37,27 +37,27 @@ type Item struct {
 }
 
 type PixivAjaxResp struct {
-	Err     bool               `json:"error"`
-	Message string             `json:"message"`
 	Body    *PixivAjaxRespBody `json:"body"`
+	Message string             `json:"message"`
+	Err     bool               `json:"error"`
 }
 
 type PixivAjaxRespBody struct {
-	IllustId   string `json:"illustId"`
-	IlustTitle string `json:"illustTitle"`
-	IllustType int    `json:"illustType"` // 2: ugoira (动图) 0: 普通图片
-	Urls       struct {
+	Urls struct {
 		Mini     string `json:"mini"`
 		Thumb    string `json:"thumb"`
 		Small    string `json:"small"`
 		Regular  string `json:"regular"`
 		Original string `json:"original"`
 	} `json:"urls"`
-	Tags        PixivAjaxRespBodyTags `json:"tags"`
+	IllustId    string                `json:"illustId"`
+	IlustTitle  string                `json:"illustTitle"`
 	UserId      string                `json:"userId"`
 	Username    string                `json:"userName"`
 	UserAccount string                `json:"userAccount"`
 	Description string                `json:"description"`
+	Tags        PixivAjaxRespBodyTags `json:"tags"`
+	IllustType  int                   `json:"illustType"` // 2: ugoira (动图) 0: 普通图片
 }
 
 type PixivAjaxRespBodyTags struct {
@@ -65,9 +65,9 @@ type PixivAjaxRespBodyTags struct {
 }
 
 type PixivAjaxRespBodyTagsTag struct {
-	// 返回里确实就是这么套的
-	Tag         string                           `json:"tag"`
 	Translation *PixivAjaxRespBodyTagTranslation `json:"translation"`
+	// 返回里确实就是这么套的
+	Tag string `json:"tag"`
 }
 
 type PixivAjaxRespBodyTagTranslation struct {
@@ -75,9 +75,9 @@ type PixivAjaxRespBodyTagTranslation struct {
 }
 
 type PixivIllustPages struct {
-	Err     bool                    `json:"error"`
 	Message string                  `json:"message"`
 	Body    []*PixivIllustPagesBody `json:"body"`
+	Err     bool                    `json:"error"`
 }
 
 type PixivIllustPagesBody struct {
@@ -92,9 +92,9 @@ type PixivIllustPagesBody struct {
 }
 
 type PixivUgoiraMeta struct {
-	Error   bool                 `json:"error"`
-	Message string               `json:"message"`
 	Body    *PixivUgoiraMetaBody `json:"body"`
+	Message string               `json:"message"`
+	Error   bool                 `json:"error"`
 }
 
 type PixivUgoiraMetaBody struct {

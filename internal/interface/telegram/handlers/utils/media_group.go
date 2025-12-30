@@ -34,12 +34,12 @@ type MediaGroupResultMessage struct {
 
 // MediaItem represents a photo, ugoira or video for unified processing
 type MediaItem struct {
-	Type         MediaResultType
-	Index        int // original index in pictures, ugoiras or videos array
 	Picture      shared.PictureLike
 	Ugoira       shared.UgoiraMetaLike
 	Video        shared.VideoLike
 	TelegramInfo shared.TelegramInfo
+	Type         MediaResultType
+	Index        int // original index in pictures, ugoiras or videos array
 }
 
 func SendArtworkMediaGroup(

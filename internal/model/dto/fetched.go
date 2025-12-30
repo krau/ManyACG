@@ -12,17 +12,16 @@ import (
 // var _ shared.ArtistLike = (*FetchedArtist)(nil)
 
 type FetchedArtwork struct {
-	Title       string            `json:"title"`
-	Description string            `json:"description"`
-	R18         bool              `json:"r18"`
-	SourceType  shared.SourceType `json:"source_type"`
-	SourceURL   string            `json:"source_url"`
-
 	Artist      *FetchedArtist       `json:"artist"`
+	Title       string               `json:"title"`
+	Description string               `json:"description"`
+	SourceType  shared.SourceType    `json:"source_type"`
+	SourceURL   string               `json:"source_url"`
 	Tags        []string             `json:"tags"`
 	Pictures    []*FetchedPicture    `json:"pictures"`
 	UgoiraMetas []*FetchedUgoiraMeta `json:"ugoira_metas,omitempty"`
 	Videos      []*FetchedVideo      `json:"videos,omitempty"`
+	R18         bool                 `json:"r18"`
 }
 
 // // GetUgoiraMetas implements [shared.ArtworkLike].
@@ -79,9 +78,10 @@ type FetchedArtist struct {
 // }
 
 type FetchedPicture struct {
-	Index     uint   `json:"index"`
 	Thumbnail string `json:"thumbnail"`
 	Original  string `json:"original"`
+
+	Index uint `json:"index"`
 
 	Width  uint `json:"width"`
 	Height uint `json:"height"`
@@ -166,8 +166,8 @@ type FetchedPicture struct {
 // }
 
 type FetchedUgoiraMeta struct {
-	Index uint                  `json:"index"`
 	Data  shared.UgoiraMetaData `json:"data"`
+	Index uint                  `json:"index"`
 }
 
 // // GetIndex implements [shared.UgoiraMetaLike].
@@ -191,13 +191,13 @@ type FetchedUgoiraMeta struct {
 // }
 
 type FetchedVideo struct {
-	Index    uint   `json:"index"`
 	URL      string `json:"url"`
+	Poster   string `json:"poster"`
+	MimeType string `json:"mime_type"`
+	Index    uint   `json:"index"`
 	Width    uint   `json:"width"`
 	Height   uint   `json:"height"`
 	Duration uint   `json:"duration"` // in milliseconds
-	Poster   string `json:"poster"`
-	MimeType string `json:"mime_type"`
 }
 
 // // GetDuration implements [shared.VideoLike].

@@ -19,8 +19,8 @@ type Service struct {
 	searcher search.Searcher
 	tagger   tagging.Tagger
 	storages map[shared.StorageType]storage.Storage
-	storCfg  runtimecfg.StorageConfig
 	sources  map[shared.SourceType]source.ArtworkSource
+	storCfg  runtimecfg.StorageConfig
 }
 
 type Option func(*Service)
