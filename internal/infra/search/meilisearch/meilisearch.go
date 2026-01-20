@@ -22,13 +22,15 @@ type SearcherMeilisearch struct {
 // AddDocuments implements search.Searcher.
 func (m *SearcherMeilisearch) AddDocuments(ctx context.Context, docs []*dto.ArtworkSearchDocument) error {
 	primaryKey := "id"
-	_, err := m.client.AddDocumentsWithContext(ctx, docs, &primaryKey)
+	_, err := m.client.AddDocumentsWithContext(ctx, docs, &meilisearch.DocumentOptions{
+		PrimaryKey: &primaryKey,
+	})
 	return err
 }
 
 // DeleteDocuments implements search.Searcher.
 func (m *SearcherMeilisearch) DeleteDocuments(ctx context.Context, ids []string) error {
-	_, err := m.client.DeleteDocumentsWithContext(ctx, ids)
+	_, err := m.client.DeleteDocumentsWithContext(ctx, ids, nil)
 	return err
 }
 
