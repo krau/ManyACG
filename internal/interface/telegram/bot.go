@@ -11,6 +11,7 @@ import (
 	"github.com/krau/ManyACG/internal/infra/config/runtimecfg"
 	"github.com/krau/ManyACG/internal/infra/kvstor"
 	"github.com/krau/ManyACG/internal/interface/telegram/handlers"
+	"github.com/krau/ManyACG/internal/interface/telegram/handlers/utils"
 	"github.com/krau/ManyACG/internal/interface/telegram/metautil"
 	"github.com/krau/ManyACG/internal/service"
 	"github.com/krau/ManyACG/internal/shared"
@@ -25,10 +26,11 @@ import (
 )
 
 type BotApp struct {
-	bot  *telego.Bot
-	serv *service.Service
-	meta *metautil.MetaData
-	cfg  runtimecfg.TelegramConfig
+	bot              *telego.Bot
+	serv             *service.Service
+	meta             *metautil.MetaData
+	cfg              runtimecfg.TelegramConfig
+	artworkInfoQueue chan artworkInfoTask
 }
 
 func (app *BotApp) Bot() *telego.Bot {
@@ -217,12 +219,35 @@ func Init(ctx context.Context, serv *service.Service, cfg runtimecfg.TelegramCon
 	}
 	metaopts = append(metaopts, metautil.WithBotID(int64(botId)))
 	meta := metautil.NewMetaData(channelChatID, botUsername, metaopts...)
-	return &BotApp{
-		bot:  bot,
-		serv: serv,
-		meta: meta,
-		cfg:  cfg,
-	}, nil
+
+	artworkInfoQueue := make(chan artworkInfoTask, 100)
+	app := &BotApp{
+		bot:              bot,
+		serv:             serv,
+		meta:             meta,
+		cfg:              cfg,
+		artworkInfoQueue: artworkInfoQueue,
+	}
+
+	// Start artwork info task processor
+	go app.processArtworkInfoTasks(ctx)
+
+	return app, nil
+}
+
+func (app *BotApp) processArtworkInfoTasks(ctx context.Context) {
+	for {
+		select {
+		case <-ctx.Done():
+			log.Info("Stopping artwork info task processor")
+			return
+		case task := <-app.artworkInfoQueue:
+			err := utils.SendArtworkInfo(task.ctx, app.bot, app.meta, app.serv, task.sourceUrl, telegoutil.ID(task.chatID), utils.SendArtworkInfoOptions{AppendCaption: task.appendCaption, HasPermission: true})
+			if err != nil {
+				log.Errorf("Error when sending artwork info: %s", err)
+			}
+		}
+	}
 }
 
 func (app *BotApp) Run(ctx context.Context, serv *service.Service) {

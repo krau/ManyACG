@@ -14,7 +14,7 @@ const (
 )
 
 type TelegramBot interface {
-	SendArtworkInfo(ctx context.Context, sourceUrl string, chatID int64, appendCaption string) error
+	SendArtworkInfo(ctx context.Context, sourceUrl string, chatID int64, appendCaption string)
 }
 
 func GetState[T any](ctx fiber.Ctx, key string) (T, bool) {

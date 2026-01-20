@@ -26,6 +26,18 @@ func (b *BotApp) PostAndCreateArtwork(ctx context.Context, artwork *entity.Cache
 	return nil
 }
 
-func (b *BotApp) SendArtworkInfo(ctx context.Context, sourceUrl string, chatID int64, appendCaption string) error {
-	return utils.SendArtworkInfo(ctx, b.bot, b.meta, b.serv, sourceUrl, telegoutil.ID(chatID), utils.SendArtworkInfoOptions{AppendCaption: appendCaption, HasPermission: true})
+type artworkInfoTask struct {
+	ctx           context.Context
+	sourceUrl     string
+	chatID        int64
+	appendCaption string
+}
+
+func (b *BotApp) SendArtworkInfo(ctx context.Context, sourceUrl string, chatID int64, appendCaption string) {
+	b.artworkInfoQueue <- artworkInfoTask{
+		ctx:           ctx,
+		sourceUrl:     sourceUrl,
+		chatID:        chatID,
+		appendCaption: appendCaption,
+	}
 }

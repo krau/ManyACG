@@ -1,6 +1,8 @@
 package handlers
 
 import (
+	"context"
+
 	"github.com/gofiber/fiber/v3"
 	"github.com/krau/ManyACG/internal/interface/rest/common"
 	"github.com/krau/ManyACG/internal/service"
@@ -38,8 +40,6 @@ func HandleSendArtworkInfoByTelegramBot(ctx fiber.Ctx) error {
 	if err := ctx.Bind().All(req); err != nil {
 		return err
 	}
-	if err := bot.SendArtworkInfo(ctx, req.SourceURL, req.ChatID, req.AppendCaption); err != nil {
-		return err
-	}
+	bot.SendArtworkInfo(context.Background(), req.SourceURL, req.ChatID, req.AppendCaption)
 	return ctx.JSON(common.NewSuccess("ok"))
 }
