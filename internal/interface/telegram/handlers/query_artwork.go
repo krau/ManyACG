@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"html"
 	"math/rand"
 	"strconv"
 	"strings"
@@ -72,7 +71,7 @@ func RandomPicture(ctx *telegohandler.Context, message telego.Message) error {
 	aw := artwork[0]
 	photo := telegoutil.
 		Photo(message.Chat.ChatID(), file.Value).
-		WithCaption(fmt.Sprintf("<a href=\"%s\">%s</a>", aw.SourceURL, html.EscapeString(aw.Title))).
+		WithCaption(fmt.Sprintf("<a href=\"%s\">%s</a>", aw.SourceURL, utils.EscapeHTML(aw.Title))).
 		WithParseMode(telego.ModeHTML).
 		WithReplyParameters(&telego.ReplyParameters{
 			MessageID: message.MessageID,
@@ -260,7 +259,7 @@ func handleSendResultArtworks(ctx context.Context, artworks []*entity.Artwork, m
 			photoURL := fmt.Sprintf("%s/?url=%s&w=2560&h=2560&we&output=jpg", runtimecfg.Get().Wsrv.URL, picture.Original)
 			file = telegoutil.FileFromURL(photoURL)
 		}
-		caption := fmt.Sprintf("<a href=\"%s\">%s</a>", artwork.SourceURL, html.EscapeString(artwork.Title))
+		caption := fmt.Sprintf("<a href=\"%s\">%s</a>", artwork.SourceURL, utils.EscapeHTML(artwork.Title))
 		inputMedias = append(inputMedias, telegoutil.MediaPhoto(file).WithCaption(caption).WithParseMode(telego.ModeHTML))
 	}
 	if len(inputMedias) == 0 {

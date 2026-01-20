@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"html"
 	"strconv"
 
 	"github.com/krau/ManyACG/internal/interface/telegram/handlers/utils"
@@ -60,7 +59,7 @@ func GetArtworkFiles(ctx *telegohandler.Context, message telego.Message) error {
 <b>使用 /files 命令回复一条含有图片或支持的链接的消息, 或在参数中提供作品链接, 将发送作品全部原图文件</b>
 
 命令语法: %s
-`, html.EscapeString("/files [作品链接]"))
+`, utils.EscapeHTML("/files [作品链接]"))
 			utils.ReplyMessageWithHTML(ctx, message, helpText)
 			return nil
 		}

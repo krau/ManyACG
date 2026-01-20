@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"html"
 	"strings"
 
 	"github.com/krau/ManyACG/internal/interface/telegram/handlers/utils"
@@ -89,7 +88,7 @@ func getDBSearchResultText(ctx context.Context, serv *service.Service, meta *met
 	for _, picture := range pictures {
 		text.WriteString(fmt.Sprintf("<a href=\"%s\">%s_%d</a>\n",
 			picture.Artwork.GetSourceURL(),
-			html.EscapeString(picture.Artwork.GetTitle()),
+			utils.EscapeHTML(picture.Artwork.GetTitle()),
 			picture.OrderIndex+1,
 		))
 		if meta.ChannelAvailable() && picture.TelegramInfo.Data().MessageID(meta.ChannelChatID().ID) != 0 {

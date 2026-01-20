@@ -3,7 +3,6 @@ package utils
 import (
 	"context"
 	"fmt"
-	"html"
 	"image"
 	"strings"
 
@@ -349,14 +348,14 @@ func doPostAndCreateArtwork(
 				return meta.ChannelMessageURL(pic.TelegramInfo.Data().MessageID(meta.ChannelChatID().ID))
 			}
 			return ent.SourceURL
-		}(), html.EscapeString(ent.Title), pic.OrderIndex))
+		}(), EscapeHTML(ent.Title), pic.OrderIndex))
 		for j, sim := range sims {
 			text.WriteString(fmt.Sprintf("\n\n%d - <a href='%s'>%s_%d</a>", j+1, func() string {
 				if meta.ChannelAvailable() {
 					return meta.ChannelMessageURL(sim.TelegramInfo.Data().MessageID(meta.ChannelChatID().ID))
 				}
 				return sim.Artwork.SourceURL
-			}(), html.EscapeString(sim.Artwork.Title), sim.OrderIndex))
+			}(), EscapeHTML(sim.Artwork.Title), sim.OrderIndex))
 		}
 		replyWaitMsg(text.String())
 	}

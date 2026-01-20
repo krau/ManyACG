@@ -3,7 +3,6 @@ package handlers
 import (
 	"encoding/json"
 	"fmt"
-	"html"
 
 	"github.com/krau/ManyACG/internal/interface/telegram/handlers/utils"
 	"github.com/krau/ManyACG/internal/service"
@@ -31,12 +30,12 @@ func DumpArtworkInfo(ctx *telegohandler.Context, message telego.Message) error {
 	}
 	artwork, err := serv.GetArtworkByURL(ctx, sourceURL)
 	if err != nil {
-		utils.ReplyMessageWithHTML(ctx, message, fmt.Sprintf("获取作品信息失败\n<code>%s</code>", html.EscapeString(err.Error())))
+		utils.ReplyMessageWithHTML(ctx, message, fmt.Sprintf("获取作品信息失败\n<code>%s</code>", utils.EscapeHTML(err.Error())))
 		return nil
 	}
 	artworkJSON, err := json.MarshalIndent(artwork, "", "  ")
 	if err != nil {
-		utils.ReplyMessageWithHTML(ctx, message, fmt.Sprintf("序列化作品信息失败\n<code>%s</code>", html.EscapeString(err.Error())))
+		utils.ReplyMessageWithHTML(ctx, message, fmt.Sprintf("序列化作品信息失败\n<code>%s</code>", utils.EscapeHTML(err.Error())))
 		return nil
 	}
 	_, err = ctx.Bot().SendDocument(ctx, telegoutil.Document(message.Chat.ChatID(),

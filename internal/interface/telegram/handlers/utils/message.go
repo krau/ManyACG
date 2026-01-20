@@ -2,7 +2,6 @@ package utils
 
 import (
 	"fmt"
-	"html"
 	"html/template"
 	"strings"
 
@@ -72,6 +71,17 @@ var tagCharsReplacer = strings.NewReplacer(
 	" ", "_",
 )
 
+var htmlEscapeReplacer = strings.NewReplacer(
+	`&`, "&amp;",
+	`<`, "&lt;",
+	`>`, "&gt;",
+)
+
+// https://core.telegram.org/bots/api#html-style
+func EscapeHTML(s string) string {
+	return htmlEscapeReplacer.Replace(s)
+}
+
 const defaultArtworkTemplate = `
 <a href='{{.SourceURL}}'><b>{{.Title}}</b></a> / <b>{{.ArtistName}}</b>
 {{- if .Description }}
@@ -105,9 +115,9 @@ func ArtworkHTMLCaption(artwork shared.ArtworkLike) string {
 	}
 
 	sourceUrl := artwork.GetSourceURL()
-	title := html.EscapeString(artwork.GetTitle())
-	artistName := html.EscapeString(artwork.GetArtist().GetName())
-	description := html.EscapeString(strutil.Ellipsis(artwork.GetDescription(), 500))
+	title := EscapeHTML(artwork.GetTitle())
+	artistName := EscapeHTML(artwork.GetArtist().GetName())
+	description := EscapeHTML(strutil.Ellipsis(artwork.GetDescription(), 500))
 
 	tags := ""
 	for _, tag := range artwork.GetTags() {
@@ -116,7 +126,7 @@ func ArtworkHTMLCaption(artwork shared.ArtworkLike) string {
 		}
 		tag = tagCharsReplacer.Replace(tag)
 		tag = strings.Trim(tag, "_")
-		tags += "#" + strings.TrimSpace(html.EscapeString(tag)) + " "
+		tags += "#" + strings.TrimSpace(EscapeHTML(tag)) + " "
 	}
 
 	cached, ok1 := artwork.(*entity.CachedArtwork)
@@ -151,9 +161,9 @@ func ArtworkHTMLCaption(artwork shared.ArtworkLike) string {
 func artworkHTMLCaptionFallback(artwork shared.ArtworkLike) string {
 	tmpl := "<a href='%s'><b>%s</b></a> / <b>%s</b>"
 	sourceUrl := artwork.GetSourceURL()
-	title := html.EscapeString(artwork.GetTitle())
-	artistName := html.EscapeString(artwork.GetArtist().GetName())
-	description := html.EscapeString(strutil.Ellipsis(artwork.GetDescription(), 500))
+	title := EscapeHTML(artwork.GetTitle())
+	artistName := EscapeHTML(artwork.GetArtist().GetName())
+	description := EscapeHTML(strutil.Ellipsis(artwork.GetDescription(), 500))
 
 	tags := ""
 	for _, tag := range artwork.GetTags() {
@@ -162,7 +172,7 @@ func artworkHTMLCaptionFallback(artwork shared.ArtworkLike) string {
 		}
 		tag = tagCharsReplacer.Replace(tag)
 		tag = strings.Trim(tag, "_")
-		tags += "#" + strings.TrimSpace(html.EscapeString(tag)) + " "
+		tags += "#" + strings.TrimSpace(EscapeHTML(tag)) + " "
 	}
 
 	args := []any{sourceUrl, title, artistName}
