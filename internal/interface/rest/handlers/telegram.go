@@ -31,7 +31,6 @@ func HandleSendArtworkInfoByTelegramBot(ctx fiber.Ctx) error {
 	if !keyEnt.CanUse() {
 		return common.NewError(fiber.StatusForbidden, "api key quota exceeded")
 	}
-	defer serv.IncreaseApiKeyUsed(ctx, key)
 	bot, ok := common.GetState[common.TelegramBot](ctx, common.StateKeyTelegramBot)
 	if !ok {
 		return fiber.ErrInternalServerError
@@ -40,6 +39,9 @@ func HandleSendArtworkInfoByTelegramBot(ctx fiber.Ctx) error {
 	if err := ctx.Bind().All(req); err != nil {
 		return err
 	}
+	go func() {
+		serv.IncreaseApiKeyUsed(context.Background(), key)
+	}()
 	bot.SendArtworkInfo(context.Background(), req.SourceURL, req.ChatID, req.AppendCaption)
 	return ctx.JSON(common.NewSuccess("ok"))
 }
