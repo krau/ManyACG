@@ -229,8 +229,9 @@ func Init(ctx context.Context, serv *service.Service, cfg runtimecfg.TelegramCon
 		artworkInfoQueue: artworkInfoQueue,
 	}
 
-	// Start artwork info task processor
-	go app.processArtworkInfoTasks(ctx)
+	for i := 0; i < 3; i++ {
+		go app.processArtworkInfoTasks(ctx)
+	}
 
 	return app, nil
 }

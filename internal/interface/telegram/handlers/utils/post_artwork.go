@@ -394,8 +394,8 @@ var (
 
 func init() {
 	const (
-		workerCount = 3
-		queueSize   = 17
+		workerCount = 5
+		queueSize   = 50
 	)
 	postArtworkTaskQueue = make(chan *postArtworkJob, queueSize)
 	for range workerCount {
@@ -407,7 +407,13 @@ func artworkPoster() {
 	for j := range postArtworkTaskQueue {
 		err := doPostAndCreateArtwork(j.ctx, j.bot, j.serv, j.meta, j.artwork, j.fromChatID, j.toChatID, j.messageID)
 		if j.done != nil {
-			j.done <- err
+			select {
+			case j.done <- err:
+			default:
+				if err != nil {
+					log.Warn("post artwork completed but caller not waiting", "err", err, "url", j.artwork.SourceURL)
+				}
+			}
 		}
 	}
 }

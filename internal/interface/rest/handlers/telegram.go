@@ -42,6 +42,6 @@ func HandleSendArtworkInfoByTelegramBot(ctx fiber.Ctx) error {
 	serv.IncreaseApiKeyUsed(ctx, key)
 	// current implement of SendArtworkInfo use a buffered channel, so it will return immediately and run in the background.
 	// thus we should use context.Background() here.
-	bot.SendArtworkInfo(context.Background(), req.SourceURL, req.ChatID, req.AppendCaption)
+	go bot.SendArtworkInfo(context.Background(), req.SourceURL, req.ChatID, req.AppendCaption)
 	return ctx.JSON(common.NewSuccess("ok"))
 }
