@@ -55,7 +55,7 @@ func Init(ctx context.Context, serv *service.Service, cfg runtimecfg.TelegramCon
 			ExponentBase: cfg.Retry.ExponentBase,
 			StartDelay:   time.Duration(cfg.Retry.StartDelay) * time.Second,
 			MaxDelay:     time.Duration(cfg.Retry.MaxDelay) * time.Second,
-			RateLimit:    telegoapi.RetryRateLimitWaitOrAbort,
+			RateLimit:    telegoapi.RetryRateLimitWait,
 		}),
 	)
 	if err != nil {

@@ -47,7 +47,7 @@ func (t *TelegramStorage) Init(ctx context.Context) error {
 			ExponentBase: t.cfg.Retry.ExponentBase,
 			StartDelay:   time.Duration(t.cfg.Retry.StartDelay) * time.Second,
 			MaxDelay:     time.Duration(t.cfg.Retry.MaxDelay) * time.Second,
-			RateLimit:    telegoapi.RetryRateLimitWaitOrAbort,
+			RateLimit:    telegoapi.RetryRateLimitWait,
 		}))
 	if err != nil {
 		return fmt.Errorf("failed to create telegram bot: %w", err)

@@ -96,10 +96,10 @@ func loadConfig() Config {
 		"wsrv.url": "https://wsrv.nl",
 
 		"telegram.api_url":             "https://api.telegram.org",
-		"telegram.retry.max_attempts":  5,
-		"telegram.retry.exponent_base": 2.0,
+		"telegram.retry.max_attempts":  50,
+		"telegram.retry.exponent_base": 1.5,
 		"telegram.retry.start_delay":   3,
-		"telegram.retry.max_delay":     300,
+		"telegram.retry.max_delay":     600,
 
 		"rest.site.title":        "ManyACG - Kawaii is all you need",
 		"rest.site.desc":         "ACG Image Collector and Gallery Server",
@@ -107,10 +107,10 @@ func loadConfig() Config {
 		"rest.cache.default_ttl": 600, // 10 minutes
 
 		"storage.telegram.api_url":             "https://api.telegram.org",
-		"storage.telegram.retry.max_attempts":  5,
-		"storage.telegram.retry.exponent_base": 2.0,
+		"storage.telegram.retry.max_attempts":  50,
+		"storage.telegram.retry.exponent_base": 1.5,
 		"storage.telegram.retry.start_delay":   3,
-		"storage.telegram.retry.max_delay":     300,
+		"storage.telegram.retry.max_delay":     600,
 		"storage.regular_length":               2560,
 		"storage.regular_format":               "webp",
 		"storage.thumb_length":                 500,
