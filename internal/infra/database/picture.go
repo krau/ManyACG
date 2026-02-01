@@ -54,18 +54,19 @@ func (d *DB) QueryPicturesByPhash(ctx context.Context, que query.PicturesPhash) 
 	if err != nil {
 		return nil, err
 	}
-
-	var pictures []entity.Picture
-	err = d.db.WithContext(ctx).Model(&entity.Picture{}).
-		Where("phash IS NOT NULL AND phash <> ''").
-		Preload("Artwork").
-		Find(&pictures).Error
+	rows, err := d.db.WithContext(ctx).Model(&entity.Picture{}).
+		Where("phash IS NOT NULL AND phash <> ''").Rows()
 	if err != nil {
 		return nil, err
 	}
+	defer rows.Close()
 
 	var result []*entity.Picture
-	for _, pic := range pictures {
+	for rows.Next() {
+		var pic entity.Picture
+		if err := d.db.ScanRows(rows, &pic); err != nil {
+			return nil, err
+		}
 		if pic.Phash == "" {
 			continue
 		}
@@ -78,6 +79,11 @@ func (d *DB) QueryPicturesByPhash(ctx context.Context, que query.PicturesPhash) 
 			continue
 		}
 		if distance <= que.Distance {
+			aw, err := d.GetArtworkByID(ctx, pic.ArtworkID)
+			if err != nil {
+				continue
+			}
+			pic.Artwork = aw
 			result = append(result, &pic)
 			if que.Limit > 0 && len(result) >= que.Limit {
 				break
