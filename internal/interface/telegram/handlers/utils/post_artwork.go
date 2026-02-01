@@ -398,7 +398,7 @@ var (
 
 func init() {
 	const (
-		workerCount = 5
+		workerCount = 3
 		queueSize   = 50
 	)
 	postArtworkTaskQueue = make(chan *postArtworkJob, queueSize)
@@ -433,7 +433,7 @@ func PostAndCreateArtwork(
 	messageID int,
 ) error {
 	done := make(chan error, 1)
-	postArtworkTaskQueue <- &postArtworkJob{
+	job := &postArtworkJob{
 		ctx:        ctx,
 		bot:        bot,
 		serv:       serv,
@@ -444,5 +444,11 @@ func PostAndCreateArtwork(
 		messageID:  messageID,
 		done:       done,
 	}
-	return <-done
+	
+	select {
+	case postArtworkTaskQueue <- job:
+		return <-done
+	case <-ctx.Done():
+		return ctx.Err()
+	}
 }
