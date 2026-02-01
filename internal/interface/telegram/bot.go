@@ -229,9 +229,7 @@ func Init(ctx context.Context, serv *service.Service, cfg runtimecfg.TelegramCon
 		artworkInfoQueue: artworkInfoQueue,
 	}
 
-	for i := 0; i < 3; i++ {
-		go app.processArtworkInfoTasks(ctx)
-	}
+	go app.processArtworkInfoTasks(ctx)
 
 	return app, nil
 }
@@ -272,6 +270,7 @@ func (app *BotApp) Run(ctx context.Context, serv *service.Service) {
 	}
 	go func() {
 		<-ctx.Done()
+		log.Info("Shutting down telegram bot...")
 		stopCtx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
 		defer cancel()
 		if err := botHandler.StopWithContext(stopCtx); err != nil {
@@ -292,12 +291,5 @@ func (app *BotApp) Run(ctx context.Context, serv *service.Service) {
 	handlers.New(app.meta, serv).Register(baseGroup)
 	if err := botHandler.Start(); err != nil {
 		log.Fatalf("Error when starting bot handler: %s", err)
-	}
-	<-ctx.Done()
-	log.Info("Shutting down telegram bot...")
-	stopCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-	if err := botHandler.StopWithContext(stopCtx); err != nil {
-		log.Warnf("Error when stopping bot handler: %s", err)
 	}
 }

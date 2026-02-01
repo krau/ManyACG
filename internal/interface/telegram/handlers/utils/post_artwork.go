@@ -444,7 +444,7 @@ func PostAndCreateArtwork(
 		messageID:  messageID,
 		done:       done,
 	}
-	
+
 	select {
 	case postArtworkTaskQueue <- job:
 		return <-done
