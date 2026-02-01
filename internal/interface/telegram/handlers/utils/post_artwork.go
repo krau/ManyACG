@@ -354,7 +354,9 @@ func doPostAndCreateArtwork(
 		for j, sim := range sims {
 			text.WriteString(fmt.Sprintf("\n\n%d - <a href='%s'>%s_%d</a>", j+1, func() string {
 				if meta.ChannelAvailable() {
-					return meta.ChannelMessageURL(sim.TelegramInfo.Data().MessageID(meta.ChannelChatID().ID))
+					if msgId := sim.TelegramInfo.Data().MessageID(meta.ChannelChatID().ID); msgId != 0 {
+						return meta.ChannelMessageURL(msgId)
+					}
 				}
 				return sim.Artwork.SourceURL
 			}(), EscapeHTML(sim.Artwork.Title), sim.OrderIndex))
