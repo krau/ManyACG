@@ -28,7 +28,7 @@ require (
 	github.com/oschwald/geoip2-golang v1.13.0
 	github.com/redis/rueidis v1.0.69
 	github.com/rhysd/go-github-selfupdate v1.2.3
-	github.com/samber/oops v1.19.4
+	github.com/samber/oops v1.21.0
 	github.com/spf13/cobra v1.10.2
 	github.com/spf13/viper v1.21.0
 	github.com/studio-b12/gowebdav v0.11.0
@@ -52,8 +52,8 @@ require (
 	github.com/andybalholm/cascadia v1.3.3 // indirect
 	github.com/aymanbagabas/go-osc52/v2 v2.0.1 // indirect
 	github.com/bytedance/gopkg v0.1.3 // indirect
-	github.com/bytedance/sonic v1.14.2 // indirect
-	github.com/bytedance/sonic/loader v0.4.0 // indirect
+	github.com/bytedance/sonic v1.15.0 // indirect
+	github.com/bytedance/sonic/loader v0.5.0 // indirect
 	github.com/charmbracelet/colorprofile v0.3.3 // indirect
 	github.com/charmbracelet/lipgloss v1.1.0 // indirect
 	github.com/charmbracelet/x/ansi v0.11.2 // indirect
