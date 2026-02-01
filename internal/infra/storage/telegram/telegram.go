@@ -52,20 +52,12 @@ func (t *TelegramStorage) Init(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("failed to create telegram bot: %w", err)
 	}
-	_, err = t.bot.GetMe(ctx)
-	if err != nil {
-		return fmt.Errorf("failed to get bot info: %w", err)
-	}
 	return nil
 }
 
 func (t *TelegramStorage) Save(ctx context.Context, r io.Reader, storPath string) (*shared.StorageDetail, error) {
 	var msg *telego.Message
 	var err error
-	// fileBytes, err := os.ReadFile(filePath)
-	// if err != nil {
-	// 	return nil, ErrReadFile
-	// }
 	msg, err = t.bot.SendDocument(ctx,
 		telegoutil.Document(t.chatID,
 			telegoutil.File(telegoutil.NameReader(r, path.Base(storPath)))).WithDisableContentTypeDetection())
@@ -84,8 +76,6 @@ func (t *TelegramStorage) Save(ctx context.Context, r io.Reader, storPath string
 	if err != nil {
 		return nil, ErrFailedMarshalFileMessage
 	}
-	// cachePath := filepath.Join(config.Get().Storage.CacheDir, strutil.MD5Hash(fileMessage.FileID))
-	// go osutil.MkCache(cachePath, fileBytes, time.Duration(config.Get().Storage.CacheTTL)*time.Second)
 	return &shared.StorageDetail{
 		Type: shared.StorageTypeTelegram,
 		Path: string(data),
