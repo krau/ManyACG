@@ -345,7 +345,9 @@ func doPostAndCreateArtwork(
 		var text strings.Builder
 		text.WriteString(fmt.Sprintf("检测到 %d 张与作品 <a href='%s'>%s 第 %d 张图片</a>相似的图片", len(sims), func() string {
 			if meta.ChannelAvailable() { // 非 telegram handler context 下 meta 可能为 nil
-				return meta.ChannelMessageURL(pic.TelegramInfo.Data().MessageID(meta.ChannelChatID().ID))
+				if msgId := pic.TelegramInfo.Data().MessageID(meta.ChannelChatID().ID); msgId != 0 {
+					return meta.ChannelMessageURL(msgId)
+				}
 			}
 			return ent.SourceURL
 		}(), EscapeHTML(ent.Title), pic.OrderIndex))
