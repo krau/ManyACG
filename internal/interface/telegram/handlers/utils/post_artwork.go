@@ -380,46 +380,13 @@ func doPostAndCreateArtwork(
 	return nil
 }
 
-type postArtworkJob struct {
-	ctx        context.Context
-	bot        *telego.Bot
-	serv       *service.Service
-	meta       *metautil.MetaData
-	artwork    *entity.CachedArtworkData
-	done       chan error
-	fromChatID telego.ChatID
-	toChatID   telego.ChatID
-	messageID  int
-}
-
 var (
-	postArtworkTaskQueue chan *postArtworkJob
+	postArtworkSemaphore chan struct{}
 )
 
 func init() {
-	const (
-		workerCount = 3
-		queueSize   = 50
-	)
-	postArtworkTaskQueue = make(chan *postArtworkJob, queueSize)
-	for range workerCount {
-		go artworkPoster()
-	}
-}
-
-func artworkPoster() {
-	for j := range postArtworkTaskQueue {
-		err := doPostAndCreateArtwork(j.ctx, j.bot, j.serv, j.meta, j.artwork, j.fromChatID, j.toChatID, j.messageID)
-		if j.done != nil {
-			select {
-			case j.done <- err:
-			default:
-				if err != nil {
-					log.Warn("post artwork completed but caller not waiting", "err", err, "url", j.artwork.SourceURL)
-				}
-			}
-		}
-	}
+	const maxConcurrentPosts = 3
+	postArtworkSemaphore = make(chan struct{}, maxConcurrentPosts)
 }
 
 func PostAndCreateArtwork(
@@ -432,22 +399,10 @@ func PostAndCreateArtwork(
 	toChatID telego.ChatID,
 	messageID int,
 ) error {
-	done := make(chan error, 1)
-	job := &postArtworkJob{
-		ctx:        ctx,
-		bot:        bot,
-		serv:       serv,
-		meta:       meta,
-		artwork:    artwork,
-		fromChatID: fromChatID,
-		toChatID:   toChatID,
-		messageID:  messageID,
-		done:       done,
-	}
-
 	select {
-	case postArtworkTaskQueue <- job:
-		return <-done
+	case postArtworkSemaphore <- struct{}{}:
+		defer func() { <-postArtworkSemaphore }()
+		return doPostAndCreateArtwork(ctx, bot, serv, meta, artwork, fromChatID, toChatID, messageID)
 	case <-ctx.Done():
 		return ctx.Err()
 	}
