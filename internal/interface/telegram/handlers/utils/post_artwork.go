@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"image"
 	"strings"
+	"time"
 
 	"github.com/gabriel-vasile/mimetype"
 	"github.com/krau/ManyACG/internal/common/httpclient"
@@ -316,7 +317,9 @@ func doPostAndCreateArtwork(
 	}
 	editReplyMarkupText("已发布到频道, 正在检测重复图片...")
 	for i, pic := range ent.Pictures {
-		similars, err := serv.QueryPicturesByPhash(ctx, query.PicturesPhash{Input: pic.Phash, Distance: 10, Limit: 20})
+		queryCtx, cancel := context.WithTimeout(ctx, time.Minute)
+		defer cancel()
+		similars, err := serv.QueryPicturesByPhash(queryCtx, query.PicturesPhash{Input: pic.Phash, Distance: 10, Limit: 20})
 		if err != nil {
 			log.Error("failed to query pictures by phash", "phash", pic.Phash, "err", err)
 			editReplyMarkupText(fmt.Sprintf("检测第%d张图片重复失败, 作品已发布", i+1))
