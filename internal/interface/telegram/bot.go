@@ -17,12 +17,12 @@ import (
 	"github.com/krau/ManyACG/internal/shared"
 	"github.com/krau/ManyACG/internal/shared/errs"
 	"github.com/krau/ManyACG/pkg/log"
-	"github.com/samber/oops"
-
+	telegoapiwrapper "github.com/krau/ManyACG/pkg/telegoapi"
 	"github.com/mymmrac/telego"
 	"github.com/mymmrac/telego/telegoapi"
 	"github.com/mymmrac/telego/telegohandler"
 	"github.com/mymmrac/telego/telegoutil"
+	"github.com/samber/oops"
 )
 
 type BotApp struct {
@@ -49,7 +49,7 @@ func Init(ctx context.Context, serv *service.Service, cfg runtimecfg.TelegramCon
 			LogFile:   "logs/telegram.log",
 		})),
 		telego.WithAPIServer(apiUrl),
-		telego.WithAPICaller(&telegoapi.RetryCaller{
+		telego.WithAPICaller(&telegoapiwrapper.RetryRateLimitCaller{
 			Caller:       telegoapi.DefaultFastHTTPCaller,
 			MaxAttempts:  cfg.Retry.MaxAttempts,
 			ExponentBase: cfg.Retry.ExponentBase,

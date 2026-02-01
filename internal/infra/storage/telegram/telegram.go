@@ -12,6 +12,7 @@ import (
 	config "github.com/krau/ManyACG/internal/infra/config/runtimecfg"
 	"github.com/krau/ManyACG/internal/infra/storage"
 	"github.com/krau/ManyACG/internal/shared"
+	telegoapiwrapper "github.com/krau/ManyACG/pkg/telegoapi"
 	"github.com/mymmrac/telego"
 	"github.com/mymmrac/telego/telegoapi"
 	"github.com/mymmrac/telego/telegoutil"
@@ -41,7 +42,7 @@ func (t *TelegramStorage) Init(ctx context.Context) error {
 	t.chatID = telegoutil.ID(t.cfg.ChatID)
 	var err error
 	t.bot, err = telego.NewBot(t.cfg.Token, telego.WithAPIServer(t.cfg.ApiUrl),
-		telego.WithAPICaller(&telegoapi.RetryCaller{
+		telego.WithAPICaller(&telegoapiwrapper.RetryRateLimitCaller{
 			Caller:       telegoapi.DefaultFastHTTPCaller,
 			MaxAttempts:  t.cfg.Retry.MaxAttempts,
 			ExponentBase: t.cfg.Retry.ExponentBase,
