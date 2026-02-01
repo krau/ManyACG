@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"image"
 	"strings"
-	"time"
 
 	"github.com/gabriel-vasile/mimetype"
 	"github.com/krau/ManyACG/internal/common/httpclient"
@@ -321,11 +320,7 @@ func doPostAndCreateArtwork(
 		return oops.Wrapf(err, "failed to get artwork by url for duplicate picture check")
 	}
 	for i, pic := range newEnt.Pictures {
-		// [TODO] 不知道为啥线上的时候这里非常慢, 在其他地方同样是调用 QueryPicturesByPhash 却很快
-		// 只能先做个超时了
-		queryCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
-		similars, err := serv.QueryPicturesByPhash(queryCtx, query.PicturesPhash{Input: pic.Phash, Distance: 10, Limit: 20})
-		cancel()
+		similars, err := serv.QueryPicturesByPhash(ctx, query.PicturesPhash{Input: pic.Phash, Distance: 10, Limit: 20})
 		if err != nil {
 			log.Error("failed to query pictures by phash", "phash", pic.Phash, "err", err)
 			editReplyMarkupText(fmt.Sprintf("检测第%d张图片重复失败, 作品已发布", i+1))
@@ -372,6 +367,7 @@ func doPostAndCreateArtwork(
 		}
 		replyWaitMsg(text.String())
 	}
+	log.Debug("similar picture detection completed", "artwork_id", ent.ID)
 	// recaption the posted message
 	ent, err = serv.GetArtworkByURL(ctx, artwork.SourceURL)
 	if err != nil {
