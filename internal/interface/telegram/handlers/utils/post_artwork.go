@@ -63,19 +63,21 @@ func doPostAndCreateArtwork(
 		if !showProgress {
 			return
 		}
-		if useEdit {
-			_, err := bot.SendMessage(ctx, telegoutil.Message(fromChatID, text).WithReplyParameters(&telego.ReplyParameters{
-				MessageID: messageID,
-			}).WithParseMode(telego.ModeHTML))
+		go func() {
+			if useEdit {
+				_, err := bot.SendMessage(ctx, telegoutil.Message(fromChatID, text).WithReplyParameters(&telego.ReplyParameters{
+					MessageID: messageID,
+				}).WithParseMode(telego.ModeHTML))
+				if err != nil {
+					log.Warn("failed to send reply wait message", "err", err)
+				}
+				return
+			}
+			_, err := bot.SendMessage(ctx, telegoutil.Message(fromChatID, text).WithParseMode(telego.ModeHTML))
 			if err != nil {
 				log.Warn("failed to send reply wait message", "err", err)
 			}
-			return
-		}
-		_, err := bot.SendMessage(ctx, telegoutil.Message(fromChatID, text).WithParseMode(telego.ModeHTML))
-		if err != nil {
-			log.Warn("failed to send reply wait message", "err", err)
-		}
+		}()
 	}
 
 	editReplyMarkupText("正在存储资源...")
