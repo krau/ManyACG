@@ -14,6 +14,7 @@ import (
 	"github.com/krau/ManyACG/internal/service"
 	"github.com/krau/ManyACG/internal/shared"
 	"github.com/krau/ManyACG/internal/shared/errs"
+	"github.com/krau/ManyACG/pkg/ioutil"
 	"github.com/krau/ManyACG/pkg/log"
 	"github.com/mymmrac/telego"
 	"github.com/mymmrac/telego/telegohandler"
@@ -95,211 +96,193 @@ func getArtworkFiles(ctx *telegohandler.Context,
 		}()
 	}
 	var errs []error
-	for i, picture := range artwork.GetPictures() {
-		err := func() error {
-			buildDocument := func() (*telego.SendDocumentParams, func() error, error) {
-				file, err := utils.GetPictureDocumentInputFile(ctx, serv, meta, artwork, picture)
-				if err != nil {
-					return nil, nil, oops.Wrapf(err, "failed to get picture document input file")
-				}
-				document := telegoutil.Document(message.Chat.ChatID(), file.Value).
-					WithReplyParameters(&telego.ReplyParameters{
-						MessageID: message.MessageID,
-					}).WithCaption(artwork.GetTitle() + "_" + strconv.Itoa(i+1)).WithDisableContentTypeDetection()
-				if meta.ChannelAvailable() && picture.GetTelegramInfo().MessageID(meta.ChannelChatID().ID) != 0 {
-					document.WithReplyMarkup(telegoutil.InlineKeyboard([]telego.InlineKeyboardButton{
-						telegoutil.InlineKeyboardButton("详情").WithURL(meta.ChannelMessageURL(picture.GetTelegramInfo().MessageID(meta.ChannelChatID().ID))),
-					}))
-				} else {
-					document.WithReplyMarkup(telegoutil.InlineKeyboard([]telego.InlineKeyboardButton{
-						telegoutil.InlineKeyboardButton("详情").WithURL(artwork.GetSourceURL()),
-					}))
-				}
-				return document, file.Close, nil
-			}
 
-			document, close, err := buildDocument()
-			if err != nil {
-				return oops.Wrapf(err, "failed to build document")
+	type fileMediaItem struct {
+		picture shared.PictureLike
+		ugoira  shared.UgoiraMetaLike
+		video   shared.VideoLike
+		index   int
+		kind    string
+	}
+	const (
+		fileMediaPicture = "picture"
+		fileMediaUgoira  = "ugoira"
+		fileMediaVideo   = "video"
+	)
+
+	items := make([]fileMediaItem, 0)
+	for i, picture := range artwork.GetPictures() {
+		items = append(items, fileMediaItem{picture: picture, index: i, kind: fileMediaPicture})
+	}
+	for i, ugoira := range artwork.GetUgoiraMetas() {
+		items = append(items, fileMediaItem{ugoira: ugoira, index: i, kind: fileMediaUgoira})
+	}
+	for i, video := range artwork.GetVideos() {
+		items = append(items, fileMediaItem{video: video, index: i, kind: fileMediaVideo})
+	}
+	if len(items) == 0 {
+		return nil
+	}
+
+	var cachedData *entity.CachedArtworkData
+	var cachedUpdated bool
+	getCachedData := func() (*entity.CachedArtworkData, error) {
+		if cachedData != nil {
+			return cachedData, nil
+		}
+		cached, err := serv.GetCachedArtworkByURL(ctx, artwork.GetSourceURL())
+		if err != nil {
+			return nil, oops.Wrapf(err, "failed to get cached artwork by url: %s", artwork.GetSourceURL())
+		}
+		cachedData = cached.Artwork.Data()
+		return cachedData, nil
+	}
+
+	sendBatch := func(start, end int) error {
+		inputs := make([]telego.InputMedia, 0, end-start)
+		closers := make([]func() error, 0, end-start)
+		for i := start; i < end; i++ {
+			item := items[i]
+			var file *ioutil.Closer[telego.InputFile]
+			var err error
+			switch item.kind {
+			case fileMediaPicture:
+				file, err = utils.GetPictureDocumentInputFile(ctx, serv, meta, artwork, item.picture)
+			case fileMediaUgoira:
+				file, err = utils.GetUgoiraVideoDocumentInputFile(ctx, serv, meta, artwork, item.ugoira)
+			case fileMediaVideo:
+				file, err = utils.GetVideoDocumentInputFile(ctx, serv, meta, artwork, item.video)
+			default:
+				err = oops.Errorf("unknown media kind: %s", item.kind)
 			}
-			defer close()
-			documentMessage, err := ctx.Bot().SendDocument(ctx, document)
 			if err != nil {
-				ctx.Bot().SendMessage(ctx, telegoutil.Messagef(
-					message.Chat.ChatID(),
-					"发送第 %d 张图片时失败",
-					i+1,
-				).WithReplyParameters(&telego.ReplyParameters{
-					MessageID: message.MessageID,
-				}))
-				return oops.Wrapf(err, "failed to send document")
+				for _, close := range closers {
+					close()
+				}
+				return err
 			}
-			if documentMessage != nil && documentMessage.Document != nil {
-				switch pic := picture.(type) {
+			closers = append(closers, file.Close)
+			caption := artwork.GetTitle() + "_" + strconv.Itoa(item.index+1)
+			doc := telegoutil.MediaDocument(file.Value).
+				WithCaption(caption).
+				WithDisableContentTypeDetection()
+			inputs = append(inputs, telego.InputMedia(doc))
+		}
+		defer func() {
+			for _, close := range closers {
+				close()
+			}
+		}()
+
+		group := telegoutil.MediaGroup(message.Chat.ChatID(), inputs...).WithReplyParameters(&telego.ReplyParameters{
+			MessageID: message.MessageID,
+		})
+		msgs, err := ctx.Bot().SendMediaGroup(ctx, group)
+		if err != nil {
+			return oops.Wrapf(err, "failed to send media group")
+		}
+
+		for i, msg := range msgs {
+			if msg.Document == nil {
+				continue
+			}
+			item := items[start+i]
+			switch item.kind {
+			case fileMediaPicture:
+				switch pic := item.picture.(type) {
 				case *entity.Picture:
 					tginfo := pic.GetTelegramInfo()
-					tginfo.SetFileID(meta.BotID(), shared.TelegramMediaTypeDocument, documentMessage.Document.FileID)
-					return serv.UpdatePictureTelegramInfo(ctx, pic.ID, &tginfo)
-				case *entity.CachedPicture:
-					cached, err := serv.GetCachedArtworkByURL(ctx, artwork.GetSourceURL())
-					if err != nil {
-						return oops.Wrapf(err, "failed to get cached artwork by url: %s", artwork.GetSourceURL())
+					tginfo.SetFileID(meta.BotID(), shared.TelegramMediaTypeDocument, msg.Document.FileID)
+					if err := serv.UpdatePictureTelegramInfo(ctx, pic.ID, &tginfo); err != nil {
+						return err
 					}
-					data := cached.Artwork.Data()
+				case *entity.CachedPicture:
+					data, err := getCachedData()
+					if err != nil {
+						return err
+					}
 					for _, p := range data.Pictures {
 						if p.Original == pic.GetOriginal() {
 							tginfo := pic.GetTelegramInfo()
-							tginfo.SetFileID(meta.BotID(), shared.TelegramMediaTypeDocument, documentMessage.Document.FileID)
+							tginfo.SetFileID(meta.BotID(), shared.TelegramMediaTypeDocument, msg.Document.FileID)
 							p.TelegramInfo = tginfo
-							return serv.UpdateCachedArtwork(ctx, data)
+							cachedUpdated = true
+							break
 						}
 					}
 				default:
 					log.Warnf("unknown picture type: %T", pic)
 				}
-			}
-			return nil
-		}()
-		if err != nil {
-			errs = append(errs, oops.Wrapf(err, "failed to send picture %d file", i+1))
-		}
-	}
-	for i, ugoira := range artwork.GetUgoiraMetas() {
-		err := func() error {
-			buildDocument := func() (*telego.SendDocumentParams, func() error, error) {
-				file, err := utils.GetUgoiraVideoDocumentInputFile(ctx, serv, meta, artwork, ugoira)
-				if err != nil {
-					return nil, nil, oops.Wrapf(err, "failed to get ugoira video document input file")
-				}
-				document := telegoutil.Document(message.Chat.ChatID(), file.Value).
-					WithReplyParameters(&telego.ReplyParameters{
-						MessageID: message.MessageID,
-					}).WithCaption(artwork.GetTitle() + "_" + strconv.Itoa(i+1)).WithDisableContentTypeDetection()
-				if meta.ChannelAvailable() && ugoira.GetTelegramInfo().MessageID(meta.ChannelChatID().ID) != 0 {
-					document.WithReplyMarkup(telegoutil.InlineKeyboard([]telego.InlineKeyboardButton{
-						telegoutil.InlineKeyboardButton("详情").WithURL(meta.ChannelMessageURL(ugoira.GetTelegramInfo().MessageID(meta.ChannelChatID().ID))),
-					}))
-				} else {
-					document.WithReplyMarkup(telegoutil.InlineKeyboard([]telego.InlineKeyboardButton{
-						telegoutil.InlineKeyboardButton("详情").WithURL(artwork.GetSourceURL()),
-					}))
-				}
-				return document, file.Close, nil
-			}
-			document, close, err := buildDocument()
-			if err != nil {
-				return oops.Wrapf(err, "failed to build document")
-			}
-			defer close()
-			documentMessage, err := ctx.Bot().SendDocument(ctx, document)
-			if err != nil {
-				ctx.Bot().SendMessage(ctx, telegoutil.Messagef(
-					message.Chat.ChatID(),
-					"发送第 %d 个动图时失败",
-					i+1,
-				).WithReplyParameters(&telego.ReplyParameters{
-					MessageID: message.MessageID,
-				}))
-				return oops.Wrapf(err, "failed to send document")
-			}
-			if documentMessage != nil && documentMessage.Document != nil {
-				switch ugo := ugoira.(type) {
+			case fileMediaUgoira:
+				switch ugo := item.ugoira.(type) {
 				case *entity.UgoiraMeta:
 					tginfo := ugo.GetTelegramInfo()
-					tginfo.SetFileID(meta.BotID(), shared.TelegramMediaTypeDocument, documentMessage.Document.FileID)
-					return serv.UpdateUgoiraTelegramInfo(ctx, ugo.ID, &tginfo)
-				case *entity.CachedUgoiraMeta:
-					cached, err := serv.GetCachedArtworkByURL(ctx, artwork.GetSourceURL())
-					if err != nil {
-						return oops.Wrapf(err, "failed to get cached artwork by url: %s", artwork.GetSourceURL())
+					tginfo.SetFileID(meta.BotID(), shared.TelegramMediaTypeDocument, msg.Document.FileID)
+					if err := serv.UpdateUgoiraTelegramInfo(ctx, ugo.ID, &tginfo); err != nil {
+						return err
 					}
-					data := cached.Artwork.Data()
+				case *entity.CachedUgoiraMeta:
+					data, err := getCachedData()
+					if err != nil {
+						return err
+					}
 					for _, u := range data.UgoiraMetas {
 						if u.MetaData.OriginalZip == ugo.MetaData.OriginalZip {
 							tginfo := ugo.GetTelegramInfo()
-							tginfo.SetFileID(meta.BotID(), shared.TelegramMediaTypeDocument, documentMessage.Document.FileID)
+							tginfo.SetFileID(meta.BotID(), shared.TelegramMediaTypeDocument, msg.Document.FileID)
 							u.TelegramInfo = tginfo
-							return serv.UpdateCachedArtwork(ctx, data)
+							cachedUpdated = true
+							break
 						}
 					}
 				default:
 					log.Warnf("unknown ugoira type: %T", ugo)
 				}
-			}
-			return nil
-		}()
-		if err != nil {
-			errs = append(errs, oops.Wrapf(err, "failed to send ugoira %d file", i+1))
-		}
-	}
-	for i, video := range artwork.GetVideos() {
-		err := func() error {
-			buildDocument := func() (*telego.SendDocumentParams, func() error, error) {
-				file, err := utils.GetVideoDocumentInputFile(ctx, serv, meta, artwork, video)
-				if err != nil {
-					return nil, nil, oops.Wrapf(err, "failed to get video document input file")
-				}
-				document := telegoutil.Document(message.Chat.ChatID(), file.Value).
-					WithReplyParameters(&telego.ReplyParameters{
-						MessageID: message.MessageID,
-					}).WithCaption(artwork.GetTitle() + "_" + strconv.Itoa(i+1)).
-					WithDisableContentTypeDetection()
-				if meta.ChannelAvailable() && video.GetTelegramInfo().MessageID(meta.ChannelChatID().ID) != 0 {
-					document.WithReplyMarkup(telegoutil.InlineKeyboard([]telego.InlineKeyboardButton{
-						telegoutil.InlineKeyboardButton("详情").WithURL(meta.ChannelMessageURL(video.GetTelegramInfo().MessageID(meta.ChannelChatID().ID))),
-					}))
-				} else {
-					document.WithReplyMarkup(telegoutil.InlineKeyboard([]telego.InlineKeyboardButton{
-						telegoutil.InlineKeyboardButton("详情").WithURL(artwork.GetSourceURL()),
-					}))
-				}
-				return document, file.Close, nil
-			}
-			document, close, err := buildDocument()
-			if err != nil {
-				return oops.Wrapf(err, "failed to build document")
-			}
-			defer close()
-			documentMessage, err := ctx.Bot().SendDocument(ctx, document)
-			if err != nil {
-				ctx.Bot().SendMessage(ctx, telegoutil.Messagef(
-					message.Chat.ChatID(),
-					"发送第 %d 个视频时失败",
-					i+1,
-				).WithReplyParameters(&telego.ReplyParameters{
-					MessageID: message.MessageID,
-				}))
-				return oops.Wrapf(err, "failed to send document")
-			}
-			if documentMessage != nil && documentMessage.Document != nil {
-				switch vid := video.(type) {
+			case fileMediaVideo:
+				switch vid := item.video.(type) {
 				case *entity.Video:
 					tginfo := vid.GetTelegramInfo()
-					tginfo.SetFileID(meta.BotID(), shared.TelegramMediaTypeDocument, documentMessage.Document.FileID)
-					return serv.UpdateVideoTelegramInfo(ctx, vid.ID, &tginfo)
-				case *entity.CachedVideo:
-					cached, err := serv.GetCachedArtworkByURL(ctx, artwork.GetSourceURL())
-					if err != nil {
-						return oops.Wrapf(err, "failed to get cached artwork by url: %s", artwork.GetSourceURL())
+					tginfo.SetFileID(meta.BotID(), shared.TelegramMediaTypeDocument, msg.Document.FileID)
+					if err := serv.UpdateVideoTelegramInfo(ctx, vid.ID, &tginfo); err != nil {
+						return err
 					}
-					data := cached.Artwork.Data()
+				case *entity.CachedVideo:
+					data, err := getCachedData()
+					if err != nil {
+						return err
+					}
 					for _, v := range data.Videos {
 						if v.URL == vid.URL {
 							tginfo := vid.GetTelegramInfo()
-							tginfo.SetFileID(meta.BotID(), shared.TelegramMediaTypeDocument, documentMessage.Document.FileID)
+							tginfo.SetFileID(meta.BotID(), shared.TelegramMediaTypeDocument, msg.Document.FileID)
 							v.TelegramInfo = tginfo
-							return serv.UpdateCachedArtwork(ctx, data)
+							cachedUpdated = true
+							break
 						}
 					}
 				default:
 					log.Warnf("unknown video type: %T", vid)
 				}
 			}
-			return nil
-		}()
-		if err != nil {
-			errs = append(errs, oops.Wrapf(err, "failed to send video %d file", i+1))
+		}
+		return nil
+	}
+
+	for i := 0; i < len(items); i += 10 {
+		end := i + 10
+		if end > len(items) {
+			end = len(items)
+		}
+		if err := sendBatch(i, end); err != nil {
+			errs = append(errs, oops.Wrapf(err, "failed to send files %d-%d", i+1, end))
 		}
 	}
+
+	if cachedUpdated && cachedData != nil {
+		if err := serv.UpdateCachedArtwork(ctx, cachedData); err != nil {
+			errs = append(errs, oops.Wrapf(err, "failed to update cached artwork"))
+		}
+	}
+
 	return oops.Join(errs...)
 }
