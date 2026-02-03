@@ -9,7 +9,7 @@ require (
 	github.com/cespare/xxhash/v2 v2.3.0
 	github.com/charmbracelet/log v0.4.2
 	github.com/corona10/goimagehash v1.1.0
-	github.com/cshum/vipsgen v1.2.1
+	github.com/cshum/vipsgen v1.3.1
 	github.com/dgraph-io/ristretto/v2 v2.3.0
 	github.com/duke-git/lancet/v2 v2.3.8
 	github.com/gabriel-vasile/mimetype v1.4.11
