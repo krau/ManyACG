@@ -7,7 +7,6 @@ import (
 	"github.com/krau/ManyACG/internal/shared"
 	"github.com/unvgo/ouid"
 	"gorm.io/gorm"
-	"gorm.io/gorm/clause"
 )
 
 func (d *DB) CreateArtwork(ctx context.Context, artwork *entity.Artwork) (*ouid.OUID, error) {
@@ -22,11 +21,7 @@ func (d *DB) CreateArtwork(ctx context.Context, artwork *entity.Artwork) (*ouid.
 func (d *DB) GetArtworkByID(ctx context.Context, id ouid.OUID) (*entity.Artwork, error) {
 	var artwork entity.Artwork
 	err := d.db.WithContext(ctx).Model(&entity.Artwork{}).
-		Preload("Tags.Alias").
-		Preload("Pictures", func(db *gorm.DB) *gorm.DB {
-			return db.Order("order_index ASC")
-		}).
-		Preload(clause.Associations).
+		Scopes(applyArtworkPreloads()).
 		Where("id = ?", id).
 		First(&artwork).Error
 	if err != nil {
@@ -41,11 +36,7 @@ func (d *DB) GetArtworksByIDs(ctx context.Context, ids []ouid.OUID) ([]*entity.A
 	}
 	var artworks []*entity.Artwork
 	err := d.db.WithContext(ctx).Model(&entity.Artwork{}).
-		Preload("Tags.Alias").
-		Preload("Pictures", func(db *gorm.DB) *gorm.DB {
-			return db.Order("order_index ASC")
-		}).
-		Preload(clause.Associations).
+		Scopes(applyArtworkPreloads()).
 		Where("id IN ?", ids).
 		Find(&artworks).Error
 	if err != nil {
@@ -57,11 +48,7 @@ func (d *DB) GetArtworksByIDs(ctx context.Context, ids []ouid.OUID) ([]*entity.A
 func (d *DB) GetArtworkByURL(ctx context.Context, url string) (*entity.Artwork, error) {
 	var artwork entity.Artwork
 	err := d.db.WithContext(ctx).Model(&entity.Artwork{}).
-		Preload("Tags.Alias").
-		Preload("Pictures", func(db *gorm.DB) *gorm.DB {
-			return db.Order("order_index ASC")
-		}).
-		Preload(clause.Associations).
+		Scopes(applyArtworkPreloads()).
 		Where("source_url = ?", url).
 		First(&artwork).Error
 	if err != nil {

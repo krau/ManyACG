@@ -52,6 +52,31 @@ func buildKeywordArgs(kw string) []any {
 	return []any{like, like, like, like, like}
 }
 
+type preloadOrder struct {
+	Association string
+	OrderBy     string
+}
+
+var artworkMediaPreloadOrders = []preloadOrder{
+	{Association: "Pictures", OrderBy: "order_index ASC"},
+	{Association: "UgoiraMetas", OrderBy: "order_index ASC"},
+	{Association: "Videos", OrderBy: "order_index ASC"},
+}
+
+func applyArtworkPreloads() func(db *gorm.DB) *gorm.DB {
+	return func(db *gorm.DB) *gorm.DB {
+		db = db.Preload("Tags.Alias")
+		for _, item := range artworkMediaPreloadOrders {
+			assoc := item.Association
+			orderBy := item.OrderBy
+			db = db.Preload(assoc, func(db *gorm.DB) *gorm.DB {
+				return db.Order(orderBy)
+			})
+		}
+		return db.Preload(clause.Associations)
+	}
+}
+
 func (d *DB) QueryArtworks(ctx context.Context, que query.ArtworksDB) ([]*entity.Artwork, error) {
 	// 基础过滤
 	baseQuery := d.db.WithContext(ctx).Model(&entity.Artwork{}).
@@ -100,12 +125,7 @@ func (d *DB) QueryArtworks(ctx context.Context, que query.ArtworksDB) ([]*entity
 		return nil, gorm.ErrRecordNotFound
 	}
 
-	dataQuery := baseQuery.
-		Preload("Tags.Alias").
-		Preload("Pictures", func(db *gorm.DB) *gorm.DB {
-			return db.Order("order_index ASC")
-		}).
-		Preload(clause.Associations)
+	dataQuery := baseQuery.Scopes(applyArtworkPreloads())
 
 	if que.Limit > 0 {
 		dataQuery = dataQuery.Limit(que.Limit)
