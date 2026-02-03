@@ -1,4 +1,4 @@
-//go:build !linux || !amd64 || without_vips
+//go:build !linux || !amd64 || novips
 
 package mediatool
 
