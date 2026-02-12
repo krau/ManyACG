@@ -21,7 +21,7 @@ RUN builtAt=${BUILT_AT:-$(date +'%F %T %z')} && \
     -X 'github.com/krau/ManyACG/internal/common/version.Version=$version'" && \
     vipsFlags="$(pkg-config --static --libs vips)" && \
     CGO_ENABLED=1 GOOS=linux GOARCH=amd64 \
-    go build -tags nodynamic,netgo \
+    go build -tags vips,nodynamic,netgo \
     -ldflags "-s -w $versionFlags -linkmode external -extldflags \"-static $vipsFlags\"" \
     -o manyacg
 
