@@ -191,6 +191,67 @@ func doPostAndCreateArtwork(
 		}
 	}
 
+	if serv.ShouldTagNewArtwork() {
+		editReplyMarkupText("正在推理作品标签...")
+		log.Info("predicting artwork tags before creation", "url", artwork.SourceURL, "title", artwork.Title)
+		predictedTags := make([]string, 0)
+		for i, pic := range artwork.Pictures {
+			err := func() error {
+				if detail := pic.StorageInfo.Original; detail != nil {
+					file, err := serv.StorageGetFile(ctx, *detail)
+					if err != nil {
+						return oops.Wrapf(err, "failed to get stored file for tagging")
+					}
+					defer file.Close()
+					result, err := serv.Tagger().Predict(ctx, file)
+					if err != nil {
+						return oops.Wrapf(err, "failed to predict tags")
+					}
+					for tag := range result {
+						predictedTags = append(predictedTags, tag)
+					}
+					return nil
+				}
+				file, err := httpclient.DownloadWithCache(ctx, pic.Original, nil)
+				if err != nil {
+					return oops.Wrapf(err, "failed to download picture for tagging")
+				}
+				defer file.Close()
+				result, err := serv.Tagger().Predict(ctx, file)
+				if err != nil {
+					return oops.Wrapf(err, "failed to predict tags")
+				}
+				for tag := range result {
+					predictedTags = append(predictedTags, tag)
+				}
+				return nil
+			}()
+			if err != nil {
+				log.Error("failed to predict tags for picture", "err", err, "index", i, "url", pic.Original)
+			}
+		}
+		if len(predictedTags) > 0 {
+			merged := make(map[string]struct{}, len(artwork.Tags)+len(predictedTags))
+			for _, t := range artwork.Tags {
+				merged[t] = struct{}{}
+			}
+			for _, t := range predictedTags {
+				merged[t] = struct{}{}
+			}
+			newTags := make([]string, 0, len(merged))
+			for t := range merged {
+				if t != "" {
+					newTags = append(newTags, t)
+				}
+			}
+			artwork.Tags = newTags
+			log.Info("predicted tags merged", "url", artwork.SourceURL, "predicted", len(predictedTags), "total", len(newTags))
+		}
+		if err := serv.UpdateCachedArtwork(ctx, artwork); err != nil {
+			log.Warn("failed to update cached artwork after tagging", "err", err)
+		}
+	}
+
 	editReplyMarkupText("正在发布到频道...")
 
 	results, err := SendArtworkMediaGroup(ctx, bot, serv, meta, toChatID, artwork)
@@ -292,30 +353,6 @@ func doPostAndCreateArtwork(
 	}
 	log.Info("created artwork", "id", ent.ID, "url", ent.SourceURL, "title", ent.Title, "pics", len(ent.Pictures))
 
-	if serv.ShouldTagNewArtwork() {
-		err := func() error {
-			log.Info("predicting artwork tags", "id", ent.ID, "title", ent.Title)
-			editReplyMarkupText("已发布到频道, 正在推理作品标签...")
-			if err := serv.PredictAndUpdateArtworkTags(ctx, ent.ID); err != nil {
-				return oops.Wrapf(err, "failed to predict and update artwork tags")
-			}
-			newEnt, err := serv.GetArtworkByURL(ctx, ent.SourceURL)
-			if err != nil {
-				return oops.Wrapf(err, "failed to get artwork by url after tagging")
-			}
-			caption := ArtworkHTMLCaption(newEnt)
-			bot.EditMessageCaption(ctx, telegoutil.
-				EditMessageCaption(toChatID,
-					ent.FirstMedia().GetTelegramInfo().MessageID(meta.ChannelChatID().ID),
-					caption).
-				WithParseMode(telego.ModeHTML))
-			return nil
-		}()
-		if err != nil {
-			log.Error("failed to predict artwork tags", "err", err)
-			editReplyMarkupText("已发布到频道, 作品标签推理失败")
-		}
-	}
 	editReplyMarkupText("已发布到频道, 正在检测重复图片...")
 	newEnt, err := serv.GetArtworkByURL(ctx, artwork.SourceURL)
 	if err != nil {
