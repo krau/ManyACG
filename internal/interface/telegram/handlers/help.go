@@ -18,8 +18,6 @@ func Help(ctx *telegohandler.Context, message telego.Message) error {
 /random - 随机全年龄图片
 /search - 搜索相似图片
 /info - 发送作品图片和信息
-/hash - 计算图片信息
-/stats - 获取统计数据
 /files - 获取作品原图
 /hybrid - 混合搜索作品
 /similar - 搜索相似作品
@@ -37,7 +35,8 @@ Inline 查询(在任意聊天框中@本bot)支持同样的参数格式.
 	if isAdmin {
 		helpText += `
 管理员命令:
-/set_admin - 设置|删除管理员
+/addadmin - 添加管理员
+/deladmin - 删除管理员
 /delete - 删除整个作品
 /r18 - 设置作品R18标记
 /title - 设置作品标题
@@ -48,6 +47,7 @@ Inline 查询(在任意聊天框中@本bot)支持同样的参数格式.
 /tagalias - 为标签添加别名
 /dump - 输出 json 格式作品信息
 /recaption - 重新生成作品描述
+/reindex - 重新索引作品
 `
 	}
 	helpText += fmt.Sprintf("\n版本: %s, 构建日期 %s, 提交 %s\nhttps://github.com/krau/ManyACG", version.Version, version.BuildTime, version.Commit[:7])
