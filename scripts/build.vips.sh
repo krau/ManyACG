@@ -14,6 +14,6 @@ vipsFlags=$(pkg-config --static --libs vips)
 
 # nodynamic tag is for https://github.com/gen2brain/avif
 CGO_ENABLED=1 go build \
-    -tags nodynamic,netgo \
+    -tags vips,nodynamic,netgo \
     -ldflags "$versionFlags -linkmode external -extldflags \"-static $vipsFlags\"" \
     -o manyacg
