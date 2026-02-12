@@ -27,6 +27,12 @@ func (m *SearcherMock) DeleteDocuments(ctx context.Context, ids []string) error 
 	return nil
 }
 
+// DeleteAllDocuments implements search.Searcher.
+func (m *SearcherMock) DeleteAllDocuments(ctx context.Context) error {
+	log.Debug("[MockSearch] DeleteAllDocuments called")
+	return nil
+}
+
 func NewSearcher(awRepo repo.Artwork) *SearcherMock {
 	return &SearcherMock{
 		repo: awRepo,

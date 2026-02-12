@@ -9,7 +9,7 @@ import (
 	"github.com/krau/ManyACG/internal/infra"
 	"github.com/krau/ManyACG/internal/infra/config/runtimecfg"
 	"github.com/krau/ManyACG/internal/infra/database"
-	"github.com/krau/ManyACG/internal/infra/search"
+	"github.com/krau/ManyACG/internal/infra/search/meilisearch"
 	"github.com/krau/ManyACG/internal/model/converter"
 	"github.com/krau/ManyACG/internal/model/dto"
 	"github.com/krau/ManyACG/internal/model/query"
@@ -29,11 +29,13 @@ var indexCmd = &cobra.Command{
 
 var (
 	indexBatchSize int
+	indexClearAll  bool
 )
 
 func init() {
 	rootCmd.AddCommand(indexCmd)
 	indexCmd.Flags().IntVarP(&indexBatchSize, "batch", "b", 1000, "Batch size for indexing artworks")
+	indexCmd.Flags().BoolVarP(&indexClearAll, "clear", "c", false, "Clear all existing documents before indexing")
 }
 
 func IndexArtworks(ctx context.Context) {
@@ -70,7 +72,20 @@ func IndexArtworks(ctx context.Context) {
 	db := database.Default()
 
 	// 初始化搜索引擎
-	searcher := search.Default(ctx)
+	searcher, err := meilisearch.NewSearcher(ctx, cfg.Search.MeiliSearch)
+	if err != nil {
+		log.Fatal("failed to initialize searcher", "err", err)
+	}
+
+	// 如果需要，清空现有索引
+	if indexClearAll {
+		log.Warn("Clearing all existing documents from MeiliSearch index")
+		err = searcher.DeleteAllDocuments(ctx)
+		if err != nil {
+			log.Fatal("failed to clear existing documents", "err", err)
+		}
+		log.Info("All existing documents cleared")
+	}
 
 	log.Info("Starting to index all artworks to MeiliSearch", "batchSize", indexBatchSize)
 

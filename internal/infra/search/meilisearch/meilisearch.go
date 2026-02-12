@@ -82,6 +82,12 @@ func (m *SearcherMeilisearch) DeleteDocuments(ctx context.Context, ids []string)
 	return err
 }
 
+// DeleteAllDocuments implements search.Searcher.
+func (m *SearcherMeilisearch) DeleteAllDocuments(ctx context.Context) error {
+	_, err := m.client.DeleteAllDocumentsWithContext(ctx, nil)
+	return err
+}
+
 func NewSearcher(ctx context.Context, cfg runtimecfg.MeiliSearchConfig) (*SearcherMeilisearch, error) {
 	if err := cfg.Valid(); err != nil {
 		return nil, err
