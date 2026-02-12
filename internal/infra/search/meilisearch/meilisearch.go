@@ -3,6 +3,7 @@ package meilisearch
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/goccy/go-json"
 	"github.com/unvgo/ouid"
@@ -11,12 +12,59 @@ import (
 	"github.com/krau/ManyACG/internal/model/dto"
 	"github.com/krau/ManyACG/internal/model/query"
 	"github.com/krau/ManyACG/internal/shared"
+	"github.com/krau/ManyACG/pkg/log"
 	"github.com/meilisearch/meilisearch-go"
 )
 
 type SearcherMeilisearch struct {
 	client meilisearch.IndexManager
 	cfg    runtimecfg.MeiliSearchConfig
+}
+
+func meilisearchIndexSettings() *meilisearch.Settings {
+	return &meilisearch.Settings{
+		FilterableAttributes: []string{
+			"r18",
+			"tags",
+			"artist",
+		},
+		SearchableAttributes: []string{
+			"title",
+			"artist",
+			"tags",
+			"description",
+		},
+	}
+}
+
+func settingsEqual(a, b *meilisearch.Settings) bool {
+	if a == nil || b == nil {
+		return a == b
+	}
+	// 比较二者的 FilterableAttributes 和 SearchableAttributes 是否相同，忽略顺序
+	if len(a.FilterableAttributes) != len(b.FilterableAttributes) ||
+		len(a.SearchableAttributes) != len(b.SearchableAttributes) {
+		return false
+	}
+	filterableMap := make(map[string]struct{})
+	for _, attr := range a.FilterableAttributes {
+		filterableMap[attr] = struct{}{}
+	}
+	for _, attr := range b.FilterableAttributes {
+		if _, ok := filterableMap[attr]; !ok {
+			return false
+		}
+	}
+	searchableMap := make(map[string]struct{})
+	for _, attr := range a.SearchableAttributes {
+		searchableMap[attr] = struct{}{}
+	}
+	for _, attr := range b.SearchableAttributes {
+		if _, ok := searchableMap[attr]; !ok {
+			return false
+		}
+	}
+	return true
 }
 
 // AddDocuments implements search.Searcher.
@@ -42,6 +90,42 @@ func NewSearcher(ctx context.Context, cfg runtimecfg.MeiliSearchConfig) (*Search
 	_, err := manager.HealthWithContext(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("meilisearch health check failed: %w", err)
+	}
+	// create index if not exists
+	index := manager.Index(cfg.Index)
+	_, err = index.FetchInfoWithContext(ctx)
+	if err == nil {
+		currentSettings, err := index.GetSettingsWithContext(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("meilisearch get settings failed: %w", err)
+		}
+		desiredSettings := meilisearchIndexSettings()
+		if !settingsEqual(currentSettings, desiredSettings) {
+			log.Info("meilisearch index settings are different from desired settings, updating settings")
+			_, err = index.UpdateSettingsWithContext(ctx, desiredSettings)
+			if err != nil {
+				return nil, fmt.Errorf("meilisearch update settings failed: %w", err)
+			}
+		}
+	}
+	// 如果索引不存在，则创建索引并设置 settings
+	if err != nil && strings.Contains(err.Error(), "index_not_found") {
+		log.Info("meilisearch index not found, creating index", "index", cfg.Index)
+		_, err = manager.CreateIndexWithContext(ctx, &meilisearch.IndexConfig{
+			Uid:        cfg.Index,
+			PrimaryKey: "id",
+		})
+		if err != nil {
+			return nil, fmt.Errorf("meilisearch create index failed: %w", err)
+		}
+		index = manager.Index(cfg.Index)
+		_, err = index.UpdateSettingsWithContext(ctx, meilisearchIndexSettings())
+		if err != nil {
+			return nil, fmt.Errorf("meilisearch update settings failed: %w", err)
+		}
+	}
+	if err != nil {
+		return nil, fmt.Errorf("meilisearch fetch index info failed: %w", err)
 	}
 	return &SearcherMeilisearch{client: manager.Index(cfg.Index), cfg: cfg}, nil
 }
