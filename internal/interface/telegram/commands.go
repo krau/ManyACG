@@ -47,6 +47,10 @@ var (
 			Command:     "similar",
 			Description: "获取与回复的图片相似的作品",
 		},
+		{
+			Command:     "tagging",
+			Description: "识别图片中的标签",
+		},
 	}
 
 	AdminCommands = []telego.BotCommand{

@@ -37,6 +37,7 @@ func (m HandlerManager) Register(hg *telegohandler.HandlerGroup) {
 	mg.HandleMessage(GetArtworkInfoCommand, telegohandler.CommandEqual("info"))
 	mg.HandleMessage(HybridSearchArtworks, telegohandler.CommandEqual("hybrid"))
 	mg.HandleMessage(SearchSimilarArtworks, telegohandler.CommandEqual("similar"))
+	mg.HandleMessage(TaggingPicture, telegohandler.CommandEqual("tagging"))
 
 	// Admin commands
 	mg.HandleMessage(SetAdmin, telegohandler.Or(telegohandler.CommandEqual("addadmin"), telegohandler.CommandEqual("deladmin")))

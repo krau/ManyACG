@@ -4,8 +4,10 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"sort"
 	"strings"
 
+	"github.com/krau/ManyACG/internal/infra/tagging"
 	"github.com/krau/ManyACG/internal/interface/telegram/handlers/utils"
 	"github.com/krau/ManyACG/internal/interface/telegram/metautil"
 	"github.com/krau/ManyACG/internal/model/query"
@@ -199,3 +201,67 @@ func SearchPictureCallbackQuery(ctx *telegohandler.Context, query telego.Callbac
 // 	return results, nil
 
 // }
+
+func TaggingPicture(ctx *telegohandler.Context, message telego.Message) error {
+	if !tagging.Enabled() {
+		utils.ReplyMessage(ctx, message, "标签识别服务未启用")
+		return nil
+	}
+	if message.ReplyToMessage == nil {
+		helpText := `
+<b>使用 /tagging 命令回复一条图片消息以识别图片中的标签</b>
+`
+		utils.ReplyMessageWithHTML(ctx, message, helpText)
+		return nil
+	}
+
+	msg, err := utils.ReplyMessage(ctx, message, "少女祈祷中...")
+	if err != nil {
+		return oops.Wrapf(err, "reply message failed")
+	}
+	file, err := utils.GetMessagePhotoFile(ctx, message.ReplyToMessage)
+	if err != nil {
+		ctx.Bot().EditMessageText(ctx, &telego.EditMessageTextParams{
+			ChatID:    msg.Chat.ChatID(),
+			MessageID: msg.GetMessageID(),
+			Text:      "获取图片文件失败: " + err.Error(),
+		})
+		return nil
+	}
+
+	serv := service.FromContext(ctx)
+	result, err := serv.Tagger().Predict(ctx, bytes.NewReader(file))
+	if err != nil {
+		log.Errorf("tagging predict failed: %s", err)
+		ctx.Bot().EditMessageText(ctx, &telego.EditMessageTextParams{
+			ChatID:    msg.Chat.ChatID(),
+			MessageID: msg.GetMessageID(),
+			Text:      "标签识别失败: " + err.Error(),
+		})
+		return nil
+	}
+
+	tags := make([]string, 0, len(result))
+	for tag := range result {
+		tags = append(tags, tag)
+	}
+	sort.Strings(tags)
+
+	var sb strings.Builder
+	sb.WriteString("<pre>")
+	for i, tag := range tags {
+		if i > 0 {
+			sb.WriteString(", ")
+		}
+		sb.WriteString(tag)
+	}
+	sb.WriteString("</pre>")
+
+	ctx.Bot().EditMessageText(ctx, &telego.EditMessageTextParams{
+		ChatID:    msg.Chat.ChatID(),
+		MessageID: msg.GetMessageID(),
+		Text:      sb.String(),
+		ParseMode: telego.ModeHTML,
+	})
+	return nil
+}
