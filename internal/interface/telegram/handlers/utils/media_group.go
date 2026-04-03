@@ -2,7 +2,7 @@ package utils
 
 import (
 	"context"
-	"io"
+	"os"
 
 	"github.com/krau/ManyACG/internal/common/httpclient"
 	"github.com/krau/ManyACG/internal/interface/telegram/metautil"
@@ -293,35 +293,36 @@ func ArtworkInputMedias(
 			case MediaResultTypeVideo:
 				v := item.Video
 				var video *telego.InputMediaVideo
+				var videoMeta *mediatool.VideoMetadata
+				var videoThumb []byte
 				if id := item.TelegramInfo.VideoFileID(meta.BotID()); id != "" {
 					video = telegoutil.MediaVideo(telegoutil.FileFromID(id))
 				} else {
 					storDetail := v.GetOriginalStorage()
+					var filePath string
 					if storDetail != shared.ZeroStorageDetail {
 						file, err := serv.StorageGetFile(ctx, storDetail)
 						if err != nil {
 							return oops.Wrapf(err, "failed to get file from storage")
 						}
-						defer file.Close()
-						videoFile, err := osutil.OpenTemp(file.Name())
-						if err != nil {
-							return oops.Wrapf(err, "failed to open video file")
-						}
-						video = telegoutil.MediaVideo(telegoutil.File(videoFile))
-						closers = append(closers, func() error { return videoFile.Close() })
+						filePath = file.Name()
+						file.Close()
 					} else {
 						file, err := httpclient.DownloadWithCache(ctx, v.GetURL(), nil)
 						if err != nil {
 							return oops.Wrapf(err, "failed to download file: %s", v.GetURL())
 						}
-						defer file.Close()
-						videoFile, err := osutil.OpenTemp(file.Name())
-						if err != nil {
-							return oops.Wrapf(err, "failed to open video file")
-						}
-						video = telegoutil.MediaVideo(telegoutil.File(videoFile))
-						closers = append(closers, func() error { return videoFile.Close() })
+						filePath = file.Name()
+						file.Close()
 					}
+					// Extract metadata and thumbnail before opening file for telego
+					videoMeta, videoThumb = extractVideoMetaAndThumb(filePath)
+					videoFile, err := osutil.OpenTemp(filePath)
+					if err != nil {
+						return oops.Wrapf(err, "failed to open video file")
+					}
+					video = telegoutil.MediaVideo(telegoutil.File(videoFile))
+					closers = append(closers, func() error { return videoFile.Close() })
 				}
 				if video == nil {
 					return oops.New("failed to create input media video")
@@ -333,30 +334,12 @@ func ArtworkInputMedias(
 					video = video.WithHasSpoiler()
 				}
 				video.WithSupportsStreaming()
-				rs, ok := video.Media.File.(io.ReadSeeker)
-				if ok {
-					// extract video metadata
-					var meta *mediatool.VideoMetadata
-					if mediatool.FFmpegAvailable() {
-						meta, _ = mediatool.GetVideoMetadata(rs)
-					} else {
-						meta, _ = mediatool.GetMP4Meta(rs)
-					}
-					if meta != nil {
-						video = video.WithWidth(int(meta.Width)).WithHeight(int(meta.Height)).WithDuration(int(meta.Duration / 1000))
-					}
-					// extract video cover
-					if mediatool.FFmpegAvailable() {
-						rs.Seek(0, io.SeekStart)
-						thumb, err := mediatool.ExtractVideoThumbFrame(rs)
-						if err == nil {
-							cover := telegoutil.FileFromBytes(thumb, "thumb.jpg")
-							video = video.WithCover(&cover)
-						} else {
-							log.Warnf("failed to extract video thumb frame: %v", err)
-						}
-					}
-					rs.Seek(0, io.SeekStart)
+				if videoMeta != nil {
+					video = video.WithWidth(int(videoMeta.Width)).WithHeight(int(videoMeta.Height)).WithDuration(int(videoMeta.Duration / 1000))
+				}
+				if videoThumb != nil {
+					cover := telegoutil.FileFromBytes(videoThumb, "thumb.jpg")
+					video = video.WithCover(&cover)
 				}
 				inputMedia = video
 			}
@@ -387,4 +370,36 @@ func ArtworkInputMedias(
 			return oops.Join(errs...)
 		},
 	}, nil
+}
+
+// extractVideoMetaAndThumb extracts video metadata and thumbnail from a file path.
+func extractVideoMetaAndThumb(filePath string) (*mediatool.VideoMetadata, []byte) {
+	file, err := os.Open(filePath)
+	if err != nil {
+		log.Warnf("failed to open video file for metadata extraction: %v", err)
+		return nil, nil
+	}
+	defer file.Close()
+
+	var meta *mediatool.VideoMetadata
+	if mediatool.FFmpegAvailable() {
+		meta, _ = mediatool.GetVideoMetadata(file)
+	} else {
+		meta, _ = mediatool.GetMP4Meta(file)
+	}
+
+	var thumb []byte
+	if mediatool.FFmpegAvailable() {
+		_, err := file.Seek(0, 0)
+		if err != nil {
+			log.Warnf("failed to seek video file: %v", err)
+			return meta, nil
+		}
+		thumb, err = mediatool.ExtractVideoThumbFrame(file)
+		if err != nil {
+			log.Warnf("failed to extract video thumb frame: %v", err)
+		}
+	}
+
+	return meta, thumb
 }

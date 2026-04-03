@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
 	"path/filepath"
 	"time"
 
@@ -96,18 +97,28 @@ func GetVideoVideoInputFile(ctx context.Context, serv *service.Service, meta *me
 		return ioutil.NewCloser(telegoutil.FileFromID(id), func() error { return nil }), nil
 	}
 	orgStorDetail := video.GetOriginalStorage()
+	var filePath string
 	if orgStorDetail != shared.ZeroStorageDetail {
 		file, err := serv.StorageGetFile(ctx, orgStorDetail)
 		if err != nil {
 			return nil, oops.Wrapf(err, "failed to get file from storage")
 		}
-		return ioutil.NewCloser(telegoutil.File(file), func() error { return file.Close() }), nil
+		filePath = file.Name()
+		file.Close()
+	} else {
+		file, err := httpclient.DownloadWithCache(ctx, video.GetURL(), nil)
+		if err != nil {
+			return nil, oops.Wrapf(err, "failed to download file: %s", video.GetURL())
+		}
+		filePath = file.Name()
+		file.Close()
 	}
-	file, err := httpclient.DownloadWithCache(ctx, video.GetURL(), nil)
+	// Use a fresh read-only handle for telego without deleting cache file on close.
+	videoFile, err := os.Open(filePath)
 	if err != nil {
-		return nil, oops.Wrapf(err, "failed to download file: %s", video.GetURL())
+		return nil, oops.Wrapf(err, "failed to open video file")
 	}
-	return ioutil.NewCloser(telegoutil.File(file), func() error { return file.Close() }), nil
+	return ioutil.NewCloser(telegoutil.File(videoFile), func() error { return videoFile.Close() }), nil
 }
 
 // MediaLike 转换为对应的 InputMedia
