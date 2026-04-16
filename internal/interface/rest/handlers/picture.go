@@ -23,6 +23,8 @@ import (
 )
 
 func HandleGetPictureFileByID(ctx fiber.Ctx) error {
+	requestCtx := ctx.RequestCtx()
+	safeCtx := ctx.Context()
 	pictureID := ctx.Params("id")
 	if pictureID == "" {
 		return fiber.NewError(fiber.StatusBadRequest, "missing picture ID")
@@ -32,20 +34,20 @@ func HandleGetPictureFileByID(ctx fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusBadRequest, "invalid picture ID")
 	}
 	serv := common.MustGetState[*service.Service](ctx, common.StateKeyService)
-	picture, err := serv.GetPictureByID(ctx, id)
+	picture, err := serv.GetPictureByID(requestCtx, id)
 	if err != nil {
 		return err
 	}
 	var filePath string
 	if detail := picture.StorageInfo.Data().Original; detail != nil {
-		file, err := serv.StorageGetFile(ctx, *detail)
+		file, err := serv.StorageGetFile(requestCtx, *detail)
 		if err != nil {
 			return err
 		}
 		defer file.Close()
 		filePath = file.Name()
 	} else {
-		file, err := httpclient.DownloadWithCache(ctx, picture.Original, nil)
+		file, err := httpclient.DownloadWithCache(safeCtx, picture.Original, nil)
 		if err != nil {
 			return err
 		}
@@ -57,6 +59,7 @@ func HandleGetPictureFileByID(ctx fiber.Ctx) error {
 }
 
 func HandleGetSizedPictureFileByID(ctx fiber.Ctx) error {
+	requestCtx := ctx.RequestCtx()
 	size := ctx.Params("size")
 	if !slices.Contains([]string{"thumb", "regular", "original"}, size) {
 		size = "regular"
@@ -70,7 +73,7 @@ func HandleGetSizedPictureFileByID(ctx fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusBadRequest, "invalid picture ID")
 	}
 	serv := common.MustGetState[*service.Service](ctx, common.StateKeyService)
-	picture, err := serv.GetPictureByID(ctx, id)
+	picture, err := serv.GetPictureByID(requestCtx, id)
 	if errors.Is(err, errs.ErrRecordNotFound) {
 		return common.NewError(fiber.StatusNotFound, "picture not found")
 	}
@@ -92,7 +95,7 @@ func HandleGetSizedPictureFileByID(ctx fiber.Ctx) error {
 			var sendErr error
 			sendWriter := func(w *bufio.Writer) {
 				defer w.Flush()
-				sendErr = serv.StorageStreamFile(ctx, *detail, w)
+				sendErr = serv.StorageStreamFile(requestCtx, *detail, w)
 			}
 			ctx.SendStreamWriter(sendWriter)
 			return sendErr
@@ -161,7 +164,7 @@ func HandleGetSizedPictureFileByID(ctx fiber.Ctx) error {
 
 func HandleGetRandomPicture(ctx fiber.Ctx) error {
 	serv := common.MustGetState[*service.Service](ctx, common.StateKeyService)
-	picture, err := serv.RandomPictures(ctx, 1)
+	picture, err := serv.RandomPictures(ctx.RequestCtx(), 1)
 	if err != nil {
 		return err
 	}

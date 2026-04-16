@@ -110,12 +110,14 @@ func fetchArtworkResponse(cacheID string, art shared.ArtworkLike, serv *service.
 }
 
 func HandleFetchArtwork(ctx fiber.Ctx) error {
+	requestCtx := ctx.RequestCtx()
+	safeCtx := ctx.Context()
 	key := ctx.Get("X-API-KEY")
 	if key == "" {
 		return common.NewError(fiber.StatusUnauthorized, "api key is required")
 	}
 	serv := common.MustGetState[*service.Service](ctx, common.StateKeyService)
-	keyEnt, err := serv.GetApiKeyByKey(ctx, key)
+	keyEnt, err := serv.GetApiKeyByKey(requestCtx, key)
 	if err != nil {
 		return common.NewError(fiber.StatusUnauthorized, "invalid api key")
 	}
@@ -134,13 +136,13 @@ func HandleFetchArtwork(ctx fiber.Ctx) error {
 	if sourceURL == "" {
 		return common.NewError(fiber.StatusBadRequest, "no valid source url found")
 	}
-	artwork, err := serv.GetOrFetchCachedArtwork(ctx, sourceURL)
+	artwork, err := serv.GetOrFetchCachedArtwork(safeCtx, sourceURL)
 	if err != nil {
 		return err
 	}
-	serv.IncreaseApiKeyUsed(ctx, key)
+	serv.IncreaseApiKeyUsed(requestCtx, key)
 	cacheID := ouid.New().Hex()
-	if err := kvstor.Set(ctx, cacheID, artwork.GetSourceURL()); err != nil {
+	if err := kvstor.Set(requestCtx, cacheID, artwork.GetSourceURL()); err != nil {
 		log.Warn("failed to set cacheid", "data", artwork.GetSourceURL(), "err", err)
 	}
 	resp := fetchArtworkResponse(cacheID, artwork, serv)

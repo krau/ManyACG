@@ -17,12 +17,13 @@ type ResponseTag struct {
 }
 
 func HandleGetRandomTags(ctx fiber.Ctx) error {
+	requestCtx := ctx.RequestCtx()
 	var req RequestRandomTags
 	if err := ctx.Bind().All(req); err != nil {
 		return err
 	}
 	serv := common.MustGetState[*service.Service](ctx, common.StateKeyService)
-	tags, err := serv.RandomTags(ctx, req.Limit)
+	tags, err := serv.RandomTags(requestCtx, req.Limit)
 	if err != nil {
 		return err
 	}

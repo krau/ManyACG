@@ -8,6 +8,7 @@ import (
 )
 
 func HandleGetArtistByID(ctx fiber.Ctx) error {
+	requestCtx := ctx.RequestCtx()
 	artistID := ctx.Params("id")
 	if artistID == "" {
 		return fiber.NewError(fiber.StatusBadRequest, "missing artist ID")
@@ -17,7 +18,7 @@ func HandleGetArtistByID(ctx fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusBadRequest, "invalid artist ID")
 	}
 	serv := common.MustGetState[*service.Service](ctx, common.StateKeyService)
-	artist, err := serv.GetArtistByID(ctx, id)
+	artist, err := serv.GetArtistByID(requestCtx, id)
 	if err != nil {
 		return err
 	}

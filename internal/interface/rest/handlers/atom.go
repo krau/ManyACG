@@ -16,8 +16,9 @@ import (
 func GenerateAtomFeed(ctx fiber.Ctx) error {
 	serv := common.MustGetState[*service.Service](ctx, common.StateKeyService)
 	cfg := common.MustGetState[runtimecfg.RestConfig](ctx, common.StateKeyConfig)
+	requestCtx := ctx.RequestCtx()
 
-	artworks, err := serv.QueryArtworks(ctx, query.ArtworksDB{
+	artworks, err := serv.QueryArtworks(requestCtx, query.ArtworksDB{
 		// 默认排序即为发布时间降序
 		Paginate: query.Paginate{
 			Limit: 50,

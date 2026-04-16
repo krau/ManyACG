@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"context"
 	"hash"
 	"strconv"
 	"strings"
@@ -89,6 +90,7 @@ func GetHandleListArtworks(serv *service.Service, cfg runtimecfg.RestConfig) fib
 	ttl := time.Duration(cfg.Cache.DefaultTTL) * time.Second
 
 	return func(ctx fiber.Ctx) error {
+		requestCtx := ctx.RequestCtx()
 		req := new(RequestListArtworks)
 		if err := ctx.Bind().All(req); err != nil {
 			return err
@@ -100,7 +102,7 @@ func GetHandleListArtworks(serv *service.Service, cfg runtimecfg.RestConfig) fib
 			}
 		}
 
-		artworks, err := listArtworks(ctx, serv, req)
+		artworks, err := listArtworks(requestCtx, serv, req)
 		if err != nil {
 			return err
 		}
@@ -116,7 +118,7 @@ func GetHandleListArtworks(serv *service.Service, cfg runtimecfg.RestConfig) fib
 	}
 }
 
-func listArtworks(ctx fiber.Ctx, serv *service.Service, req *RequestListArtworks) ([]*entity.Artwork, error) {
+func listArtworks(ctx context.Context, serv *service.Service, req *RequestListArtworks) ([]*entity.Artwork, error) {
 	if req.PageSize <= 0 {
 		req.PageSize = 20
 	}

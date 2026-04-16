@@ -24,6 +24,7 @@ type RequestCountArtwork struct {
 
 func HandleRandomArtworks(ctx fiber.Ctx) error {
 	serv := common.MustGetState[*service.Service](ctx, common.StateKeyService)
+	requestCtx := ctx.RequestCtx()
 	req := new(RequestRandomArtworks)
 	if err := ctx.Bind().All(req); err != nil {
 		return err
@@ -31,7 +32,7 @@ func HandleRandomArtworks(ctx fiber.Ctx) error {
 	if req.Limit <= 0 {
 		req.Limit = 1
 	}
-	artworks, err := serv.QueryArtworks(ctx, query.ArtworksDB{
+	artworks, err := serv.QueryArtworks(requestCtx, query.ArtworksDB{
 		ArtworksFilter: query.ArtworksFilter{
 			R18:        shared.R18TypeFromInt(req.R18),
 			HasPicture: true,
@@ -54,11 +55,12 @@ func HandleRandomArtworks(ctx fiber.Ctx) error {
 
 func HandleRandomPreviewArtworks(ctx fiber.Ctx) error {
 	serv := common.MustGetState[*service.Service](ctx, common.StateKeyService)
+	requestCtx := ctx.RequestCtx()
 	req := new(RequestRandomArtworks)
 	if err := ctx.Bind().All(req); err != nil {
 		return err
 	}
-	artworks, err := serv.QueryArtworks(ctx, query.ArtworksDB{
+	artworks, err := serv.QueryArtworks(requestCtx, query.ArtworksDB{
 		ArtworksFilter: query.ArtworksFilter{
 			R18:        shared.R18TypeFromInt(req.R18),
 			HasPicture: true,
@@ -85,11 +87,12 @@ func HandleRandomPreviewArtworks(ctx fiber.Ctx) error {
 
 func HandleCountArtwork(ctx fiber.Ctx) error {
 	serv := common.MustGetState[*service.Service](ctx, common.StateKeyService)
+	requestCtx := ctx.RequestCtx()
 	req := new(RequestCountArtwork)
 	if err := ctx.Bind().All(req); err != nil {
 		return err
 	}
-	count, err := serv.CountArtworks(ctx, shared.R18TypeFromInt(req.R18))
+	count, err := serv.CountArtworks(requestCtx, shared.R18TypeFromInt(req.R18))
 	if err != nil {
 		return err
 	}
@@ -97,6 +100,7 @@ func HandleCountArtwork(ctx fiber.Ctx) error {
 }
 
 func HandleGetArtworkByID(ctx fiber.Ctx) error {
+	requestCtx := ctx.RequestCtx()
 	artworkID := ctx.Params("id")
 	if artworkID == "" {
 		return common.NewError(fiber.StatusBadRequest, "artwork id is required")
@@ -106,7 +110,7 @@ func HandleGetArtworkByID(ctx fiber.Ctx) error {
 		return common.NewError(fiber.StatusBadRequest, "invalid artwork id")
 	}
 	serv := common.MustGetState[*service.Service](ctx, common.StateKeyService)
-	artwork, err := serv.GetArtworkByID(ctx, artworkUUID)
+	artwork, err := serv.GetArtworkByID(requestCtx, artworkUUID)
 	if err != nil {
 		if err == errs.ErrRecordNotFound {
 			return common.NewError(fiber.StatusNotFound, "artwork not found")

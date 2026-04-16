@@ -16,12 +16,13 @@ type RequestSendArtworkInfoByTelegramBot struct {
 }
 
 func HandleSendArtworkInfoByTelegramBot(ctx fiber.Ctx) error {
+	requestCtx := ctx.RequestCtx()
 	key := ctx.Get("X-API-KEY")
 	if key == "" {
 		return common.NewError(fiber.StatusUnauthorized, "api key is required")
 	}
 	serv := common.MustGetState[*service.Service](ctx, common.StateKeyService)
-	keyEnt, err := serv.GetApiKeyByKey(ctx, key)
+	keyEnt, err := serv.GetApiKeyByKey(requestCtx, key)
 	if err != nil {
 		return common.NewError(fiber.StatusUnauthorized, "invalid api key")
 	}
@@ -39,7 +40,7 @@ func HandleSendArtworkInfoByTelegramBot(ctx fiber.Ctx) error {
 	if err := ctx.Bind().All(req); err != nil {
 		return err
 	}
-	serv.IncreaseApiKeyUsed(ctx, key)
+	serv.IncreaseApiKeyUsed(requestCtx, key)
 	// current implement of SendArtworkInfo use a buffered channel, so it will return immediately and run in the background.
 	// thus we should use context.Background() here.
 	go bot.SendArtworkInfo(context.Background(), req.SourceURL, req.ChatID, req.AppendCaption)
