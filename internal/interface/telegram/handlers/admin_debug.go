@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"github.com/krau/ManyACG/internal/interface/telegram/handlers/utils"
-	"github.com/krau/ManyACG/internal/service"
 	"github.com/mymmrac/telego"
 	"github.com/mymmrac/telego/telegohandler"
 	"github.com/mymmrac/telego/telegoutil"
@@ -13,8 +12,11 @@ import (
 )
 
 func DumpArtworkInfo(ctx *telegohandler.Context, message telego.Message) error {
-	serv := service.FromContext(ctx)
-	_, err := serv.GetAdminByTelegramID(ctx, message.From.ID)
+	serv, err := requireService(ctx)
+	if err != nil {
+		return err
+	}
+	_, err = serv.GetAdminByTelegramID(ctx, message.From.ID)
 	if err != nil {
 		return oops.Errorf("get admin by telegram id %d failed: %w", message.From.ID, err)
 	}

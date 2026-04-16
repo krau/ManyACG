@@ -5,14 +5,16 @@ import (
 
 	"github.com/krau/ManyACG/internal/common/version"
 	"github.com/krau/ManyACG/internal/interface/telegram/handlers/utils"
-	"github.com/krau/ManyACG/internal/service"
 
 	"github.com/mymmrac/telego"
 	"github.com/mymmrac/telego/telegohandler"
 )
 
 func Help(ctx *telegohandler.Context, message telego.Message) error {
-	serv := service.FromContext(ctx)
+	serv, err := requireService(ctx)
+	if err != nil {
+		return err
+	}
 	helpText := `使用方法:
 /setu - 随机图片(NSFW)
 /random - 随机全年龄图片

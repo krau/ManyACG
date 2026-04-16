@@ -21,6 +21,14 @@ import (
 )
 
 func SearchPicture(ctx *telegohandler.Context, message telego.Message) error {
+	serv, err := requireService(ctx)
+	if err != nil {
+		return err
+	}
+	meta, err := requireMeta(ctx)
+	if err != nil {
+		return err
+	}
 	if message.ReplyToMessage == nil {
 		helpText := `
 <b>使用 /search 命令回复一条图片消息以搜索图片来源</b>
@@ -41,7 +49,7 @@ func SearchPicture(ctx *telegohandler.Context, message telego.Message) error {
 		})
 		return nil
 	}
-	text, dbExists, err := getDBSearchResultText(ctx, service.FromContext(ctx), metautil.FromContext(ctx), file)
+	text, dbExists, err := getDBSearchResultText(ctx, serv, meta, file)
 	if err != nil {
 		log.Errorf("search in db failed: %s", err)
 		ctx.Bot().EditMessageText(ctx, &telego.EditMessageTextParams{
@@ -104,6 +112,14 @@ func getDBSearchResultText(ctx context.Context, serv *service.Service, meta *met
 }
 
 func SearchPictureCallbackQuery(ctx *telegohandler.Context, query telego.CallbackQuery) error {
+	serv, err := requireService(ctx)
+	if err != nil {
+		return err
+	}
+	meta, err := requireMeta(ctx)
+	if err != nil {
+		return err
+	}
 	if !query.Message.IsAccessible() {
 		return nil
 	}
@@ -116,7 +132,7 @@ func SearchPictureCallbackQuery(ctx *telegohandler.Context, query telego.Callbac
 		ctx.Bot().AnswerCallbackQuery(ctx, telegoutil.CallbackQuery(query.ID).WithText("获取图片文件失败: "+err.Error()).WithShowAlert().WithCacheTime(5))
 		return nil
 	}
-	text, hasResult, err := getDBSearchResultText(ctx, service.FromContext(ctx), metautil.FromContext(ctx), file)
+	text, hasResult, err := getDBSearchResultText(ctx, serv, meta, file)
 	if err != nil {
 		ctx.Bot().AnswerCallbackQuery(ctx, telegoutil.CallbackQuery(query.ID).WithText(err.Error()).WithShowAlert().WithCacheTime(5))
 		return nil
@@ -229,7 +245,10 @@ func TaggingPicture(ctx *telegohandler.Context, message telego.Message) error {
 		return nil
 	}
 
-	serv := service.FromContext(ctx)
+	serv, err := requireService(ctx)
+	if err != nil {
+		return err
+	}
 	result, err := serv.Tagger().Predict(ctx, bytes.NewReader(file))
 	if err != nil {
 		log.Errorf("tagging predict failed: %s", err)

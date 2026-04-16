@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/krau/ManyACG/internal/interface/telegram/metautil"
+	"github.com/krau/ManyACG/pkg/log"
 	"github.com/mymmrac/telego"
 	"github.com/mymmrac/telego/telegoutil"
 )
@@ -15,6 +16,10 @@ import (
 func CommandToMe(ctx context.Context, update telego.Update) bool {
 	meta := metautil.FromContext(ctx)
 	if update.Message.Chat.Type != telego.ChatTypePrivate {
+		if meta == nil {
+			log.Error("telegram command filter missing metadata in context")
+			return false
+		}
 		_, botUsername, _ := telegoutil.ParseCommand(update.Message.Text)
 		if botUsername == "" {
 			return true

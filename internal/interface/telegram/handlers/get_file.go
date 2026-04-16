@@ -24,13 +24,19 @@ import (
 
 func GetArtworkFiles(ctx *telegohandler.Context, message telego.Message) error {
 	var sourceURL string
-	serv := service.FromContext(ctx)
+	serv, err := requireService(ctx)
+	if err != nil {
+		return err
+	}
 	if message.ReplyToMessage != nil {
 		sourceURL = utils.FindSourceURLInMessage(serv, message.ReplyToMessage)
 	} else {
 		sourceURL = serv.FindSourceURL(message.Text)
 	}
-	meta := metautil.FromContext(ctx)
+	meta, err := requireMeta(ctx)
+	if err != nil {
+		return err
+	}
 	if sourceURL == "" {
 		getPictureByHash := func() *entity.Picture {
 			if message.ReplyToMessage == nil {

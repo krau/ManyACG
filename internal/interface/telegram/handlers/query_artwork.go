@@ -14,7 +14,6 @@ import (
 	"github.com/krau/ManyACG/internal/interface/telegram/metautil"
 	"github.com/krau/ManyACG/internal/model/entity"
 	"github.com/krau/ManyACG/internal/model/query"
-	"github.com/krau/ManyACG/internal/service"
 	"github.com/krau/ManyACG/internal/shared"
 	"github.com/krau/ManyACG/internal/shared/errs"
 	"github.com/krau/ManyACG/pkg/strutil"
@@ -33,7 +32,10 @@ func RandomPicture(ctx *telegohandler.Context, message telego.Message) error {
 	if r18 {
 		r18Type = shared.R18TypeR18
 	}
-	serv := service.FromContext(ctx)
+	serv, err := requireService(ctx)
+	if err != nil {
+		return err
+	}
 	artwork, err := serv.QueryArtworks(ctx, query.ArtworksDB{
 		ArtworksFilter: query.ArtworksFilter{
 			R18:        r18Type,
@@ -61,7 +63,10 @@ func RandomPicture(ctx *telegohandler.Context, message telego.Message) error {
 	pictures := artwork[0].Pictures
 	picIndex := rand.Intn(len(pictures))
 	picture := pictures[picIndex]
-	meta := metautil.MustFromContext(ctx)
+	meta, err := requireMeta(ctx)
+	if err != nil {
+		return err
+	}
 	file, err := utils.GetPicturePhotoInputFile(ctx, serv, meta, picture)
 	if err != nil {
 		utils.ReplyMessage(ctx, message, "获取图片失败")
@@ -76,7 +81,7 @@ func RandomPicture(ctx *telegohandler.Context, message telego.Message) error {
 		WithReplyParameters(&telego.ReplyParameters{
 			MessageID: message.MessageID,
 		}).
-		WithReplyMarkup(telegoutil.InlineKeyboard(utils.GetPostedArtworkInlineKeyboardButton(aw, metautil.FromContext(ctx))))
+		WithReplyMarkup(telegoutil.InlineKeyboard(utils.GetPostedArtworkInlineKeyboardButton(aw, meta)))
 	if aw.R18 {
 		photo.WithHasSpoiler()
 	}
@@ -97,7 +102,10 @@ func RandomPicture(ctx *telegohandler.Context, message telego.Message) error {
 }
 
 func HybridSearchArtworks(ctx *telegohandler.Context, message telego.Message) error {
-	serv := service.FromContext(ctx)
+	serv, err := requireService(ctx)
+	if err != nil {
+		return err
+	}
 	_, _, args := telegoutil.ParseCommand(message.Text)
 	if len(args) == 0 {
 		helpText := `
@@ -114,7 +122,7 @@ func HybridSearchArtworks(ctx *telegohandler.Context, message telego.Message) er
 	}
 	var hybridSemanticRatio float64
 	var queryText string
-	hybridSemanticRatio, err := strconv.ParseFloat(args[len(args)-1], 64)
+	hybridSemanticRatio, err = strconv.ParseFloat(args[len(args)-1], 64)
 	if err != nil {
 		hybridSemanticRatio = 0.8
 		queryText = strings.Join(args, " ")
@@ -171,7 +179,10 @@ func SearchSimilarArtworks(ctx *telegohandler.Context, message telego.Message) e
 		utils.ReplyMessageWithHTML(ctx, message, helpText)
 		return nil
 	}
-	serv := service.FromContext(ctx)
+	serv, err := requireService(ctx)
+	if err != nil {
+		return err
+	}
 	// var sourceURL string
 	sourceURL := utils.FindSourceURLInMessage(serv, message.ReplyToMessage)
 	if sourceURL == "" {
@@ -246,7 +257,10 @@ func SearchSimilarArtworks(ctx *telegohandler.Context, message telego.Message) e
 
 func handleSendResultArtworks(ctx context.Context, artworks []*entity.Artwork, message telego.Message, bot *telego.Bot) error {
 	inputMedias := make([]telego.InputMedia, 0, len(artworks))
-	meta := metautil.MustFromContext(ctx)
+	meta := metautil.FromContext(ctx)
+	if meta == nil {
+		return oops.New("telegram handler missing metadata in context")
+	}
 	for _, artwork := range artworks {
 		if len(artwork.Pictures) == 0 {
 			continue

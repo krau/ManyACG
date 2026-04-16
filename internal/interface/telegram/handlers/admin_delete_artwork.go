@@ -6,7 +6,6 @@ import (
 	"strings"
 
 	"github.com/krau/ManyACG/internal/interface/telegram/handlers/utils"
-	"github.com/krau/ManyACG/internal/service"
 	"github.com/krau/ManyACG/internal/shared"
 	"github.com/krau/ManyACG/pkg/log"
 	"github.com/mymmrac/telego"
@@ -17,7 +16,10 @@ import (
 )
 
 func DeleteArtwork(ctx *telegohandler.Context, message telego.Message) error {
-	serv := service.FromContext(ctx)
+	serv, err := requireService(ctx)
+	if err != nil {
+		return err
+	}
 	if !utils.CheckPermissionInGroup(ctx, serv, message, shared.PermissionDeleteArtwork) {
 		return oops.Errorf("user %d has no permission to delete artwork", message.From.ID)
 	}
@@ -91,7 +93,10 @@ func DeleteArtwork(ctx *telegohandler.Context, message telego.Message) error {
 }
 
 func DeleteArtworkCallbackQuery(ctx *telegohandler.Context, query telego.CallbackQuery) error {
-	serv := service.FromContext(ctx)
+	serv, err := requireService(ctx)
+	if err != nil {
+		return err
+	}
 	if !utils.CheckPermissionForQuery(ctx, serv, query, shared.PermissionDeleteArtwork) {
 		ctx.Bot().AnswerCallbackQuery(ctx, telegoutil.CallbackQuery(query.ID).WithText("你没有删除图片的权限").WithCacheTime(60).WithShowAlert())
 		return nil

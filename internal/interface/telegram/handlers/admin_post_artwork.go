@@ -7,8 +7,6 @@ import (
 
 	"github.com/krau/ManyACG/internal/infra/kvstor"
 	"github.com/krau/ManyACG/internal/interface/telegram/handlers/utils"
-	"github.com/krau/ManyACG/internal/interface/telegram/metautil"
-	"github.com/krau/ManyACG/internal/service"
 	"github.com/krau/ManyACG/internal/shared"
 	"github.com/krau/ManyACG/pkg/log"
 	"github.com/mymmrac/telego"
@@ -18,7 +16,10 @@ import (
 )
 
 func PostArtworkCallbackQuery(ctx *telegohandler.Context, query telego.CallbackQuery) error {
-	serv := service.FromContext(ctx)
+	serv, err := requireService(ctx)
+	if err != nil {
+		return err
+	}
 	if !utils.CheckPermissionForQuery(ctx, serv, query, shared.PermissionPostArtwork) {
 		ctx.Bot().AnswerCallbackQuery(ctx, &telego.AnswerCallbackQueryParams{
 			CallbackQueryID: query.ID,
@@ -86,7 +87,10 @@ func PostArtworkCallbackQuery(ctx *telegohandler.Context, query telego.CallbackQ
 	if reverseR18 {
 		artwork.R18 = !artwork.R18
 	}
-	meta := metautil.MustFromContext(ctx)
+	meta, err := requireMeta(ctx)
+	if err != nil {
+		return err
+	}
 	if meta.ChannelAvailable() {
 		if err := utils.PostAndCreateArtwork(ctx, ctx.Bot(), serv, meta, artwork, query.Message.GetChat().ChatID(), meta.ChannelChatID(), query.Message.GetMessageID()); err != nil {
 			log.Errorf("failed to post and create artwork: %s", err)
@@ -117,7 +121,10 @@ func PostArtworkCallbackQuery(ctx *telegohandler.Context, query telego.CallbackQ
 }
 
 func PostArtworkCommand(ctx *telegohandler.Context, message telego.Message) error {
-	serv := service.FromContext(ctx)
+	serv, err := requireService(ctx)
+	if err != nil {
+		return err
+	}
 	if !utils.CheckPermissionInGroup(ctx, serv, message, shared.PermissionPostArtwork) {
 		return oops.Errorf("user %d has no permission to post artwork", message.From.ID)
 	}
@@ -164,7 +171,10 @@ func PostArtworkCommand(ctx *telegohandler.Context, message telego.Message) erro
 	}
 	artwork := cachedArtwork.Artwork.Data()
 
-	meta := metautil.MustFromContext(ctx)
+	meta, err := requireMeta(ctx)
+	if err != nil {
+		return err
+	}
 	if meta.ChannelAvailable() {
 		if err := utils.PostAndCreateArtwork(ctx, ctx.Bot(), serv, meta, artwork, message.GetChat().ChatID(), meta.ChannelChatID(), message.MessageID); err != nil {
 			utils.ReplyMessage(ctx, message, "发布失败: "+err.Error())

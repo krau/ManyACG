@@ -2,7 +2,7 @@ package service
 
 import (
 	"context"
-	"sync"
+	"fmt"
 
 	"github.com/krau/ManyACG/internal/infra/config/runtimecfg"
 	"github.com/krau/ManyACG/internal/infra/search"
@@ -11,7 +11,6 @@ import (
 	"github.com/krau/ManyACG/internal/infra/tagging"
 	"github.com/krau/ManyACG/internal/repo"
 	"github.com/krau/ManyACG/internal/shared"
-	"github.com/krau/ManyACG/pkg/log"
 )
 
 type Service struct {
@@ -48,20 +47,6 @@ func NewService(
 	return s
 }
 
-var (
-	defaultService *Service
-	defaultOnce    sync.Once
-)
-
-func SetDefault(s *Service) { defaultOnce.Do(func() { defaultService = s }) }
-
-func Default() *Service {
-	if defaultService == nil {
-		log.Fatal("service: Default service is not set")
-	}
-	return defaultService
-}
-
 type serviceCtxKey struct{}
 
 var contextKey = serviceCtxKey{}
@@ -74,5 +59,13 @@ func FromContext(ctx context.Context) *Service {
 	if serv, ok := ctx.Value(contextKey).(*Service); ok {
 		return serv
 	}
-	return Default()
+	return nil
+}
+
+func MustFromContext(ctx context.Context) *Service {
+	serv := FromContext(ctx)
+	if serv == nil {
+		panic(fmt.Sprintf("service: missing service in context (%T)", ctx))
+	}
+	return serv
 }

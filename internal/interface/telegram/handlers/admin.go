@@ -6,7 +6,6 @@ import (
 	"strconv"
 
 	"github.com/krau/ManyACG/internal/interface/telegram/handlers/utils"
-	"github.com/krau/ManyACG/internal/service"
 	"github.com/krau/ManyACG/internal/shared"
 	"github.com/mymmrac/telego"
 	"github.com/mymmrac/telego/telegohandler"
@@ -15,7 +14,10 @@ import (
 )
 
 func SetAdmin(ctx *telegohandler.Context, message telego.Message) error {
-	serv := service.FromContext(ctx)
+	serv, err := requireService(ctx)
+	if err != nil {
+		return err
+	}
 	if !serv.CheckAdminPermissionByTgID(ctx, message.From.ID, shared.PermissionSudo) {
 		return nil
 	}
@@ -91,7 +93,10 @@ func SetAdmin(ctx *telegohandler.Context, message telego.Message) error {
 }
 
 func AddTagAlias(ctx *telegohandler.Context, message telego.Message) error {
-	serv := service.FromContext(ctx)
+	serv, err := requireService(ctx)
+	if err != nil {
+		return err
+	}
 	if !serv.CheckAdminPermissionByTgID(ctx, message.From.ID, shared.PermissionSudo) {
 		utils.ReplyMessage(ctx, message, "你没有权限添加标签别名")
 		return nil

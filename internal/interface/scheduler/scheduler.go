@@ -22,7 +22,10 @@ type ArtworkPoster interface {
 }
 
 func StartPoster(ctx context.Context, poster ArtworkPoster, serv *service.Service) {
-	cfg := runtimecfg.Get().Scheduler
+	StartPosterWithConfig(ctx, runtimecfg.Get().Scheduler, poster, serv)
+}
+
+func StartPosterWithConfig(ctx context.Context, cfg runtimecfg.SchedulerConfig, poster ArtworkPoster, serv *service.Service) {
 	if !cfg.Enable || poster == nil {
 		return
 	}

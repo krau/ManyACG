@@ -30,6 +30,7 @@ type BotApp struct {
 	serv             *service.Service
 	meta             *metautil.MetaData
 	cfg              runtimecfg.TelegramConfig
+	debug            bool
 	artworkInfoQueue chan artworkInfoTask
 }
 
@@ -37,7 +38,7 @@ func (app *BotApp) Bot() *telego.Bot {
 	return app.bot
 }
 
-func Init(ctx context.Context, serv *service.Service, cfg runtimecfg.TelegramConfig) (*BotApp, error) {
+func Init(ctx context.Context, serv *service.Service, cfg runtimecfg.TelegramConfig, debug bool) (*BotApp, error) {
 	log.Info("Initing telegram client")
 	var err error
 	apiUrl := cfg.APIURL
@@ -139,69 +140,23 @@ func Init(ctx context.Context, serv *service.Service, cfg runtimecfg.TelegramCon
 			return
 		}
 		log.Info("Commands signature changed, updating commands...")
-		// set bot commands
-		bot.SetMyCommands(ctx, &telego.SetMyCommandsParams{
-			Commands: CommonCommands,
-			Scope:    &telego.BotCommandScopeDefault{Type: telego.ScopeTypeDefault},
-		})
+		setCommands(ctx, bot, CommonCommands, &telego.BotCommandScopeDefault{Type: telego.ScopeTypeDefault})
 
 		allCommands := append(CommonCommands, AdminCommands...)
 		adminUserIDs, err := serv.GetAdminUserIDs(ctx)
 		if err != nil {
 			log.Warnf("Error when getting admin user IDs: %s", err)
 		} else {
-			for _, adminID := range adminUserIDs {
-				bot.SetMyCommands(ctx, &telego.SetMyCommandsParams{
-					Commands: allCommands,
-					Scope: &telego.BotCommandScopeChat{
-						Type:   telego.ScopeTypeChat,
-						ChatID: telegoutil.ID(adminID),
-					},
-				})
-				if cfg.GroupID == 0 {
-					continue
-				}
-				bot.SetMyCommands(ctx, &telego.SetMyCommandsParams{
-					Commands: allCommands,
-					Scope: &telego.BotCommandScopeChatMember{
-						Type:   telego.ScopeTypeChat,
-						ChatID: groupChatID,
-						UserID: adminID,
-					},
-				})
-			}
-			for _, adminID := range adminUserIDs {
-				bot.SetMyCommands(ctx, &telego.SetMyCommandsParams{
-					Commands: allCommands,
-					Scope: &telego.BotCommandScopeChat{
-						Type:   telego.ScopeTypeChat,
-						ChatID: telegoutil.ID(adminID),
-					},
-				})
-				if cfg.GroupID == 0 {
-					continue
-				}
-				bot.SetMyCommands(ctx, &telego.SetMyCommandsParams{
-					Commands: allCommands,
-					Scope: &telego.BotCommandScopeChatMember{
-						Type:   telego.ScopeTypeChat,
-						ChatID: groupChatID,
-						UserID: adminID,
-					},
-				})
-			}
+			syncAdminUserCommands(ctx, bot, allCommands, adminUserIDs, groupChatID)
 		}
 		adminGroupIDs, err := serv.GetAdminGroupIDs(ctx)
 		if err != nil {
 			log.Warnf("Error when getting admin group IDs: %s", err)
 		} else {
 			for _, adminID := range adminGroupIDs {
-				bot.SetMyCommands(ctx, &telego.SetMyCommandsParams{
-					Commands: allCommands,
-					Scope: &telego.BotCommandScopeChat{
-						Type:   telego.ScopeTypeChat,
-						ChatID: telegoutil.ID(adminID),
-					},
+				setCommands(ctx, bot, allCommands, &telego.BotCommandScopeChat{
+					Type:   telego.ScopeTypeChat,
+					ChatID: telegoutil.ID(adminID),
 				})
 			}
 		}
@@ -226,12 +181,36 @@ func Init(ctx context.Context, serv *service.Service, cfg runtimecfg.TelegramCon
 		serv:             serv,
 		meta:             meta,
 		cfg:              cfg,
+		debug:            debug,
 		artworkInfoQueue: artworkInfoQueue,
 	}
 
 	go app.processArtworkInfoTasks(ctx)
 
 	return app, nil
+}
+
+func setCommands(ctx context.Context, bot *telego.Bot, commands []telego.BotCommand, scope telego.BotCommandScope) {
+	if err := bot.SetMyCommands(ctx, &telego.SetMyCommandsParams{Commands: commands, Scope: scope}); err != nil {
+		log.Warnf("Error when setting commands for %T: %s", scope, err)
+	}
+}
+
+func syncAdminUserCommands(ctx context.Context, bot *telego.Bot, commands []telego.BotCommand, adminUserIDs []int64, groupChatID telego.ChatID) {
+	for _, adminID := range adminUserIDs {
+		setCommands(ctx, bot, commands, &telego.BotCommandScopeChat{
+			Type:   telego.ScopeTypeChat,
+			ChatID: telegoutil.ID(adminID),
+		})
+		if groupChatID.ID == 0 {
+			continue
+		}
+		setCommands(ctx, bot, commands, &telego.BotCommandScopeChatMember{
+			Type:   telego.ScopeTypeChat,
+			ChatID: groupChatID,
+			UserID: adminID,
+		})
+	}
 }
 
 func (app *BotApp) processArtworkInfoTasks(ctx context.Context) {
@@ -264,7 +243,12 @@ func (app *BotApp) Run(ctx context.Context, serv *service.Service) {
 		log.Fatalf("Error when getting updates: %s", err)
 	}
 
-	botHandler, err := telegohandler.NewBotHandler(app.Bot(), updates)
+	botHandler, err := telegohandler.NewBotHandler(app.Bot(), updates,
+		telegohandler.WithErrorHandler(func(ctx *telegohandler.Context, update telego.Update, err error) {
+			fields := append([]any{"err", err}, updateLogFields(update)...)
+			log.Error("telegram handler error", fields...)
+		}),
+	)
 	if err != nil {
 		log.Fatalf("Error when creating bot handler: %s", err)
 	}
@@ -279,7 +263,7 @@ func (app *BotApp) Run(ctx context.Context, serv *service.Service) {
 		log.Info("Stopped bot handler")
 	}()
 
-	if !runtimecfg.Get().App.Debug {
+	if !app.debug {
 		botHandler.Use(telegohandler.PanicRecoveryHandler(func(recovered any) error {
 			log.Errorf("Panic recovered: %v", recovered)
 			return nil

@@ -119,7 +119,7 @@ func (s *Service) StorageStreamFile(ctx context.Context, detail shared.StorageDe
 	}
 	// 将文件流式传输到 w, 同时使用 io.TeeReader 来缓存到临时文件
 	cachePath := s.storageCachePath(detail)
-	if stor, ok := defaultService.storages[detail.Type]; ok {
+	if stor, ok := s.storages[detail.Type]; ok {
 		// 先检查缓存
 		if cacheFile, err := osutil.OpenCache(cachePath); err == nil {
 			defer cacheFile.Close()

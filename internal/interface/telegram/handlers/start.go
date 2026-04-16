@@ -6,8 +6,6 @@ import (
 
 	"github.com/krau/ManyACG/internal/infra/kvstor"
 	"github.com/krau/ManyACG/internal/interface/telegram/handlers/utils"
-	"github.com/krau/ManyACG/internal/interface/telegram/metautil"
-	"github.com/krau/ManyACG/internal/service"
 	"github.com/krau/ManyACG/internal/shared"
 	"github.com/krau/ManyACG/internal/shared/errs"
 	"github.com/krau/ManyACG/pkg/log"
@@ -22,8 +20,14 @@ func Start(ctx *telegohandler.Context, message telego.Message) error {
 	_, _, args := telegoutil.ParseCommand(message.Text)
 	if len(args) > 0 {
 		log.Debug("received start", "args", args)
-		serv := service.FromContext(ctx)
-		meta := metautil.MustFromContext(ctx)
+		serv, err := requireService(ctx)
+		if err != nil {
+			return err
+		}
+		meta, err := requireMeta(ctx)
+		if err != nil {
+			return err
+		}
 		cmds := strings.Split(args[0], "_")
 		action := cmds[0]
 		switch action {

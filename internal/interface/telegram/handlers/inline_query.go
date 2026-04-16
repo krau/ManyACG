@@ -6,9 +6,7 @@ import (
 
 	"github.com/krau/ManyACG/internal/infra/config/runtimecfg"
 	"github.com/krau/ManyACG/internal/interface/telegram/handlers/utils"
-	"github.com/krau/ManyACG/internal/interface/telegram/metautil"
 	"github.com/krau/ManyACG/internal/model/query"
-	"github.com/krau/ManyACG/internal/service"
 	"github.com/krau/ManyACG/internal/shared"
 	"github.com/krau/ManyACG/pkg/log"
 	"github.com/krau/ManyACG/pkg/strutil"
@@ -22,8 +20,14 @@ import (
 
 func InlineQuery(ctx *telegohandler.Context, inlineQuery telego.InlineQuery) error {
 	queryText := inlineQuery.Query
-	serv := service.FromContext(ctx)
-	meta := metautil.FromContext(ctx)
+	serv, err := requireService(ctx)
+	if err != nil {
+		return err
+	}
+	meta, err := requireMeta(ctx)
+	if err != nil {
+		return err
+	}
 	if url := serv.FindSourceURL(queryText); url != "" {
 		artwork, err := serv.GetOrFetchCachedArtwork(ctx, url)
 		if err != nil {

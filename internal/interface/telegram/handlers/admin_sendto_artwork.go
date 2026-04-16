@@ -7,8 +7,6 @@ import (
 
 	"github.com/krau/ManyACG/internal/infra/kvstor"
 	"github.com/krau/ManyACG/internal/interface/telegram/handlers/utils"
-	"github.com/krau/ManyACG/internal/interface/telegram/metautil"
-	"github.com/krau/ManyACG/internal/service"
 	"github.com/krau/ManyACG/internal/shared"
 	"github.com/mymmrac/telego"
 	"github.com/mymmrac/telego/telegohandler"
@@ -17,7 +15,10 @@ import (
 )
 
 func SendtoArtworkCallbackQuery(ctx *telegohandler.Context, query telego.CallbackQuery) error {
-	serv := service.FromContext(ctx)
+	serv, err := requireService(ctx)
+	if err != nil {
+		return err
+	}
 	answerQuery := func(text string, showAlert bool) {
 		ctx.Bot().AnswerCallbackQuery(ctx, &telego.AnswerCallbackQueryParams{
 			CallbackQueryID: query.ID,
@@ -61,7 +62,10 @@ func SendtoArtworkCallbackQuery(ctx *telegohandler.Context, query telego.Callbac
 				telegoutil.InlineKeyboardButton("正在发送").WithCallbackData("noop"),
 			})))
 
-	meta := metautil.MustFromContext(ctx)
+	meta, err := requireMeta(ctx)
+	if err != nil {
+		return err
+	}
 	results, err := utils.SendArtworkMediaGroup(ctx, ctx.Bot(), serv, meta, telegoutil.ID(chatId), cachedArtwork)
 	if err != nil {
 		ctx.Bot().SendMessage(ctx, telegoutil.Message(query.Message.GetChat().ChatID(),

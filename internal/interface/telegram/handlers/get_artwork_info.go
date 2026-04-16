@@ -6,8 +6,6 @@ import (
 	"strings"
 
 	"github.com/krau/ManyACG/internal/interface/telegram/handlers/utils"
-	"github.com/krau/ManyACG/internal/interface/telegram/metautil"
-	"github.com/krau/ManyACG/internal/service"
 	"github.com/krau/ManyACG/internal/shared"
 	"github.com/krau/ManyACG/internal/shared/errs"
 	"github.com/krau/ManyACG/pkg/log"
@@ -18,11 +16,20 @@ import (
 )
 
 func GetArtworkInfo(ctx *telegohandler.Context, message telego.Message) error {
-	serv := service.FromContext(ctx)
-	sourceURL := ctx.Value("source_url").(string)
+	serv, err := requireService(ctx)
+	if err != nil {
+		return err
+	}
+	sourceURL, err := requireSourceURL(ctx)
+	if err != nil {
+		return err
+	}
 	ogch := utils.GetMssageOriginChannel(&message)
 	chatID := message.Chat.ChatID()
-	meta := metautil.FromContext(ctx)
+	meta, err := requireMeta(ctx)
+	if err != nil {
+		return err
+	}
 	if ogch != nil && (ogch.Chat.ID == meta.ChannelChatID().ID || strings.EqualFold(ogch.Chat.Username, strings.TrimPrefix(meta.ChannelChatID().Username, "@"))) {
 		// handle the posted artwork in our channel
 		artwork, err := serv.GetArtworkByURL(ctx, sourceURL)
@@ -68,7 +75,7 @@ func GetArtworkInfo(ctx *telegohandler.Context, message telego.Message) error {
 		}
 		return nil
 	}
-	err := utils.SendArtworkInfo(ctx, ctx.Bot(), meta, serv, sourceURL, chatID, utils.SendArtworkInfoOptions{
+	err = utils.SendArtworkInfo(ctx, ctx.Bot(), meta, serv, sourceURL, chatID, utils.SendArtworkInfoOptions{
 		HasPermission:   hasPermission,
 		ReplyParameters: &telego.ReplyParameters{MessageID: message.MessageID},
 	})
@@ -80,7 +87,10 @@ func GetArtworkInfo(ctx *telegohandler.Context, message telego.Message) error {
 }
 
 func GetArtworkInfoCommand(ctx *telegohandler.Context, message telego.Message) error {
-	serv := service.FromContext(ctx)
+	serv, err := requireService(ctx)
+	if err != nil {
+		return err
+	}
 	sourceURL := utils.FindSourceURLInMessage(serv, &message)
 	if sourceURL == "" {
 		sourceURL = utils.FindSourceURLInMessage(serv, message.ReplyToMessage)
@@ -99,7 +109,10 @@ func GetArtworkInfoCommand(ctx *telegohandler.Context, message telego.Message) e
 		utils.ReplyMessage(ctx, message, "获取作品信息失败")
 		return oops.Wrapf(err, "get or fetch cached artwork failed: %s", sourceURL)
 	}
-	meta := metautil.MustFromContext(ctx)
+	meta, err := requireMeta(ctx)
+	if err != nil {
+		return err
+	}
 	results, err := utils.SendArtworkMediaGroup(ctx, ctx.Bot(), serv, meta, message.Chat.ChatID(), artwork)
 	if err != nil {
 		utils.ReplyMessage(ctx, message, "发送作品图片时出现错误")

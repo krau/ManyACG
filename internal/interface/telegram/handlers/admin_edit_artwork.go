@@ -7,8 +7,6 @@ import (
 
 	"github.com/duke-git/lancet/v2/slice"
 	"github.com/krau/ManyACG/internal/interface/telegram/handlers/utils"
-	"github.com/krau/ManyACG/internal/interface/telegram/metautil"
-	"github.com/krau/ManyACG/internal/service"
 	"github.com/krau/ManyACG/internal/shared"
 	"github.com/krau/ManyACG/internal/shared/errs"
 	"github.com/krau/ManyACG/pkg/log"
@@ -20,7 +18,10 @@ import (
 )
 
 func ToggleArtworkR18(ctx *telegohandler.Context, message telego.Message) error {
-	serv := service.FromContext(ctx)
+	serv, err := requireService(ctx)
+	if err != nil {
+		return err
+	}
 	if !utils.CheckPermissionInGroup(ctx, serv, message, shared.PermissionEditArtwork) {
 		utils.ReplyMessage(ctx, message, "你没有编辑作品的权限")
 		return nil
@@ -55,7 +56,10 @@ func ToggleArtworkR18(ctx *telegohandler.Context, message telego.Message) error 
 }
 
 func SetArtworkTags(ctx *telegohandler.Context, message telego.Message) error {
-	serv := service.FromContext(ctx)
+	serv, err := requireService(ctx)
+	if err != nil {
+		return err
+	}
 	if !utils.CheckPermissionInGroup(ctx, serv, message, shared.PermissionEditArtwork) {
 		utils.ReplyMessage(ctx, message, "你没有编辑作品的权限")
 		return nil
@@ -129,8 +133,10 @@ func SetArtworkTags(ctx *telegohandler.Context, message telego.Message) error {
 		utils.ReplyMessage(ctx, message, "获取更新后的作品信息失败: "+err.Error())
 		return nil
 	}
-	meta := metautil.MustFromContext(ctx)
-
+	meta, err := requireMeta(ctx)
+	if err != nil {
+		return err
+	}
 	if msgId := artwork.FirstMedia().GetTelegramInfo().MessageID(meta.ChannelChatID().ID); msgId != 0 {
 		ctx.Bot().EditMessageCaption(ctx, &telego.EditMessageCaptionParams{
 			ChatID:    meta.ChannelChatID(),
@@ -144,7 +150,10 @@ func SetArtworkTags(ctx *telegohandler.Context, message telego.Message) error {
 }
 
 func EditArtworkR18(ctx *telegohandler.Context, query telego.CallbackQuery) error {
-	serv := service.FromContext(ctx)
+	serv, err := requireService(ctx)
+	if err != nil {
+		return err
+	}
 	if !utils.CheckPermissionForQuery(ctx, serv, query, shared.PermissionEditArtwork) {
 		ctx.Bot().AnswerCallbackQuery(ctx,
 			&telego.AnswerCallbackQueryParams{
@@ -204,7 +213,10 @@ func EditArtworkR18(ctx *telegohandler.Context, query telego.CallbackQuery) erro
 }
 
 func EditArtworkTitle(ctx *telegohandler.Context, message telego.Message) error {
-	serv := service.FromContext(ctx)
+	serv, err := requireService(ctx)
+	if err != nil {
+		return err
+	}
 	if !utils.CheckPermissionInGroup(ctx, serv, message, shared.PermissionEditArtwork) {
 		utils.ReplyMessage(ctx, message, "你没有编辑作品的权限")
 		return nil
@@ -252,7 +264,10 @@ func EditArtworkTitle(ctx *telegohandler.Context, message telego.Message) error 
 		utils.ReplyMessage(ctx, message, "获取更新后的作品信息失败: "+err.Error())
 		return nil
 	}
-	meta := metautil.MustFromContext(ctx)
+	meta, err := requireMeta(ctx)
+	if err != nil {
+		return err
+	}
 	if msgId := artwork.FirstMedia().GetTelegramInfo().MessageID(meta.ChannelChatID().ID); msgId != 0 {
 		ctx.Bot().EditMessageCaption(ctx, &telego.EditMessageCaptionParams{
 			ChatID:    meta.ChannelChatID(),
@@ -267,7 +282,10 @@ func EditArtworkTitle(ctx *telegohandler.Context, message telego.Message) error 
 
 // 删除 CachedArtwork, 刷新 telegram info
 func RefreshArtwork(ctx *telegohandler.Context, message telego.Message) error {
-	serv := service.FromContext(ctx)
+	serv, err := requireService(ctx)
+	if err != nil {
+		return err
+	}
 	if !utils.CheckPermissionInGroup(ctx, serv, message, shared.PermissionEditArtwork) {
 		utils.ReplyMessage(ctx, message, "你没有编辑作品的权限")
 		return nil
@@ -315,7 +333,10 @@ func RefreshArtwork(ctx *telegohandler.Context, message telego.Message) error {
 }
 
 func ReCaptionArtwork(ctx *telegohandler.Context, message telego.Message) error {
-	serv := service.FromContext(ctx)
+	serv, err := requireService(ctx)
+	if err != nil {
+		return err
+	}
 	if !utils.CheckPermissionInGroup(ctx, serv, message, shared.PermissionEditArtwork) {
 		utils.ReplyMessage(ctx, message, "你没有编辑作品的权限")
 		return nil
@@ -335,7 +356,10 @@ func ReCaptionArtwork(ctx *telegohandler.Context, message telego.Message) error 
 		utils.ReplyMessage(ctx, message, "获取作品信息失败: "+err.Error())
 		return nil
 	}
-	meta := metautil.MustFromContext(ctx)
+	meta, err := requireMeta(ctx)
+	if err != nil {
+		return err
+	}
 	if artwork.FirstMedia().GetTelegramInfo().MessageID(meta.ChannelChatID().ID) == 0 {
 		utils.ReplyMessage(ctx, message, "该作品未在频道发布")
 		return nil
@@ -351,7 +375,10 @@ func ReCaptionArtwork(ctx *telegohandler.Context, message telego.Message) error 
 }
 
 func AutoTaggingArtwork(ctx *telegohandler.Context, message telego.Message) error {
-	serv := service.FromContext(ctx)
+	serv, err := requireService(ctx)
+	if err != nil {
+		return err
+	}
 	if !utils.CheckPermissionInGroup(ctx, serv, message, shared.PermissionEditArtwork) {
 		utils.ReplyMessage(ctx, message, "你没有编辑作品的权限")
 		return nil
@@ -400,7 +427,10 @@ func AutoTaggingArtwork(ctx *telegohandler.Context, message telego.Message) erro
 		})
 		return nil
 	}
-	meta := metautil.MustFromContext(ctx)
+	meta, err := requireMeta(ctx)
+	if err != nil {
+		return err
+	}
 	if msgId := newAw.FirstMedia().GetTelegramInfo().MessageID(meta.ChannelChatID().ID); msgId != 0 {
 		caption := utils.ArtworkHTMLCaption(newAw)
 		ctx.Bot().EditMessageCaption(ctx, &telego.EditMessageCaptionParams{
@@ -419,7 +449,10 @@ func AutoTaggingArtwork(ctx *telegohandler.Context, message telego.Message) erro
 }
 
 func ReindexArtworks(ctx *telegohandler.Context, message telego.Message) error {
-	serv := service.FromContext(ctx)
+	serv, err := requireService(ctx)
+	if err != nil {
+		return err
+	}
 	if !utils.CheckPermissionInGroup(ctx, serv, message, shared.PermissionEditArtwork) {
 		utils.ReplyMessage(ctx, message, "你没有编辑作品的权限")
 		return nil
