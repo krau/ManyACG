@@ -53,6 +53,14 @@ func icAngle(img *grayImage, cx, cy int) float32 {
 	return float32(math.Atan2(float64(m01), float64(m10)) * degPerRad)
 }
 
+// iround is round-half-away-from-zero for both signs (int(x+0.5) fails for x<0).
+func iround(x float64) int {
+	if x >= 0 {
+		return int(x + 0.5)
+	}
+	return int(x - 0.5)
+}
+
 func computeDescriptor(img *grayImage, cx, cy int, angleDeg float32, desc []byte) {
 	angle := float64(angleDeg) / degPerRad
 	a := math.Cos(angle)
@@ -72,14 +80,12 @@ func computeDescriptor(img *grayImage, cx, cy int, angleDeg float32, desc []byte
 			px1 := float64(bitPattern31[p1*2])
 			py1 := float64(bitPattern31[p1*2+1])
 
-			// point 0: y=round(px*b+py*a), x=round(px*a-py*b)
-			y0 := int(px0*b + py0*a + 0.5)
-			x0 := int(px0*a - py0*b + 0.5)
+			y0 := iround(px0*b + py0*a)
+			x0 := iround(px0*a - py0*b)
 			t0 := int(pix[base+x0+y0*stride])
 
-			// point 1
-			y1 := int(px1*b + py1*a + 0.5)
-			x1 := int(px1*a - py1*b + 0.5)
+			y1 := iround(px1*b + py1*a)
+			x1 := iround(px1*a - py1*b)
 			t1 := int(pix[base+x1+y1*stride])
 
 			if t0 < t1 {
