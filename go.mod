@@ -19,6 +19,7 @@ require (
 	github.com/gofiber/fiber/v3 v3.1.0
 	github.com/gorilla/feeds v1.2.0
 	github.com/imroc/req/v3 v3.57.0
+	github.com/klauspost/compress v1.19.0
 	github.com/krau/ffmpeg-go v0.6.0
 	github.com/krau/go-thumbhash v0.0.0-20250822034729-2df7c655859d
 	github.com/meilisearch/meilisearch-go v0.36.1
@@ -35,6 +36,7 @@ require (
 	github.com/unvgo/ouid v1.0.0
 	github.com/vmihailenco/msgpack/v5 v5.4.1
 	github.com/yapingcat/gomedia v0.0.0-20240906162731-17feea57090c
+	github.com/zeebo/blake3 v0.2.4
 	go.etcd.io/bbolt v1.4.3
 	go.uber.org/zap v1.27.1
 	golang.org/x/image v0.39.0
@@ -86,7 +88,6 @@ require (
 	github.com/jackc/puddle/v2 v2.2.2 // indirect
 	github.com/jinzhu/inflection v1.0.0 // indirect
 	github.com/jinzhu/now v1.1.5 // indirect
-	github.com/klauspost/compress v1.18.5 // indirect
 	github.com/klauspost/cpuid/v2 v2.3.0 // indirect
 	github.com/leodido/go-urn v1.4.0 // indirect
 	github.com/lucasb-eyer/go-colorful v1.3.0 // indirect
