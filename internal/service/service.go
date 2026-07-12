@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"github.com/krau/ManyACG/internal/infra/config/runtimecfg"
-	"github.com/krau/ManyACG/internal/infra/imsearch"
 	"github.com/krau/ManyACG/internal/infra/search"
 	"github.com/krau/ManyACG/internal/infra/source"
 	"github.com/krau/ManyACG/internal/infra/storage"
@@ -21,14 +20,9 @@ type Service struct {
 	storages map[shared.StorageType]storage.Storage
 	sources  map[shared.SourceType]source.ArtworkSource
 	storCfg  runtimecfg.StorageConfig
-	imsearch imsearch.Engine
 }
 
 type Option func(*Service)
-
-func WithImsearch(e imsearch.Engine) Option {
-	return func(s *Service) { s.imsearch = e }
-}
 
 func NewService(
 	repos repo.Repositories,
@@ -52,9 +46,6 @@ func NewService(
 	}
 	return s
 }
-
-// Imsearch returns the feature search engine (may be nil or disabled).
-func (s *Service) Imsearch() imsearch.Engine { return s.imsearch }
 
 type serviceCtxKey struct{}
 

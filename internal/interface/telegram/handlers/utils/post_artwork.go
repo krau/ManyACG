@@ -353,12 +353,11 @@ func doPostAndCreateArtwork(
 	}
 	log.Info("created artwork", "id", ent.ID, "url", ent.SourceURL, "title", ent.Title, "pics", len(ent.Pictures))
 
+	editReplyMarkupText("已发布到频道, 正在检测重复图片...")
 	newEnt, err := serv.GetArtworkByURL(ctx, artwork.SourceURL)
 	if err != nil {
-		return oops.Wrapf(err, "failed to get artwork by url after create")
+		return oops.Wrapf(err, "failed to get artwork by url for duplicate picture check")
 	}
-
-	editReplyMarkupText("已发布到频道, 正在检测重复图片...")
 	for i, pic := range newEnt.Pictures {
 		similars, err := serv.QueryPicturesByPhash(ctx, query.PicturesPhash{Input: pic.Phash, Distance: 10, Limit: 20})
 		if err != nil {

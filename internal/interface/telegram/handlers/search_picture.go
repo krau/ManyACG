@@ -10,6 +10,8 @@ import (
 	"github.com/krau/ManyACG/internal/infra/tagging"
 	"github.com/krau/ManyACG/internal/interface/telegram/handlers/utils"
 	"github.com/krau/ManyACG/internal/interface/telegram/metautil"
+	"github.com/krau/ManyACG/internal/model/query"
+	"github.com/krau/ManyACG/internal/pkg/mediatool"
 	"github.com/krau/ManyACG/internal/service"
 	"github.com/krau/ManyACG/pkg/log"
 	"github.com/mymmrac/telego"
@@ -76,21 +78,25 @@ func SearchPicture(ctx *telegohandler.Context, message telego.Message) error {
 }
 
 func getDBSearchResultText(ctx context.Context, serv *service.Service, meta *metautil.MetaData, file []byte) (string, bool, error) {
-	hits, err := serv.SearchPicturesByImage(ctx, file, 10, 10)
+	hash, err := mediatool.GetImagePhashFromReader(bytes.NewReader(file))
 	if err != nil {
-		return "", false, oops.Wrapf(err, "search pictures by image failed")
+		return "", false, oops.Wrapf(err, "fail to calculate image hash")
 	}
-	if len(hits) == 0 {
+	pictures, err := serv.QueryPicturesByPhash(ctx, query.PicturesPhash{
+		Input:    hash,
+		Distance: 10,
+		Limit:    10,
+	})
+	if err != nil {
+		return "", false, oops.Wrapf(err, "query pictures by phash failed")
+	}
+	if len(pictures) == 0 {
 		return "未在数据库中找到相似图片", false, nil
 	}
 	var text strings.Builder
-	text.WriteString(fmt.Sprintf("找到 %d 张相似图片\n\n", len(hits)))
-	for _, hit := range hits {
-		picture := hit.Picture
-		if picture == nil || picture.Artwork == nil {
-			continue
-		}
-		text.WriteString(fmt.Sprintf("<a href=\"%s\">%s</a> · 第 %d 张\n",
+	text.WriteString(fmt.Sprintf("找到%d张相似的图片\n\n", len(pictures)))
+	for _, picture := range pictures {
+		text.WriteString(fmt.Sprintf("<a href=\"%s\">%s_%d</a>\n",
 			picture.Artwork.GetSourceURL(),
 			utils.EscapeHTML(picture.Artwork.GetTitle()),
 			picture.OrderIndex+1,
@@ -99,9 +105,8 @@ func getDBSearchResultText(ctx context.Context, serv *service.Service, meta *met
 			text.WriteString(fmt.Sprintf("<a href=\"%s\">频道消息</a>\n", meta.ChannelMessageURL(picture.TelegramInfo.Data().MessageID(meta.ChannelChatID().ID))))
 		}
 		if meta.SiteURL() != "" {
-			text.WriteString(fmt.Sprintf("<a href=\"%s\">网站页面</a>\n", meta.SiteURL()+"/artwork/"+picture.ArtworkID.Hex()))
+			text.WriteString(fmt.Sprintf("<a href=\"%s\">ManyACG</a>\n\n", meta.SiteURL()+"/artwork/"+picture.ArtworkID.Hex()))
 		}
-		text.WriteString("\n")
 	}
 	return text.String(), true, nil
 }
