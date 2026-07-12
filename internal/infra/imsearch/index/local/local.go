@@ -224,7 +224,7 @@ func (b *Backend) NewSearcher(_ context.Context, threads int) (index.Searcher, e
 	var subs []invlists.InvertedLists
 	var closers []io.Closer
 
-	// Load the main invlists.bin if it exists.
+	// Main invlists.bin is required for a trained local index.
 	mainOD, err := invlists.LoadOnDisk(b.invlistsPath())
 	if err != nil {
 		return nil, fmt.Errorf("load invlists: %w", err)
@@ -236,7 +236,7 @@ func (b *Backend) NewSearcher(_ context.Context, threads int) (index.Searcher, e
 	subs = append(subs, mainOD)
 	closers = append(closers, mainOD)
 
-	// Load any shard files (invlists.0.bin, invlists.1.bin, ...).
+	// Load any shard files (invlists.0, invlists.1, ...).
 	for i := 0; ; i++ {
 		subPath := b.subIndexPath(i)
 		od, err := invlists.LoadOnDisk(subPath)

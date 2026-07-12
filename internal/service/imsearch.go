@@ -27,7 +27,7 @@ func (s *Service) SearchPicturesByImage(ctx context.Context, imageBytes []byte, 
 	if limit <= 0 {
 		limit = 10
 	}
-	if phashDistance <= 0 {
+	if phashDistance < 0 {
 		phashDistance = 10
 	}
 

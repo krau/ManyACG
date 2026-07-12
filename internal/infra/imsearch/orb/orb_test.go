@@ -37,7 +37,7 @@ func TestUmax(t *testing.T) {
 	}
 	for v := 1; v <= halfPatchSize; v++ {
 		if umax[v] > umax[v-1] {
-			t.Fatalf("umax not monotstonic at %d: %d > %d", v, umax[v], umax[v-1])
+			t.Fatalf("umax not monotonic at %d: %d > %d", v, umax[v], umax[v-1])
 		}
 	}
 }

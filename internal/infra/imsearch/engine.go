@@ -11,7 +11,6 @@ import (
 	_ "image/png"
 	"math"
 	"sync"
-	"sync/atomic"
 	"time"
 
 	"github.com/corona10/goimagehash"
@@ -111,7 +110,9 @@ type engine struct {
 	db  *imdb.IMDB
 	ext *orb.Extractor
 
-	searcher atomic.Pointer[index.Searcher]
+	searchMu sync.RWMutex
+	searcher index.Searcher
+
 	// build coordination
 	buildMu   sync.Mutex
 	building  bool
@@ -158,7 +159,7 @@ func Init(ctx context.Context, cfg Config) (Engine, error) {
 	e := &engine{cfg: cfg, db: m, ext: ext}
 	// Try open searcher; ok if not trained yet.
 	if s, _, err := m.OpenIndex(ctx, 0); err == nil {
-		e.searcher.Store(&s)
+		e.searcher = s
 	} else {
 		log.Warn("imsearch: index not ready yet", "err", err)
 	}
@@ -176,9 +177,12 @@ func (e *engine) Close() error {
 			e.buildTmr = nil
 		}
 		e.buildMu.Unlock()
-		if p := e.searcher.Swap(nil); p != nil && *p != nil {
-			_ = (*p).Close()
+		e.searchMu.Lock()
+		if e.searcher != nil {
+			_ = e.searcher.Close()
+			e.searcher = nil
 		}
+		e.searchMu.Unlock()
 		if e.ext != nil {
 			_ = e.ext.Close()
 		}
@@ -279,16 +283,21 @@ func (e *engine) Search(ctx context.Context, imageBytes []byte, opts SearchOpts)
 		return nil, nil
 	}
 	sopts := e.searchOpts(opts)
-	p := e.searcher.Load()
-	if p == nil || *p == nil {
-		// try open once
+
+	e.searchMu.RLock()
+	s := e.searcher
+	if s == nil {
+		e.searchMu.RUnlock()
 		e.reloadSearcher(ctx)
-		p = e.searcher.Load()
-		if p == nil || *p == nil {
-			return nil, nil // not ready
+		e.searchMu.RLock()
+		s = e.searcher
+		if s == nil {
+			e.searchMu.RUnlock()
+			return nil, nil
 		}
 	}
-	results, err := e.db.Search(ctx, *p, descs, sopts)
+	results, err := e.db.Search(ctx, s, descs, sopts)
+	e.searchMu.RUnlock()
 	if err != nil {
 		return nil, err
 	}
@@ -421,13 +430,15 @@ func (e *engine) Status(ctx context.Context) (Status, error) {
 	if err != nil {
 		return Status{}, err
 	}
-	p := e.searcher.Load()
+	e.searchMu.RLock()
+	ok := e.searcher != nil
+	e.searchMu.RUnlock()
 	return Status{
 		Images:     images,
 		Vectors:    vectors,
 		Unindexed:  unindexed,
 		Trained:    e.db.Backend().Trained(ctx),
-		SearcherOK: p != nil && *p != nil,
+		SearcherOK: ok,
 		DataDir:    e.cfg.DataDir,
 	}, nil
 }
@@ -536,9 +547,13 @@ func (e *engine) reloadSearcher(ctx context.Context) {
 		log.Warn("imsearch open index", "err", err)
 		return
 	}
-	old := e.searcher.Swap(&s)
-	if old != nil && *old != nil {
-		go (*old).Close()
+	e.searchMu.Lock()
+	old := e.searcher
+	e.searcher = s
+	e.searchMu.Unlock()
+	// Close only after writers released the lock so no Search still holds old.
+	if old != nil {
+		_ = old.Close()
 	}
 }
 
