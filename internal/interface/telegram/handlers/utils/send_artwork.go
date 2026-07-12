@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"os"
 	"path/filepath"
 	"time"
 
@@ -113,8 +112,8 @@ func GetVideoVideoInputFile(ctx context.Context, serv *service.Service, meta *me
 		filePath = file.Name()
 		file.Close()
 	}
-	// Use a fresh read-only handle for telego without deleting cache file on close.
-	videoFile, err := os.Open(filePath)
+	// Fresh handle for telego; OpenTemp removes the local file after upload.
+	videoFile, err := osutil.OpenTemp(filePath)
 	if err != nil {
 		return nil, oops.Wrapf(err, "failed to open video file")
 	}

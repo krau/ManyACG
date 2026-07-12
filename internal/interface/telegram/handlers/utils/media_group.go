@@ -2,6 +2,7 @@ package utils
 
 import (
 	"context"
+	"io"
 	"os"
 
 	"github.com/krau/ManyACG/internal/common/httpclient"
@@ -315,7 +316,9 @@ func ArtworkInputMedias(
 						filePath = file.Name()
 						file.Close()
 					}
-					// Extract metadata and thumbnail before opening file for telego
+					// Probe on a dedicated handle, then open a fresh TempFile for telego
+					// so upload is not affected by ffmpeg pipe/seek side effects.
+					// OpenTemp: second FD for upload; Close removes the local cache file.
 					videoMeta, videoThumb = extractVideoMetaAndThumb(filePath)
 					videoFile, err := osutil.OpenTemp(filePath)
 					if err != nil {
@@ -372,7 +375,8 @@ func ArtworkInputMedias(
 	}, nil
 }
 
-// extractVideoMetaAndThumb extracts video metadata and thumbnail from a file path.
+// extractVideoMetaAndThumb probes metadata and thumbnail on a short-lived handle.
+// Must not share that handle with the telego upload reader (avoids closed-pipe races).
 func extractVideoMetaAndThumb(filePath string) (*mediatool.VideoMetadata, []byte) {
 	file, err := os.Open(filePath)
 	if err != nil {
@@ -383,16 +387,18 @@ func extractVideoMetaAndThumb(filePath string) (*mediatool.VideoMetadata, []byte
 
 	var meta *mediatool.VideoMetadata
 	if mediatool.FFmpegAvailable() {
-		meta, _ = mediatool.GetVideoMetadata(file)
+		meta, err = mediatool.GetVideoMetadata(file)
 	} else {
-		meta, _ = mediatool.GetMP4Meta(file)
+		meta, err = mediatool.GetMP4Meta(file)
+	}
+	if err != nil {
+		log.Warnf("failed to extract video metadata: %v", err)
 	}
 
 	var thumb []byte
 	if mediatool.FFmpegAvailable() {
-		_, err := file.Seek(0, 0)
-		if err != nil {
-			log.Warnf("failed to seek video file: %v", err)
+		if _, seekErr := file.Seek(0, io.SeekStart); seekErr != nil {
+			log.Warnf("failed to seek video file: %v", seekErr)
 			return meta, nil
 		}
 		thumb, err = mediatool.ExtractVideoThumbFrame(file)
