@@ -103,14 +103,24 @@ func (s *Service) SearchPicturesByImage(ctx context.Context, imageBytes []byte, 
 		}
 		out = append(out, PictureSearchHit{Picture: a.pic, Score: a.score, Source: src})
 	}
-	// both > phash > feature; then by score
+	// both > phash > feature; then by score; then by picture id for stability
 	rank := map[string]int{"both": 0, "phash": 1, "feature": 2}
 	sort.SliceStable(out, func(i, j int) bool {
 		ri, rj := rank[out[i].Source], rank[out[j].Source]
 		if ri != rj {
 			return ri < rj
 		}
-		return out[i].Score > out[j].Score
+		if out[i].Score != out[j].Score {
+			return out[i].Score > out[j].Score
+		}
+		idi, idj := "", ""
+		if out[i].Picture != nil {
+			idi = out[i].Picture.ID.Hex()
+		}
+		if out[j].Picture != nil {
+			idj = out[j].Picture.ID.Hex()
+		}
+		return idi < idj
 	})
 	if len(out) > limit {
 		out = out[:limit]
@@ -137,9 +147,11 @@ func (s *Service) resolveImsearchHit(ctx context.Context, h imsearch.Hit) (*enti
 	pic, err := s.repos.Picture().GetPictureByID(ctx, oid)
 	if err == nil {
 		if pic.Artwork == nil {
-			if aw, err := s.repos.Artwork().GetArtworkByID(ctx, pic.ArtworkID); err == nil {
-				pic.Artwork = aw
+			aw, awErr := s.repos.Artwork().GetArtworkByID(ctx, pic.ArtworkID)
+			if awErr != nil {
+				return nil, nil
 			}
+			pic.Artwork = aw
 		}
 		return pic, nil
 	}

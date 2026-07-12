@@ -144,6 +144,8 @@ func loadConfig() Config {
 		"imsearch.max_width":          768,
 		"imsearch.auto_build":         true,
 		"imsearch.build_debounce_sec": 2,
+		"imsearch.min_matches":        8,
+		"imsearch.min_score":          float32(25),
 	}
 
 	for key, value := range defaults {
