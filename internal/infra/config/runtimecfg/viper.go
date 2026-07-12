@@ -28,6 +28,7 @@ type Config struct {
 	KVDB      KVDBConfig      `toml:"kvdb" mapstructure:"kvdb" json:"kvdb" yaml:"kvdb"`
 	Storage   StorageConfig   `toml:"storage" mapstructure:"storage" json:"storage" yaml:"storage"`
 	Scheduler SchedulerConfig `toml:"scheduler" mapstructure:"scheduler" json:"scheduler" yaml:"scheduler"`
+	Imsearch  ImsearchConfig  `toml:"imsearch" mapstructure:"imsearch" json:"imsearch" yaml:"imsearch"`
 	App       AppConfig       `toml:"app" mapstructure:"app" json:"app" yaml:"app"`
 }
 
@@ -131,6 +132,20 @@ func loadConfig() Config {
 		"kvdb.ttl_batch_limit":  1024,
 		"kvdb.ttl_sweep_period": 60, // in seconds
 		"kvdb.redis.prefix":     "manyacg:",
+
+		"imsearch.enable":             false,
+		"imsearch.data_dir":           "./data/imsearch",
+		"imsearch.distance":           64,
+		"imsearch.count":              10,
+		"imsearch.k":                  3,
+		"imsearch.nprobe":             16,
+		"imsearch.nfeatures":          500,
+		"imsearch.max_height":         1080,
+		"imsearch.max_width":          768,
+		"imsearch.auto_build":         true,
+		"imsearch.build_debounce_sec": 2,
+		"imsearch.min_matches":        8,
+		"imsearch.min_score":          float32(25),
 	}
 
 	for key, value := range defaults {
