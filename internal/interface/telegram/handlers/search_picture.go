@@ -80,29 +80,33 @@ func getDBSearchResultText(ctx context.Context, serv *service.Service, meta *met
 	if err != nil {
 		return "", false, oops.Wrapf(err, "search pictures by image failed")
 	}
-	if len(hits) == 0 {
-		return "未在数据库中找到相似图片", false, nil
-	}
-	var text strings.Builder
-	text.WriteString(fmt.Sprintf("找到 %d 张相似图片\n\n", len(hits)))
+	shown := 0
+	var body strings.Builder
 	for _, hit := range hits {
 		picture := hit.Picture
 		if picture == nil || picture.Artwork == nil {
 			continue
 		}
-		text.WriteString(fmt.Sprintf("<a href=\"%s\">%s</a> · 第 %d 张\n",
+		shown++
+		body.WriteString(fmt.Sprintf("<a href=\"%s\">%s</a> · 第 %d 张\n",
 			picture.Artwork.GetSourceURL(),
 			utils.EscapeHTML(picture.Artwork.GetTitle()),
 			picture.OrderIndex+1,
 		))
 		if meta.ChannelAvailable() && picture.TelegramInfo.Data().MessageID(meta.ChannelChatID().ID) != 0 {
-			text.WriteString(fmt.Sprintf("<a href=\"%s\">频道消息</a>\n", meta.ChannelMessageURL(picture.TelegramInfo.Data().MessageID(meta.ChannelChatID().ID))))
+			body.WriteString(fmt.Sprintf("<a href=\"%s\">频道消息</a>\n", meta.ChannelMessageURL(picture.TelegramInfo.Data().MessageID(meta.ChannelChatID().ID))))
 		}
 		if meta.SiteURL() != "" {
-			text.WriteString(fmt.Sprintf("<a href=\"%s\">网站页面</a>\n", meta.SiteURL()+"/artwork/"+picture.ArtworkID.Hex()))
+			body.WriteString(fmt.Sprintf("<a href=\"%s\">网站页面</a>\n", meta.SiteURL()+"/artwork/"+picture.ArtworkID.Hex()))
 		}
-		text.WriteString("\n")
+		body.WriteString("\n")
 	}
+	if shown == 0 {
+		return "未在数据库中找到相似图片", false, nil
+	}
+	var text strings.Builder
+	text.WriteString(fmt.Sprintf("找到 %d 张相似图片\n\n", shown))
+	text.WriteString(body.String())
 	return text.String(), true, nil
 }
 
