@@ -332,25 +332,43 @@ func (bl *builder) commitShards(nSub int) error {
 		return os.Rename(bl.backend.subIndexPath(0), finalPath)
 	}
 
-	// If invlists.bin doesn't exist but we have multiple shards, we must
-	// merge them into a single invlists.bin (first-time full build).
+	// If invlists.bin doesn't exist but we have multiple shards, merge them.
 	if os.IsNotExist(statErr) {
 		return bl.mergeIntoNew(nSub, finalPath)
 	}
 
-	// invlists.bin exists: shards are saved alongside it and the searcher
-	// loads them all via VStack. No expensive full-rewrite merge needed.
-	return nil
+	// invlists.bin exists: merge new shards into it to avoid VStack proliferation.
+	return bl.mergeIntoExisting(nSub, finalPath)
 }
 
 func (bl *builder) mergeIntoNew(nSub int, finalPath string) error {
+	return bl.mergeShards(nSub, finalPath, false)
+}
+
+func (bl *builder) mergeIntoExisting(nSub int, finalPath string) error {
+	return bl.mergeShards(nSub, finalPath, true)
+}
+
+func (bl *builder) mergeShards(nSub int, finalPath string, includeExisting bool) error {
 	var subs []invlists.InvertedLists
 	var closers []*invlists.OnDisk
+
+	if includeExisting {
+		od, err := invlists.LoadOnDisk(finalPath)
+		if err != nil {
+			return fmt.Errorf("merge: load existing invlists: %w", err)
+		}
+		subs = append(subs, od)
+		closers = append(closers, od)
+	}
 
 	for i := range nSub {
 		od, err := invlists.LoadOnDisk(bl.backend.subIndexPath(i))
 		if err != nil {
-			return err
+			for _, c := range closers {
+				c.Close()
+			}
+			return fmt.Errorf("merge: load shard %d: %w", i, err)
 		}
 		subs = append(subs, od)
 		closers = append(closers, od)
@@ -361,21 +379,22 @@ func (bl *builder) mergeIntoNew(nSub int, finalPath string) error {
 		for _, c := range closers {
 			c.Close()
 		}
-		return err
+		return fmt.Errorf("merge: vstack: %w", err)
 	}
 	tmpMerged := finalPath + ".merged"
 	if err := invlists.Save(v, tmpMerged, bl.backend.codeSize, 3); err != nil {
 		for _, c := range closers {
 			c.Close()
 		}
-		return err
+		return fmt.Errorf("merge: save: %w", err)
 	}
 	for _, c := range closers {
 		c.Close()
 	}
 	if err := os.Rename(tmpMerged, finalPath); err != nil {
-		return err
+		return fmt.Errorf("merge: rename: %w", err)
 	}
+	// Remove merged shards.
 	for i := range nSub {
 		os.Remove(bl.backend.subIndexPath(i))
 	}
