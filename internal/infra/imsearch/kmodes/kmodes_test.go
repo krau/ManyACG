@@ -28,12 +28,14 @@ func TestUpdateCentroidMajority(t *testing.T) {
 	// 3 points; bit 0 set in 2 of 3 -> majority -> set. bit 1 set in 1 of 3 -> not.
 	data := [][]byte{{0b01}, {0b01}, {0b10}}
 	assignments := []int{0, 0, 0}
-	c, freq := updateCentroid(data, assignments, 0, 1)
-	if freq != 3 {
-		t.Fatalf("freq=%d want 3", freq)
+	centroids := make([][]byte, 1)
+	frequency := make([]int, 1)
+	updateCentroids(data, assignments, centroids, frequency, 1, 1)
+	if frequency[0] != 3 {
+		t.Fatalf("freq=%d want 3", frequency[0])
 	}
-	if c[0] != 0b01 {
-		t.Fatalf("centroid=%08b want 00000001", c[0])
+	if centroids[0][0] != 0b01 {
+		t.Fatalf("centroid=%08b want 00000001", centroids[0][0])
 	}
 }
 

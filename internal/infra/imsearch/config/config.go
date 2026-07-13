@@ -22,7 +22,7 @@ func DefaultSearchOptions() SearchOptions {
 		Distance:   64,
 		Count:      10,
 		K:          3,
-		NProbe:     16,
+		NProbe:     3,
 		Threads:    runtime.NumCPU(),
 		MinMatches: 8,
 		MinScore:   25,

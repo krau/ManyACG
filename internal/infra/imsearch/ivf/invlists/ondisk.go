@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"sync"
 
 	"github.com/klauspost/compress/zstd"
 )
@@ -123,7 +124,16 @@ type OnDisk struct {
 	listSize   []uint64
 	listSplit  []uint64
 	file       *os.File
-	dec        *zstd.Decoder // shared; DecodeAll is safe for concurrent use
+	dec        *zstd.Decoder
+
+	cacheMu sync.Mutex
+	cache   map[int]*listCache
+	maxCache int
+}
+
+type listCache struct {
+	ids   []uint64
+	codes [][]byte
 }
 
 func LoadOnDisk(path string) (*OnDisk, error) {
@@ -155,6 +165,8 @@ func LoadOnDisk(path string) (*OnDisk, error) {
 		listSplit:  make([]uint64, nlist),
 		file:       f,
 		dec:        dec,
+		cache:      make(map[int]*listCache),
+		maxCache:   512,
 	}
 	for _, arr := range [][]uint64{od.listLen, od.listOffset, od.listSize, od.listSplit} {
 		if err := binary.Read(r, binary.LittleEndian, arr); err != nil {
@@ -176,6 +188,14 @@ func (o *OnDisk) GetList(listNo int) ([]uint64, [][]byte, error) {
 	if n == 0 {
 		return nil, nil, nil
 	}
+
+	o.cacheMu.Lock()
+	if c, ok := o.cache[listNo]; ok {
+		o.cacheMu.Unlock()
+		return c.ids, c.codes, nil
+	}
+	o.cacheMu.Unlock()
+
 	size := int(o.listSize[listNo])
 	offset := int64(o.listOffset[listNo])
 	split := int(o.listSplit[listNo])
@@ -202,6 +222,17 @@ func (o *OnDisk) GetList(listNo int) ([]uint64, [][]byte, error) {
 	for i := range n {
 		codes[i] = codeBytes[i*o.codeSize : (i+1)*o.codeSize]
 	}
+
+	o.cacheMu.Lock()
+	if len(o.cache) >= o.maxCache {
+		for k := range o.cache {
+			delete(o.cache, k)
+			break
+		}
+	}
+	o.cache[listNo] = &listCache{ids: ids, codes: codes}
+	o.cacheMu.Unlock()
+
 	return ids, codes, nil
 }
 

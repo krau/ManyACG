@@ -138,7 +138,7 @@ func loadConfig() Config {
 		"imsearch.distance":           64,
 		"imsearch.count":              10,
 		"imsearch.k":                  3,
-		"imsearch.nprobe":             16,
+		"imsearch.nprobe":             3,
 		"imsearch.nfeatures":          500,
 		"imsearch.max_height":         1080,
 		"imsearch.max_width":          768,

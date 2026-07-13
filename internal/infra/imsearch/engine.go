@@ -94,7 +94,7 @@ func DefaultConfig() Config {
 		Distance:         64,
 		Count:            10,
 		K:                3,
-		NProbe:           16,
+		NProbe:           3,
 		NFeatures:        500,
 		MaxHeight:        1080,
 		MaxWidth:         768,

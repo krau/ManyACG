@@ -3,6 +3,8 @@ package kmodes
 import (
 	"math"
 	"math/rand"
+	"runtime"
+	"sync"
 
 	"github.com/krau/ManyACG/internal/infra/imsearch/hamming"
 )
@@ -112,78 +114,162 @@ func Cluster(data [][]byte, k, maxIter int, method InitMethod, rng *rand.Rand) S
 	cs := codeSize(data)
 	centroids := initCentroids(data, k, method, rng)
 
-	var assignments []int
+	assignments := make([]int, len(data))
 	distance := uint32(math.MaxUint32)
 	frequency := make([]int, k)
 
 	for range maxIter {
-		newAssignments, newDistance := updateAssignments(data, centroids)
+		newDistance := updateAssignments(data, centroids, assignments)
 		if newDistance >= distance {
 			break
 		}
-		assignments = newAssignments
 		distance = newDistance
 
-		for cid := range k {
-			c, freq := updateCentroid(data, assignments, cid, cs)
-			centroids[cid] = c
-			frequency[cid] = freq
-		}
+		updateCentroids(data, assignments, centroids, frequency, cs, k)
 	}
 
 	return State{DistSum: distance, Centroids: centroids, Frequency: frequency}
 }
 
-func updateAssignments(data, centroids [][]byte) ([]int, uint32) {
-	assignments := make([]int, len(data))
-	var total uint32
-	for i, point := range data {
-		minD := uint32(math.MaxUint32)
-		best := 0
-		for j, c := range centroids {
-			if d := hamming.Distance(point, c); d < minD {
-				minD = d
-				best = j
-			}
-		}
-		assignments[i] = best
-		total += minD
+// updateAssignments assigns each point to its nearest centroid in parallel.
+// assignments is reused across iterations to avoid re-allocation.
+// Returns the total minimum distance.
+func updateAssignments(data, centroids [][]byte, assignments []int) uint32 {
+	n := len(data)
+	nc := len(centroids)
+	if n == 0 || nc == 0 {
+		return 0
 	}
-	return assignments, total
+
+	workers := max(min(runtime.NumCPU(), n), 1)
+
+	type partial struct {
+		total uint32
+	}
+
+	results := make([]partial, workers)
+	chunk := (n + workers - 1) / workers
+
+	var wg sync.WaitGroup
+	for w := range workers {
+		lo := w * chunk
+		hi := min(lo+chunk, n)
+		if lo >= hi {
+			continue
+		}
+		wg.Add(1)
+		go func(lo, hi, wid int) {
+			defer wg.Done()
+			var sub uint32
+			for i := lo; i < hi; i++ {
+				point := data[i]
+				minD := uint32(math.MaxUint32)
+				best := 0
+				for j := range nc {
+					if d := hamming.Distance(point, centroids[j]); d < minD {
+						minD = d
+						best = j
+					}
+				}
+				assignments[i] = best
+				sub += minD
+			}
+			results[wid].total = sub
+		}(lo, hi, w)
+	}
+	wg.Wait()
+
+	var total uint32
+	for _, r := range results {
+		total += r.total
+	}
+	return total
 }
 
-func updateCentroid(data [][]byte, assignments []int, clusterID, cs int) ([]byte, int) {
-	var points [][]byte
-	for i, a := range assignments {
-		if a == clusterID {
-			points = append(points, data[i])
-		}
+// updateCentroids recomputes all centroids in parallel.
+// Uses per-worker flat accumulators to avoid contention, then merges.
+func updateCentroids(data [][]byte, assignments []int, centroids [][]byte, frequency []int, cs, k int) {
+	nBits := k * cs * 8
+	counts := make([]uint32, k)
+
+	n := len(data)
+	workers := max(min(runtime.NumCPU(), n), 1)
+
+	type workerAcc struct {
+		bits   []uint32
+		counts []uint32
 	}
-	if len(points) == 0 {
-		return make([]byte, cs), 0
+	accs := make([]workerAcc, workers)
+	for i := range workers {
+		accs[i] = workerAcc{
+			bits:   make([]uint32, nBits),
+			counts: make([]uint32, k),
+		}
 	}
 
-	centroid := make([]byte, cs)
-	half := uint32(len(points)) / 2
-	for bytePos := range cs {
-		var bitCounts [8]uint32
-		for _, p := range points {
-			bv := p[bytePos]
-			for bit := range 8 {
-				if (bv>>bit)&1 == 1 {
-					bitCounts[bit]++
+	chunk := (n + workers - 1) / workers
+	var wg sync.WaitGroup
+	for w := 0; w < workers; w++ {
+		lo := w * chunk
+		hi := min(lo+chunk, n)
+		if lo >= hi {
+			continue
+		}
+		wg.Add(1)
+		go func(lo, hi, wid int) {
+			defer wg.Done()
+			lb := accs[wid].bits
+			lc := accs[wid].counts
+			for i := lo; i < hi; i++ {
+				cid := assignments[i]
+				lc[cid]++
+				p := data[i]
+				for bp := range cs {
+					bv := p[bp]
+					base := cid*cs*8 + bp*8
+					for bit := range 8 {
+						if (bv>>bit)&1 == 1 {
+							lb[base+bit]++
+						}
+					}
 				}
 			}
-		}
-		var nb byte
-		for bit := range 8 {
-			if bitCounts[bit] > half {
-				nb |= 1 << bit
-			}
-		}
-		centroid[bytePos] = nb
+		}(lo, hi, w)
 	}
-	return centroid, len(points)
+	wg.Wait()
+
+	// Merge
+	bitCounts := make([]uint32, nBits)
+	for w := range accs {
+		for i := range nBits {
+			bitCounts[i] += accs[w].bits[i]
+		}
+		for cid := range k {
+			counts[cid] += accs[w].counts[cid]
+		}
+	}
+
+	// Majority vote (serial, cheap).
+	for cid := range k {
+		frequency[cid] = int(counts[cid])
+		if counts[cid] == 0 {
+			centroids[cid] = make([]byte, cs)
+			continue
+		}
+		half := counts[cid] / 2
+		centroid := make([]byte, cs)
+		for bp := range cs {
+			base := cid*cs*8 + bp*8
+			var nb byte
+			for bit := range 8 {
+				if bitCounts[base+bit] > half {
+					nb |= 1 << bit
+				}
+			}
+			centroid[bp] = nb
+		}
+		centroids[cid] = centroid
+	}
 }
 
 func ImbalanceFactor(hist []int) float32 {
@@ -228,7 +314,8 @@ func Cluster2Level(x [][]byte, nc, maxIter int, method InitMethod, rng *rand.Ran
 	ks := Cluster(x[:n1], nc1, maxIter, method, rng)
 
 	// Assign ALL vectors to level-1 centroids.
-	assignments, _ := updateAssignments(x, ks.Centroids)
+	assignments := make([]int, len(x))
+	updateAssignments(x, ks.Centroids, assignments)
 	xc := make([][][]byte, nc1)
 	for i, a := range assignments {
 		xc[a] = append(xc[a], x[i])

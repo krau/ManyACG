@@ -21,8 +21,68 @@ func (m *IMDB) ExportVectors(ctx context.Context, count int) ([][]byte, error) {
 	if int64(count) >= totalVec {
 		return m.exportSequential(ctx, count)
 	}
+
+	avgPerImg := max(int(totalVec/imgCount), 1)
+	imgSample := min(max(count/avgPerImg, 1), int(imgCount))
+
+	out := make([][]byte, 0, count)
+	sqlDB := m.db.SQL()
+
+	rows, err := sqlDB.QueryContext(ctx,
+		`SELECT v.vector FROM vector v
+		 WHERE v.id IN (
+		   SELECT id FROM image
+		   WHERE id IN (SELECT abs(random()) % (SELECT coalesce(max(id),0)+1 FROM image) FROM image LIMIT ?)
+		 )
+		 ORDER BY v.id ASC`, imgSample*3)
+	if err != nil {
+		// Fallback: sequential stride sampling (slow but memory-safe).
+		return m.exportStride(ctx, count, totalVec)
+	}
+	defer rows.Close()
+
 	keepRatio := float64(count) / float64(totalVec)
-	var out [][]byte
+	step := 1
+	if keepRatio > 0 && keepRatio < 1 {
+		step = int(1.0 / keepRatio)
+	}
+	if step < 1 {
+		step = 1
+	}
+
+	for rows.Next() {
+		var blob []byte
+		if err := rows.Scan(&blob); err != nil {
+			return nil, err
+		}
+		n := len(blob) / m.codeSize
+		for i := 0; i < n; i += step {
+			code := make([]byte, m.codeSize)
+			copy(code, blob[i*m.codeSize:(i+1)*m.codeSize])
+			out = append(out, code)
+			if len(out) >= count {
+				return out, nil
+			}
+		}
+	}
+	if len(out) < count {
+		// Random sampling didn't yield enough; fall back to stride.
+		return m.exportStride(ctx, count, totalVec)
+	}
+	return out, rows.Err()
+}
+
+// exportStride reads vectors in id order with a stride, keeping memory bounded.
+func (m *IMDB) exportStride(ctx context.Context, count int, totalVec int64) ([][]byte, error) {
+	keepRatio := float64(count) / float64(totalVec)
+	step := 1
+	if keepRatio > 0 && keepRatio < 1 {
+		step = int(1.0 / keepRatio)
+	}
+	if step < 1 {
+		step = 1
+	}
+	out := make([][]byte, 0, count)
 	const batch = 500
 	var offset int64
 	for len(out) < count {
@@ -35,13 +95,6 @@ func (m *IMDB) ExportVectors(ctx context.Context, count int) ([][]byte, error) {
 		}
 		for _, r := range rows {
 			n := len(r.Vector) / m.codeSize
-			step := 1
-			if keepRatio > 0 {
-				step = int(1.0 / keepRatio)
-			}
-			if step < 1 {
-				step = 1
-			}
 			for i := 0; i < n; i += step {
 				code := make([]byte, m.codeSize)
 				copy(code, r.Vector[i*m.codeSize:(i+1)*m.codeSize])

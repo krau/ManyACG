@@ -39,47 +39,17 @@ func (s *Service) SearchPicturesByImage(ctx context.Context, imageBytes []byte, 
 	}
 	byID := map[string]*acc{}
 
-	// phash
-	hash, err := getPhashFromBytes(imageBytes)
-	if err == nil && hash != "" {
-		pics, err := s.QueryPicturesByPhash(ctx, query.PicturesPhash{
-			Input:    hash,
-			Distance: phashDistance,
-			Limit:    limit,
-		})
-		if err != nil {
-			log.Warn("phash search failed", "err", err)
-		} else {
-			for _, p := range pics {
-				id := p.ID.Hex()
-				if a, ok := byID[id]; ok {
-					a.phash = true
-				} else {
-					byID[id] = &acc{pic: p, phash: true}
-				}
-			}
-		}
-	}
-
-	// feature
+	// feature search first (fast IVF); results guide whether phash scan is needed.
 	if s.imsearch != nil && s.imsearch.Enabled() {
 		hits, err := s.imsearch.Search(ctx, imageBytes, imsearch.SearchOpts{Count: limit})
 		if err != nil {
 			log.Warn("imsearch feature search failed", "err", err)
 		} else {
 			for _, h := range hits {
-				if a, ok := byID[h.PictureID]; ok {
-					a.feature = true
-					if h.Score > a.score {
-						a.score = h.Score
-					}
-					continue
-				}
 				pic, err := s.resolveImsearchHit(ctx, h)
 				if err != nil || pic == nil {
 					continue
 				}
-				// Dedup by resolved picture id (stale hit may map to another pic of same artwork).
 				resolvedID := pic.ID.Hex()
 				if a, ok := byID[resolvedID]; ok {
 					a.feature = true
@@ -89,6 +59,30 @@ func (s *Service) SearchPicturesByImage(ctx context.Context, imageBytes []byte, 
 					continue
 				}
 				byID[resolvedID] = &acc{pic: pic, score: h.Score, feature: true}
+			}
+		}
+	}
+
+	// phash scan only if feature search didn't fill enough results.
+	if len(byID) < limit {
+		hash, err := getPhashFromBytes(imageBytes)
+		if err == nil && hash != "" {
+			pics, err := s.QueryPicturesByPhash(ctx, query.PicturesPhash{
+				Input:    hash,
+				Distance: phashDistance,
+				Limit:    limit,
+			})
+			if err != nil {
+				log.Warn("phash search failed", "err", err)
+			} else {
+				for _, p := range pics {
+					id := p.ID.Hex()
+					if a, ok := byID[id]; ok {
+						a.phash = true
+					} else {
+						byID[id] = &acc{pic: p, phash: true}
+					}
+				}
 			}
 		}
 	}
