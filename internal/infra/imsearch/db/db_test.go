@@ -111,7 +111,7 @@ func TestTotalVectorCountRunning(t *testing.T) {
 func TestIndexedBatchAndUnindexed(t *testing.T) {
 	ctx := context.Background()
 	d := openTest(t)
-	for i := 0; i < 3; i++ {
+	for i := range 3 {
 		tx, _ := d.Begin(ctx)
 		id, _ := d.AddImage(ctx, tx, []byte{byte(i + 1), 0, 0, 0}, "p", "", "", "")
 		d.AddVector(ctx, tx, id, make([]byte, 8))

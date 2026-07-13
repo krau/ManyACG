@@ -452,13 +452,7 @@ func autoNList(totalVecs int64) int {
 	if totalVecs <= 0 {
 		return 64
 	}
-	n := int(math.Sqrt(float64(totalVecs)))
-	if n < 64 {
-		n = 64
-	}
-	if n > 16384 {
-		n = 16384
-	}
+	n := min(max(int(math.Sqrt(float64(totalVecs))), 64), 16384)
 	return n
 }
 

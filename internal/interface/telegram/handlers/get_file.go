@@ -275,10 +275,7 @@ func getArtworkFiles(ctx *telegohandler.Context,
 	}
 
 	for i := 0; i < len(items); i += 10 {
-		end := i + 10
-		if end > len(items) {
-			end = len(items)
-		}
+		end := min(i+10, len(items))
 		if err := sendBatch(i, end); err != nil {
 			errs = append(errs, oops.Wrapf(err, "failed to send files %d-%d", i+1, end))
 		}

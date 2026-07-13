@@ -30,7 +30,7 @@ func (v *structValidator) Validate(out any) error {
 
 	if errs, ok := err.(validator.ValidationErrors); ok {
 		t := reflect.TypeOf(out)
-		if t.Kind() == reflect.Ptr {
+		if t.Kind() == reflect.Pointer {
 			t = t.Elem()
 		}
 		first := errs[0]

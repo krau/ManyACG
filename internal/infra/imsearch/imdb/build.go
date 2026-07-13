@@ -172,4 +172,3 @@ func (m *IMDB) OpenIndex(ctx context.Context, threads int) (index.Searcher, func
 	}
 	return s, s.Close, nil
 }
-

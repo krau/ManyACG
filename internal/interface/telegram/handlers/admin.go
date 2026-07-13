@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"slices"
 	"strconv"
+	"strings"
 
 	"github.com/krau/ManyACG/internal/interface/telegram/handlers/utils"
 	"github.com/krau/ManyACG/internal/shared"
@@ -25,14 +26,14 @@ func SetAdmin(ctx *telegohandler.Context, message telego.Message) error {
 	var userIDStr string
 	cmd, _, args := telegoutil.ParseCommand(message.Text)
 
-	var supportedPermissionsText string
+	var supportedPermissionsText strings.Builder
 	for _, p := range shared.PermissionNames() {
-		supportedPermissionsText += fmt.Sprintf("<code>%s</code>\n", p)
+		supportedPermissionsText.WriteString(fmt.Sprintf("<code>%s</code>\n", p))
 	}
 	if message.ReplyToMessage == nil {
 		if len(args) == 0 {
 			utils.ReplyMessageWithHTML(ctx, message,
-				fmt.Sprintf("请回复一名用户或提供ID, 并指定权限, 以空格分隔, 支持的权限:\n%s", supportedPermissionsText),
+				fmt.Sprintf("请回复一名用户或提供ID, 并指定权限, 以空格分隔, 支持的权限:\n%s", supportedPermissionsText.String()),
 			)
 			return nil
 		}
@@ -75,7 +76,7 @@ func SetAdmin(ctx *telegohandler.Context, message telego.Message) error {
 	}
 	if len(inputPermissions) == 0 {
 		utils.ReplyMessageWithHTML(ctx, message,
-			fmt.Sprintf("请指定权限, 以空格分隔, 支持的权限:\n%s", supportedPermissionsText),
+			fmt.Sprintf("请指定权限, 以空格分隔, 支持的权限:\n%s", supportedPermissionsText.String()),
 		)
 		return nil
 	}
