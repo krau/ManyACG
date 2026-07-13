@@ -28,7 +28,7 @@ type Config struct {
 	KVDB      KVDBConfig      `toml:"kvdb" mapstructure:"kvdb" json:"kvdb" yaml:"kvdb"`
 	Storage   StorageConfig   `toml:"storage" mapstructure:"storage" json:"storage" yaml:"storage"`
 	Scheduler SchedulerConfig `toml:"scheduler" mapstructure:"scheduler" json:"scheduler" yaml:"scheduler"`
-	Imsearch  ImsearchConfig  `toml:"imsearch" mapstructure:"imsearch" json:"imsearch" yaml:"imsearch"`
+	Imseek  ImseekConfig  `toml:"imseek" mapstructure:"imseek" json:"imseek" yaml:"imseek"`
 	App       AppConfig       `toml:"app" mapstructure:"app" json:"app" yaml:"app"`
 }
 
@@ -133,19 +133,19 @@ func loadConfig() Config {
 		"kvdb.ttl_sweep_period": 60, // in seconds
 		"kvdb.redis.prefix":     "manyacg:",
 
-		"imsearch.enable":             false,
-		"imsearch.data_dir":           "./data/imsearch",
-		"imsearch.distance":           64,
-		"imsearch.count":              10,
-		"imsearch.k":                  3,
-		"imsearch.nprobe":             3,
-		"imsearch.nfeatures":          500,
-		"imsearch.max_height":         1080,
-		"imsearch.max_width":          768,
-		"imsearch.auto_build":         true,
-		"imsearch.build_debounce_sec": 2,
-		"imsearch.min_matches":        8,
-		"imsearch.min_score":          float32(25),
+		"imseek.enable":             false,
+		"imseek.data_dir":           "./data/imseek",
+		"imseek.distance":           64,
+		"imseek.count":              10,
+		"imseek.k":                  3,
+		"imseek.nprobe":             3,
+		"imseek.nfeatures":          500,
+		"imseek.max_height":         1080,
+		"imseek.max_width":          768,
+		"imseek.auto_build":         true,
+		"imseek.build_debounce_sec": 2,
+		"imseek.min_matches":        8,
+		"imseek.min_score":          float32(25),
 	}
 
 	for key, value := range defaults {

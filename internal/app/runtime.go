@@ -9,7 +9,7 @@ import (
 	"github.com/krau/ManyACG/internal/infra/config/runtimecfg"
 	"github.com/krau/ManyACG/internal/infra/database"
 	"github.com/krau/ManyACG/internal/infra/eventbus"
-	"github.com/krau/ManyACG/internal/infra/imsearch"
+	"github.com/krau/ManyACG/internal/infra/imseek"
 	"github.com/krau/ManyACG/internal/infra/search"
 	"github.com/krau/ManyACG/internal/infra/source"
 	"github.com/krau/ManyACG/internal/infra/storage"
@@ -44,8 +44,8 @@ func NewRuntime(ctx context.Context, cfg runtimecfg.Config) (*Runtime, error) {
 	searcher := search.Default(ctx)
 
 	// local feature-point search(Optional)
-	imCfg := cfg.Imsearch
-	eng, err := imsearch.Init(ctx, imsearch.Config{
+	imCfg := cfg.Imseek
+	eng, err := imseek.Init(ctx, imseek.Config{
 		Enable:           imCfg.Enable,
 		DataDir:          imCfg.DataDir,
 		Distance:         imCfg.Distance,
@@ -61,11 +61,11 @@ func NewRuntime(ctx context.Context, cfg runtimecfg.Config) (*Runtime, error) {
 		MinScore:         imCfg.MinScore,
 	})
 	if err != nil {
-		log.Error("imsearch init failed, continuing without feature search", "err", err)
-		eng, _ = imsearch.Init(ctx, imsearch.DefaultConfig())
+		log.Error("imseek init failed, continuing without feature search", "err", err)
+		eng, _ = imseek.Init(ctx, imseek.DefaultConfig())
 	}
 	if eng != nil && eng.Enabled() {
-		log.Info("imsearch feature search enabled", "data_dir", imCfg.DataDir)
+		log.Info("imseek feature search enabled", "data_dir", imCfg.DataDir)
 		oldCloser := closer
 		closer = func() error {
 			_ = eng.Close()
@@ -94,10 +94,10 @@ func NewRuntime(ctx context.Context, cfg runtimecfg.Config) (*Runtime, error) {
 		storage.Storages(),
 		source.Sources(),
 		cfg.Storage,
-		service.WithImsearch(eng),
+		service.WithImseek(eng),
 	)
 	if artworkBus != nil {
-		registerArtworkEventImsearchHandlers(ctx, artworkBus, serv)
+		registerArtworkEventImseekHandlers(ctx, artworkBus, serv)
 	}
 
 	return &Runtime{
