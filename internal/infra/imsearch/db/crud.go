@@ -173,6 +173,14 @@ func (d *DB) GetCount(ctx context.Context) (int64, int64, error) {
 	return images, total.Int64, nil
 }
 
+func (d *DB) CountVectors(ctx context.Context) (int64, error) {
+	var n int64
+	err := d.sql.QueryRowContext(ctx,
+		`SELECT COALESCE(SUM(LENGTH(vector)/?), 0) FROM vector`,
+		32).Scan(&n)
+	return n, err
+}
+
 type VectorBound struct {
 	ImageID int64
 	Total   int64 // inclusive upper bound of this image's vector ids
