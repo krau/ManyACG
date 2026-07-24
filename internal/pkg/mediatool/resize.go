@@ -10,7 +10,6 @@ import (
 	"path/filepath"
 	"runtime"
 
-	"github.com/gen2brain/avif"
 	"github.com/krau/ManyACG/internal/infra/config/runtimecfg"
 	"github.com/krau/ManyACG/pkg/log"
 	"github.com/krau/ManyACG/pkg/osutil"
@@ -24,8 +23,6 @@ var (
 )
 
 func init() {
-	avif.InitEncoder()
-	avif.InitDecoder()
 	switch runtime.GOOS {
 	case "windows":
 		_, err := exec.LookPath("ffmpeg.exe")
