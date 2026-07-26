@@ -7,7 +7,6 @@ import (
 	"github.com/krau/ManyACG/internal/infra/config/runtimecfg"
 	"github.com/krau/ManyACG/internal/model/entity"
 	"github.com/krau/ManyACG/pkg/log"
-	_ "github.com/ncruces/go-sqlite3/embed"
 	"github.com/ncruces/go-sqlite3/gormlite"
 
 	"gorm.io/driver/mysql"
