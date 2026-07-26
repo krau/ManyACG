@@ -42,6 +42,7 @@ func (t *TelegramStorage) Init(ctx context.Context) error {
 	t.chatID = telegoutil.ID(t.cfg.ChatID)
 	var err error
 	t.bot, err = telego.NewBot(t.cfg.Token, telego.WithAPIServer(t.cfg.ApiUrl),
+		telego.WithRequestConstructor(telegoapiwrapper.MultipartRequestConstructor{}),
 		telego.WithAPICaller(&telegoapiwrapper.RetryRateLimitCaller{
 			Caller:       telegoapi.DefaultFastHTTPCaller,
 			MaxAttempts:  t.cfg.Retry.MaxAttempts,

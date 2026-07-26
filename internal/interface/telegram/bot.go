@@ -50,6 +50,7 @@ func Init(ctx context.Context, serv *service.Service, cfg runtimecfg.TelegramCon
 			LogFile:   "logs/telegram.log",
 		})),
 		telego.WithAPIServer(apiUrl),
+		telego.WithRequestConstructor(telegoapiwrapper.MultipartRequestConstructor{}),
 		telego.WithAPICaller(&telegoapiwrapper.RetryRateLimitCaller{
 			Caller:       telegoapi.DefaultFastHTTPCaller,
 			MaxAttempts:  cfg.Retry.MaxAttempts,
