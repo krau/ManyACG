@@ -7,7 +7,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/cshum/vipsgen/vips"
+	"github.com/cshum/vipsgen/vips817"
 	"github.com/duke-git/lancet/v2/fileutil"
 )
 
@@ -64,7 +64,10 @@ func compressImageVIPS(inputPath, outputPath, format string, maxEdgeLength int) 
 	case "webp":
 		err = img.Webpsave(outputPath, vips.DefaultWebpsaveOptions())
 	case "avif":
-		err = img.Heifsave(outputPath, vips.DefaultHeifsaveOptions())
+		// vipsgen defaults to AVC; AVIF requires the AV1 codec.
+		heifOptions := vips.DefaultHeifsaveOptions()
+		heifOptions.Compression = vips.HeifCompressionAv1
+		err = img.Heifsave(outputPath, heifOptions)
 	default:
 		return fmt.Errorf("unsupported image format: %s", format)
 	}

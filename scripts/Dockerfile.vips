@@ -1,30 +1,372 @@
-FROM acherkrau/libvips-static:latest AS builder
+#
+# Fully static ManyACG build (linux/amd64, musl): pinned C dependencies
+# compiled with zig cc (see *_VERSION/*_SHA256 below), then the Go binary
+# linked statically.
+#
+# Targets:
+#   vips-base  - toolchain + static libvips image, published as
+#                acherkrau/libvips-static (consumed by scripts/Dockerfile.build)
+#   exporter   - the static manyacg binary (full from-source build)
+#
+# To upgrade a dependency: bump *_VERSION/*_SHA256, republish vips-base.
+# libvips 8.17.x pairs with github.com/cshum/vipsgen/vips817 (8.18.x: /vips).
 
-RUN apk add --no-cache git go
+# ---------------------------------------------------------------------------
+# Pinned versions and sha256 checksums (get with: sha256sum <tarball>)
+# ---------------------------------------------------------------------------
+FROM debian:bookworm-slim AS vips-deps
 
-WORKDIR /ManyACG
+ARG ZIG_VERSION=0.16.0
+ARG ZIG_SHA256=70e49664a74374b48b51e6f3fdfbf437f6395d42509050588bd49abe52ba3d00
 
+ARG GO_VERSION=1.25.7
+ARG GO_SHA256=12e6d6a191091ae27dc31f6efc630e3a3b8ba409baf3573d955b196fdf086005
+
+ARG MESON_VERSION=1.6.1
+
+ARG ZLIB_VERSION=1.3.1
+ARG ZLIB_SHA256=9a93b2b7dfdac77ceba5a558a580e74667dd6fede4585b91eefb60f03b72df23
+
+ARG FFI_VERSION=3.4.6
+ARG FFI_SHA256=b0dea9df23c863a7a50e825440f3ebffabd65df1497108e5d437747843895a4e
+
+ARG PCRE2_VERSION=10.44
+ARG PCRE2_SHA256=86b9cb0aa3bcb7994faa88018292bc704cdbb708e785f7c74352ff6ea7d3175b
+
+ARG GLIB_VERSION=2.82.4
+ARG GLIB_SHA256=37dd0877fe964cd15e9a2710b044a1830fb1bd93652a6d0cb6b8b2dff187c709
+
+ARG EXPAT_VERSION=2.6.4
+ARG EXPAT_SHA256=fd03b7172b3bd7427a3e7a812063f74754f24542429b634e0db6511b53fb2278
+ARG EXPAT_TAG=R_2_6_4
+
+ARG JPEG_VERSION=3.0.4
+ARG JPEG_SHA256=99130559e7d62e8d695f2c0eaeef912c5828d5b84a0537dcb24c9678c9d5b76b
+
+ARG PNG_VERSION=1.6.46
+ARG PNG_SHA256=c2b8ffb46f48331416e01f9e5c7169c7a2e08ad766b742742644e5fdf192e4a1
+
+ARG WEBP_VERSION=1.6.0
+ARG WEBP_SHA256=93a852c2b3efafee3723efd4636de855b46f9fe1efddd607e1f42f60fc8f2136
+
+ARG TIFF_VERSION=4.7.0
+ARG TIFF_SHA256=67160e3457365ab96c5b3286a0903aa6e78bdc44c4bc737d2e486bcecb6ba976
+
+ARG EXIF_VERSION=0.6.25
+ARG EXIF_SHA256=7c9eba99aed3e6594d8c3e85861f1c6aaf450c218621528bc989d3b3e7a26307
+
+ARG LCMS_VERSION=19.1
+ARG LCMS_SHA256=267705e278e2f7c2fb886c259dadcbaeb2be52748bcbc71c79f08aacacb7a709
+
+ARG IMAGEQUANT_VERSION=2.17.0
+ARG IMAGEQUANT_SHA256=9f6cc50182be4d2ece75118aa0b0fd3e9bbad06e94fd6b9eb3a4c08129c2dd26
+
+ARG CGIF_VERSION=0.5.0
+ARG CGIF_SHA256=d6cb312c7da2c6c9f310811aa3658120c0316ba130c48a012e7baf3698920fe9
+
+ARG AOM_VERSION=3.12.1
+# From Debian's archive; aomedia.googlesource.com tarballs are not reproducible.
+ARG AOM_SHA256=40c929a41b2a59c24319a699c358351422829b3ae646de31b18cbabed0191962
+
+ARG HEIF_VERSION=1.20.2
+ARG HEIF_SHA256=b70340395d84184bb8dfc833dd51c95ae049435f7ff9abc7b505a08b5ee2bd2a
+
+ARG VIPS_VERSION=8.17.2
+ARG VIPS_SHA256=57ea0ec4f30ea04748c9e8eec5415e7c9ac7cafe6822e4788fc110376a1d224a
+
+# ---------------------------------------------------------------------------
+# Toolchain
+# ---------------------------------------------------------------------------
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        ca-certificates wget curl xz-utils bzip2 git \
+        pkg-config ninja-build cmake make \
+        autoconf automake libtool gperf nasm \
+        python3 python3-pip libglib2.0-dev-bin \
+    && rm -rf /var/lib/apt/lists/* \
+    && pip install --no-cache-dir --break-system-packages "meson==${MESON_VERSION}"
+
+RUN mkdir -p /opt && cd /opt \
+    && wget -q "https://ziglang.org/download/${ZIG_VERSION}/zig-x86_64-linux-${ZIG_VERSION}.tar.xz" -O zig.tar.xz \
+    && echo "${ZIG_SHA256}  zig.tar.xz" | sha256sum -c - >/dev/null \
+    && tar xJf zig.tar.xz && rm zig.tar.xz \
+    && ln -s "/opt/zig-x86_64-linux-${ZIG_VERSION}/zig" /usr/local/bin/zig
+
+RUN cd /tmp \
+    && wget -q "https://dl.google.com/go/go${GO_VERSION}.linux-amd64.tar.gz" -O go.tar.gz \
+    && echo "${GO_SHA256}  go.tar.gz" | sha256sum -c - >/dev/null \
+    && tar xzf go.tar.gz -C /usr/local && rm go.tar.gz \
+    && rm -rf /usr/local/go/test /usr/local/go/misc \
+              /usr/local/go/api /usr/local/go/doc \
+    && ln -s /usr/local/go/bin/go /usr/local/bin/go
+
+# Cross-compiler wrappers (zig cc for x86_64-linux-musl).
+# musl-cc-static forces -Wl,-static early: zig ignores plain -static for cgo links.
+RUN printf '%s\n' \
+        '#!/bin/sh' \
+        'exec /usr/local/bin/zig cc -target x86_64-linux-musl -O3 "$@"' \
+        > /usr/local/bin/musl-cc \
+    && printf '%s\n' \
+        '#!/bin/sh' \
+        'exec /usr/local/bin/zig c++ -target x86_64-linux-musl -O3 "$@"' \
+        > /usr/local/bin/musl-c++ \
+    && printf '%s\n' \
+        '#!/bin/sh' \
+        'exec /usr/local/bin/zig cc -target x86_64-linux-musl -O3 -Wl,-static "$@"' \
+        > /usr/local/bin/musl-cc-static \
+    && printf '%s\n' \
+        '#!/bin/sh' \
+        'exec /usr/local/bin/zig ar "$@"' \
+        > /usr/local/bin/musl-ar \
+    && printf '%s\n' \
+        '#!/bin/sh' \
+        'exec /usr/local/bin/zig ranlib "$@"' \
+        > /usr/local/bin/musl-ranlib \
+    && printf '%s\n' \
+        '#!/bin/sh' \
+        'exec /usr/local/bin/zig strip "$@"' \
+        > /usr/local/bin/musl-strip \
+    && chmod +x /usr/local/bin/musl-*
+
+# Only our own (musl, static) libraries are visible to pkg-config.
+ENV PKG_CONFIG_LIBDIR=/usr/local/lib/pkgconfig
+
+COPY scripts/zig-cross.ini /zig-cross.ini
+COPY scripts/fetch.sh /usr/local/bin/fetch.sh
+
+# ---------------------------------------------------------------------------
+# Dependencies (each in its own layer for cacheable builds)
+# ---------------------------------------------------------------------------
+# zlib
+RUN set -eux; \
+    fetch.sh "https://zlib.net/fossils/zlib-${ZLIB_VERSION}.tar.gz" "$ZLIB_SHA256" /tmp; \
+    cd "/tmp/zlib-${ZLIB_VERSION}"; \
+    CC=musl-cc AR=musl-ar RANLIB=musl-ranlib ./configure --static --prefix=/usr/local >/dev/null; \
+    make -j"$(nproc)" >/dev/null; make install >/dev/null; \
+    rm -rf "/tmp/zlib-${ZLIB_VERSION}"
+
+# libffi (glib dependency)
+RUN set -eux; \
+    fetch.sh "https://github.com/libffi/libffi/releases/download/v${FFI_VERSION}/libffi-${FFI_VERSION}.tar.gz" "$FFI_SHA256" /tmp; \
+    cd "/tmp/libffi-${FFI_VERSION}"; \
+    CC=musl-cc ./configure --host=x86_64-linux-musl --prefix=/usr/local \
+        --disable-shared --enable-static --disable-docs --disable-man --disable-structs >/dev/null; \
+    make -j"$(nproc)" >/dev/null; make install >/dev/null; \
+    rm -rf "/tmp/libffi-${FFI_VERSION}"
+
+# pcre2 (glib regex dependency)
+RUN set -eux; \
+    fetch.sh "https://github.com/PCRE2Project/pcre2/releases/download/pcre2-${PCRE2_VERSION}/pcre2-${PCRE2_VERSION}.tar.gz" "$PCRE2_SHA256" /tmp; \
+    cmake -S "/tmp/pcre2-${PCRE2_VERSION}" -B /tmp/pcre2-build -DCMAKE_INSTALL_PREFIX=/usr/local \
+        -DCMAKE_BUILD_TYPE=Release \
+        -DCMAKE_C_COMPILER=musl-cc -DCMAKE_C_COMPILER_AR=musl-ar -DCMAKE_C_COMPILER_RANLIB=musl-ranlib \
+        -DBUILD_SHARED_LIBS=OFF -DPCRE2_BUILD_PCRE2_16=OFF -DPCRE2_BUILD_PCRE2_32=OFF \
+        -DPCRE2_SUPPORT_JIT=OFF -DPCRE2_BUILD_TESTS=OFF -DPCRE2_BUILD_PCRE2GREP=OFF \
+        -DPCRE2_SUPPORT_UNICODE=ON >/dev/null; \
+    cmake --build /tmp/pcre2-build -j"$(nproc)" >/dev/null; cmake --install /tmp/pcre2-build >/dev/null; \
+    rm -rf "/tmp/pcre2-${PCRE2_VERSION}" /tmp/pcre2-build
+
+# glib
+RUN set -eux; \
+    fetch.sh "https://download.gnome.org/sources/glib/${GLIB_VERSION%.*}/glib-${GLIB_VERSION}.tar.xz" "$GLIB_SHA256" /tmp; \
+    cd "/tmp/glib-${GLIB_VERSION}"; \
+    meson setup build --cross-file=/zig-cross.ini --buildtype=release --prefix=/usr/local -Ddefault_library=static \
+        -Dlibmount=disabled -Dnls=disabled -Dtests=false -Dinstalled_tests=false \
+        -Dgtk_doc=false -Dman=false -Ddocumentation=false -Dintrospection=disabled \
+        -Dselinux=disabled -Dxattr=false -Dlibelf=disabled >/dev/null; \
+    ninja -C build -j"$(nproc)" >/dev/null; ninja -C build install >/dev/null; \
+    rm -rf "/tmp/glib-${GLIB_VERSION}"
+
+# expat (required by libvips for XMP)
+RUN set -eux; \
+    fetch.sh "https://github.com/libexpat/libexpat/releases/download/${EXPAT_TAG}/expat-${EXPAT_VERSION}.tar.gz" "$EXPAT_SHA256" /tmp; \
+    cmake -S "/tmp/expat-${EXPAT_VERSION}" -B /tmp/expat-build -DCMAKE_INSTALL_PREFIX=/usr/local \
+        -DCMAKE_BUILD_TYPE=Release \
+        -DCMAKE_C_COMPILER=musl-cc -DCMAKE_C_COMPILER_AR=musl-ar -DCMAKE_C_COMPILER_RANLIB=musl-ranlib \
+        -DBUILD_SHARED_LIBS=OFF -DEXPAT_BUILD_TOOLS=OFF -DEXPAT_BUILD_TESTS=OFF \
+        -DEXPAT_BUILD_DOCS=OFF -DEXPAT_BUILD_EXAMPLES=OFF -DEXPAT_SHARED_LIBS=OFF >/dev/null; \
+    cmake --build /tmp/expat-build -j"$(nproc)" >/dev/null; cmake --install /tmp/expat-build >/dev/null; \
+    rm -rf "/tmp/expat-${EXPAT_VERSION}" /tmp/expat-build
+
+# libjpeg-turbo
+RUN set -eux; \
+    fetch.sh "https://github.com/libjpeg-turbo/libjpeg-turbo/releases/download/${JPEG_VERSION}/libjpeg-turbo-${JPEG_VERSION}.tar.gz" "$JPEG_SHA256" /tmp; \
+    cmake -S "/tmp/libjpeg-turbo-${JPEG_VERSION}" -B /tmp/jpeg-build -DCMAKE_INSTALL_PREFIX=/usr/local \
+        -DCMAKE_BUILD_TYPE=Release \
+        -DCMAKE_C_COMPILER=musl-cc -DCMAKE_C_COMPILER_AR=musl-ar -DCMAKE_C_COMPILER_RANLIB=musl-ranlib \
+        -DENABLE_SHARED=OFF -DENABLE_STATIC=ON -DWITH_TURBOJPEG=OFF -DWITH_JAVA=OFF >/dev/null; \
+    cmake --build /tmp/jpeg-build -j"$(nproc)" >/dev/null; cmake --install /tmp/jpeg-build >/dev/null; \
+    rm -rf "/tmp/libjpeg-turbo-${JPEG_VERSION}" /tmp/jpeg-build
+
+# libpng
+RUN set -eux; \
+    fetch.sh "https://download.sourceforge.net/libpng/libpng-${PNG_VERSION}.tar.gz" "$PNG_SHA256" /tmp; \
+    cmake -S "/tmp/libpng-${PNG_VERSION}" -B /tmp/png-build -DCMAKE_INSTALL_PREFIX=/usr/local \
+        -DCMAKE_BUILD_TYPE=Release \
+        -DCMAKE_C_COMPILER=musl-cc -DCMAKE_C_COMPILER_AR=musl-ar -DCMAKE_C_COMPILER_RANLIB=musl-ranlib \
+        -DPNG_SHARED=OFF -DPNG_STATIC=ON -DPNG_TESTS=OFF -DPNG_TOOLS=OFF \
+        -DZLIB_LIBRARY=/usr/local/lib/libz.a -DZLIB_INCLUDE_DIR=/usr/local/include >/dev/null; \
+    cmake --build /tmp/png-build -j"$(nproc)" >/dev/null; cmake --install /tmp/png-build >/dev/null; \
+    rm -rf "/tmp/libpng-${PNG_VERSION}" /tmp/png-build
+
+# libwebp (encoder + mux/demux for animated webp)
+RUN set -eux; \
+    fetch.sh "https://github.com/webmproject/libwebp/archive/refs/tags/v${WEBP_VERSION}.tar.gz" "$WEBP_SHA256" /tmp "libwebp-${WEBP_VERSION}.tar.gz"; \
+    cmake -S "/tmp/libwebp-${WEBP_VERSION}" -B /tmp/webp-build -DCMAKE_INSTALL_PREFIX=/usr/local \
+        -DCMAKE_BUILD_TYPE=Release \
+        -DCMAKE_C_COMPILER=musl-cc -DCMAKE_C_COMPILER_AR=musl-ar -DCMAKE_C_COMPILER_RANLIB=musl-ranlib \
+        -DBUILD_SHARED_LIBS=OFF \
+        -DWEBP_BUILD_ANIM_UTILS=OFF -DWEBP_BUILD_CWEBP=OFF -DWEBP_BUILD_DWEBP=OFF \
+        -DWEBP_BUILD_GIF2WEBP=OFF -DWEBP_BUILD_IMG2WEBP=OFF -DWEBP_BUILD_VWEBP=OFF \
+        -DWEBP_BUILD_WEBPINFO=OFF -DWEBP_BUILD_LIBWEBPMUX=ON -DWEBP_BUILD_LIBWEBPDEMUX=ON >/dev/null; \
+    cmake --build /tmp/webp-build -j"$(nproc)" >/dev/null; cmake --install /tmp/webp-build >/dev/null; \
+    rm -rf "/tmp/libwebp-${WEBP_VERSION}" /tmp/webp-build
+
+# libtiff
+RUN set -eux; \
+    fetch.sh "https://download.osgeo.org/libtiff/tiff-${TIFF_VERSION}.tar.gz" "$TIFF_SHA256" /tmp; \
+    cd "/tmp/tiff-${TIFF_VERSION}"; \
+    CC=musl-cc ./configure --host=x86_64-linux-musl --prefix=/usr/local --disable-shared --enable-static \
+        --disable-cxx --disable-tools --disable-tests --disable-contrib --disable-docs --without-x --disable-webp \
+        --with-zlib-include-dir=/usr/local/include --with-zlib-lib-dir=/usr/local/lib \
+        --with-jpeg-include-dir=/usr/local/include --with-jpeg-lib-dir=/usr/local/lib \
+        --with-lzma=no --with-zstd=no --with-jbig=no >/dev/null; \
+    make -j"$(nproc)" >/dev/null; make install >/dev/null; \
+    rm -rf "/tmp/tiff-${TIFF_VERSION}"
+
+# libexif (EXIF metadata)
+RUN set -eux; \
+    fetch.sh "https://github.com/libexif/libexif/releases/download/v${EXIF_VERSION}/libexif-${EXIF_VERSION}.tar.bz2" "$EXIF_SHA256" /tmp; \
+    cd "/tmp/libexif-${EXIF_VERSION}"; \
+    CC=musl-cc ./configure --host=x86_64-linux-musl --prefix=/usr/local \
+        --disable-shared --enable-static --disable-docs --disable-nls >/dev/null; \
+    make -j"$(nproc)" >/dev/null; make install >/dev/null; \
+    rm -rf "/tmp/libexif-${EXIF_VERSION}"
+
+# lcms2 (ICC colour profiles)
+RUN set -eux; \
+    fetch.sh "https://github.com/mm2/Little-CMS/archive/refs/tags/lcms2.${LCMS_VERSION}.tar.gz" "$LCMS_SHA256" /tmp "lcms2-${LCMS_VERSION}.tar.gz"; \
+    cd "/tmp/Little-CMS-lcms2.${LCMS_VERSION}"; \
+    CC=musl-cc ./configure --host=x86_64-linux-musl --prefix=/usr/local \
+        --disable-shared --enable-static --disable-docs >/dev/null; \
+    make -j"$(nproc)" >/dev/null; make install >/dev/null; \
+    rm -rf "/tmp/Little-CMS-lcms2.${LCMS_VERSION}"
+
+# libimagequant (palette quantisation for GIF save; gates vips' cgif support)
+RUN set -eux; \
+    fetch.sh "https://github.com/ImageOptim/libimagequant/archive/refs/tags/${IMAGEQUANT_VERSION}.tar.gz" "$IMAGEQUANT_SHA256" /tmp "libimagequant-${IMAGEQUANT_VERSION}.tar.gz"; \
+    cd "/tmp/libimagequant-${IMAGEQUANT_VERSION}"; \
+    make install static PREFIX=/usr/local CC=musl-cc AR=musl-ar CFLAGS=-O3 >/dev/null; \
+    rm -rf "/tmp/libimagequant-${IMAGEQUANT_VERSION}"
+
+# cgif (GIF encoder)
+RUN set -eux; \
+    fetch.sh "https://github.com/dloebl/cgif/archive/refs/tags/v${CGIF_VERSION}.tar.gz" "$CGIF_SHA256" /tmp "cgif-${CGIF_VERSION}.tar.gz"; \
+    cd "/tmp/cgif-${CGIF_VERSION}"; \
+    meson setup build --cross-file=/zig-cross.ini --buildtype=release --prefix=/usr/local -Ddefault_library=static \
+        -Dexamples=false >/dev/null; \
+    ninja -C build -j"$(nproc)" >/dev/null; ninja -C build install >/dev/null; \
+    rm -rf "/tmp/cgif-${CGIF_VERSION}"
+
+# libaom (AV1 codec for libheif)
+RUN set -eux; \
+    fetch.sh "https://deb.debian.org/debian/pool/main/a/aom/aom_${AOM_VERSION}.orig.tar.gz" "$AOM_SHA256" /tmp; \
+    cd "/tmp/aom-${AOM_VERSION}"; \
+    cmake -S . -B build -DCMAKE_INSTALL_PREFIX=/usr/local -DCMAKE_BUILD_TYPE=Release \
+        -DCMAKE_C_COMPILER=musl-cc -DCMAKE_C_COMPILER_AR=musl-ar -DCMAKE_C_COMPILER_RANLIB=musl-ranlib \
+        -DBUILD_SHARED_LIBS=0 -DENABLE_TESTS=0 -DENABLE_DOCS=0 -DENABLE_EXAMPLES=0 -DENABLE_TOOLS=0 \
+        -DENABLE_NASM=ON >/dev/null; \
+    cmake --build build -j"$(nproc)" >/dev/null; cmake --install build >/dev/null; \
+    rm -rf "/tmp/aom-${AOM_VERSION}"
+
+# libheif (AVIF/HEIF via aom; AVC/HEVC encoders intentionally off)
+RUN set -eux; \
+    fetch.sh "https://github.com/strukturag/libheif/archive/refs/tags/v${HEIF_VERSION}.tar.gz" "$HEIF_SHA256" /tmp "libheif-${HEIF_VERSION}.tar.gz"; \
+    cmake -S "/tmp/libheif-${HEIF_VERSION}" -B /tmp/heif-build -DCMAKE_INSTALL_PREFIX=/usr/local \
+        -DCMAKE_BUILD_TYPE=Release \
+        -DCMAKE_C_COMPILER=musl-cc -DCMAKE_CXX_COMPILER=musl-c++ \
+        -DCMAKE_C_COMPILER_AR=musl-ar -DCMAKE_C_COMPILER_RANLIB=musl-ranlib \
+        -DBUILD_SHARED_LIBS=OFF -DBUILD_TESTING=OFF \
+        -DWITH_X265=OFF -DWITH_X264=OFF -DWITH_LIBDE265=OFF -DWITH_DAV1D=OFF \
+        -DWITH_AOM_DECODER=ON -DWITH_AOM_ENCODER=ON -DWITH_RAV1E=OFF -DWITH_SvtEnc=OFF \
+        -DWITH_OPENJPEG=OFF -DWITH_EXAMPLES=OFF -DWITH_GDK_PIXBUF=OFF -DENABLE_PLUGIN_LOADING=OFF \
+        -DWITH_LIBSHARPYUV=OFF >/dev/null; \
+    cmake --build /tmp/heif-build -j"$(nproc)" >/dev/null; cmake --install /tmp/heif-build >/dev/null; \
+    rm -rf "/tmp/libheif-${HEIF_VERSION}" /tmp/heif-build
+
+# ---------------------------------------------------------------------------
+# libvips
+# ---------------------------------------------------------------------------
+RUN set -eux; \
+    fetch.sh "https://github.com/libvips/libvips/releases/download/v${VIPS_VERSION}/vips-${VIPS_VERSION}.tar.xz" "$VIPS_SHA256" /tmp; \
+    cd "/tmp/vips-${VIPS_VERSION}"; \
+    meson setup build --cross-file=/zig-cross.ini --buildtype=release --prefer-static --prefix=/usr/local -Ddefault_library=static \
+        -Dmodules=disabled -Dexamples=false -Ddeprecated=true \
+        -Dintrospection=disabled -Dvapi=false -Dcplusplus=false -Ddocs=false \
+        -Dmagick=disabled -Dpoppler=disabled -Dopenslide=disabled -Dmatio=disabled -Dnifti=disabled \
+        -Dcfitsio=disabled -Dopenexr=disabled -Dopenjpeg=disabled -Dpdfium=disabled -Drsvg=disabled \
+        -Dpangocairo=disabled -Dfontconfig=disabled -Dimagequant=enabled -Dquantizr=disabled \
+        -Dspng=disabled -Dfftw=disabled -Dorc=disabled -Dhighway=disabled -Darchive=disabled \
+        -Dnsgif=true -Dcgif=enabled -Dexif=enabled -Dlcms=enabled \
+        -Djpeg=enabled -Dpng=enabled -Dtiff=enabled -Dwebp=enabled -Dheif=enabled -Dzlib=enabled \
+        >/dev/null; \
+    ninja -C build -j"$(nproc)" >/dev/null; ninja -C build install >/dev/null; \
+    rm -rf "/tmp/vips-${VIPS_VERSION}"
+
+# ---------------------------------------------------------------------------
+# Publishable base image: zig + go + static libs (no build toolchain).
+# ---------------------------------------------------------------------------
+FROM debian:bookworm-slim AS vips-base
+
+ARG ZIG_VERSION=0.16.0
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        pkg-config ca-certificates git \
+    && rm -rf /var/lib/apt/lists/*
+
+ENV PKG_CONFIG_LIBDIR=/usr/local/lib/pkgconfig
+
+COPY --from=vips-deps /usr/local/lib /usr/local/lib
+COPY --from=vips-deps /usr/local/include /usr/local/include
+COPY --from=vips-deps /usr/local/bin/musl-* /usr/local/bin/
+COPY --from=vips-deps "/opt/zig-x86_64-linux-${ZIG_VERSION}" "/opt/zig-x86_64-linux-${ZIG_VERSION}"
+COPY --from=vips-deps /usr/local/go /usr/local/go
+
+RUN ln -s "/opt/zig-x86_64-linux-${ZIG_VERSION}/zig" /usr/local/bin/zig \
+    && ln -s /usr/local/go/bin/go /usr/local/bin/go
+
+# ---------------------------------------------------------------------------
+# Go binary (separate stage so vips-base stays publishable)
+# ---------------------------------------------------------------------------
+FROM vips-base AS vips-build
+
+# Override with --build-arg GOPROXY=... if proxy.golang.org is unreachable.
+ARG GOPROXY=https://proxy.golang.org,direct
+ENV GOPROXY=${GOPROXY}
+
+ARG BUILD_AT
+ARG BUILT_AT=${BUILD_AT}
+ARG GIT_COMMIT
+ARG VERSION
+
+WORKDIR /src
 COPY go.mod go.sum ./
 RUN go mod download
 
 COPY . .
 
-ARG BUILT_AT
-ARG GIT_COMMIT
-ARG VERSION
-
-RUN builtAt=${BUILT_AT:-$(date +'%F %T %z')} && \
-    gitCommit=${GIT_COMMIT:-$(git log --pretty=format:"%h" -1)} && \
-    version=${VERSION:-$(git describe --abbrev=0 --tags)} && \
-    versionFlags="-X 'github.com/krau/ManyACG/internal/common/version.BuildTime=$builtAt' \
-    -X 'github.com/krau/ManyACG/internal/common/version.Commit=$gitCommit' \
-    -X 'github.com/krau/ManyACG/internal/common/version.Version=$version'" && \
-    vipsFlags="$(pkg-config --static --libs vips)" && \
-    CGO_ENABLED=1 GOOS=linux GOARCH=amd64 \
+RUN set -eux; \
+    builtAt="${BUILT_AT:-$(date +'%F %T %z')}"; \
+    gitCommit="${GIT_COMMIT:-$(git log --pretty=format:%h -1 2>/dev/null || echo unknown)}"; \
+    version="${VERSION:-$(git describe --abbrev=0 --tags 2>/dev/null || echo dev)}"; \
+    versionFlags="-X 'github.com/krau/ManyACG/internal/common/version.BuildTime=${builtAt}' \
+-X 'github.com/krau/ManyACG/internal/common/version.Commit=${gitCommit}' \
+-X 'github.com/krau/ManyACG/internal/common/version.Version=${version}'"; \
+    CGO_LDFLAGS="-Wl,--start-group $(pkg-config --static --libs vips) -Wl,--end-group" \
+    CGO_ENABLED=1 CC=musl-cc-static GOOS=linux GOARCH=amd64 \
     go build -tags vips,nodynamic,netgo \
-    -ldflags "-s -w $versionFlags -linkmode external -extldflags \"-static $vipsFlags\"" \
-    -o manyacg
+        -ldflags "-s -w ${versionFlags} -linkmode external" \
+        -o manyacg
 
-
+# ---------------------------------------------------------------------------
 FROM scratch AS exporter
-COPY --from=builder /ManyACG/manyacg /manyacg
+COPY --from=vips-build /src/manyacg /manyacg

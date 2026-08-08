@@ -50,7 +50,7 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Build static binary with alpine (Docker)
+      - name: Build static binary with libvips (prebuilt image)
         run: |
           docker buildx build \
             --platform linux/amd64 \
@@ -59,7 +59,7 @@ jobs:
             --build-arg GIT_COMMIT=${COMMIT} \
             --target exporter \
             --output type=local,dest=./output \
-            -f scripts/Dockerfile.vips \
+            -f scripts/Dockerfile.build \
             .
 
       - name: Prepare build script for go-release-action

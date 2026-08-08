@@ -1,0 +1,41 @@
+#
+# Fast ManyACG build: pulls the prebuilt vips toolchain image
+# (acherkrau/libvips-static, built by scripts/Dockerfile.vips) and compiles
+# the Go binary. Go steps mirror the tail of scripts/Dockerfile.vips.
+#
+# Bump VIPS_BASE_IMAGE after republishing a new vips-base image.
+#
+ARG VIPS_BASE_IMAGE=acherkrau/libvips-static:8.17.2
+FROM ${VIPS_BASE_IMAGE} AS vips-build
+
+# Override with --build-arg GOPROXY=... if proxy.golang.org is unreachable.
+ARG GOPROXY=https://proxy.golang.org,direct
+ENV GOPROXY=${GOPROXY}
+
+ARG BUILD_AT
+ARG BUILT_AT=${BUILD_AT}
+ARG GIT_COMMIT
+ARG VERSION
+
+WORKDIR /src
+COPY go.mod go.sum ./
+RUN go mod download
+
+COPY . .
+
+RUN set -eux; \
+    builtAt="${BUILT_AT:-$(date +'%F %T %z')}"; \
+    gitCommit="${GIT_COMMIT:-$(git log --pretty=format:%h -1 2>/dev/null || echo unknown)}"; \
+    version="${VERSION:-$(git describe --abbrev=0 --tags 2>/dev/null || echo dev)}"; \
+    versionFlags="-X 'github.com/krau/ManyACG/internal/common/version.BuildTime=${builtAt}' \
+-X 'github.com/krau/ManyACG/internal/common/version.Commit=${gitCommit}' \
+-X 'github.com/krau/ManyACG/internal/common/version.Version=${version}'"; \
+    CGO_LDFLAGS="-Wl,--start-group $(pkg-config --static --libs vips) -Wl,--end-group" \
+    CGO_ENABLED=1 CC=musl-cc-static GOOS=linux GOARCH=amd64 \
+    go build -tags vips,nodynamic,netgo \
+        -ldflags "-s -w ${versionFlags} -linkmode external" \
+        -o manyacg
+
+# ---------------------------------------------------------------------------
+FROM scratch AS exporter
+COPY --from=vips-build /src/manyacg /manyacg
