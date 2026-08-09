@@ -107,7 +107,7 @@ RUN printf '%s\n' \
         > /usr/local/bin/musl-cc \
     && printf '%s\n' \
         '#!/bin/sh' \
-        'exec /usr/local/bin/zig c++ -target x86_64-linux-musl -O3 "$@"' \
+        'exec /usr/local/bin/zig c++ -target x86_64-linux-musl -O3 -Wno-nullability-completeness "$@"' \
         > /usr/local/bin/musl-c++ \
     && printf '%s\n' \
         '#!/bin/sh' \
@@ -293,6 +293,13 @@ RUN set -eux; \
     cmake --build /tmp/heif-build -j"$(nproc)" >/dev/null; cmake --install /tmp/heif-build >/dev/null; \
     rm -rf "/tmp/libheif-${HEIF_VERSION}" /tmp/heif-build
 
+# Go's cgo external link adds -rdynamic and -s, which makes zig compile a
+# second libc++ variant on demand (slow, ~1700 warning lines). Pre-warm it so
+# the published base image ships both variants in the zig cache.
+RUN printf 'int main(){return 0;}\n' > /tmp/rd.cpp \
+    && zig cc -target x86_64-linux-musl -O3 -Wl,-static -s -rdynamic -lc++ /tmp/rd.cpp -o /tmp/rdwarm \
+    && rm -f /tmp/rd.cpp /tmp/rdwarm
+
 # ---------------------------------------------------------------------------
 # libvips
 # ---------------------------------------------------------------------------
@@ -330,6 +337,9 @@ COPY --from=vips-deps /usr/local/include /usr/local/include
 COPY --from=vips-deps /usr/local/bin/musl-* /usr/local/bin/
 COPY --from=vips-deps "/opt/zig-x86_64-linux-${ZIG_VERSION}" "/opt/zig-x86_64-linux-${ZIG_VERSION}"
 COPY --from=vips-deps /usr/local/go /usr/local/go
+# zig compiles its bundled libc++ on first C++ link (~2-3 min, very noisy);
+# ship the compiled cache from the deps stage instead.
+COPY --from=vips-deps /root/.cache/zig /root/.cache/zig
 
 RUN ln -s "/opt/zig-x86_64-linux-${ZIG_VERSION}/zig" /usr/local/bin/zig \
     && ln -s /usr/local/go/bin/go /usr/local/bin/go
