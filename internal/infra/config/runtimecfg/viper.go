@@ -28,7 +28,7 @@ type Config struct {
 	KVDB      KVDBConfig      `toml:"kvdb" mapstructure:"kvdb" json:"kvdb" yaml:"kvdb"`
 	Storage   StorageConfig   `toml:"storage" mapstructure:"storage" json:"storage" yaml:"storage"`
 	Scheduler SchedulerConfig `toml:"scheduler" mapstructure:"scheduler" json:"scheduler" yaml:"scheduler"`
-	Imseek  ImseekConfig  `toml:"imseek" mapstructure:"imseek" json:"imseek" yaml:"imseek"`
+	Imseek    ImseekConfig    `toml:"imseek" mapstructure:"imseek" json:"imseek" yaml:"imseek"`
 	App       AppConfig       `toml:"app" mapstructure:"app" json:"app" yaml:"app"`
 }
 

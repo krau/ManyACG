@@ -21,7 +21,7 @@ type Service struct {
 	storages map[shared.StorageType]storage.Storage
 	sources  map[shared.SourceType]source.ArtworkSource
 	storCfg  runtimecfg.StorageConfig
-	imseek imseek.Engine
+	imseek   imseek.Engine
 }
 
 type Option func(*Service)
