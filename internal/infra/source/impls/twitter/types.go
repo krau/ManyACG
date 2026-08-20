@@ -70,7 +70,7 @@ func (resp *FxTwitterApiResp) ToArtwork() (*dto.FetchedArtwork, error) {
 
 	pictures := make([]*dto.FetchedPicture, 0)
 	for i, photo := range media.Photos {
-		picUrl := strings.Split(photo.URL, "?")[0]
+		picUrl, _, _ := strings.Cut(photo.URL, "?")
 		pictures = append(pictures, &dto.FetchedPicture{
 			Index:     uint(i),
 			Thumbnail: picUrl + "?name=medium",
@@ -81,7 +81,7 @@ func (resp *FxTwitterApiResp) ToArtwork() (*dto.FetchedArtwork, error) {
 	}
 	videos := make([]*dto.FetchedVideo, 0)
 	for i, video := range media.Videos {
-		videoUrl := strings.Split(video.URL, "?")[0]
+		videoUrl, _, _ := strings.Cut(video.URL, "?")
 		posterUrl := ""
 		if video.ThumbnailUrl != "" {
 			posterUrl = strings.Split(video.ThumbnailUrl, "?")[0]

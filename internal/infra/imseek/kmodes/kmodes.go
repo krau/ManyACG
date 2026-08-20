@@ -196,7 +196,7 @@ func updateCentroids(data [][]byte, assignments []int, centroids [][]byte, frequ
 
 	chunk := (n + workers - 1) / workers
 	var wg sync.WaitGroup
-	for w := 0; w < workers; w++ {
+	for w := range workers {
 		lo := w * chunk
 		hi := min(lo+chunk, n)
 		if lo >= hi {

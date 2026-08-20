@@ -90,7 +90,7 @@ func Init(ctx context.Context, serv *service.Service, cfg runtimecfg.TelegramCon
 
 	// key: telegram:bot:username:<bot_id>
 	// value: bot username without @
-	botIdStr := strings.Split(cfg.BotToken, ":")[0]
+	botIdStr, _, _ := strings.Cut(cfg.BotToken, ":")
 	botId, err := strconv.Atoi(botIdStr)
 	if err != nil {
 		return nil, oops.Errorf("Invalid bot token: %s", err)
