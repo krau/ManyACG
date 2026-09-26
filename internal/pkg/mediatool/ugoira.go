@@ -127,8 +127,18 @@ func UgoiraZipToMp4(zipPath string, frames []shared.UgoiraFrame, outputPath stri
 	if strings.ToLower(filepath.Ext(outputPath)) != ".mp4" {
 		ffoutPath += ".mp4"
 	}
-	// 输出只写一次, 用唯一路径避免并发转换互相覆盖
-	ffoutPath = osutil.UniquePath(ffoutPath)
+	// 先输出到临时文件, 成功后再提交到唯一路径:
+	// 转换失败时只留下可被清理的临时文件, 并发调用也不会写到同一个文件
+	tmpFile, err := osutil.CreateTempSibling(ffoutPath)
+	if err != nil {
+		return "", fmt.Errorf("create temp file: %w", err)
+	}
+	tmpPath := tmpFile.Name()
+	if err := tmpFile.Close(); err != nil {
+		os.Remove(tmpPath)
+		return "", fmt.Errorf("close temp file: %w", err)
+	}
+	defer os.Remove(tmpPath)
 
 	// 调整为偶数边长, mp4 编码要求
 	filtered := in.Filter("pad", ffmpeg.Args{
@@ -139,7 +149,7 @@ func UgoiraZipToMp4(zipPath string, frames []shared.UgoiraFrame, outputPath stri
 		"black",        // padding color
 	})
 
-	out := filtered.Output(ffoutPath, ffmpeg.KwArgs{
+	out := filtered.Output(tmpPath, ffmpeg.KwArgs{
 		"fps_mode": "vfr",
 		"crf":      "23",
 		"c:v":      "libx264",
@@ -149,7 +159,11 @@ func UgoiraZipToMp4(zipPath string, frames []shared.UgoiraFrame, outputPath stri
 	if err := out.OverWriteOutput().ErrorToStdOut().Run(); err != nil {
 		return "", fmt.Errorf("ffmpeg run error: %w", err)
 	}
-	return ffoutPath, nil
+	outPath := osutil.UniquePath(ffoutPath)
+	if err := osutil.CommitTempFile(tmpPath, outPath); err != nil {
+		return "", fmt.Errorf("commit mp4 file: %w", err)
+	}
+	return outPath, nil
 }
 
 func escapePathForConcat(p string) string {

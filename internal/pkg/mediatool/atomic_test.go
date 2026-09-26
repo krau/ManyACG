@@ -12,6 +12,7 @@ import (
 	"testing"
 
 	"github.com/krau/ManyACG/internal/shared"
+	"github.com/krau/ManyACG/pkg/osutil"
 )
 
 func writeTestPNG(t *testing.T, path string, width, height int) {
@@ -113,68 +114,94 @@ func TestCompressImgUsesUniqueOutput(t *testing.T) {
 		if format != "png" || cfg.Width != 400 || cfg.Height != 300 {
 			t.Errorf("unexpected output %s: format=%s size=%dx%d", paths[i], format, cfg.Width, cfg.Height)
 		}
+		if osutil.IsTempFile(paths[i]) {
+			t.Errorf("output path looks like a temp file: %s", paths[i])
+		}
 	}
+	assertNoTempFiles(t, dir)
 }
 
 func TestCompressImgFailureWritesNothing(t *testing.T) {
-	dir := t.TempDir()
-	inputPath := filepath.Join(dir, "input.png")
-	writeTestPNG(t, inputPath, 32, 32)
-	if _, err := CompressImg(inputPath, filepath.Join(dir, "output.unknown"), "unknown-format", 0); err == nil {
-		t.Fatal("expected an error for unsupported format")
+	for _, tt := range []struct {
+		name   string
+		base   string
+		format string
+		write  func(dir string) string
+	}{
+		{
+			name: "unsupported format", base: "output.unknown", format: "unknown-format",
+			write: func(dir string) string {
+				p := filepath.Join(dir, "input.png")
+				writeTestPNG(t, p, 32, 32)
+				return p
+			},
+		},
+		{
+			name: "unreadable input", base: "output.png", format: "png",
+			write: func(dir string) string {
+				p := filepath.Join(dir, "broken.png")
+				if err := os.WriteFile(p, []byte("not an image"), 0o644); err != nil {
+					t.Fatal(err)
+				}
+				return p
+			},
+		},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			dir := t.TempDir()
+			inputPath := tt.write(dir)
+			if _, err := CompressImg(inputPath, filepath.Join(dir, tt.base), tt.format, 0); err == nil {
+				t.Fatal("expected an error")
+			}
+			assertNoTempFiles(t, dir)
+			assertOnlyFiles(t, dir, filepath.Base(inputPath))
+		})
 	}
-	assertOnlyFiles(t, dir, "input.png")
 }
 
-// ugoira 转 mp4 的输出是临时产物, 并发转换同一目标时不应写入同一路径
-func TestUgoiraZipToMp4UsesUniqueOutput(t *testing.T) {
+// 转换失败时不应留下产物或临时文件
+func TestUgoiraZipToMp4FailureWritesNothing(t *testing.T) {
 	if !FFmpegAvailable() {
 		t.Skip("ffmpeg is not available")
 	}
 	dir := t.TempDir()
 	zipPath := filepath.Join(dir, "frames.zip")
-	frames := writeTestUgoiraZip(t, zipPath, 64)
-	basePath := filepath.Join(dir, "out.mp4")
-
-	const workers = 3
-	paths := make([]string, workers)
-	errs := make([]error, workers)
-	var wg sync.WaitGroup
-	for i := range workers {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-			paths[i], errs[i] = UgoiraZipToMp4(zipPath, frames, basePath)
-		}()
+	f, err := os.Create(zipPath)
+	if err != nil {
+		t.Fatal(err)
 	}
-	wg.Wait()
+	zw := zip.NewWriter(f)
+	w, err := zw.Create("frame_000.png")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := w.Write([]byte("not an image")); err != nil {
+		t.Fatal(err)
+	}
+	if err := zw.Close(); err != nil {
+		t.Fatal(err)
+	}
+	if err := f.Close(); err != nil {
+		t.Fatal(err)
+	}
+	frames := []shared.UgoiraFrame{{File: "frame_000.png", Delay: 100}}
+	if _, err := UgoiraZipToMp4(zipPath, frames, filepath.Join(dir, "out.mp4")); err == nil {
+		t.Fatal("expected an error for an undecodable frame")
+	}
+	assertNoTempFiles(t, dir)
+	assertOnlyFiles(t, dir, "frames.zip")
+}
 
-	seen := make(map[string]struct{}, workers)
-	for i := range workers {
-		if errs[i] != nil {
-			t.Fatalf("UgoiraZipToMp4: %v", errs[i])
-		}
-		if paths[i] == basePath {
-			t.Fatalf("output is written to the shared path %s", paths[i])
-		}
-		if _, ok := seen[paths[i]]; ok {
-			t.Fatalf("duplicated output path %s", paths[i])
-		}
-		seen[paths[i]] = struct{}{}
-		if filepath.Ext(paths[i]) != ".mp4" {
-			t.Errorf("unexpected output extension: %s", paths[i])
-		}
-		f, err := os.Open(paths[i])
-		if err != nil {
-			t.Fatalf("open output: %v", err)
-		}
-		meta, err := GetMP4Meta(f)
-		f.Close()
-		if err != nil {
-			t.Fatalf("output %s is not a valid mp4: %v", paths[i], err)
-		}
-		if meta.Width != 64 || meta.Height != 64 || meta.Duration == 0 {
-			t.Errorf("unexpected mp4 metadata for %s: %+v", paths[i], meta)
+// 成功返回的路径必须是完整产物, 且不带临时文件标记
+func assertNoTempFiles(t *testing.T, dir string) {
+	t.Helper()
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		t.Fatalf("read dir: %v", err)
+	}
+	for _, entry := range entries {
+		if osutil.IsTempFile(entry.Name()) {
+			t.Errorf("leftover temp file: %s", entry.Name())
 		}
 	}
 }

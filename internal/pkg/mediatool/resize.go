@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"image"
 	"io"
-	"math/rand"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -71,47 +70,69 @@ func CompressImg(inputPath, outputPath, format string, maxEdgeLength int) (strin
 	if err := os.MkdirAll(filepath.Dir(outputPath), os.ModePerm); err != nil {
 		return "", err
 	}
-	// 输出只写一次, 用唯一路径避免并发压缩互相覆盖
-	outputPath = osutil.UniquePath(outputPath)
+	// 先写临时文件, 成功后再提交到唯一路径:
+	// 压缩失败时只留下可被清理的临时文件, 并发调用也不会写到同一个文件
+	tmpFile, err := osutil.CreateTempSibling(outputPath)
+	if err != nil {
+		return "", err
+	}
+	tmpPath := tmpFile.Name()
+	if err := tmpFile.Close(); err != nil {
+		os.Remove(tmpPath)
+		return "", err
+	}
+	defer os.Remove(tmpPath)
+	if err := compressImgToFile(inputPath, tmpPath, format, maxEdgeLength); err != nil {
+		return "", err
+	}
+	outPath := osutil.UniquePath(outputPath)
+	if err := osutil.CommitTempFile(tmpPath, outPath); err != nil {
+		return "", err
+	}
+	return outPath, nil
+}
+
+func compressImgToFile(inputPath, outputPath, format string, maxEdgeLength int) error {
 	if _, ok := vipsFormat[format]; ok {
 		log.Debug("compressing image", "method", "vips", "input", inputPath, "output", outputPath, "format", format)
 		err := compressImageVIPS(inputPath, outputPath, format, maxEdgeLength)
 		if err != nil {
-			return "", fmt.Errorf("failed to compress image with vips: %w", err)
+			return fmt.Errorf("failed to compress image with vips: %w", err)
 		}
-		return outputPath, nil
+		return nil
 	}
 	if ffmpegAvailable {
 		log.Debug("compressing image", "method", "ffmpeg", "input", inputPath, "output", outputPath, "format", format)
 		err := compressImageByFFmpeg(inputPath, outputPath, maxEdgeLength)
 		if err != nil {
-			return "", fmt.Errorf("failed to compress image with ffmpeg: %w", err)
+			return fmt.Errorf("failed to compress image with ffmpeg: %w", err)
 		}
-		return outputPath, nil
+		return nil
 	}
 	if _, ok := nativeFormat[format]; ok {
 		log.Debug("compressing image", "method", "native", "input", inputPath, "output", outputPath, "format", format)
 		err := compressImageNative(inputPath, outputPath, format, maxEdgeLength)
 		if err != nil {
-			return "", fmt.Errorf("failed to compress image with native: %w", err)
+			return fmt.Errorf("failed to compress image with native: %w", err)
 		}
-		return outputPath, nil
+		return nil
 	}
-	return "", fmt.Errorf("unsupported image format: %s", format)
+	return fmt.Errorf("unsupported image format: %s", format)
 }
 
 func CompressImgForTelegram(input []byte) ([]byte, error) {
 	if _, ok := vipsFormat["jpeg"]; ok {
 		return compressImageForTelegramByVIPS(input)
 	}
-	tmpFile, err := os.CreateTemp(runtimecfg.Get().Storage.CacheDir, "mediatool_*.png")
+	cacheDir := runtimecfg.Get().Storage.CacheDir
+	tmpFile, err := osutil.CreateTempSibling(filepath.Join(cacheDir, "mediatool_telegram.png"))
 	if err != nil {
 		return nil, fmt.Errorf("failed to create temp file: %w", err)
 	}
 	defer os.Remove(tmpFile.Name())
 	defer tmpFile.Close()
 
-	distFile, err := os.CreateTemp(runtimecfg.Get().Storage.CacheDir, "mediatool_*.jpg")
+	distFile, err := osutil.CreateTempSibling(filepath.Join(cacheDir, "mediatool_telegram.jpg"))
 	if err != nil {
 		return nil, fmt.Errorf("failed to create temp file: %w", err)
 	}
@@ -145,7 +166,7 @@ func CompressImgForTelegram(input []byte) ([]byte, error) {
 }
 
 func CompressImgForTelegramFromFile(filePath string) (*osutil.TempFile, error) {
-	outputPath := filepath.Join(runtimecfg.Get().Storage.CacheDir, "compress", fmt.Sprintf("tg_%s_%d.jpg", strutil.MD5Hash(filePath), rand.Int()))
+	outputPath := osutil.TempSiblingPath(filepath.Join(runtimecfg.Get().Storage.CacheDir, "compress", fmt.Sprintf("tg_%s.jpg", strutil.MD5Hash(filePath))))
 	if _, ok := vipsFormat["jpeg"]; ok {
 		err := compressImageForTelegramByVIPSFromFile(filePath, outputPath)
 		if err != nil {
