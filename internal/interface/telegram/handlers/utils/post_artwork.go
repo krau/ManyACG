@@ -16,6 +16,7 @@ import (
 	"github.com/krau/ManyACG/internal/service"
 	"github.com/krau/ManyACG/internal/shared"
 	"github.com/krau/ManyACG/pkg/log"
+	"github.com/krau/ManyACG/pkg/osutil"
 	"github.com/krau/ManyACG/pkg/strutil"
 	"github.com/mymmrac/telego"
 	"github.com/mymmrac/telego/telegoutil"
@@ -85,15 +86,11 @@ func doPostAndCreateArtwork(
 	for i, pic := range artwork.Pictures {
 		// 下载并存储图片, 同时计算 phash, thumbhash, width, height
 		err = func() error {
-			file, err := httpclient.DownloadWithCache(ctx, pic.Original, nil)
+			file, img, err := downloadAndDecodePicture(ctx, pic.Original)
 			if err != nil {
-				return oops.Wrapf(err, "failed to download picture %d", i)
+				return oops.Wrapf(err, "failed to load picture %d", i)
 			}
 			defer file.Close()
-			img, _, err := image.Decode(file)
-			if err != nil {
-				return oops.Wrapf(err, "failed to decode picture %d", i)
-			}
 			if pic.Phash == "" {
 				phash, err := mediatool.GetImagePhash(img)
 				if err != nil {
@@ -423,6 +420,35 @@ func doPostAndCreateArtwork(
 		log.Warn("failed to recaption posted artwork message", "err", err)
 	}
 	return nil
+}
+
+// downloadAndDecodePicture 下载图片并解码.
+// 若缓存中的文件无法解码(例如上次下载被中断留下的截断文件), 则删除缓存并重新下载一次.
+func downloadAndDecodePicture(ctx context.Context, url string) (*osutil.File, image.Image, error) {
+	file, err := httpclient.DownloadWithCache(ctx, url, nil)
+	if err != nil {
+		return nil, nil, oops.Wrapf(err, "failed to download")
+	}
+	img, _, err := image.Decode(file)
+	if err == nil {
+		return file, img, nil
+	}
+	log.Warn("cached picture is not decodable, downloading again", "url", url, "err", err)
+	path := file.Name()
+	file.Close()
+	if rmErr := osutil.RemoveNow(path); rmErr != nil {
+		log.Warn("failed to remove undecodable cache file", "path", path, "err", rmErr)
+	}
+	file, err = httpclient.DownloadWithCache(ctx, url, nil)
+	if err != nil {
+		return nil, nil, oops.Wrapf(err, "failed to download")
+	}
+	img, _, err = image.Decode(file)
+	if err != nil {
+		file.Close()
+		return nil, nil, oops.Wrapf(err, "failed to decode")
+	}
+	return file, img, nil
 }
 
 var (
