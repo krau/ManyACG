@@ -16,6 +16,7 @@ import (
 	"time"
 
 	"github.com/imroc/req/v3"
+	"github.com/krau/ManyACG/pkg/osutil"
 )
 
 func TestDownloadToFileIsAtomic(t *testing.T) {
@@ -132,7 +133,7 @@ func assertNoTempFiles(t *testing.T, dir string) {
 		t.Fatalf("read dir: %v", err)
 	}
 	for _, entry := range entries {
-		if strings.Contains(entry.Name(), ".tmp-") {
+		if osutil.IsTempFile(entry.Name()) {
 			t.Errorf("leftover temp file: %s", entry.Name())
 		}
 	}

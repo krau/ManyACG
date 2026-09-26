@@ -6,7 +6,6 @@ import (
 	"errors"
 	"io"
 	"os"
-	"strings"
 	"sync"
 	"testing"
 
@@ -198,7 +197,7 @@ func assertNoTempFiles(t *testing.T, dir string) {
 		t.Fatalf("read dir: %v", err)
 	}
 	for _, entry := range entries {
-		if strings.Contains(entry.Name(), ".tmp-") {
+		if osutil.IsTempFile(entry.Name()) {
 			t.Errorf("leftover temp file: %s", entry.Name())
 		}
 	}
