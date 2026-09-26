@@ -38,6 +38,36 @@ func getCachePath(url string) string {
 	return filepath.Join(runtimecfg.Get().Storage.CacheDir, "req", strutil.MD5Hash(url)+ext)
 }
 
+// downloadToFile 下载 url 的内容并写入 path.
+// 内容会先写入同目录下的临时文件, 下载完成后重命名到 path,
+// 保证 path 上出现的文件一定是完整的, 不会被并发读取到写入中的内容.
+func downloadToFile(ctx context.Context, client *req.Client, url, path string) error {
+	if err := os.MkdirAll(filepath.Dir(path), os.ModePerm); err != nil {
+		return err
+	}
+	tmpFile, err := osutil.CreateTempSibling(path)
+	if err != nil {
+		return err
+	}
+	tmpPath := tmpFile.Name()
+	if err := tmpFile.Close(); err != nil {
+		os.Remove(tmpPath)
+		return err
+	}
+	defer os.Remove(tmpPath)
+	resp, err := client.R().
+		SetContext(ctx).
+		SetOutputFile(tmpPath).
+		Get(url)
+	if err != nil {
+		return err
+	}
+	if resp.IsErrorState() {
+		return fmt.Errorf("http error: %d", resp.GetStatusCode())
+	}
+	return osutil.CommitTempFile(tmpPath, path)
+}
+
 // DownloadWithCache downloads a file with caching. If the file is already cached, it returns the cached file.
 func DownloadWithCache(ctx context.Context, url string, client *req.Client) (
 	*osutil.File,
@@ -58,19 +88,7 @@ func DownloadWithCache(ctx context.Context, url string, client *req.Client) (
 		if fi, err := os.Stat(cachePath); err == nil && !fi.IsDir() {
 			return nil, nil
 		}
-		resp, err := client.R().
-			SetContext(ctx).
-			SetOutputFile(cachePath).
-			Get(url)
-		if err != nil {
-			os.Remove(cachePath)
-			return nil, err
-		}
-		if resp.IsErrorState() {
-			os.Remove(cachePath)
-			return nil, fmt.Errorf("http error: %d", resp.GetStatusCode())
-		}
-		return nil, nil
+		return nil, downloadToFile(ctx, client, url, cachePath)
 	})
 	select {
 	case r := <-ch:
