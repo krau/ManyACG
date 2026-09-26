@@ -211,6 +211,12 @@ type File struct {
 	path string
 }
 
+// Name 返回缓存文件在缓存路径上的文件名.
+// 文件可能是由临时文件重命名而来的, 此时底层文件描述符的名字已不是实际路径.
+func (f *File) Name() string {
+	return f.path
+}
+
 func (f *File) Close() error {
 	err := f.File.Close()
 	markClosed(f.path)
