@@ -219,8 +219,8 @@ func (s *Service) StorageSaveAllSize(ctx context.Context, inputPath, storDirPath
 		fileNameWithOutExt = fileName[:len(fileName)-len(ext)]
 	}
 	if s.storCfg.RegularType != "" {
-		compressedPath := filepath.Join(s.storCfg.CacheDir, "compress", fmt.Sprintf("regular_%s.%s", fileNameWithOutExt, s.storCfg.RegularFormat))
-		err := mediatool.CompressImg(inputPath, compressedPath, s.storCfg.RegularFormat, s.storCfg.RegularLength)
+		regularBasePath := filepath.Join(s.storCfg.CacheDir, "compress", fmt.Sprintf("regular_%s.%s", fileNameWithOutExt, s.storCfg.RegularFormat))
+		compressedPath, err := mediatool.CompressImg(inputPath, regularBasePath, s.storCfg.RegularFormat, s.storCfg.RegularLength)
 		if err != nil {
 			return nil, oops.Wrapf(err, "failed to compress image for regular storage %s", s.storCfg.RegularType)
 		}
@@ -250,8 +250,8 @@ func (s *Service) StorageSaveAllSize(ctx context.Context, inputPath, storDirPath
 		regularDetail.Mime = mimeType.String()
 	}
 	if s.storCfg.ThumbType != "" {
-		compressedPath2 := filepath.Join(s.storCfg.CacheDir, "compress", fmt.Sprintf("thumb_%s.%s", fileNameWithOutExt, s.storCfg.ThumbFormat))
-		err := mediatool.CompressImg(inputPath, compressedPath2, s.storCfg.ThumbFormat, s.storCfg.ThumbLength)
+		thumbBasePath := filepath.Join(s.storCfg.CacheDir, "compress", fmt.Sprintf("thumb_%s.%s", fileNameWithOutExt, s.storCfg.ThumbFormat))
+		compressedPath2, err := mediatool.CompressImg(inputPath, thumbBasePath, s.storCfg.ThumbFormat, s.storCfg.ThumbLength)
 		if err != nil {
 			return nil, oops.Wrapf(err, "failed to compress image for thumb storage %s", s.storCfg.ThumbType)
 		}

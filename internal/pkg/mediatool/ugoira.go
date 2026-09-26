@@ -11,6 +11,7 @@ import (
 
 	"github.com/krau/ManyACG/internal/shared"
 	"github.com/krau/ManyACG/pkg/log"
+	"github.com/krau/ManyACG/pkg/osutil"
 	"github.com/krau/ffmpeg-go"
 )
 
@@ -126,6 +127,8 @@ func UgoiraZipToMp4(zipPath string, frames []shared.UgoiraFrame, outputPath stri
 	if strings.ToLower(filepath.Ext(outputPath)) != ".mp4" {
 		ffoutPath += ".mp4"
 	}
+	// 输出只写一次, 用唯一路径避免并发转换互相覆盖
+	ffoutPath = osutil.UniquePath(ffoutPath)
 
 	// 调整为偶数边长, mp4 编码要求
 	filtered := in.Filter("pad", ffmpeg.Args{
