@@ -2,7 +2,6 @@ package service
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"io"
 	"mime"
@@ -95,15 +94,19 @@ func (s *Service) StorageGetFile(ctx context.Context, detail shared.StorageDetai
 		}
 		defer rc.Close()
 		// 读取到临时文件, 避免频繁从远程存储获取文件
-		cacheFile, err := osutil.CreateCache(cachePath)
+		cacheWriter, err := osutil.CreateAtomicCache(cachePath)
 		if err != nil {
 			return nil, oops.Wrapf(err, "create cache file failed")
 		}
-		if _, err := io.Copy(cacheFile, rc); err != nil {
-			osutil.RemoveNow(cacheFile.Name())
+		// 写入完成后才会出现在缓存路径上, 其他读者不会读到未写完的文件
+		if _, err := io.Copy(cacheWriter, rc); err != nil {
+			cacheWriter.Abort()
 			return nil, oops.Wrapf(err, "write cache file failed")
 		}
-		cacheFile.Seek(0, io.SeekStart)
+		cacheFile, err := cacheWriter.Commit()
+		if err != nil {
+			return nil, oops.Wrapf(err, "write cache file failed")
+		}
 		return cacheFile, nil
 	}
 	return nil, oops.Errorf("storage type %s not found", detail.Type)
@@ -133,19 +136,21 @@ func (s *Service) StorageStreamFile(ctx context.Context, detail shared.StorageDe
 		}
 		defer rc.Close()
 		// 读取到临时文件, 避免频繁从远程存储获取文件
-		cacheFile, err := osutil.CreateCache(cachePath)
+		cacheWriter, err := osutil.CreateAtomicCache(cachePath)
 		if err != nil {
 			return oops.Wrapf(err, "create cache file failed")
 		}
-		defer func() {
-			cacheFile.Close()
-			if err != nil && !errors.Is(err, io.EOF) {
-				osutil.RemoveNow(cacheFile.Name())
-			}
-		}()
-		tr := io.TeeReader(rc, cacheFile)
-		_, err = io.Copy(w, tr)
-		return err
+		defer cacheWriter.Abort()
+		tr := io.TeeReader(rc, cacheWriter)
+		if _, err := io.Copy(w, tr); err != nil {
+			return err
+		}
+		// 完整写入缓存路径后关闭, 保证其他读者只会读到完整的文件
+		cacheFile, err := cacheWriter.Commit()
+		if err != nil {
+			return oops.Wrapf(err, "write cache file failed")
+		}
+		return cacheFile.Close()
 	}
 	return oops.Errorf("storage type %s not found", detail.Type)
 }
