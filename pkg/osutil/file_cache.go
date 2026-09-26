@@ -86,8 +86,11 @@ func CreateAtomicCache(target string) (*AtomicCache, error) {
 	return &AtomicCache{file: f, target: target}, nil
 }
 
-// Write 实现 io.Writer
+// Write 实现 io.Writer, Commit/Abort 之后返回 os.ErrClosed
 func (a *AtomicCache) Write(p []byte) (int, error) {
+	if a.file == nil {
+		return 0, os.ErrClosed
+	}
 	return a.file.Write(p)
 }
 
@@ -98,14 +101,15 @@ func (a *AtomicCache) Commit() (*File, error) {
 		a.Abort()
 		return nil, err
 	}
-	if _, err := a.file.Seek(0, io.SeekStart); err != nil {
-		a.file.Close()
-		a.file = nil
+	f := a.file
+	a.file = nil
+	// 先登记再 Seek: 文件已经出现在目标路径上, 即使 Seek 失败也应由缓存 TTL 回收
+	cacheFile := registerFile(f, a.target, cachettl)
+	if _, err := cacheFile.Seek(0, io.SeekStart); err != nil {
+		cacheFile.Close()
 		return nil, err
 	}
-	f := registerFile(a.file, a.target, cachettl)
-	a.file = nil
-	return f, nil
+	return cacheFile, nil
 }
 
 // Abort 关闭并删除临时文件, 忽略其中产生的错误.
