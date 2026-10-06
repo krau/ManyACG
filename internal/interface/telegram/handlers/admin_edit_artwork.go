@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"errors"
+	"fmt"
 	"strconv"
 	"strings"
 
@@ -484,4 +485,33 @@ func ReindexArtworks(ctx *telegohandler.Context, message telego.Message) error {
 	}
 	utils.ReplyMessage(ctx, message, "已重新索引该作品")
 	return nil
+}
+
+func FixArtworkIndex(ctx *telegohandler.Context, message telego.Message) error {
+	serv, err := requireService(ctx)
+	if err != nil {
+		return err
+	}
+	if !utils.CheckPermissionInGroup(ctx, serv, message, shared.PermissionEditArtwork) {
+		utils.ReplyMessage(ctx, message, "你没有编辑作品的权限")
+		return nil
+	}
+	msg, err := utils.ReplyMessage(ctx, message, "正在检查未索引的作品...")
+	if err != nil {
+		return oops.Wrapf(err, "failed to send message")
+	}
+	submitted, err := serv.FixArtworkIndex(ctx)
+	text := "检查完成，没有发现未索引的作品"
+	if err != nil {
+		log.Errorf("failed to fix artwork index: %s", err)
+		text = fmt.Sprintf("修复索引失败，已提交 %d 个作品重新索引: %s", submitted, err)
+	} else if submitted > 0 {
+		text = fmt.Sprintf("已提交 %d 个未索引的作品重新索引，请稍后查询", submitted)
+	}
+	_, err = ctx.Bot().EditMessageText(ctx, &telego.EditMessageTextParams{
+		ChatID:    msg.Chat.ChatID(),
+		MessageID: msg.MessageID,
+		Text:      text,
+	})
+	return err
 }

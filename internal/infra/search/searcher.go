@@ -12,11 +12,13 @@ import (
 	"github.com/krau/ManyACG/internal/model/dto"
 	"github.com/krau/ManyACG/internal/model/query"
 	"github.com/krau/ManyACG/pkg/log"
+	"github.com/unvgo/ouid"
 )
 
 type Searcher interface {
 	SearchArtworks(ctx context.Context, que *query.ArtworkSearch) (*dto.ArtworkSearchResult, error)
 	FindSimilarArtworks(ctx context.Context, que *query.ArtworkSimilar) (*dto.ArtworkSearchResult, error)
+	GetMissingArtworkIDs(ctx context.Context, ids []ouid.OUID) ([]ouid.OUID, error)
 	AddDocuments(ctx context.Context, docs []*dto.ArtworkSearchDocument) error
 	DeleteDocuments(ctx context.Context, ids []string) error
 }
@@ -69,6 +71,10 @@ func (s *noopSearcher) SearchArtworks(ctx context.Context, que *query.ArtworkSea
 }
 
 func (s *noopSearcher) FindSimilarArtworks(ctx context.Context, que *query.ArtworkSimilar) (*dto.ArtworkSearchResult, error) {
+	return nil, ErrNotEnabled
+}
+
+func (s *noopSearcher) GetMissingArtworkIDs(ctx context.Context, ids []ouid.OUID) ([]ouid.OUID, error) {
 	return nil, ErrNotEnabled
 }
 

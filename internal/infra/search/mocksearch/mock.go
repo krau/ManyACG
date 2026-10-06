@@ -33,6 +33,24 @@ func (m *SearcherMock) DeleteAllDocuments(ctx context.Context) error {
 	return nil
 }
 
+func (m *SearcherMock) GetMissingArtworkIDs(ctx context.Context, ids []ouid.OUID) ([]ouid.OUID, error) {
+	artworks, err := m.repo.GetArtworksByIDs(ctx, ids)
+	if err != nil {
+		return nil, err
+	}
+	existing := make(map[ouid.OUID]struct{}, len(artworks))
+	for _, artwork := range artworks {
+		existing[artwork.ID] = struct{}{}
+	}
+	var missing []ouid.OUID
+	for _, id := range ids {
+		if _, ok := existing[id]; !ok {
+			missing = append(missing, id)
+		}
+	}
+	return missing, nil
+}
+
 func NewSearcher(awRepo repo.Artwork) *SearcherMock {
 	return &SearcherMock{
 		repo: awRepo,

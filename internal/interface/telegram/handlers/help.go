@@ -50,6 +50,8 @@ Inline 查询(在任意聊天框中@本bot)支持同样的参数格式.
 /dump - 输出 json 格式作品信息
 /recaption - 重新生成作品描述
 /reindex - 重新索引作品
+/fixindex - 检查并补全所有未索引的作品
+
 `
 	}
 	helpText += fmt.Sprintf("\n版本: %s, 构建日期 %s, 提交 %s\nhttps://github.com/krau/ManyACG", version.Version, version.BuildTime, version.Commit[:7])

@@ -45,6 +45,18 @@ func (d *DB) GetArtworksByIDs(ctx context.Context, ids []ouid.OUID) ([]*entity.A
 	return artworks, nil
 }
 
+func (d *DB) GetArtworkIDs(ctx context.Context, after ouid.OUID, limit int) ([]ouid.OUID, error) {
+	que := d.db.WithContext(ctx).Model(&entity.Artwork{}).Order("id ASC").Limit(limit)
+	if !after.IsZero() {
+		que = que.Where("id > ?", after)
+	}
+	var ids []ouid.OUID
+	if err := que.Pluck("id", &ids).Error; err != nil {
+		return nil, err
+	}
+	return ids, nil
+}
+
 func (d *DB) GetArtworkByURL(ctx context.Context, url string) (*entity.Artwork, error) {
 	var artwork entity.Artwork
 	err := d.db.WithContext(ctx).Model(&entity.Artwork{}).

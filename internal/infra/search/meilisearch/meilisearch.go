@@ -88,6 +88,49 @@ func (m *SearcherMeilisearch) DeleteAllDocuments(ctx context.Context) error {
 	return err
 }
 
+func (m *SearcherMeilisearch) GetMissingArtworkIDs(ctx context.Context, ids []ouid.OUID) ([]ouid.OUID, error) {
+	if len(ids) == 0 {
+		return nil, nil
+	}
+	documentIDs := make([]string, len(ids))
+	for i, id := range ids {
+		documentIDs[i] = id.Hex()
+	}
+	req := &meilisearch.DocumentsQuery{
+		Ids:    documentIDs,
+		Fields: []string{"id"},
+		Limit:  int64(len(ids)),
+	}
+	existing := make(map[string]struct{}, len(ids))
+	for {
+		var resp meilisearch.DocumentsResult
+		if err := m.client.GetDocumentsWithContext(ctx, req, &resp); err != nil {
+			return nil, fmt.Errorf("meilisearch get documents failed: %w", err)
+		}
+		for _, hit := range resp.Results {
+			var id string
+			if err := json.Unmarshal(hit["id"], &id); err != nil {
+				return nil, fmt.Errorf("meilisearch decode document id failed: %w", err)
+			}
+			existing[id] = struct{}{}
+		}
+		req.Offset += int64(len(resp.Results))
+		if req.Offset >= resp.Total {
+			break
+		}
+		if len(resp.Results) == 0 {
+			return nil, fmt.Errorf("meilisearch returned an incomplete document page")
+		}
+	}
+	var missing []ouid.OUID
+	for i, id := range ids {
+		if _, ok := existing[documentIDs[i]]; !ok {
+			missing = append(missing, id)
+		}
+	}
+	return missing, nil
+}
+
 func NewSearcher(ctx context.Context, cfg runtimecfg.MeiliSearchConfig) (*SearcherMeilisearch, error) {
 	if err := cfg.Valid(); err != nil {
 		return nil, err

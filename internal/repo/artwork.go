@@ -23,6 +23,7 @@ type Artwork interface {
 	DeleteArtworkByID(ctx context.Context, id ouid.OUID) error
 	QueryArtworks(ctx context.Context, que query.ArtworksDB) ([]*entity.Artwork, error)
 	GetArtworksByIDs(ctx context.Context, ids []ouid.OUID) ([]*entity.Artwork, error)
+	GetArtworkIDs(ctx context.Context, after ouid.OUID, limit int) ([]ouid.OUID, error)
 	CountArtworks(ctx context.Context, r18 shared.R18Type) (int64, error)
 }
 
@@ -120,6 +121,10 @@ func (a *ArtworkWithEvent) GetArtworkByURL(ctx context.Context, url string) (*en
 // GetArtworksByIDs implements Artwork.
 func (a *ArtworkWithEvent) GetArtworksByIDs(ctx context.Context, ids []ouid.OUID) ([]*entity.Artwork, error) {
 	return a.inner.GetArtworksByIDs(ctx, ids)
+}
+
+func (a *ArtworkWithEvent) GetArtworkIDs(ctx context.Context, after ouid.OUID, limit int) ([]ouid.OUID, error) {
+	return a.inner.GetArtworkIDs(ctx, after, limit)
 }
 
 // QueryArtworks implements Artwork.
@@ -238,6 +243,10 @@ func (a *ArtworkWithRecorder) GetArtworkByURL(ctx context.Context, url string) (
 
 func (a *ArtworkWithRecorder) GetArtworksByIDs(ctx context.Context, ids []ouid.OUID) ([]*entity.Artwork, error) {
 	return a.inner.GetArtworksByIDs(ctx, ids)
+}
+
+func (a *ArtworkWithRecorder) GetArtworkIDs(ctx context.Context, after ouid.OUID, limit int) ([]ouid.OUID, error) {
+	return a.inner.GetArtworkIDs(ctx, after, limit)
 }
 
 func (a *ArtworkWithRecorder) QueryArtworks(ctx context.Context, que query.ArtworksDB) ([]*entity.Artwork, error) {

@@ -110,6 +110,10 @@ var (
 			Command:     "dump",
 			Description: "导出作品信息",
 		},
+		{
+			Command:     "fixindex",
+			Description: "补全未索引的作品",
+		},
 	}
 )
 
