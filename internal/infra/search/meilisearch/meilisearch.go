@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/goccy/go-json"
 	"github.com/unvgo/ouid"
@@ -74,6 +75,33 @@ func (m *SearcherMeilisearch) AddDocuments(ctx context.Context, docs []*dto.Artw
 		PrimaryKey: &primaryKey,
 	})
 	return err
+}
+
+func (m *SearcherMeilisearch) AddDocumentsAndWait(ctx context.Context, docs []*dto.ArtworkSearchDocument) error {
+	if len(docs) == 0 {
+		return nil
+	}
+	primaryKey := "id"
+	info, err := m.client.AddDocumentsWithContext(ctx, docs, &meilisearch.DocumentOptions{
+		PrimaryKey: &primaryKey,
+	})
+	if err != nil {
+		if ctx.Err() != nil {
+			return ctx.Err()
+		}
+		return err
+	}
+	task, err := m.client.WaitForTaskWithContext(ctx, info.TaskUID, time.Second)
+	if err != nil {
+		if ctx.Err() != nil {
+			return ctx.Err()
+		}
+		return fmt.Errorf("meilisearch wait for task %d failed: %w", info.TaskUID, err)
+	}
+	if task.Status != meilisearch.TaskStatusSucceeded {
+		return fmt.Errorf("meilisearch task %d ended with status %q (code %q): %s", info.TaskUID, task.Status, task.Error.Code, task.Error.Message)
+	}
+	return nil
 }
 
 // DeleteDocuments implements search.Searcher.

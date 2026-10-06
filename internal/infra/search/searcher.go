@@ -20,6 +20,7 @@ type Searcher interface {
 	FindSimilarArtworks(ctx context.Context, que *query.ArtworkSimilar) (*dto.ArtworkSearchResult, error)
 	GetMissingArtworkIDs(ctx context.Context, ids []ouid.OUID) ([]ouid.OUID, error)
 	AddDocuments(ctx context.Context, docs []*dto.ArtworkSearchDocument) error
+	AddDocumentsAndWait(ctx context.Context, docs []*dto.ArtworkSearchDocument) error
 	DeleteDocuments(ctx context.Context, ids []string) error
 }
 
@@ -58,6 +59,10 @@ type noopSearcher struct{}
 
 // AddDocuments implements Searcher.
 func (s *noopSearcher) AddDocuments(ctx context.Context, docs []*dto.ArtworkSearchDocument) error {
+	return ErrNotEnabled
+}
+
+func (s *noopSearcher) AddDocumentsAndWait(ctx context.Context, docs []*dto.ArtworkSearchDocument) error {
 	return ErrNotEnabled
 }
 

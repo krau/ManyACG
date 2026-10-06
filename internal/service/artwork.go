@@ -331,38 +331,6 @@ func (s *Service) ReIndexArtworks(ctx context.Context, ids []ouid.OUID) error {
 	return nil
 }
 
-func (s *Service) FixArtworkIndex(ctx context.Context) (int, error) {
-	if s.searcher == nil {
-		return 0, search.ErrNotEnabled
-	}
-	const batchSize = 1000
-	var after ouid.OUID
-	submitted := 0
-	for {
-		if err := ctx.Err(); err != nil {
-			return submitted, err
-		}
-		ids, err := s.repos.Artwork().GetArtworkIDs(ctx, after, batchSize)
-		if err != nil {
-			return submitted, fmt.Errorf("get artwork ids failed: %w", err)
-		}
-		if len(ids) == 0 {
-			return submitted, nil
-		}
-		missing, err := s.searcher.GetMissingArtworkIDs(ctx, ids)
-		if err != nil {
-			return submitted, fmt.Errorf("get missing artwork ids failed: %w", err)
-		}
-		if len(missing) > 0 {
-			if err := s.ReIndexArtworks(ctx, missing); err != nil {
-				return submitted, err
-			}
-			submitted += len(missing)
-		}
-		after = ids[len(ids)-1]
-	}
-}
-
 func (s *Service) CountArtworks(ctx context.Context, r18 shared.R18Type) (int64, error) {
 	return s.repos.Artwork().CountArtworks(ctx, r18)
 }

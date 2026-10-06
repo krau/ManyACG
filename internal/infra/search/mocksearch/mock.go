@@ -21,6 +21,10 @@ func (m *SearcherMock) AddDocuments(ctx context.Context, docs []*dto.ArtworkSear
 	return nil
 }
 
+func (m *SearcherMock) AddDocumentsAndWait(ctx context.Context, docs []*dto.ArtworkSearchDocument) error {
+	return m.AddDocuments(ctx, docs)
+}
+
 // DeleteDocuments implements search.Searcher.
 func (m *SearcherMock) DeleteDocuments(ctx context.Context, ids []string) error {
 	log.Debug("[MockSearch] DeleteDocuments called with %d ids", len(ids))
