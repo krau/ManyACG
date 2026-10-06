@@ -3,6 +3,7 @@ package osutil
 import (
 	"bytes"
 	"errors"
+	"io"
 	"os"
 	"path/filepath"
 	"testing"
@@ -41,6 +42,13 @@ func TestAtomicCachePublishesCompleteFileOnly(t *testing.T) {
 	if !bytes.Equal(got, payload) {
 		t.Errorf("content mismatch: got %d bytes, want %d", len(got), len(payload))
 	}
+	readBack, err := io.ReadAll(file)
+	if err != nil {
+		t.Fatalf("read committed handle: %v", err)
+	}
+	if !bytes.Equal(readBack, payload) {
+		t.Errorf("committed handle content mismatch: got %d bytes, want %d", len(readBack), len(payload))
+	}
 	if file.Name() != target {
 		t.Errorf("unexpected file name: %s", file.Name())
 	}
@@ -66,4 +74,39 @@ func TestAtomicCacheAbortLeavesNothing(t *testing.T) {
 		t.Errorf("target must not exist after Abort: %v", err)
 	}
 	assertNoTempFiles(t, dir)
+}
+
+func TestAtomicCacheCommitFailurePreservesTarget(t *testing.T) {
+	dir := t.TempDir()
+	target := filepath.Join(dir, "existing")
+	if err := os.Mkdir(target, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	writer, err := CreateAtomicCache(target)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := writer.Write([]byte("must not replace directory")); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := writer.Commit(); err == nil {
+		t.Fatal("expected commit to fail")
+	}
+	writer.Abort()
+	info, err := os.Stat(target)
+	if err != nil || !info.IsDir() {
+		t.Fatalf("existing directory was not preserved: %v", err)
+	}
+	assertNoTempFiles(t, dir)
+}
+
+func TestAtomicCacheCommitAfterAbort(t *testing.T) {
+	writer, err := CreateAtomicCache(filepath.Join(t.TempDir(), "cache.bin"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	writer.Abort()
+	if _, err := writer.Commit(); !errors.Is(err, os.ErrClosed) {
+		t.Fatalf("Commit after Abort: got %v, want os.ErrClosed", err)
+	}
 }

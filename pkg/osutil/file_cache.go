@@ -2,7 +2,6 @@ package osutil
 
 import (
 	"fmt"
-	"io"
 	"math/rand/v2"
 	"os"
 	"path/filepath"
@@ -54,7 +53,10 @@ func OpenCacheWithTTL(path string, ttl time.Duration) (*File, error) {
 func registerFile(f *os.File, path string, ttl time.Duration) *File {
 	cacheMu.Lock()
 	defer cacheMu.Unlock()
+	return registerFileLocked(f, path, ttl)
+}
 
+func registerFileLocked(f *os.File, path string, ttl time.Duration) *File {
 	refCounts[path]++
 	fileTTLs[path] = ttl
 
@@ -97,19 +99,30 @@ func (a *AtomicCache) Write(p []byte) (int, error) {
 // Commit 将临时文件重命名为目标路径并登记缓存引用计数.
 // 返回的文件已定位到起始位置.
 func (a *AtomicCache) Commit() (*File, error) {
-	if err := CommitTempFile(a.file.Name(), a.target); err != nil {
-		a.Abort()
-		return nil, err
+	if a.file == nil {
+		return nil, os.ErrClosed
 	}
 	f := a.file
+	tmpPath := f.Name()
 	a.file = nil
-	// 先登记再 Seek: 文件已经出现在目标路径上, 即使 Seek 失败也应由缓存 TTL 回收
-	cacheFile := registerFile(f, a.target, cachettl)
-	if _, err := cacheFile.Seek(0, io.SeekStart); err != nil {
-		cacheFile.Close()
+	defer os.Remove(tmpPath)
+	// Windows 不允许重命名仍由 os.File 打开的文件.
+	if err := f.Close(); err != nil {
 		return nil, err
 	}
-	return cacheFile, nil
+
+	// 发布与登记引用之间不允许已有的缓存删除定时器运行.
+	cacheMu.Lock()
+	defer cacheMu.Unlock()
+	if err := CommitTempFile(tmpPath, a.target); err != nil {
+		return nil, err
+	}
+	f, err := os.Open(a.target)
+	if err != nil {
+		_ = os.Remove(a.target)
+		return nil, err
+	}
+	return registerFileLocked(f, a.target, cachettl), nil
 }
 
 // Abort 关闭并删除临时文件, 忽略其中产生的错误.
@@ -216,7 +229,6 @@ type File struct {
 }
 
 // Name 返回缓存文件在缓存路径上的文件名.
-// 文件可能是由临时文件重命名而来的, 此时底层文件描述符的名字已不是实际路径.
 func (f *File) Name() string {
 	return f.path
 }
