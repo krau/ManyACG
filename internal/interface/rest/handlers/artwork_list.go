@@ -143,10 +143,8 @@ func listArtworks(ctx context.Context, serv *service.Service, req *RequestListAr
 		return serv.FindSimilarArtworks(ctx, &query.ArtworkSimilar{
 			ArtworkID: targetID,
 			R18:       shared.R18TypeFromInt(req.R18),
-			Paginate: query.Paginate{
-				Limit:  int(req.PageSize),
-				Offset: int((req.Page - 1) * req.PageSize),
-			},
+			Limit:     int(req.PageSize),
+			Offset:    int((req.Page - 1) * req.PageSize),
 		})
 	}
 
@@ -156,10 +154,8 @@ func listArtworks(ctx context.Context, serv *service.Service, req *RequestListAr
 			HybridSemanticRatio: 0.8,
 			R18:                 shared.R18TypeFromInt(req.R18),
 			Query:               req.Keyword,
-			Paginate: query.Paginate{
-				Limit:  int(req.PageSize),
-				Offset: int((req.Page - 1) * req.PageSize),
-			},
+			Limit:               int(req.PageSize),
+			Offset:              int((req.Page - 1) * req.PageSize),
 		})
 	}
 
@@ -174,14 +170,10 @@ func listArtworks(ctx context.Context, serv *service.Service, req *RequestListAr
 
 	keywords := strutil.ParseTo2DArray(req.Keyword, ",", "|")
 	dbQuery := query.ArtworksDB{
-		ArtworksFilter: query.ArtworksFilter{
-			R18:        shared.R18TypeFromInt(req.R18),
-			HasPicture: true,
-		},
-		Paginate: query.Paginate{
-			Limit:  int(req.PageSize),
-			Offset: int((req.Page - 1) * req.PageSize),
-		},
+		R18:        shared.R18TypeFromInt(req.R18),
+		HasPicture: true,
+		Limit:      int(req.PageSize),
+		Offset:     int((req.Page - 1) * req.PageSize),
 	}
 	if artistID != ouid.Nil {
 		dbQuery.ArtistID = artistID

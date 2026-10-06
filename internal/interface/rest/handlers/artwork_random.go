@@ -33,14 +33,10 @@ func HandleRandomArtworks(ctx fiber.Ctx) error {
 		req.Limit = 1
 	}
 	artworks, err := serv.QueryArtworks(requestCtx, query.ArtworksDB{
-		ArtworksFilter: query.ArtworksFilter{
-			R18:        shared.R18TypeFromInt(req.R18),
-			HasPicture: true,
-		},
-		Random: true,
-		Paginate: query.Paginate{
-			Limit: req.Limit,
-		},
+		R18:        shared.R18TypeFromInt(req.R18),
+		HasPicture: true,
+		Random:     true,
+		Limit:      req.Limit,
 	})
 	if err != nil {
 		return err
@@ -61,14 +57,10 @@ func HandleRandomPreviewArtworks(ctx fiber.Ctx) error {
 		return err
 	}
 	artworks, err := serv.QueryArtworks(requestCtx, query.ArtworksDB{
-		ArtworksFilter: query.ArtworksFilter{
-			R18:        shared.R18TypeFromInt(req.R18),
-			HasPicture: true,
-		},
-		Random: true,
-		Paginate: query.Paginate{
-			Limit: 1,
-		},
+		R18:        shared.R18TypeFromInt(req.R18),
+		HasPicture: true,
+		Random:     true,
+		Limit:      1,
 	})
 	if err != nil {
 		return err

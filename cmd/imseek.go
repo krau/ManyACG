@@ -165,7 +165,7 @@ func indexAllPictures(ctx context.Context, serv *service.Service, limit, offset 
 	artworkOffset := offset
 	for {
 		aws, err := serv.QueryArtworks(ctx, query.ArtworksDB{
-			Paginate: query.Paginate{Limit: page, Offset: artworkOffset},
+			Limit: page, Offset: artworkOffset,
 		})
 		if err != nil {
 			return indexed, failed, err

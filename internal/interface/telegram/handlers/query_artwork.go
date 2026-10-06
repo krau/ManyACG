@@ -37,16 +37,12 @@ func RandomPicture(ctx *telegohandler.Context, message telego.Message) error {
 		return err
 	}
 	artwork, err := serv.QueryArtworks(ctx, query.ArtworksDB{
-		ArtworksFilter: query.ArtworksFilter{
-			R18:        r18Type,
-			Keywords:   textArray,
-			HasPicture: true,
-		},
-		Paginate: query.Paginate{
-			Offset: 0,
-			Limit:  1,
-		},
-		Random: true,
+		R18:        r18Type,
+		Keywords:   textArray,
+		HasPicture: true,
+		Offset:     0,
+		Limit:      1,
+		Random:     true,
 	})
 	if err != nil {
 		if errors.Is(err, errs.ErrRecordNotFound) {
@@ -138,11 +134,9 @@ func HybridSearchArtworks(ctx *telegohandler.Context, message telego.Message) er
 		Query:               queryText,
 		Hybrid:              true,
 		HybridSemanticRatio: hybridSemanticRatio,
-		Paginate: query.Paginate{
-			Offset: 0,
-			Limit:  50,
-		},
-		R18: shared.R18TypeAll,
+		Offset:              0,
+		Limit:               50,
+		R18:                 shared.R18TypeAll,
 	})
 	if err != nil {
 		if errors.Is(err, errs.ErrSearchEngineNotEnabled) {
@@ -213,10 +207,8 @@ func SearchSimilarArtworks(ctx *telegohandler.Context, message telego.Message) e
 	artworks, err := serv.FindSimilarArtworks(ctx, &query.ArtworkSimilar{
 		ArtworkID: artwork.ID,
 		R18:       shared.R18TypeAll,
-		Paginate: query.Paginate{
-			Offset: offset,
-			Limit:  limit,
-		},
+		Offset:    offset,
+		Limit:     limit,
 	})
 	if err != nil {
 		if errors.Is(err, errs.ErrSearchEngineNotEnabled) {

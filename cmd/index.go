@@ -112,13 +112,9 @@ func IndexArtworks(ctx context.Context) {
 	for {
 		// 查询一批 artwork
 		que := query.ArtworksDB{
-			ArtworksFilter: query.ArtworksFilter{
-				R18: shared.R18TypeAll,
-			},
-			Paginate: query.Paginate{
-				Limit:  indexBatchSize,
-				Offset: offset,
-			},
+			R18:    shared.R18TypeAll,
+			Limit:  indexBatchSize,
+			Offset: offset,
 		}
 
 		artworks, err := db.Artwork().QueryArtworks(ctx, que)

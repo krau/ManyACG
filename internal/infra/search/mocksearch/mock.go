@@ -64,9 +64,7 @@ func NewSearcher(awRepo repo.Artwork) *SearcherMock {
 func (m *SearcherMock) SearchArtworks(ctx context.Context, que *query.ArtworkSearch) (*dto.ArtworkSearchResult, error) {
 	log.Debug("[MockSearch] SearchArtworks called with query: %+v", que)
 	res, err := m.repo.QueryArtworks(ctx, query.ArtworksDB{
-		Paginate: query.Paginate{
-			Limit: que.Limit,
-		},
+		Limit:  que.Limit,
 		Random: true,
 	})
 	if err != nil {
@@ -84,9 +82,7 @@ func (m *SearcherMock) SearchArtworks(ctx context.Context, que *query.ArtworkSea
 func (m *SearcherMock) FindSimilarArtworks(ctx context.Context, que *query.ArtworkSimilar) (*dto.ArtworkSearchResult, error) {
 	log.Debug("[MockSearch] FindSimilarArtworks called with query: %+v", que)
 	res, err := m.repo.QueryArtworks(ctx, query.ArtworksDB{
-		Paginate: query.Paginate{
-			Limit: que.Limit,
-		},
+		Limit:  que.Limit,
 		Random: true,
 	})
 	if err != nil {

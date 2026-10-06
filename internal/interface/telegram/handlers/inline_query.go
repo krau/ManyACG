@@ -63,16 +63,12 @@ func InlineQuery(ctx *telegohandler.Context, inlineQuery telego.InlineQuery) err
 	}
 	texts := strutil.ParseTo2DArray(queryText, "|", " ")
 	artworks, err := serv.QueryArtworks(ctx, query.ArtworksDB{
-		ArtworksFilter: query.ArtworksFilter{
-			R18:        shared.R18TypeAll,
-			Keywords:   texts,
-			HasPicture: true,
-		},
-		Paginate: query.Paginate{
-			Limit:  48,
-			Offset: 0,
-		},
-		Random: true,
+		R18:        shared.R18TypeAll,
+		Keywords:   texts,
+		HasPicture: true,
+		Limit:      48,
+		Offset:     0,
+		Random:     true,
 	})
 	if err != nil || len(artworks) == 0 {
 		log.Errorf("获取图片失败: %s", err)

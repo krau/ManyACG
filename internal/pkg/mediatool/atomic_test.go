@@ -79,11 +79,9 @@ func TestCompressImgUsesUniqueOutput(t *testing.T) {
 	errs := make([]error, workers)
 	var wg sync.WaitGroup
 	for i := range workers {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
+		wg.Go(func() {
 			paths[i], errs[i] = CompressImg(inputPath, basePath, "png", 0)
-		}()
+		})
 	}
 	wg.Wait()
 

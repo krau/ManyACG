@@ -44,15 +44,13 @@ func WithTelegramBot(bot common.TelegramBot) RestAppOption {
 func New(ctx context.Context, serv *service.Service, cfg runtimecfg.RestConfig, opts ...RestAppOption) (*RestApp, error) {
 	errHandler := func(c fiber.Ctx, err error) error {
 		c.Set(fiber.HeaderContentType, fiber.MIMEApplicationJSONCharsetUTF8)
-		var e *common.Error
-		if errors.As(err, &e) {
+		if e, ok := errors.AsType[*common.Error](err); ok {
 			if e.Status == fiber.StatusInternalServerError {
 				log.Error("internal server error", "err", err, "url", c.OriginalURL())
 			}
 			return c.Status(e.Status).JSON(e.Response())
 		}
-		var fe *fiber.Error
-		if errors.As(err, &fe) {
+		if fe, ok := errors.AsType[*fiber.Error](err); ok {
 			return c.Status(fe.Code).JSON(common.NewError(fe.Code, fe.Message).Response())
 		}
 		if errors.Is(err, errs.ErrRecordNotFound) {

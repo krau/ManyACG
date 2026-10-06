@@ -20,13 +20,9 @@ func GenerateAtomFeed(ctx fiber.Ctx) error {
 
 	artworks, err := serv.QueryArtworks(requestCtx, query.ArtworksDB{
 		// 默认排序即为发布时间降序
-		Paginate: query.Paginate{
-			Limit: 50,
-		},
-		ArtworksFilter: query.ArtworksFilter{
-			R18:        shared.R18TypeNone,
-			HasPicture: true,
-		},
+		Limit:      50,
+		R18:        shared.R18TypeNone,
+		HasPicture: true,
 	})
 	if err != nil {
 		return common.NewError(fiber.StatusInternalServerError, " failed to query artworks")
