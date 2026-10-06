@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"image"
 	"strings"
+	"sync"
 
 	"github.com/gabriel-vasile/mimetype"
 	"github.com/krau/ManyACG/internal/common/httpclient"
@@ -422,9 +423,63 @@ func doPostAndCreateArtwork(
 	return nil
 }
 
+type pictureCacheLock struct {
+	held chan struct{}
+	refs int
+}
+
+var (
+	pictureCacheMu    sync.Mutex
+	pictureCacheLocks = make(map[string]*pictureCacheLock)
+)
+
+func acquirePictureCacheLock(ctx context.Context, url string) (*pictureCacheLock, error) {
+	pictureCacheMu.Lock()
+	lock := pictureCacheLocks[url]
+	if lock == nil {
+		lock = &pictureCacheLock{held: make(chan struct{}, 1)}
+		pictureCacheLocks[url] = lock
+	}
+	lock.refs++
+	pictureCacheMu.Unlock()
+
+	select {
+	case lock.held <- struct{}{}:
+		if err := ctx.Err(); err != nil {
+			releasePictureCacheLock(url, lock)
+			return nil, err
+		}
+		return lock, nil
+	case <-ctx.Done():
+		forgetPictureCacheLock(url, lock)
+		return nil, ctx.Err()
+	}
+}
+
+func releasePictureCacheLock(url string, lock *pictureCacheLock) {
+	<-lock.held
+	forgetPictureCacheLock(url, lock)
+}
+
+func forgetPictureCacheLock(url string, lock *pictureCacheLock) {
+	pictureCacheMu.Lock()
+	defer pictureCacheMu.Unlock()
+	lock.refs--
+	if lock.refs == 0 {
+		delete(pictureCacheLocks, url)
+	}
+}
+
 // downloadAndDecodePicture 下载图片并解码.
 // 若缓存中的文件无法解码(例如上次下载被中断留下的截断文件), 则删除缓存并重新下载一次.
 func downloadAndDecodePicture(ctx context.Context, url string) (*osutil.File, image.Image, error) {
+	// 同一 URL 的解码与缓存失效处理必须串行, 避免旧文件的错误删除新缓存.
+	lock, err := acquirePictureCacheLock(ctx, url)
+	if err != nil {
+		return nil, nil, err
+	}
+	defer releasePictureCacheLock(url, lock)
+
 	file, err := httpclient.DownloadWithCache(ctx, url, nil)
 	if err != nil {
 		return nil, nil, oops.Wrapf(err, "failed to download")
