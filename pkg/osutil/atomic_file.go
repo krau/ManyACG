@@ -49,9 +49,6 @@ func UniquePath(target string) string {
 // 保证范围限于进程层面: rename 是原子的, 其他读者不会读到写入中的内容, 进程被结束时
 // 目标路径也不会留下半成品. 目标内容不保证在掉电时已落盘(缓存内容可再生, 不做 fsync).
 func CommitTempFile(tmpPath, target string) error {
-	// 临时文件的权限受 umask 影响, 显式设置以与其他缓存文件一致;
-	// 设置失败不会影响文件内容, 忽略即可.
-	_ = os.Chmod(tmpPath, 0o644)
 	return os.Rename(tmpPath, target)
 }
 
