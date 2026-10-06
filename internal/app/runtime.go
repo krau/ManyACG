@@ -35,6 +35,13 @@ type Runtime struct {
 }
 
 func NewRuntime(ctx context.Context, cfg runtimecfg.Config) (*Runtime, error) {
+	// 清理上次异常退出(如被强杀)残留在缓存目录的临时文件
+	if removed, err := osutil.RemoveStaleTempFiles(cfg.Storage.CacheDir, time.Hour); err != nil {
+		log.Warn("failed to remove stale temp files", "dir", cfg.Storage.CacheDir, "err", err)
+	} else if removed > 0 {
+		log.Info("removed stale temp files", "dir", cfg.Storage.CacheDir, "count", removed)
+	}
+
 	closer, err := infra.Init(ctx, cfg)
 	if err != nil {
 		return nil, err

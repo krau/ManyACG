@@ -2,7 +2,7 @@ package osutil
 
 import (
 	"fmt"
-	"math/rand"
+	"math/rand/v2"
 	"os"
 	"path/filepath"
 	"sync"
@@ -40,40 +40,23 @@ func OpenCache(path string) (*File, error) {
 	return OpenCacheWithTTL(path, cachettl)
 }
 
-func CreateCache(path string) (*File, error) {
-	if err := os.MkdirAll(filepath.Dir(path), os.ModePerm); err != nil {
-		return nil, err
-	}
-	f, err := os.Create(path)
-	if err != nil {
-		return nil, err
-	}
-
-	cacheMu.Lock()
-	defer cacheMu.Unlock()
-
-	refCounts[path]++
-	fileTTLs[path] = cachettl
-
-	// 如果存在删除定时器，停止并删除
-	if t, ok := timers[path]; ok {
-		t.Stop()
-		delete(timers, path)
-	}
-
-	return &File{File: f, path: path}, nil
-}
-
 // OpenCacheWithTTL 打开一个文件并增加引用计数，使用自定义 TTL。
 func OpenCacheWithTTL(path string, ttl time.Duration) (*File, error) {
 	f, err := os.Open(path)
 	if err != nil {
 		return nil, err
 	}
+	return registerFile(f, path, ttl), nil
+}
 
+// registerFile 登记缓存文件, 增加引用计数并取消已存在的延迟删除定时器
+func registerFile(f *os.File, path string, ttl time.Duration) *File {
 	cacheMu.Lock()
 	defer cacheMu.Unlock()
+	return registerFileLocked(f, path, ttl)
+}
 
+func registerFileLocked(f *os.File, path string, ttl time.Duration) *File {
 	refCounts[path]++
 	fileTTLs[path] = ttl
 
@@ -83,7 +66,74 @@ func OpenCacheWithTTL(path string, ttl time.Duration) (*File, error) {
 		delete(timers, path)
 	}
 
-	return &File{File: f, path: path}, nil
+	return &File{File: f, path: path}
+}
+
+// AtomicCache 用于原子地写入缓存文件: 内容先写入同目录下的临时文件,
+// Commit 时才重命名为目标路径, 保证其他读者不会读到写入中的内容.
+type AtomicCache struct {
+	file   *os.File
+	target string
+}
+
+// CreateAtomicCache 创建用于写入 target 的临时文件
+func CreateAtomicCache(target string) (*AtomicCache, error) {
+	if err := os.MkdirAll(filepath.Dir(target), os.ModePerm); err != nil {
+		return nil, err
+	}
+	f, err := CreateTempSibling(target)
+	if err != nil {
+		return nil, err
+	}
+	return &AtomicCache{file: f, target: target}, nil
+}
+
+// Write 实现 io.Writer, Commit/Abort 之后返回 os.ErrClosed
+func (a *AtomicCache) Write(p []byte) (int, error) {
+	if a.file == nil {
+		return 0, os.ErrClosed
+	}
+	return a.file.Write(p)
+}
+
+// Commit 将临时文件重命名为目标路径并登记缓存引用计数.
+// 返回的文件已定位到起始位置.
+func (a *AtomicCache) Commit() (*File, error) {
+	if a.file == nil {
+		return nil, os.ErrClosed
+	}
+	f := a.file
+	tmpPath := f.Name()
+	a.file = nil
+	defer os.Remove(tmpPath)
+	// Windows 不允许重命名仍由 os.File 打开的文件.
+	if err := f.Close(); err != nil {
+		return nil, err
+	}
+
+	// 发布与登记引用之间不允许已有的缓存删除定时器运行.
+	cacheMu.Lock()
+	defer cacheMu.Unlock()
+	if err := CommitTempFile(tmpPath, a.target); err != nil {
+		return nil, err
+	}
+	f, err := os.Open(a.target)
+	if err != nil {
+		_ = os.Remove(a.target)
+		return nil, err
+	}
+	return registerFileLocked(f, a.target, cachettl), nil
+}
+
+// Abort 关闭并删除临时文件, 忽略其中产生的错误.
+// Commit 之后调用不再有任何效果.
+func (a *AtomicCache) Abort() {
+	if a.file == nil {
+		return
+	}
+	_ = a.file.Close()
+	_ = os.Remove(a.file.Name())
+	a.file = nil
 }
 
 // MkCache 创建文件并自动加入缓存管理
@@ -176,6 +226,11 @@ func MkFile(path string, data []byte) error {
 type File struct {
 	*os.File
 	path string
+}
+
+// Name 返回缓存文件在缓存路径上的文件名.
+func (f *File) Name() string {
+	return f.path
 }
 
 func (f *File) Close() error {
