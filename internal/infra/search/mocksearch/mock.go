@@ -21,6 +21,10 @@ func (m *SearcherMock) AddDocuments(ctx context.Context, docs []*dto.ArtworkSear
 	return nil
 }
 
+func (m *SearcherMock) AddDocumentsAndWait(ctx context.Context, docs []*dto.ArtworkSearchDocument) error {
+	return m.AddDocuments(ctx, docs)
+}
+
 // DeleteDocuments implements search.Searcher.
 func (m *SearcherMock) DeleteDocuments(ctx context.Context, ids []string) error {
 	log.Debug("[MockSearch] DeleteDocuments called with %d ids", len(ids))
@@ -31,6 +35,24 @@ func (m *SearcherMock) DeleteDocuments(ctx context.Context, ids []string) error 
 func (m *SearcherMock) DeleteAllDocuments(ctx context.Context) error {
 	log.Debug("[MockSearch] DeleteAllDocuments called")
 	return nil
+}
+
+func (m *SearcherMock) GetMissingArtworkIDs(ctx context.Context, ids []ouid.OUID) ([]ouid.OUID, error) {
+	artworks, err := m.repo.GetArtworksByIDs(ctx, ids)
+	if err != nil {
+		return nil, err
+	}
+	existing := make(map[ouid.OUID]struct{}, len(artworks))
+	for _, artwork := range artworks {
+		existing[artwork.ID] = struct{}{}
+	}
+	var missing []ouid.OUID
+	for _, id := range ids {
+		if _, ok := existing[id]; !ok {
+			missing = append(missing, id)
+		}
+	}
+	return missing, nil
 }
 
 func NewSearcher(awRepo repo.Artwork) *SearcherMock {

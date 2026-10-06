@@ -52,6 +52,7 @@ func (m HandlerManager) Register(hg *telegohandler.HandlerGroup) {
 	mg.HandleMessage(ReCaptionArtwork, telegohandler.CommandEqual("recaption"))
 	mg.HandleMessage(AutoTaggingArtwork, telegohandler.CommandEqual("autotag"))
 	mg.HandleMessage(ReindexArtworks, telegohandler.CommandEqual("reindex"))
+	mg.HandleMessage(FixArtworkIndex, telegohandler.CommandEqual("fixindex"))
 
 	hg.HandleCallbackQuery(PostArtworkCallbackQuery, telegohandler.CallbackDataContains("post_artwork"))
 	hg.HandleCallbackQuery(SearchPictureCallbackQuery, telegohandler.CallbackDataPrefix("search_picture"))

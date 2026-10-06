@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"fmt"
+	"sync"
 
 	"github.com/krau/ManyACG/internal/infra/config/runtimecfg"
 	"github.com/krau/ManyACG/internal/infra/imseek"
@@ -22,6 +23,9 @@ type Service struct {
 	sources  map[shared.SourceType]source.ArtworkSource
 	storCfg  runtimecfg.StorageConfig
 	imseek   imseek.Engine
+
+	indexRepairMu       sync.Mutex
+	indexRepairProgress ArtworkIndexProgress
 }
 
 type Option func(*Service)

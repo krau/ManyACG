@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/goccy/go-json"
 	"github.com/unvgo/ouid"
@@ -76,6 +77,33 @@ func (m *SearcherMeilisearch) AddDocuments(ctx context.Context, docs []*dto.Artw
 	return err
 }
 
+func (m *SearcherMeilisearch) AddDocumentsAndWait(ctx context.Context, docs []*dto.ArtworkSearchDocument) error {
+	if len(docs) == 0 {
+		return nil
+	}
+	primaryKey := "id"
+	info, err := m.client.AddDocumentsWithContext(ctx, docs, &meilisearch.DocumentOptions{
+		PrimaryKey: &primaryKey,
+	})
+	if err != nil {
+		if ctx.Err() != nil {
+			return ctx.Err()
+		}
+		return err
+	}
+	task, err := m.client.WaitForTaskWithContext(ctx, info.TaskUID, time.Second)
+	if err != nil {
+		if ctx.Err() != nil {
+			return ctx.Err()
+		}
+		return fmt.Errorf("meilisearch wait for task %d failed: %w", info.TaskUID, err)
+	}
+	if task.Status != meilisearch.TaskStatusSucceeded {
+		return fmt.Errorf("meilisearch task %d ended with status %q (code %q): %s", info.TaskUID, task.Status, task.Error.Code, task.Error.Message)
+	}
+	return nil
+}
+
 // DeleteDocuments implements search.Searcher.
 func (m *SearcherMeilisearch) DeleteDocuments(ctx context.Context, ids []string) error {
 	_, err := m.client.DeleteDocumentsWithContext(ctx, ids, nil)
@@ -86,6 +114,49 @@ func (m *SearcherMeilisearch) DeleteDocuments(ctx context.Context, ids []string)
 func (m *SearcherMeilisearch) DeleteAllDocuments(ctx context.Context) error {
 	_, err := m.client.DeleteAllDocumentsWithContext(ctx, nil)
 	return err
+}
+
+func (m *SearcherMeilisearch) GetMissingArtworkIDs(ctx context.Context, ids []ouid.OUID) ([]ouid.OUID, error) {
+	if len(ids) == 0 {
+		return nil, nil
+	}
+	documentIDs := make([]string, len(ids))
+	for i, id := range ids {
+		documentIDs[i] = id.Hex()
+	}
+	req := &meilisearch.DocumentsQuery{
+		Ids:    documentIDs,
+		Fields: []string{"id"},
+		Limit:  int64(len(ids)),
+	}
+	existing := make(map[string]struct{}, len(ids))
+	for {
+		var resp meilisearch.DocumentsResult
+		if err := m.client.GetDocumentsWithContext(ctx, req, &resp); err != nil {
+			return nil, fmt.Errorf("meilisearch get documents failed: %w", err)
+		}
+		for _, hit := range resp.Results {
+			var id string
+			if err := json.Unmarshal(hit["id"], &id); err != nil {
+				return nil, fmt.Errorf("meilisearch decode document id failed: %w", err)
+			}
+			existing[id] = struct{}{}
+		}
+		req.Offset += int64(len(resp.Results))
+		if req.Offset >= resp.Total {
+			break
+		}
+		if len(resp.Results) == 0 {
+			return nil, fmt.Errorf("meilisearch returned an incomplete document page")
+		}
+	}
+	var missing []ouid.OUID
+	for i, id := range ids {
+		if _, ok := existing[documentIDs[i]]; !ok {
+			missing = append(missing, id)
+		}
+	}
+	return missing, nil
 }
 
 func NewSearcher(ctx context.Context, cfg runtimecfg.MeiliSearchConfig) (*SearcherMeilisearch, error) {

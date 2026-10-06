@@ -3,6 +3,8 @@ package database
 import (
 	"context"
 
+	"github.com/krau/ManyACG/internal/model/converter"
+	"github.com/krau/ManyACG/internal/model/dto"
 	"github.com/krau/ManyACG/internal/model/entity"
 	"github.com/krau/ManyACG/internal/shared"
 	"github.com/unvgo/ouid"
@@ -43,6 +45,46 @@ func (d *DB) GetArtworksByIDs(ctx context.Context, ids []ouid.OUID) ([]*entity.A
 		return nil, err
 	}
 	return artworks, nil
+}
+
+func (d *DB) GetArtworkSearchDocuments(ctx context.Context, ids []ouid.OUID) ([]*dto.ArtworkSearchDocument, error) {
+	if len(ids) == 0 {
+		return []*dto.ArtworkSearchDocument{}, nil
+	}
+	var artworks []*entity.Artwork
+	err := d.db.WithContext(ctx).Model(&entity.Artwork{}).
+		Select("id", "title", "description", "r18", "artist_id").
+		Preload("Artist", func(db *gorm.DB) *gorm.DB {
+			return db.Select("id", "name")
+		}).
+		Preload("Tags", func(db *gorm.DB) *gorm.DB {
+			return db.Select("id", "name")
+		}).
+		Preload("Tags.Alias", func(db *gorm.DB) *gorm.DB {
+			return db.Select("id", "tag_id", "alias")
+		}).
+		Where("id IN ?", ids).
+		Find(&artworks).Error
+	if err != nil {
+		return nil, err
+	}
+	docs := make([]*dto.ArtworkSearchDocument, len(artworks))
+	for i, artwork := range artworks {
+		docs[i] = converter.EntityArtworkToSearchDocument(artwork)
+	}
+	return docs, nil
+}
+
+func (d *DB) GetArtworkIDs(ctx context.Context, after ouid.OUID, limit int) ([]ouid.OUID, error) {
+	que := d.db.WithContext(ctx).Model(&entity.Artwork{}).Order("id ASC").Limit(limit)
+	if !after.IsZero() {
+		que = que.Where("id > ?", after)
+	}
+	var ids []ouid.OUID
+	if err := que.Pluck("id", &ids).Error; err != nil {
+		return nil, err
+	}
+	return ids, nil
 }
 
 func (d *DB) GetArtworkByURL(ctx context.Context, url string) (*entity.Artwork, error) {
