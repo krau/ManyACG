@@ -2,7 +2,7 @@ package database
 
 import (
 	"context"
-	"math/rand"
+	"math/rand/v2"
 	"strings"
 
 	"github.com/krau/ManyACG/internal/model/entity"
@@ -27,7 +27,7 @@ func applyBaseFilters(que query.ArtworksDB) func(db *gorm.DB) *gorm.DB {
 			db = db.Where("EXISTS (SELECT 1 FROM videos v WHERE v.artwork_id = artworks.id)")
 		}
 		if que.HasUgoira {
-			db = db.Where("EXISTS (SELECT 1 FROM ugoira_metas u WHERE u.artwork_id = artworks.id)")
+			db = db.Where("EXISTS (SELECT 1 FROM ugoira_meta u WHERE u.artwork_id = artworks.id)")
 		}
 
 		// Tags：Group AND，Group 内 OR（IDs）
@@ -47,9 +47,90 @@ func applyBaseFilters(que query.ArtworksDB) func(db *gorm.DB) *gorm.DB {
 	}
 }
 
-func buildKeywordArgs(kw string) []any {
-	like := "%" + strings.ReplaceAll(strings.ReplaceAll(kw, "%", "\\%"), "_", "\\_") + "%"
-	return []any{like, like, like, like, like}
+var keywordLikeEscaper = strings.NewReplacer("!", "!!", "%", "!%", "_", "!_")
+
+var keywordIDBranches = [...]struct {
+	query      string
+	column     string
+	pageDirect bool
+}{
+	{"SELECT id FROM artworks WHERE ", "artworks.title", true},
+	{"SELECT id FROM artworks WHERE ", "artworks.description", true},
+	{"SELECT a.id FROM artists ar JOIN artworks a ON a.artist_id = ar.id WHERE ", "ar.name", false},
+	{"SELECT at.artwork_id FROM tags t JOIN artwork_tags at ON at.tag_id = t.id WHERE ", "t.name", false},
+	{"SELECT at.artwork_id FROM tag_aliases ta JOIN tags t ON t.id = ta.tag_id JOIN artwork_tags at ON at.tag_id = t.id WHERE ", "ta.alias", false},
+}
+
+func buildKeywordGroupQuery(keywords []string, page bool) (string, []any) {
+	var patterns []any
+	for _, kw := range keywords {
+		if kw == "" {
+			continue
+		}
+		if patterns == nil {
+			patterns = make([]any, 0, len(keywords))
+		}
+		patterns = append(patterns, "%"+keywordLikeEscaper.Replace(kw)+"%")
+	}
+	if len(patterns) == 0 {
+		return "", nil
+	}
+
+	const inPrefix = "artworks.id IN ("
+	const match = " LIKE ? ESCAPE '!'"
+	prefix, separator := inPrefix, " UNION "
+	if page {
+		prefix, separator = "(", " OR "
+	}
+	size := len(prefix) + 1 + (len(keywordIDBranches)-1)*len(separator)
+	for _, branch := range keywordIDBranches {
+		size += len(patterns)*(len(branch.column)+len(match)) + (len(patterns)-1)*len(" OR ")
+		if !page {
+			size += len(branch.query)
+		} else if !branch.pageDirect {
+			size += len(inPrefix) + len(branch.query) + 1
+		}
+	}
+	var sql strings.Builder
+	sql.Grow(size)
+	sql.WriteString(prefix)
+	args := make([]any, 0, len(patterns)*len(keywordIDBranches))
+	// 分页直接匹配正文以保留 LIMIT 短路；计数先收集各字段命中 ID。
+	for i, branch := range keywordIDBranches {
+		if i > 0 {
+			sql.WriteString(separator)
+		}
+		direct := page && branch.pageDirect
+		if page && !direct {
+			sql.WriteString(inPrefix)
+		}
+		if !direct {
+			sql.WriteString(branch.query)
+		}
+		for j := range patterns {
+			if j > 0 {
+				sql.WriteString(" OR ")
+			}
+			sql.WriteString(branch.column)
+			sql.WriteString(match)
+		}
+		args = append(args, patterns...)
+		if page && !direct {
+			sql.WriteByte(')')
+		}
+	}
+	sql.WriteByte(')')
+	return sql.String(), args
+}
+
+func applyKeywordFilters(db *gorm.DB, groups [][]string, page bool) *gorm.DB {
+	for _, keywords := range groups {
+		groupSQL, args := buildKeywordGroupQuery(keywords, page)
+		if groupSQL != "" {
+			db = db.Where(groupSQL, args...)
+		}
+	}
+	return db
 }
 
 type preloadOrder struct {
@@ -79,52 +160,14 @@ func applyArtworkPreloads() func(db *gorm.DB) *gorm.DB {
 
 const randomScanThreshold = 1000
 
-// buildArtworkQuery 构建带筛选条件的 artworks 查询, 供 QueryArtworks 与 CountArtworks 共用.
 func (d *DB) buildArtworkQuery(ctx context.Context, que query.ArtworksDB) *gorm.DB {
-	// 基础过滤
-	baseQuery := d.db.WithContext(ctx).Model(&entity.Artwork{}).
-		Scopes(applyBaseFilters(que))
-
-	// Keyword 处理（Group AND 内部 OR）
-	if len(que.Keywords) > 0 {
-		keywordOrExpr := `
-		artworks.title LIKE ? OR
-		artworks.description LIKE ? OR
-		EXISTS (
-			SELECT 1 FROM artists ar
-			WHERE ar.id = artworks.artist_id AND ar.name LIKE ?
-		) OR
-		EXISTS (
-			SELECT 1 FROM artwork_tags at
-			JOIN tags t ON t.id = at.tag_id
-			LEFT JOIN tag_aliases ta ON ta.tag_id = t.id
-			WHERE at.artwork_id = artworks.id
-			  AND (t.name LIKE ? OR ta.alias LIKE ?)
-		)
-	`
-		for _, orKeywords := range que.Keywords {
-			if len(orKeywords) == 0 {
-				continue
-			}
-
-			var orParts []string
-			var args []any
-
-			for _, kw := range orKeywords {
-				orParts = append(orParts, "("+keywordOrExpr+")")
-				args = append(args, buildKeywordArgs(kw)...)
-			}
-
-			groupSQL := "(" + strings.Join(orParts, " OR ") + ")"
-			baseQuery = baseQuery.Where(groupSQL, args...)
-		}
-	}
-
-	return baseQuery
+	base := d.db.WithContext(ctx).Model(&entity.Artwork{}).Scopes(applyBaseFilters(que))
+	return applyKeywordFilters(base, que.Keywords, false)
 }
 
 func (d *DB) QueryArtworks(ctx context.Context, que query.ArtworksDB) ([]*entity.Artwork, error) {
-	baseQuery := d.buildArtworkQuery(ctx, que)
+	base := d.db.WithContext(ctx).Model(&entity.Artwork{}).Scopes(applyBaseFilters(que))
+	baseQuery := applyKeywordFilters(base, que.Keywords, !que.Random)
 
 	if !que.Random {
 		// 非随机查询直接分页取数, 无需统计总数
@@ -168,139 +211,10 @@ func (d *DB) QueryArtworks(ctx context.Context, que query.ArtworksDB) ([]*entity
 		}
 	default:
 		// 随机偏移取连续的 Limit 条: 避免对大结果集全量排序, 代价为一次偏移扫描
-		randOffset := rand.Int63n(total - int64(que.Limit) + 1)
+		randOffset := rand.Int64N(total - int64(que.Limit) + 1)
 		if err := dataQuery.Order("created_at DESC").Offset(int(randOffset)).Find(&artworks).Error; err != nil {
 			return nil, err
 		}
 	}
 	return artworks, nil
 }
-
-// func (d *DB) QueryArtworks(ctx context.Context, que query.ArtworksDB) ([]*entity.Artwork, error) {
-// 	base := d.db.WithContext(ctx).Model(&entity.Artwork{})
-
-// 	if que.R18 != shared.R18TypeAll {
-// 		base = base.Where("r18 = ?", que.R18 == shared.R18TypeR18)
-// 	}
-// 	if !que.ArtistID.IsZero() {
-// 		base = base.Where("artist_id = ?", que.ArtistID)
-// 	}
-
-// 	mainQueryExpr := "(" +
-// 		"artworks.title LIKE ? OR artworks.description LIKE ? OR " +
-// 		"EXISTS (SELECT 1 FROM artists ar WHERE ar.id = artworks.artist_id AND ar.name LIKE ?) OR " +
-// 		"EXISTS (SELECT 1 FROM artwork_tags at JOIN tags t ON at.tag_id = t.id LEFT JOIN tag_aliases ta ON t.id = ta.tag_id WHERE at.artwork_id = artworks.id AND (t.name LIKE ? OR ta.alias LIKE ?))" +
-// 		")"
-// 	// Tags: each inner slice is OR (one-of), outer slice is AND (must satisfy each group)
-// 	if len(que.Tags) > 0 {
-// 		for _, orTags := range que.Tags {
-// 			if len(orTags) == 0 {
-// 				continue
-// 			}
-// 			base = base.Where("EXISTS (SELECT 1 FROM artwork_tags at WHERE at.artwork_id = artworks.id AND at.tag_id IN ?)", orTags)
-// 		}
-// 	} else if len(que.Keywords) > 0 {
-// 		// Keywords: 组内 OR，组间 AND
-// 		for _, orKeywords := range que.Keywords {
-// 			if len(orKeywords) == 0 {
-// 				continue
-// 			}
-// 			var perKWExpr []string
-// 			var perKWArgs []any
-
-// 			for _, kw := range orKeywords {
-// 				like := "%" + strings.ReplaceAll(strings.ReplaceAll(kw, "%", "\\%"), "_", "\\_") + "%"
-
-// 				perKWExpr = append(perKWExpr, mainQueryExpr)
-// 				perKWArgs = append(perKWArgs, like, like, like, like, like)
-// 			}
-
-// 			// 将当前 group 的所有 keyword 表达式用 OR 拼接，整个 group 作为一个 WHERE 条件（与其他 group AND）
-// 			groupSQL := strings.Join(perKWExpr, " OR ")
-// 			base = base.Where(groupSQL, perKWArgs...)
-// 		}
-// 	}
-
-// 	countQuery := base.Session(&gorm.Session{})
-// 	var total int64
-// 	if err := countQuery.Count(&total).Error; err != nil {
-// 		return nil, err
-// 	}
-// 	if total == 0 {
-// 		return nil, gorm.ErrRecordNotFound
-// 	}
-
-// 	dataQuery := d.db.WithContext(ctx).Model(&entity.Artwork{})
-
-// 	if que.R18 != shared.R18TypeAll {
-// 		dataQuery = dataQuery.Where("r18 = ?", que.R18 == shared.R18TypeR18)
-// 	}
-// 	if que.ArtistID != objectuuid.Nil {
-// 		dataQuery = dataQuery.Where("artist_id = ?", que.ArtistID)
-// 	}
-// 	if len(que.Tags) > 0 {
-// 		for _, orTags := range que.Tags {
-// 			if len(orTags) == 0 {
-// 				continue
-// 			}
-// 			dataQuery = dataQuery.Where("EXISTS (SELECT 1 FROM artwork_tags at WHERE at.artwork_id = artworks.id AND at.tag_id IN ?)", orTags)
-// 		}
-// 	} else if len(que.Keywords) > 0 {
-// 		for _, orKeywords := range que.Keywords {
-// 			if len(orKeywords) == 0 {
-// 				continue
-// 			}
-// 			var perKWExpr []string
-// 			var perKWArgs []any
-// 			for _, kw := range orKeywords {
-// 				like := "%" + strings.ReplaceAll(strings.ReplaceAll(kw, "%", "\\%"), "_", "\\_") + "%"
-// 				perKWExpr = append(perKWExpr, mainQueryExpr)
-// 				perKWArgs = append(perKWArgs, like, like, like, like, like)
-// 			}
-// 			groupSQL := strings.Join(perKWExpr, " OR ")
-// 			dataQuery = dataQuery.Where(groupSQL, perKWArgs...)
-// 		}
-// 	}
-
-// 	dataQuery = dataQuery.Preload("Tags.Alias").
-// 		Preload("Pictures", func(db *gorm.DB) *gorm.DB {
-// 			return db.Order("order_index ASC")
-// 		}).Preload(clause.Associations)
-// 	if que.Limit > 0 {
-// 		dataQuery = dataQuery.Limit(que.Limit)
-// 	}
-
-// 	// 按时间排
-// 	if !que.Random {
-// 		if que.Offset > 0 {
-// 			dataQuery = dataQuery.Offset(que.Offset)
-// 		}
-// 		var artworks []*entity.Artwork
-// 		if err := dataQuery.Order("created_at DESC").Find(&artworks).Error; err != nil {
-// 			return nil, err
-// 		}
-// 		return artworks, nil
-// 	}
-
-// 	var artworks []*entity.Artwork
-// 	if int64(que.Limit) >= total {
-// 		if err := dataQuery.Find(&artworks).Error; err != nil {
-// 			return nil, err
-// 		}
-// 		return artworks, nil
-// 	}
-
-// 	// 总数<1000时直接 RANDOM()
-// 	if total < 1000 {
-// 		if err := dataQuery.Order("RANDOM()").Limit(que.Limit).Find(&artworks).Error; err != nil {
-// 			return nil, err
-// 		}
-// 		return artworks, nil
-// 	}
-// 	maxOffset := total - int64(que.Limit)
-// 	randOffset := rand.Int63n(maxOffset + 1)
-// 	if err := dataQuery.Offset(int(randOffset)).Find(&artworks).Error; err != nil {
-// 		return nil, err
-// 	}
-// 	return artworks, nil
-// }

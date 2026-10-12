@@ -7,6 +7,7 @@ import "strings"
 // ParseTo2DArray("1,2,3;4,5,6", ",", ";") => [][]string{{"1", "2", "3"}, {"4", "5", "6"}}
 //
 // ParseTo2DArray("1,2,3;\"4,5,6\"", ",", ";") => [][]string{{"1", "2", "3"}, {"4,5,6"}}
+// Empty items and rows are ignored.
 func ParseTo2DArray(str, sep, sep2 string) [][]string {
 	result := make([][]string, 0)
 	if str == "" {
@@ -28,11 +29,17 @@ func ParseTo2DArray(str, sep, sep2 string) [][]string {
 			if c == '"' || c == '\'' {
 				inQuote = true
 			} else if string(c) == sep {
-				row = append(row, builder.String())
+				if builder.Len() > 0 {
+					row = append(row, builder.String())
+				}
 				builder.Reset()
 			} else if string(c) == sep2 {
-				row = append(row, builder.String())
-				result = append(result, row)
+				if builder.Len() > 0 {
+					row = append(row, builder.String())
+				}
+				if len(row) > 0 {
+					result = append(result, row)
+				}
 				row = nil
 				builder.Reset()
 			} else {

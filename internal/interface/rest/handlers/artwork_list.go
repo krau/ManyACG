@@ -162,8 +162,7 @@ func listArtworks(ctx context.Context, serv *service.Service, req *RequestListAr
 	return serv.QueryArtworks(ctx, dbQuery)
 }
 
-// applyArtworkDBFilters 解析 list 与 random 接口共用的作品筛选参数:
-// keyword 组间 AND, 组内 OR.
+// keyword 使用逗号连接 OR，竖线分隔 AND 组。
 func applyArtworkDBFilters(ctx context.Context, serv *service.Service, dbQuery *query.ArtworksDB, artistID, tag, keyword string) error {
 	if artistID != "" {
 		parsed, err := ouid.FromObjectIDHex(artistID)

@@ -49,6 +49,54 @@ func TestParseStringTo2DArray(t *testing.T) {
 			sep2:     ";",
 			expected: nil,
 		},
+		{
+			input:    ",a,,b|c,d|",
+			sep:      ",",
+			sep2:     "|",
+			expected: [][]string{{"a", "b"}, {"c", "d"}},
+		},
+		{
+			input:    "||a|||b||",
+			sep:      ",",
+			sep2:     "|",
+			expected: [][]string{{"a"}, {"b"}},
+		},
+		{
+			input:    ",|,||,",
+			sep:      ",",
+			sep2:     "|",
+			expected: nil,
+		},
+		{
+			input:    "\"a,b\",|\"c|d\"||",
+			sep:      ",",
+			sep2:     "|",
+			expected: [][]string{{"a,b"}, {"c|d"}},
+		},
+		{
+			input:    "'',a|\"\"|b",
+			sep:      ",",
+			sep2:     "|",
+			expected: [][]string{{"a"}, {"b"}},
+		},
+		{
+			input:    "\"  \",a",
+			sep:      ",",
+			sep2:     "|",
+			expected: [][]string{{"  ", "a"}},
+		},
+		{
+			input:    "  a||b   c|  ",
+			sep:      "|",
+			sep2:     " ",
+			expected: [][]string{{"a", "b"}, {"c"}},
+		},
+		{
+			input:    " \"a b\"||c \"d|e\" ",
+			sep:      "|",
+			sep2:     " ",
+			expected: [][]string{{"a b", "c"}, {"d|e"}},
+		},
 	}
 
 	for _, test := range tests {

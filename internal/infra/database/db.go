@@ -115,23 +115,30 @@ func optimizePgSQL(ctx context.Context, db *gorm.DB) error {
 		sqls := []string{
 			`CREATE EXTENSION IF NOT EXISTS pgroonga;`,
 
-			// delete existing trigram indexes if any
+			// PGroonga indexes
+			`CREATE INDEX IF NOT EXISTS pgroonga_artworks_title_like ON artworks USING pgroonga (title pgroonga_text_regexp_ops_v2);`,
+			`CREATE INDEX IF NOT EXISTS pgroonga_artworks_description_like ON artworks USING pgroonga (description pgroonga_text_regexp_ops_v2);`,
+			`CREATE INDEX IF NOT EXISTS pgroonga_artists_name_like ON artists USING pgroonga (name pgroonga_text_regexp_ops_v2);`,
+			`CREATE INDEX IF NOT EXISTS pgroonga_tags_name_like ON tags USING pgroonga (name pgroonga_text_regexp_ops_v2);`,
+			`CREATE INDEX IF NOT EXISTS pgroonga_tag_alias_alias_like ON tag_aliases USING pgroonga (alias pgroonga_text_regexp_ops_v2);`,
+
+			// Foreign key
+			`CREATE INDEX IF NOT EXISTS idx_artworks_artist_id ON artworks(artist_id);`,
+			`CREATE INDEX IF NOT EXISTS idx_artwork_tags_artwork_id ON artwork_tags(artwork_id);`,
+			`CREATE INDEX IF NOT EXISTS idx_artwork_tags_tag_artwork ON artwork_tags(tag_id,artwork_id);`,
+
+			// Delete obsolete indexes only after their replacements exist.
+			`DROP INDEX IF EXISTS pgroonga_artworks_title;`,
+			`DROP INDEX IF EXISTS pgroonga_artworks_description;`,
+			`DROP INDEX IF EXISTS pgroonga_artists_name;`,
+			`DROP INDEX IF EXISTS pgroonga_tags_name;`,
+			`DROP INDEX IF EXISTS pgroonga_tag_alias_alias;`,
 			`DROP INDEX IF EXISTS idx_artworks_title_trgm;`,
 			`DROP INDEX IF EXISTS idx_artworks_description_trgm;`,
 			`DROP INDEX IF EXISTS idx_artists_name_trgm;`,
 			`DROP INDEX IF EXISTS idx_tags_name_trgm;`,
 			`DROP INDEX IF EXISTS idx_tag_alias_alias_trgm;`,
-			// PGroonga indexes
-			`CREATE INDEX IF NOT EXISTS pgroonga_artworks_title ON artworks USING pgroonga (title);`,
-			`CREATE INDEX IF NOT EXISTS pgroonga_artworks_description ON artworks USING pgroonga (description);`,
-			`CREATE INDEX IF NOT EXISTS pgroonga_artists_name ON artists USING pgroonga (name);`,
-			`CREATE INDEX IF NOT EXISTS pgroonga_tags_name ON tags USING pgroonga (name);`,
-			`CREATE INDEX IF NOT EXISTS pgroonga_tag_alias_alias ON tag_aliases USING pgroonga (alias);`,
-
-			// Foreign key
-			`CREATE INDEX IF NOT EXISTS idx_artworks_artist_id ON artworks(artist_id);`,
-			`CREATE INDEX IF NOT EXISTS idx_artwork_tags_artwork_id ON artwork_tags(artwork_id);`,
-			`CREATE INDEX IF NOT EXISTS idx_artwork_tags_tag_id ON artwork_tags(tag_id);`,
+			`DROP INDEX IF EXISTS idx_artwork_tags_tag_id;`,
 		}
 		for _, sql := range sqls {
 			if err := db.WithContext(ctx).Exec(sql).Error; err != nil {
@@ -142,11 +149,11 @@ func optimizePgSQL(ctx context.Context, db *gorm.DB) error {
 		if runtimecfg.Get().Database.Pgsql.ReindexPGroonga {
 			log.Debug("Reindexing pgroonga indexes...")
 			pgroongaIndexes := []string{
-				"pgroonga_artworks_title",
-				"pgroonga_artworks_description",
-				"pgroonga_artists_name",
-				"pgroonga_tags_name",
-				"pgroonga_tag_alias_alias",
+				"pgroonga_artworks_title_like",
+				"pgroonga_artworks_description_like",
+				"pgroonga_artists_name_like",
+				"pgroonga_tags_name_like",
+				"pgroonga_tag_alias_alias_like",
 			}
 			for _, index := range pgroongaIndexes {
 				reindexSQL := "REINDEX INDEX " + index + ";"
@@ -164,13 +171,6 @@ func optimizePgSQL(ctx context.Context, db *gorm.DB) error {
 	sqls := []string{
 		// Extensions
 		`CREATE EXTENSION IF NOT EXISTS pg_trgm;`,
-		// delete existing pgroonga indexes if any
-		`DROP INDEX IF EXISTS pgroonga_artworks_title;`,
-		`DROP INDEX IF EXISTS pgroonga_artworks_description;`,
-		`DROP INDEX IF EXISTS pgroonga_artists_name;`,
-		`DROP INDEX IF EXISTS pgroonga_tags_name;`,
-		`DROP INDEX IF EXISTS pgroonga_tag_alias_alias;`,
-
 		// Trigram indexes
 		`CREATE INDEX IF NOT EXISTS idx_artworks_title_trgm ON artworks USING gin (title gin_trgm_ops);`,
 		`CREATE INDEX IF NOT EXISTS idx_artworks_description_trgm ON artworks USING gin (description gin_trgm_ops);`,
@@ -181,7 +181,20 @@ func optimizePgSQL(ctx context.Context, db *gorm.DB) error {
 		// Foreign key
 		`CREATE INDEX IF NOT EXISTS idx_artworks_artist_id ON artworks(artist_id);`,
 		`CREATE INDEX IF NOT EXISTS idx_artwork_tags_artwork_id ON artwork_tags(artwork_id);`,
-		`CREATE INDEX IF NOT EXISTS idx_artwork_tags_tag_id ON artwork_tags(tag_id);`,
+		`CREATE INDEX IF NOT EXISTS idx_artwork_tags_tag_artwork ON artwork_tags(tag_id,artwork_id);`,
+
+		// Delete obsolete indexes only after their replacements exist.
+		`DROP INDEX IF EXISTS pgroonga_artworks_title;`,
+		`DROP INDEX IF EXISTS pgroonga_artworks_description;`,
+		`DROP INDEX IF EXISTS pgroonga_artists_name;`,
+		`DROP INDEX IF EXISTS pgroonga_tags_name;`,
+		`DROP INDEX IF EXISTS pgroonga_tag_alias_alias;`,
+		`DROP INDEX IF EXISTS pgroonga_artworks_title_like;`,
+		`DROP INDEX IF EXISTS pgroonga_artworks_description_like;`,
+		`DROP INDEX IF EXISTS pgroonga_artists_name_like;`,
+		`DROP INDEX IF EXISTS pgroonga_tags_name_like;`,
+		`DROP INDEX IF EXISTS pgroonga_tag_alias_alias_like;`,
+		`DROP INDEX IF EXISTS idx_artwork_tags_tag_id;`,
 	}
 	for _, sql := range sqls {
 		if err := db.WithContext(ctx).Exec(sql).Error; err != nil {
