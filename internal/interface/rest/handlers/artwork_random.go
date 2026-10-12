@@ -1,6 +1,8 @@
 package handlers
 
 import (
+	"context"
+
 	"github.com/gofiber/fiber/v3"
 	"github.com/krau/ManyACG/internal/infra/config/runtimecfg"
 	"github.com/krau/ManyACG/internal/interface/rest/common"
@@ -14,8 +16,11 @@ import (
 )
 
 type RequestRandomArtworks struct {
-	R18   int `query:"r18,default=0" form:"r18,default=0" json:"r18" validate:"gte=0,lte=2" message:"r18 must be 0 (no R18), 1 (only R18) or 2 (both)"`
-	Limit int `query:"limit,default=1" form:"limit,default=1" json:"limit" validate:"lte=200" message:"limit must be between 1 and 200"`
+	R18      int    `query:"r18,default=0" form:"r18,default=0" json:"r18" validate:"gte=0,lte=2" message:"r18 must be 0 (no R18), 1 (only R18) or 2 (both)"`
+	Limit    int    `query:"limit,default=1" form:"limit,default=1" json:"limit" validate:"lte=200" message:"limit must be between 1 and 200"`
+	ArtistID string `query:"artist_id" form:"artist_id" json:"artist_id" validate:"omitempty,objectid" message:"artist_id must be a valid ObjectID"`
+	Tag      string `query:"tag" form:"tag" json:"tag"`
+	Keyword  string `query:"keyword" form:"keyword" json:"keyword" validate:"max=50" message:"keyword max length is 50"`
 }
 
 type RequestCountArtwork struct {
@@ -29,15 +34,7 @@ func HandleRandomArtworks(ctx fiber.Ctx) error {
 	if err := ctx.Bind().All(req); err != nil {
 		return err
 	}
-	if req.Limit <= 0 {
-		req.Limit = 1
-	}
-	artworks, err := serv.QueryArtworks(requestCtx, query.ArtworksDB{
-		R18:        shared.R18TypeFromInt(req.R18),
-		HasPicture: true,
-		Random:     true,
-		Limit:      req.Limit,
-	})
+	artworks, err := queryRandomArtworks(requestCtx, serv, req, req.Limit)
 	if err != nil {
 		return err
 	}
@@ -56,12 +53,7 @@ func HandleRandomPreviewArtworks(ctx fiber.Ctx) error {
 	if err := ctx.Bind().All(req); err != nil {
 		return err
 	}
-	artworks, err := serv.QueryArtworks(requestCtx, query.ArtworksDB{
-		R18:        shared.R18TypeFromInt(req.R18),
-		HasPicture: true,
-		Random:     true,
-		Limit:      1,
-	})
+	artworks, err := queryRandomArtworks(requestCtx, serv, req, 1)
 	if err != nil {
 		return err
 	}
@@ -75,6 +67,22 @@ func HandleRandomPreviewArtworks(ctx fiber.Ctx) error {
 	pic := artworks[0].Pictures[0]
 	_, regular := utils.PictureResponseUrl(ctx, pic, cfg)
 	return ctx.Redirect().To(regular)
+}
+
+func queryRandomArtworks(ctx context.Context, serv *service.Service, req *RequestRandomArtworks, limit int) ([]*entity.Artwork, error) {
+	if limit <= 0 {
+		limit = 1
+	}
+	dbQuery := query.ArtworksDB{
+		R18:        shared.R18TypeFromInt(req.R18),
+		HasPicture: true,
+		Random:     true,
+		Limit:      limit,
+	}
+	if err := applyArtworkDBFilters(ctx, serv, &dbQuery, req.ArtistID, req.Tag, req.Keyword); err != nil {
+		return nil, err
+	}
+	return serv.QueryArtworks(ctx, dbQuery)
 }
 
 func HandleCountArtwork(ctx fiber.Ctx) error {

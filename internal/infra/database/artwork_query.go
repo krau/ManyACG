@@ -77,6 +77,8 @@ func applyArtworkPreloads() func(db *gorm.DB) *gorm.DB {
 	}
 }
 
+const randomScanThreshold = 1000
+
 func (d *DB) QueryArtworks(ctx context.Context, que query.ArtworksDB) ([]*entity.Artwork, error) {
 	// 基础过滤
 	baseQuery := d.db.WithContext(ctx).Model(&entity.Artwork{}).
@@ -117,21 +119,12 @@ func (d *DB) QueryArtworks(ctx context.Context, que query.ArtworksDB) ([]*entity
 		}
 	}
 
-	var total int64
-	if err := baseQuery.Count(&total).Error; err != nil {
-		return nil, err
-	}
-	if total == 0 {
-		return nil, gorm.ErrRecordNotFound
-	}
-
-	dataQuery := baseQuery.Scopes(applyArtworkPreloads())
-
-	if que.Limit > 0 {
-		dataQuery = dataQuery.Limit(que.Limit)
-	}
-
 	if !que.Random {
+		// 非随机查询直接分页取数, 无需统计总数
+		dataQuery := baseQuery.Scopes(applyArtworkPreloads())
+		if que.Limit > 0 {
+			dataQuery = dataQuery.Limit(que.Limit)
+		}
 		if que.Offset > 0 {
 			dataQuery = dataQuery.Offset(que.Offset)
 		}
@@ -142,28 +135,37 @@ func (d *DB) QueryArtworks(ctx context.Context, que query.ArtworksDB) ([]*entity
 		return artworks, nil
 	}
 
-	var artworks []*entity.Artwork
-
-	if int64(que.Limit) >= total {
-		if err := dataQuery.Find(&artworks).Error; err != nil {
-			return nil, err
-		}
-		return artworks, nil
-	}
-
-	if total < 1000 {
-		if err := dataQuery.Order("RANDOM()").Limit(que.Limit).Find(&artworks).Error; err != nil {
-			return nil, err
-		}
-		return artworks, nil
-	}
-
-	maxOffset := total - int64(que.Limit)
-	randOffset := rand.Int63n(maxOffset + 1)
-	if err := dataQuery.Offset(int(randOffset)).Find(&artworks).Error; err != nil {
+	// 随机采样依赖总数: 结果集较小时直接随机排序, 较大时随机偏移取窗口
+	var total int64
+	if err := baseQuery.Count(&total).Error; err != nil {
 		return nil, err
 	}
+	if total == 0 {
+		return nil, gorm.ErrRecordNotFound
+	}
 
+	dataQuery := baseQuery.Scopes(applyArtworkPreloads())
+	if que.Limit > 0 {
+		dataQuery = dataQuery.Limit(que.Limit)
+	}
+
+	var artworks []*entity.Artwork
+	switch {
+	case int64(que.Limit) >= total:
+		if err := dataQuery.Order("created_at DESC").Find(&artworks).Error; err != nil {
+			return nil, err
+		}
+	case total < randomScanThreshold:
+		if err := dataQuery.Order("RANDOM()").Find(&artworks).Error; err != nil {
+			return nil, err
+		}
+	default:
+		// 随机偏移取连续的 Limit 条: 避免对大结果集全量排序, 代价为一次偏移扫描
+		randOffset := rand.Int63n(total - int64(que.Limit) + 1)
+		if err := dataQuery.Order("created_at DESC").Offset(int(randOffset)).Find(&artworks).Error; err != nil {
+			return nil, err
+		}
+	}
 	return artworks, nil
 }
 

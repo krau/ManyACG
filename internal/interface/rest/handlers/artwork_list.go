@@ -126,15 +126,6 @@ func listArtworks(ctx context.Context, serv *service.Service, req *RequestListAr
 		req.Page = 1
 	}
 
-	var artistID ouid.OUID
-	if req.ArtistID != "" {
-		parsed, err := ouid.FromObjectIDHex(req.ArtistID)
-		if err != nil {
-			return nil, err
-		}
-		artistID = parsed
-	}
-
 	if req.SimilarTarget != "" {
 		targetID, err := ouid.FromObjectIDHex(req.SimilarTarget)
 		if err != nil {
@@ -159,30 +150,37 @@ func listArtworks(ctx context.Context, serv *service.Service, req *RequestListAr
 		})
 	}
 
-	var tagID ouid.OUID
-	if req.Tag != "" {
-		tag, err := serv.GetTagByNameWithAlias(ctx, req.Tag)
-		if err != nil {
-			return nil, common.NewError(fiber.StatusNotFound, "tag not found")
-		}
-		tagID = tag.ID
-	}
-
-	keywords := strutil.ParseTo2DArray(req.Keyword, ",", "|")
 	dbQuery := query.ArtworksDB{
 		R18:        shared.R18TypeFromInt(req.R18),
 		HasPicture: true,
 		Limit:      int(req.PageSize),
 		Offset:     int((req.Page - 1) * req.PageSize),
 	}
-	if artistID != ouid.Nil {
-		dbQuery.ArtistID = artistID
-	}
-	if tagID != ouid.Nil {
-		dbQuery.Tags = [][]ouid.OUID{{tagID}}
-	}
-	if len(keywords) > 0 {
-		dbQuery.Keywords = keywords
+	if err := applyArtworkDBFilters(ctx, serv, &dbQuery, req.ArtistID, req.Tag, req.Keyword); err != nil {
+		return nil, err
 	}
 	return serv.QueryArtworks(ctx, dbQuery)
+}
+
+// applyArtworkDBFilters 解析 list 与 random 接口共用的作品筛选参数:
+// keyword 组间 AND, 组内 OR.
+func applyArtworkDBFilters(ctx context.Context, serv *service.Service, dbQuery *query.ArtworksDB, artistID, tag, keyword string) error {
+	if artistID != "" {
+		parsed, err := ouid.FromObjectIDHex(artistID)
+		if err != nil {
+			return err
+		}
+		dbQuery.ArtistID = parsed
+	}
+	if tag != "" {
+		tagEntity, err := serv.GetTagByNameWithAlias(ctx, tag)
+		if err != nil {
+			return common.NewError(fiber.StatusNotFound, "tag not found")
+		}
+		dbQuery.Tags = [][]ouid.OUID{{tagEntity.ID}}
+	}
+	if keywords := strutil.ParseTo2DArray(keyword, ",", "|"); len(keywords) > 0 {
+		dbQuery.Keywords = keywords
+	}
+	return nil
 }
