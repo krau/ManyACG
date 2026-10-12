@@ -331,6 +331,6 @@ func (s *Service) ReIndexArtworks(ctx context.Context, ids []ouid.OUID) error {
 	return nil
 }
 
-func (s *Service) CountArtworks(ctx context.Context, r18 shared.R18Type) (int64, error) {
-	return s.repos.Artwork().CountArtworks(ctx, r18)
+func (s *Service) CountArtworks(ctx context.Context, que query.ArtworksDB) (int64, error) {
+	return s.repos.Artwork().CountArtworks(ctx, que)
 }

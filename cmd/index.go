@@ -90,7 +90,7 @@ func IndexArtworks(ctx context.Context) {
 	log.Info("Starting to index all artworks to MeiliSearch", "batchSize", indexBatchSize)
 
 	// 统计总数
-	total, err := db.Artwork().CountArtworks(ctx, shared.R18TypeAll)
+	total, err := db.Artwork().CountArtworks(ctx, query.ArtworksDB{R18: shared.R18TypeAll})
 	if err != nil {
 		log.Fatal("failed to count artworks", "err", err)
 	}

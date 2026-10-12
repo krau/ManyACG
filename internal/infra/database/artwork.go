@@ -6,7 +6,7 @@ import (
 	"github.com/krau/ManyACG/internal/model/converter"
 	"github.com/krau/ManyACG/internal/model/dto"
 	"github.com/krau/ManyACG/internal/model/entity"
-	"github.com/krau/ManyACG/internal/shared"
+	"github.com/krau/ManyACG/internal/model/query"
 	"github.com/unvgo/ouid"
 	"gorm.io/gorm"
 )
@@ -173,13 +173,9 @@ func (d *DB) UpdateArtworkTags(ctx context.Context, id ouid.OUID, tags []*entity
 	return d.db.WithContext(ctx).Model(&existing).Association("Tags").Replace(tags)
 }
 
-func (d *DB) CountArtworks(ctx context.Context, r18 shared.R18Type) (int64, error) {
+func (d *DB) CountArtworks(ctx context.Context, que query.ArtworksDB) (int64, error) {
 	var count int64
-	query := d.db.WithContext(ctx).Model(&entity.Artwork{})
-	if r18 != shared.R18TypeAll {
-		query = query.Where("r18 = ?", r18 == shared.R18TypeR18)
-	}
-	err := query.Count(&count).Error
+	err := d.buildArtworkQuery(ctx, que).Count(&count).Error
 	if err != nil {
 		return 0, err
 	}

@@ -8,7 +8,6 @@ import (
 	"github.com/krau/ManyACG/internal/model/dto"
 	"github.com/krau/ManyACG/internal/model/entity"
 	"github.com/krau/ManyACG/internal/model/query"
-	"github.com/krau/ManyACG/internal/shared"
 	"github.com/unvgo/ouid"
 )
 
@@ -25,7 +24,7 @@ type Artwork interface {
 	GetArtworksByIDs(ctx context.Context, ids []ouid.OUID) ([]*entity.Artwork, error)
 	GetArtworkSearchDocuments(ctx context.Context, ids []ouid.OUID) ([]*dto.ArtworkSearchDocument, error)
 	GetArtworkIDs(ctx context.Context, after ouid.OUID, limit int) ([]ouid.OUID, error)
-	CountArtworks(ctx context.Context, r18 shared.R18Type) (int64, error)
+	CountArtworks(ctx context.Context, que query.ArtworksDB) (int64, error)
 }
 
 type ArtworkWithEvent struct {
@@ -34,8 +33,8 @@ type ArtworkWithEvent struct {
 }
 
 // CountArtworks implements Artwork.
-func (a *ArtworkWithEvent) CountArtworks(ctx context.Context, r18 shared.R18Type) (int64, error) {
-	return a.inner.CountArtworks(ctx, r18)
+func (a *ArtworkWithEvent) CountArtworks(ctx context.Context, que query.ArtworksDB) (int64, error) {
+	return a.inner.CountArtworks(ctx, que)
 }
 
 var _ Artwork = (*ArtworkWithEvent)(nil)
@@ -161,8 +160,8 @@ type ArtworkWithRecorder struct {
 }
 
 // CountArtworks implements Artwork.
-func (a *ArtworkWithRecorder) CountArtworks(ctx context.Context, r18 shared.R18Type) (int64, error) {
-	return a.inner.CountArtworks(ctx, r18)
+func (a *ArtworkWithRecorder) CountArtworks(ctx context.Context, que query.ArtworksDB) (int64, error) {
+	return a.inner.CountArtworks(ctx, que)
 }
 
 var _ Artwork = (*ArtworkWithRecorder)(nil)

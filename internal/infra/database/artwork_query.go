@@ -79,7 +79,8 @@ func applyArtworkPreloads() func(db *gorm.DB) *gorm.DB {
 
 const randomScanThreshold = 1000
 
-func (d *DB) QueryArtworks(ctx context.Context, que query.ArtworksDB) ([]*entity.Artwork, error) {
+// buildArtworkQuery 构建带筛选条件的 artworks 查询, 供 QueryArtworks 与 CountArtworks 共用.
+func (d *DB) buildArtworkQuery(ctx context.Context, que query.ArtworksDB) *gorm.DB {
 	// 基础过滤
 	baseQuery := d.db.WithContext(ctx).Model(&entity.Artwork{}).
 		Scopes(applyBaseFilters(que))
@@ -118,6 +119,12 @@ func (d *DB) QueryArtworks(ctx context.Context, que query.ArtworksDB) ([]*entity
 			baseQuery = baseQuery.Where(groupSQL, args...)
 		}
 	}
+
+	return baseQuery
+}
+
+func (d *DB) QueryArtworks(ctx context.Context, que query.ArtworksDB) ([]*entity.Artwork, error) {
+	baseQuery := d.buildArtworkQuery(ctx, que)
 
 	if !que.Random {
 		// 非随机查询直接分页取数, 无需统计总数
