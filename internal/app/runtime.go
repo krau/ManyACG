@@ -25,14 +25,15 @@ import (
 )
 
 type Runtime struct {
-	cfg     runtimecfg.Config
-	closer  func() error
-	cleanup func(context.Context) error
-	repos   repo.Repositories
-	search  search.Searcher
-	service *service.Service
-	poster  scheduler.ArtworkPoster
-	tgbot   restcommon.TelegramBot
+	cfg      runtimecfg.Config
+	closer   func() error
+	cleanup  func(context.Context) error
+	restOpts []rest.RestAppOption
+	repos    repo.Repositories
+	search   search.Searcher
+	service  *service.Service
+	poster   scheduler.ArtworkPoster
+	tgbot    restcommon.TelegramBot
 }
 
 func NewRuntime(ctx context.Context, cfg runtimecfg.Config) (*Runtime, error) {
@@ -124,18 +125,23 @@ func NewRuntime(ctx context.Context, cfg runtimecfg.Config) (*Runtime, error) {
 		registerArtworkEventImseekHandlers(ctx, artworkBus, serv)
 	}
 
+	var restOpts []rest.RestAppOption
+	if writable {
+		restOpts = append(restOpts, rest.WithWriteService(serv))
+	}
 	var cleanup func(context.Context) error
 	if cfg.App.Mode.Standalone() {
 		cleanup = serv.Cleanup
 	}
 
 	return &Runtime{
-		cfg:     cfg,
-		closer:  closer,
-		cleanup: cleanup,
-		repos:   repos,
-		search:  searcher,
-		service: serv,
+		cfg:      cfg,
+		closer:   closer,
+		cleanup:  cleanup,
+		restOpts: restOpts,
+		repos:    repos,
+		search:   searcher,
+		service:  serv,
 	}, nil
 }
 
@@ -155,7 +161,7 @@ func (r *Runtime) Start(ctx context.Context, stop func()) error {
 	}
 
 	if r.cfg.Rest.Enable {
-		opts := []rest.RestAppOption{}
+		opts := r.restOpts
 		if r.tgbot != nil {
 			opts = append(opts, rest.WithTelegramBot(r.tgbot))
 		}

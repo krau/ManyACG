@@ -3,7 +3,6 @@ package handlers
 import (
 	"github.com/gofiber/fiber/v3"
 	"github.com/krau/ManyACG/internal/interface/rest/common"
-	"github.com/krau/ManyACG/internal/service"
 )
 
 type RequestRandomTags struct {
@@ -22,7 +21,7 @@ func HandleGetRandomTags(ctx fiber.Ctx) error {
 	if err := ctx.Bind().All(req); err != nil {
 		return err
 	}
-	serv := common.MustGetState[*service.Service](ctx, common.StateKeyService)
+	serv := common.MustGetState[common.QueryService](ctx, common.StateKeyQueryService)
 	tags, err := serv.RandomTags(requestCtx, req.Limit)
 	if err != nil {
 		return err

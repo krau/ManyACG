@@ -5,7 +5,6 @@ import (
 
 	"github.com/gofiber/fiber/v3"
 	"github.com/krau/ManyACG/internal/interface/rest/common"
-	"github.com/krau/ManyACG/internal/service"
 	"github.com/krau/ManyACG/internal/shared"
 )
 
@@ -21,7 +20,7 @@ func HandleSendArtworkInfoByTelegramBot(ctx fiber.Ctx) error {
 	if key == "" {
 		return common.NewError(fiber.StatusUnauthorized, "api key is required")
 	}
-	serv := common.MustGetState[*service.Service](ctx, common.StateKeyService)
+	serv := common.MustGetState[common.WriteService](ctx, common.StateKeyWriteService)
 	keyEnt, err := serv.GetApiKeyByKey(requestCtx, key)
 	if err != nil {
 		return common.NewError(fiber.StatusUnauthorized, "invalid api key")

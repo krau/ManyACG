@@ -17,7 +17,6 @@ import (
 	"github.com/krau/ManyACG/internal/infra/config/runtimecfg"
 	"github.com/krau/ManyACG/internal/interface/rest/common"
 	"github.com/krau/ManyACG/internal/interface/rest/handlers"
-	"github.com/krau/ManyACG/internal/service"
 	"github.com/krau/ManyACG/internal/shared/errs"
 
 	"github.com/samber/oops"
@@ -27,6 +26,11 @@ type RestApp struct {
 	fiberApp *fiber.App
 	cfg      runtimecfg.RestConfig
 	tgbot    common.TelegramBot
+	writer   common.WriteService
+}
+
+type queryService struct {
+	common.QueryService
 }
 
 type RestAppOption func(app *RestApp) error
@@ -41,7 +45,17 @@ func WithTelegramBot(bot common.TelegramBot) RestAppOption {
 	}
 }
 
-func New(ctx context.Context, serv *service.Service, cfg runtimecfg.RestConfig, opts ...RestAppOption) (*RestApp, error) {
+func WithWriteService(serv common.WriteService) RestAppOption {
+	return func(app *RestApp) error {
+		if serv == nil {
+			return oops.New("write service is nil")
+		}
+		app.writer = serv
+		return nil
+	}
+}
+
+func New(ctx context.Context, serv common.QueryService, cfg runtimecfg.RestConfig, opts ...RestAppOption) (*RestApp, error) {
 	errHandler := func(c fiber.Ctx, err error) error {
 		c.Set(fiber.HeaderContentType, fiber.MIMEApplicationJSONCharsetUTF8)
 		if e, ok := errors.AsType[*common.Error](err); ok {
@@ -76,7 +90,7 @@ func New(ctx context.Context, serv *service.Service, cfg runtimecfg.RestConfig, 
 		EnableIPValidation: true,
 	})
 
-	app.State().Set(common.StateKeyService, serv)
+	app.State().Set(common.StateKeyQueryService, queryService{QueryService: serv})
 	app.State().Set(common.StateKeyConfig, cfg)
 
 	if cfg.Limit.Enable {
@@ -94,9 +108,6 @@ func New(ctx context.Context, serv *service.Service, cfg runtimecfg.RestConfig, 
 	loggerCfg.Format = "${time} | ${status} | ${latency} | ${ip} | ${method} | ${path} | ${queryParams} | ${error}\n"
 	app.Use(logger.New(loggerCfg))
 
-	v1group := app.Group("/api/v1")
-	handlers.Register(v1group, serv, cfg)
-
 	restApp := &RestApp{
 		fiberApp: app,
 		cfg:      cfg,
@@ -110,6 +121,11 @@ func New(ctx context.Context, serv *service.Service, cfg runtimecfg.RestConfig, 
 	if restApp.tgbot != nil {
 		app.State().Set(common.StateKeyTelegramBot, restApp.tgbot)
 	}
+	if restApp.writer != nil {
+		app.State().Set(common.StateKeyWriteService, restApp.writer)
+	}
+	root := app.Group("/api/v1")
+	handlers.Register(root, cfg, restApp.writer)
 	return restApp, nil
 }
 

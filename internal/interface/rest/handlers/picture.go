@@ -14,12 +14,10 @@ import (
 	"github.com/krau/ManyACG/internal/infra/config/runtimecfg"
 	"github.com/krau/ManyACG/internal/interface/rest/common"
 	"github.com/krau/ManyACG/internal/interface/rest/utils"
-	"github.com/krau/ManyACG/internal/service"
+	"github.com/krau/ManyACG/internal/model/entity"
 	"github.com/krau/ManyACG/internal/shared"
 	"github.com/krau/ManyACG/internal/shared/errs"
-	"github.com/krau/ManyACG/pkg/log"
 	"github.com/unvgo/ouid"
-	"gorm.io/datatypes"
 )
 
 func HandleGetPictureFileByID(ctx fiber.Ctx) error {
@@ -33,7 +31,7 @@ func HandleGetPictureFileByID(ctx fiber.Ctx) error {
 	if err != nil {
 		return fiber.NewError(fiber.StatusBadRequest, "invalid picture ID")
 	}
-	serv := common.MustGetState[*service.Service](ctx, common.StateKeyService)
+	serv := common.MustGetState[common.QueryService](ctx, common.StateKeyQueryService)
 	picture, err := serv.GetPictureByID(requestCtx, id)
 	if err != nil {
 		return err
@@ -58,112 +56,113 @@ func HandleGetPictureFileByID(ctx fiber.Ctx) error {
 	return ctx.SendFile(filePath, fiber.SendFile{Compress: true})
 }
 
-func HandleGetSizedPictureFileByID(ctx fiber.Ctx) error {
-	requestCtx := ctx.RequestCtx()
-	size := ctx.Params("size")
-	if !slices.Contains([]string{"thumb", "regular", "original"}, size) {
-		size = "regular"
-	}
-	pictureID := ctx.Params("id")
-	if pictureID == "" {
-		return fiber.NewError(fiber.StatusBadRequest, "missing picture ID")
-	}
-	id, err := ouid.FromObjectIDHex(pictureID)
-	if err != nil {
-		return fiber.NewError(fiber.StatusBadRequest, "invalid picture ID")
-	}
-	serv := common.MustGetState[*service.Service](ctx, common.StateKeyService)
-	picture, err := serv.GetPictureByID(requestCtx, id)
-	if errors.Is(err, errs.ErrRecordNotFound) {
-		return common.NewError(fiber.StatusNotFound, "picture not found")
-	}
-	if err != nil {
-		return err
-	}
-	var detail *shared.StorageDetail
-	switch size {
-	case "thumb":
-		detail = picture.StorageInfo.Data().Thumb
-	case "regular":
-		detail = picture.StorageInfo.Data().Regular
-	case "original":
-		detail = picture.StorageInfo.Data().Original
-	}
-	if detail != nil {
-		if detail.Mime != "" {
-			ctx.Set(fiber.HeaderContentType, detail.Mime)
-			var sendErr error
-			sendWriter := func(w *bufio.Writer) {
-				defer w.Flush()
-				sendErr = serv.StorageStreamFile(requestCtx, *detail, w)
-			}
-			ctx.SendStreamWriter(sendWriter)
-			return sendErr
+type PictureMIMEObserver func(picture *entity.Picture, size string, detail shared.StorageDetail)
+
+func NewSizedPictureFileHandler(observers ...PictureMIMEObserver) fiber.Handler {
+	return func(ctx fiber.Ctx) error {
+		requestCtx := ctx.RequestCtx()
+		size := ctx.Params("size")
+		if !slices.Contains([]string{"thumb", "regular", "original"}, size) {
+			size = "regular"
 		}
-
-		pr, pw := io.Pipe()
-		streamCtx, cancel := context.WithCancel(context.Background())
-		defer cancel()
-
-		errChan := make(chan error, 1)
-		go func() {
-			defer close(errChan)
-			err := serv.StorageStreamFile(streamCtx, *detail, pw)
-			if err != nil {
-				pw.CloseWithError(err)
-				errChan <- err
-				return
-			}
-			pw.Close()
-		}()
-
-		buf := make([]byte, 3072)
-		n, err := io.ReadAtLeast(pr, buf, 3072)
+		pictureID := ctx.Params("id")
+		if pictureID == "" {
+			return fiber.NewError(fiber.StatusBadRequest, "missing picture ID")
+		}
+		id, err := ouid.FromObjectIDHex(pictureID)
 		if err != nil {
-			cancel()
-			pr.Close()
-
-			streamErr := <-errChan
-			if streamErr != nil {
-				return streamErr
-			}
-
-			if !errors.Is(err, io.EOF) && !errors.Is(err, io.ErrUnexpectedEOF) {
-				return err
-			}
+			return fiber.NewError(fiber.StatusBadRequest, "invalid picture ID")
 		}
+		serv := common.MustGetState[common.QueryService](ctx, common.StateKeyQueryService)
+		picture, err := serv.GetPictureByID(requestCtx, id)
+		if errors.Is(err, errs.ErrRecordNotFound) {
+			return common.NewError(fiber.StatusNotFound, "picture not found")
+		}
+		if err != nil {
+			return err
+		}
+		var detail *shared.StorageDetail
+		switch size {
+		case "thumb":
+			detail = picture.StorageInfo.Data().Thumb
+		case "regular":
+			detail = picture.StorageInfo.Data().Regular
+		case "original":
+			detail = picture.StorageInfo.Data().Original
+		}
+		if detail != nil {
+			if detail.Mime != "" {
+				ctx.Set(fiber.HeaderContentType, detail.Mime)
+				var sendErr error
+				sendWriter := func(w *bufio.Writer) {
+					defer w.Flush()
+					sendErr = serv.StorageStreamFile(requestCtx, *detail, w)
+				}
+				ctx.SendStreamWriter(sendWriter)
+				return sendErr
+			}
 
-		buf = buf[:n]
-		mtype := mimetype.Detect(buf)
-		if mtype != nil {
-			ctx.Set(fiber.HeaderContentType, mtype.String())
+			pr, pw := io.Pipe()
+			streamCtx, cancel := context.WithCancel(context.Background())
+
+			errChan := make(chan error, 1)
+			streamDetail := *detail
 			go func() {
-				// 异步更新 mime 类型
-				detail.Mime = mtype.String()
-				storData := picture.StorageInfo.Data()
-				if size == "thumb" {
-					storData.Thumb = detail
-				} else if size == "regular" {
-					storData.Regular = detail
-				} else if size == "original" {
-					storData.Original = detail
+				defer close(errChan)
+				err := serv.StorageStreamFile(streamCtx, streamDetail, pw)
+				if err != nil {
+					pw.CloseWithError(err)
+					errChan <- err
+					return
 				}
-				picture.StorageInfo = datatypes.NewJSONType(storData)
-				if err := serv.SavePicture(context.Background(), picture); err != nil {
-					log.Errorf("failed to save picture mime: %v", err)
-				}
+				pw.Close()
 			}()
-		}
-		ctx.Set(fiber.HeaderContentDisposition, "inline")
 
-		fullReader := io.MultiReader(bytes.NewReader(buf), pr)
-		return ctx.SendStream(fullReader)
+			buf := make([]byte, 3072)
+			n, err := io.ReadAtLeast(pr, buf, 3072)
+			if err != nil {
+				cancel()
+				pr.Close()
+
+				streamErr := <-errChan
+				if streamErr != nil {
+					return streamErr
+				}
+
+				if !errors.Is(err, io.EOF) && !errors.Is(err, io.ErrUnexpectedEOF) {
+					return err
+				}
+			}
+
+			buf = buf[:n]
+			mtype := mimetype.Detect(buf)
+			if mtype != nil {
+				ctx.Set(fiber.HeaderContentType, mtype.String())
+				detectedDetail := streamDetail
+				detectedDetail.Mime = mtype.String()
+				for _, observer := range observers {
+					observer(picture, size, detectedDetail)
+				}
+			}
+			ctx.Set(fiber.HeaderContentDisposition, "inline")
+
+			var fullReader io.Reader = bytes.NewReader(buf)
+			if err == nil {
+				fullReader = io.MultiReader(fullReader, pr)
+			}
+			return ctx.SendStreamWriter(func(w *bufio.Writer) {
+				defer cancel()
+				defer pr.Close()
+				defer w.Flush()
+				io.Copy(w, fullReader)
+			})
+		}
+		return ctx.Redirect().To(picture.Thumbnail)
 	}
-	return ctx.Redirect().To(picture.Thumbnail)
 }
 
 func HandleGetRandomPicture(ctx fiber.Ctx) error {
-	serv := common.MustGetState[*service.Service](ctx, common.StateKeyService)
+	serv := common.MustGetState[common.QueryService](ctx, common.StateKeyQueryService)
 	picture, err := serv.RandomPictures(ctx.RequestCtx(), 1)
 	if err != nil {
 		return err
