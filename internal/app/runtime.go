@@ -27,6 +27,7 @@ import (
 type Runtime struct {
 	cfg     runtimecfg.Config
 	closer  func() error
+	cleanup func(context.Context) error
 	repos   repo.Repositories
 	search  search.Searcher
 	service *service.Service
@@ -35,6 +36,15 @@ type Runtime struct {
 }
 
 func NewRuntime(ctx context.Context, cfg runtimecfg.Config) (*Runtime, error) {
+	if err := cfg.App.Mode.Valid(); err != nil {
+		return nil, err
+	}
+	writable := !cfg.App.Mode.ReadOnly()
+	if !writable {
+		cfg.Telegram.Disable = true
+		cfg.Scheduler.Enable = false
+		cfg.Imseek.Enable = false
+	}
 	// 清理上次异常退出(如被强杀)残留在缓存目录的临时文件
 	if removed, err := osutil.RemoveStaleTempFiles(cfg.Storage.CacheDir, time.Hour); err != nil {
 		log.Warn("failed to remove stale temp files", "dir", cfg.Storage.CacheDir, "err", err)
@@ -94,10 +104,15 @@ func NewRuntime(ctx context.Context, cfg runtimecfg.Config) (*Runtime, error) {
 		repos = repo.NewWithArtworkEventImpl(dbRepo, artworkBus)
 	}
 
+	var tagger tagging.Tagger
+	if writable {
+		tagger = tagging.Default()
+	}
+
 	serv := service.NewService(
 		repos,
 		searcher,
-		tagging.Default(),
+		tagger,
 		storage.Storages(),
 		source.Sources(),
 		cfg.Storage,
@@ -107,9 +122,15 @@ func NewRuntime(ctx context.Context, cfg runtimecfg.Config) (*Runtime, error) {
 		registerArtworkEventImseekHandlers(ctx, artworkBus, serv)
 	}
 
+	var cleanup func(context.Context) error
+	if cfg.App.Mode.Standalone() {
+		cleanup = serv.Cleanup
+	}
+
 	return &Runtime{
 		cfg:     cfg,
 		closer:  closer,
+		cleanup: cleanup,
 		repos:   repos,
 		search:  searcher,
 		service: serv,
@@ -160,7 +181,10 @@ func (r *Runtime) Close() error {
 }
 
 func (r *Runtime) Cleanup(ctx context.Context) error {
-	return r.service.Cleanup(ctx)
+	if r.cleanup == nil {
+		return nil
+	}
+	return r.cleanup(ctx)
 }
 
 func Run(ctx context.Context, cfg runtimecfg.Config, stop func()) error {

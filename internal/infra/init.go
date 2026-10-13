@@ -9,26 +9,23 @@ import (
 	"github.com/samber/oops"
 )
 
-// Init initializes the infra package, return the closer function and error if any.
 func Init(ctx context.Context, cfg runtimecfg.Config) (func() error, error) {
 	var errs []error
 	var closerFuncs []func() error
-	kvstor.Init(cfg.KVDB)
-	closerFuncs = append(closerFuncs, func() error {
-		return kvstor.Close()
-	})
+	if err := cfg.App.Mode.Valid(); err != nil {
+		return nil, err
+	}
+	if !cfg.App.Mode.ReadOnly() {
+		kvstor.Init(cfg.KVDB)
+		closerFuncs = append(closerFuncs, func() error {
+			return kvstor.Close()
+		})
+	}
 	initSource()
 	if err := initStorage(ctx); err != nil {
 		errs = append(errs, err)
 	}
-	database.Init(ctx)
-	// if err := cache.Init(); err != nil {
-	// 	errs = append(errs, err)
-	// } else {
-	// 	closerFuncs = append(closerFuncs, func() error {
-	// 		return cache.Close()
-	// 	})
-	// }
+	database.Init(ctx, cfg)
 
 	return func() error {
 		var errs []error

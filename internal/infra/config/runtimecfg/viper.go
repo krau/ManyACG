@@ -64,7 +64,7 @@ type SchedulerConfig struct {
 }
 
 type AppConfig struct {
-	// Something globally used in app
+	Mode  Mode `toml:"mode" mapstructure:"mode" json:"mode" yaml:"mode"`
 	Debug bool `toml:"debug" mapstructure:"debug" json:"debug" yaml:"debug"`
 }
 
@@ -91,6 +91,8 @@ func loadConfig() Config {
 	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
 
 	defaults := map[string]any{
+		"app.mode": ModeStandalone,
+
 		"log.file_path":  "logs/manyacg.log",
 		"log.backup_num": 7,
 
@@ -159,6 +161,10 @@ func loadConfig() Config {
 	c := Config{}
 	if err := viper.Unmarshal(&c); err != nil {
 		fmt.Printf("error when unmarshal config: %s\n", err)
+		os.Exit(1)
+	}
+	if err := c.App.Mode.Valid(); err != nil {
+		fmt.Printf("invalid app mode: %s\n", err)
 		os.Exit(1)
 	}
 	return c
