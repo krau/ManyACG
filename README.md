@@ -115,6 +115,68 @@ chmod +x manyacg
 ./manyacg
 ```
 
+#### 多节点部署
+
+通过 `[app] mode` 选择实例角色，也可使用环境变量 `MANYACG_APP_MODE` 覆盖。未配置或空值均使用 `standalone`；其他值只能为 `writer` 或 `reader`，非法值会阻止启动。角色在实例启动时确定，修改模式后需重启实例。
+
+| 模式 | 启动时迁移数据库 | Bot、发布调度和本地图像索引 | 抓取、Bot 操作接口 | 退出时恢复发布状态 |
+| --- | --- | --- | --- | --- |
+| `standalone`（默认） | 自动执行 | 按原有开关启用 | 保留 | 保留单节点恢复行为 |
+| `writer` | 不执行 | 按原有开关启用 | 保留 | 不自动恢复 |
+| `reader` | 不执行 | 始终关闭 | 不提供 | 不自动恢复 |
+
+多节点部署只允许一个活跃的 `writer`，负责 Telegram Bot、发布和搜索索引更新；多个 `reader` 提供查询和媒体读取。模式配置不会自动选主，也不会阻止误启动第二个写节点。数据库复制、负载均衡及 CDN 需要单独配置。
+
+写节点配置示例（合并到已有配置，保留 Bot、存储和调度设置）：
+
+```toml
+[app]
+mode = "writer"
+
+[database]
+type = "pgsql"
+dsn = "host=db-primary user=manyacg_writer dbname=manyacg port=5432 sslmode=verify-full"
+
+[rest]
+enable = true
+addr = ":8080"
+base = "https://api.example.com/api/v1"
+
+[storage]
+cache_dir = "./cache-writer"
+```
+
+读节点配置示例：
+
+```toml
+[app]
+mode = "reader"
+
+[database]
+type = "pgsql"
+dsn = "host=db-replica user=manyacg_reader dbname=manyacg port=5432 sslmode=verify-full"
+
+[rest]
+enable = true
+addr = ":8080"
+base = "https://api.example.com/api/v1"
+
+[storage]
+cache_dir = "./cache-reader"
+```
+
+DSN 中的主机、用户和 TLS 设置需按部署环境填写。读节点应使用只读数据库账号并连接读副本；写节点连接主库。各实例使用独立的缓存目录，不能共用正在使用的缓存文件；媒体存储必须对读节点可读，写节点本地磁盘上的文件不会自动复制。读节点仍需要配置相应存储驱动，`storage.telegram` 用于媒体读取，与交互 Bot 的开关不同。
+
+部署或升级顺序：
+
+1. 维护期间先停掉所有 ManyACG 节点，用连接主库且具备迁移权限的配置执行 `./manyacg migrate`。该命令只更新数据库结构与配置的数据库索引，不启动 Bot、调度或媒体存储；`reader` 模式不能执行它。
+2. 等待数据库结构同步到读副本，再启动一个 `writer`。启用 MeiliSearch 时，写节点负责共享索引的初始化与更新；首次部署可在写节点执行 `./manyacg index` 导入已有作品。
+3. 启动多个 `reader`，将普通查询和媒体请求路由到它们；将 `/api/v1/artwork/fetch` 和 `/api/v1/bot/send_artwork_info` 的 GET、POST 请求只路由到写节点。POST `/artwork/list` 和 `/artwork/random` 仍是读接口，可路由到读节点。
+
+读节点可使用仅有目标索引 `search` 权限的 MeiliSearch 密钥，必须与写节点使用相同的 Host 和 Index。读节点不会创建索引、修改搜索设置或补写图片 MIME；缺失索引或搜索服务故障会在查询时返回错误。读副本和搜索索引可能存在同步延迟，新发布作品不保证立即在所有读节点可见。`migrate`、`index` 和所有 `imseek` 子命令（包括 `status`）只能在非读模式运行；读节点不提供本地图像索引功能。
+
+写节点故障后，先确认旧写节点已停止，再启动替代实例。`writer` 和 `reader` 退出不会把发布中的记录自动变为可重发状态；应核对 Telegram 频道与数据库中的实际发布结果，再人工处理未完成记录，避免重复发送。本模式不提供自动接管或可靠任务恢复。
+
 #### 安装为服务
 
 适用于 Linux 系统, 以 systemd 为例:
