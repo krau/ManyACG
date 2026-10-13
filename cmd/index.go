@@ -19,11 +19,12 @@ import (
 )
 
 var indexCmd = &cobra.Command{
-	Use:   "index",
-	Short: "Index all artworks to MeiliSearch",
-	Long:  "Index all artworks from database to the specified MeiliSearch index",
+	Use:         "index",
+	Short:       "Index all artworks to MeiliSearch",
+	Long:        "Index all artworks from database to the specified MeiliSearch index",
+	Annotations: map[string]string{writeCommandAnnotation: "true"},
 	Run: func(cmd *cobra.Command, args []string) {
-		IndexArtworks(cmd.Context())
+		indexArtworks(cmd.Context())
 	},
 }
 
@@ -38,7 +39,7 @@ func init() {
 	indexCmd.Flags().BoolVarP(&indexClearAll, "clear", "c", false, "Clear all existing documents before indexing")
 }
 
-func IndexArtworks(ctx context.Context) {
+func indexArtworks(ctx context.Context) {
 	// 读取配置
 	cfg := runtimecfg.Get()
 

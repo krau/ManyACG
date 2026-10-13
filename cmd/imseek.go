@@ -21,8 +21,9 @@ import (
 )
 
 var imseekCmd = &cobra.Command{
-	Use:   "imseek",
-	Short: "Manage local feature image index",
+	Use:         "imseek",
+	Short:       "Manage local feature image index",
+	Annotations: map[string]string{writeCommandAnnotation: "true"},
 }
 
 var (
