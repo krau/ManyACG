@@ -17,9 +17,13 @@ import (
 	"github.com/meilisearch/meilisearch-go"
 )
 
-type SearcherMeilisearch struct {
+type ReaderMeilisearch struct {
 	client meilisearch.IndexManager
 	cfg    runtimecfg.MeiliSearchConfig
+}
+
+type SearcherMeilisearch struct {
+	ReaderMeilisearch
 }
 
 func meilisearchIndexSettings() *meilisearch.Settings {
@@ -68,7 +72,6 @@ func settingsEqual(a, b *meilisearch.Settings) bool {
 	return true
 }
 
-// AddDocuments implements search.Searcher.
 func (m *SearcherMeilisearch) AddDocuments(ctx context.Context, docs []*dto.ArtworkSearchDocument) error {
 	primaryKey := "id"
 	_, err := m.client.AddDocumentsWithContext(ctx, docs, &meilisearch.DocumentOptions{
@@ -104,13 +107,11 @@ func (m *SearcherMeilisearch) AddDocumentsAndWait(ctx context.Context, docs []*d
 	return nil
 }
 
-// DeleteDocuments implements search.Searcher.
 func (m *SearcherMeilisearch) DeleteDocuments(ctx context.Context, ids []string) error {
 	_, err := m.client.DeleteDocumentsWithContext(ctx, ids, nil)
 	return err
 }
 
-// DeleteAllDocuments implements search.Searcher.
 func (m *SearcherMeilisearch) DeleteAllDocuments(ctx context.Context) error {
 	_, err := m.client.DeleteAllDocumentsWithContext(ctx, nil)
 	return err
@@ -159,6 +160,14 @@ func (m *SearcherMeilisearch) GetMissingArtworkIDs(ctx context.Context, ids []ou
 	return missing, nil
 }
 
+func NewReader(cfg runtimecfg.MeiliSearchConfig) (*ReaderMeilisearch, error) {
+	if err := cfg.Valid(); err != nil {
+		return nil, err
+	}
+	manager := meilisearch.New(cfg.Host, meilisearch.WithAPIKey(cfg.Key))
+	return &ReaderMeilisearch{client: manager.Index(cfg.Index), cfg: cfg}, nil
+}
+
 func NewSearcher(ctx context.Context, cfg runtimecfg.MeiliSearchConfig) (*SearcherMeilisearch, error) {
 	if err := cfg.Valid(); err != nil {
 		return nil, err
@@ -204,10 +213,10 @@ func NewSearcher(ctx context.Context, cfg runtimecfg.MeiliSearchConfig) (*Search
 	if err != nil {
 		return nil, fmt.Errorf("meilisearch fetch index info failed: %w", err)
 	}
-	return &SearcherMeilisearch{client: manager.Index(cfg.Index), cfg: cfg}, nil
+	return &SearcherMeilisearch{ReaderMeilisearch: ReaderMeilisearch{client: manager.Index(cfg.Index), cfg: cfg}}, nil
 }
 
-func (m *SearcherMeilisearch) SearchArtworks(ctx context.Context, que *query.ArtworkSearch) (*dto.ArtworkSearchResult, error) {
+func (m *ReaderMeilisearch) SearchArtworks(ctx context.Context, que *query.ArtworkSearch) (*dto.ArtworkSearchResult, error) {
 	filter := map[shared.R18Type]string{
 		shared.R18TypeAll:  "",
 		shared.R18TypeNone: "r18 = false",
@@ -253,7 +262,7 @@ func (m *SearcherMeilisearch) SearchArtworks(ctx context.Context, que *query.Art
 	}, nil
 }
 
-func (m *SearcherMeilisearch) FindSimilarArtworks(ctx context.Context, que *query.ArtworkSimilar) (*dto.ArtworkSearchResult, error) {
+func (m *ReaderMeilisearch) FindSimilarArtworks(ctx context.Context, que *query.ArtworkSimilar) (*dto.ArtworkSearchResult, error) {
 	filter := map[shared.R18Type]string{
 		shared.R18TypeAll:  "",
 		shared.R18TypeNone: "r18 = false",

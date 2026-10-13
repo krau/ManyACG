@@ -13,7 +13,7 @@ import (
 
 type dtoArtworkEventItem = dto.ArtworkEventItem
 
-func registerArtworkEventSearcherHandlers(ctx context.Context, bus repo.EventBus[*dto.ArtworkEventItem], searcher search.Searcher) {
+func registerArtworkEventSearcherHandlers(ctx context.Context, bus repo.EventBus[*dto.ArtworkEventItem], indexer search.Indexer) {
 	filter := func(payload *dto.ArtworkEventItem) bool {
 		return payload != nil && !payload.ID.IsZero()
 	}
@@ -23,7 +23,7 @@ func registerArtworkEventSearcherHandlers(ctx context.Context, bus repo.EventBus
 			if doc == nil {
 				return nil
 			}
-			err := searcher.AddDocuments(ctx, []*dto.ArtworkSearchDocument{doc})
+			err := indexer.AddDocuments(ctx, []*dto.ArtworkSearchDocument{doc})
 			if err != nil {
 				log.Error(err)
 				return err
@@ -38,7 +38,7 @@ func registerArtworkEventSearcherHandlers(ctx context.Context, bus repo.EventBus
 			if doc == nil {
 				return nil
 			}
-			err := searcher.AddDocuments(ctx, []*dto.ArtworkSearchDocument{doc})
+			err := indexer.AddDocuments(ctx, []*dto.ArtworkSearchDocument{doc})
 			if err != nil {
 				log.Error(err)
 				return err
@@ -49,7 +49,7 @@ func registerArtworkEventSearcherHandlers(ctx context.Context, bus repo.EventBus
 	}, filter)
 	bus.Subscribe(repo.EventTypeArtworkDelete, func(payload *dto.ArtworkEventItem) {
 		retry.Retry(func() error {
-			err := searcher.DeleteDocuments(ctx, []string{payload.ID.Hex()})
+			err := indexer.DeleteDocuments(ctx, []string{payload.ID.Hex()})
 			if err != nil {
 				log.Error(err)
 				return err

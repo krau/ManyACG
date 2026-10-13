@@ -45,7 +45,7 @@ func (s *Service) updateArtworkIndexProgress(scanned, repaired int, phase Artwor
 }
 
 func (s *Service) FixArtworkIndex(ctx context.Context) (progress ArtworkIndexProgress, err error) {
-	if s.searcher == nil {
+	if s.indexer == nil {
 		return progress, search.ErrNotEnabled
 	}
 	s.indexRepairMu.Lock()
@@ -82,7 +82,7 @@ func (s *Service) FixArtworkIndex(ctx context.Context) (progress ArtworkIndexPro
 		if len(ids) == 0 {
 			return progress, nil
 		}
-		missing, err := s.searcher.GetMissingArtworkIDs(ctx, ids)
+		missing, err := s.indexer.GetMissingArtworkIDs(ctx, ids)
 		if err != nil {
 			return progress, fmt.Errorf("get missing artwork ids failed: %w", err)
 		}
@@ -95,7 +95,7 @@ func (s *Service) FixArtworkIndex(ctx context.Context) (progress ArtworkIndexPro
 			}
 			if len(docs) > 0 {
 				s.updateArtworkIndexProgress(0, 0, ArtworkIndexIndexing)
-				if err := s.searcher.AddDocumentsAndWait(ctx, docs); err != nil {
+				if err := s.indexer.AddDocumentsAndWait(ctx, docs); err != nil {
 					return progress, fmt.Errorf("index artwork documents failed: %w", err)
 				}
 				s.updateArtworkIndexProgress(0, len(docs), ArtworkIndexChecking)

@@ -18,6 +18,9 @@ import (
 type Searcher interface {
 	SearchArtworks(ctx context.Context, que *query.ArtworkSearch) (*dto.ArtworkSearchResult, error)
 	FindSimilarArtworks(ctx context.Context, que *query.ArtworkSimilar) (*dto.ArtworkSearchResult, error)
+}
+
+type Indexer interface {
 	GetMissingArtworkIDs(ctx context.Context, ids []ouid.OUID) ([]ouid.OUID, error)
 	AddDocuments(ctx context.Context, docs []*dto.ArtworkSearchDocument) error
 	AddDocumentsAndWait(ctx context.Context, docs []*dto.ArtworkSearchDocument) error
@@ -26,6 +29,7 @@ type Searcher interface {
 
 var (
 	defaultSearcher Searcher
+	defaultIndexer  Indexer
 	once            sync.Once
 	ErrNotEnabled   = errors.New("search engine is not enabled")
 )
@@ -35,19 +39,34 @@ func initDefault(ctx context.Context) {
 		defaultSearcher = &noopSearcher{}
 		return
 	}
-	cfg := runtimecfg.Get().Search
-	switch cfg.Engine {
+	cfg := runtimecfg.Get()
+	switch cfg.Search.Engine {
 	case "meilisearch":
-		s, err := meilisearch.NewSearcher(ctx, cfg.MeiliSearch)
+		if cfg.App.Mode.ReadOnly() {
+			s, err := meilisearch.NewReader(cfg.Search.MeiliSearch)
+			if err != nil {
+				log.Fatal("failed to initialize meilisearch reader", "err", err)
+			}
+			defaultSearcher = s
+			return
+		}
+		s, err := meilisearch.NewSearcher(ctx, cfg.Search.MeiliSearch)
 		if err != nil {
 			log.Fatal("failed to initialize meilisearch searcher", "err", err)
 		}
 		defaultSearcher = s
+		defaultIndexer = s
 	case "mock":
 		log.Warn("using mock searcher, this is only for testing purposes")
-		defaultSearcher = mocksearch.NewSearcher(database.Default().Artwork())
+		s := mocksearch.NewSearcher(database.Default().Artwork())
+		if cfg.App.Mode.ReadOnly() {
+			defaultSearcher = &querySearcher{Searcher: s}
+			return
+		}
+		defaultSearcher = s
+		defaultIndexer = s
 	default:
-		log.Fatal("unknown search engine: %s", cfg.Engine)
+		log.Fatal("unknown search engine: %s", cfg.Search.Engine)
 	}
 }
 
@@ -55,31 +74,17 @@ func Enabled() bool {
 	return runtimecfg.Get().Search.Enable
 }
 
+type querySearcher struct {
+	Searcher
+}
+
 type noopSearcher struct{}
-
-// AddDocuments implements Searcher.
-func (s *noopSearcher) AddDocuments(ctx context.Context, docs []*dto.ArtworkSearchDocument) error {
-	return ErrNotEnabled
-}
-
-func (s *noopSearcher) AddDocumentsAndWait(ctx context.Context, docs []*dto.ArtworkSearchDocument) error {
-	return ErrNotEnabled
-}
-
-// DeleteDocuments implements Searcher.
-func (s *noopSearcher) DeleteDocuments(ctx context.Context, ids []string) error {
-	return ErrNotEnabled
-}
 
 func (s *noopSearcher) SearchArtworks(ctx context.Context, que *query.ArtworkSearch) (*dto.ArtworkSearchResult, error) {
 	return nil, ErrNotEnabled
 }
 
 func (s *noopSearcher) FindSimilarArtworks(ctx context.Context, que *query.ArtworkSimilar) (*dto.ArtworkSearchResult, error) {
-	return nil, ErrNotEnabled
-}
-
-func (s *noopSearcher) GetMissingArtworkIDs(ctx context.Context, ids []ouid.OUID) ([]ouid.OUID, error) {
 	return nil, ErrNotEnabled
 }
 
@@ -92,4 +97,11 @@ func Default(ctx context.Context) Searcher {
 		initDefault(ctx)
 	})
 	return defaultSearcher
+}
+
+func DefaultIndexer(ctx context.Context) Indexer {
+	once.Do(func() {
+		initDefault(ctx)
+	})
+	return defaultIndexer
 }

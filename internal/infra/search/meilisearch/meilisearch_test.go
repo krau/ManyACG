@@ -42,7 +42,7 @@ func TestGetMissingArtworkIDsHandlesDocumentPagination(t *testing.T) {
 		}
 	}))
 	defer server.Close()
-	searcher := &SearcherMeilisearch{client: meilisearch.New(server.URL).Index("artworks")}
+	searcher := &SearcherMeilisearch{ReaderMeilisearch: ReaderMeilisearch{client: meilisearch.New(server.URL).Index("artworks")}}
 	missing, err := searcher.GetMissingArtworkIDs(context.Background(), ids)
 	if err != nil {
 		t.Fatal(err)
@@ -70,7 +70,7 @@ func TestGetMissingArtworkIDsRejectsIncompleteOrFailedQuery(t *testing.T) {
 				fmt.Fprint(w, tc.body)
 			}))
 			defer server.Close()
-			searcher := &SearcherMeilisearch{client: meilisearch.New(server.URL).Index("artworks")}
+			searcher := &SearcherMeilisearch{ReaderMeilisearch: ReaderMeilisearch{client: meilisearch.New(server.URL).Index("artworks")}}
 			if missing, err := searcher.GetMissingArtworkIDs(context.Background(), []ouid.OUID{id}); err == nil || len(missing) != 0 {
 				t.Fatalf("lookup = (%v, %v), want error without missing IDs", missing, err)
 			}
@@ -115,7 +115,7 @@ func TestAddDocumentsAndWaitDoesNotCompleteBeforeTaskSucceeds(t *testing.T) {
 	defer server.Close()
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
-	searcher := &SearcherMeilisearch{client: meilisearch.New(server.URL).Index("artworks")}
+	searcher := &SearcherMeilisearch{ReaderMeilisearch: ReaderMeilisearch{client: meilisearch.New(server.URL).Index("artworks")}}
 	result := make(chan error, 1)
 	go func() {
 		result <- searcher.AddDocumentsAndWait(ctx, []*dto.ArtworkSearchDocument{{ID: "artwork"}})
@@ -181,7 +181,7 @@ func TestAddDocumentsAndWaitRejectsFailedAndCanceledTasks(t *testing.T) {
 			defer server.Close()
 			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 			defer cancel()
-			searcher := &SearcherMeilisearch{client: meilisearch.New(server.URL).Index("artworks")}
+			searcher := &SearcherMeilisearch{ReaderMeilisearch: ReaderMeilisearch{client: meilisearch.New(server.URL).Index("artworks")}}
 			err := searcher.AddDocumentsAndWait(ctx, []*dto.ArtworkSearchDocument{{ID: "artwork"}})
 			if err == nil {
 				t.Fatalf("%s task reported success", tc.status)
@@ -228,7 +228,7 @@ func TestAddDocumentsAndWaitPropagatesCancellation(t *testing.T) {
 			defer server.Close()
 			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 			defer cancel()
-			searcher := &SearcherMeilisearch{client: meilisearch.New(server.URL).Index("artworks")}
+			searcher := &SearcherMeilisearch{ReaderMeilisearch: ReaderMeilisearch{client: meilisearch.New(server.URL).Index("artworks")}}
 			result := make(chan error, 1)
 			go func() {
 				result <- searcher.AddDocumentsAndWait(ctx, []*dto.ArtworkSearchDocument{{ID: "artwork"}})
@@ -267,7 +267,7 @@ func TestAddDocumentsAndWaitPropagatesPollingError(t *testing.T) {
 	defer server.Close()
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	searcher := &SearcherMeilisearch{client: meilisearch.New(server.URL).Index("artworks")}
+	searcher := &SearcherMeilisearch{ReaderMeilisearch: ReaderMeilisearch{client: meilisearch.New(server.URL).Index("artworks")}}
 	err := searcher.AddDocumentsAndWait(ctx, []*dto.ArtworkSearchDocument{{ID: "artwork"}})
 	var sdkErr *meilisearch.Error
 	if !errors.As(err, &sdkErr) || sdkErr.MeilisearchApiError.Code != "task_not_found" {
@@ -285,7 +285,7 @@ func TestAddDocumentsAndWaitSkipsEmptyBatches(t *testing.T) {
 		w.WriteHeader(http.StatusInternalServerError)
 	}))
 	defer server.Close()
-	searcher := &SearcherMeilisearch{client: meilisearch.New(server.URL).Index("artworks")}
+	searcher := &SearcherMeilisearch{ReaderMeilisearch: ReaderMeilisearch{client: meilisearch.New(server.URL).Index("artworks")}}
 	for _, docs := range [][]*dto.ArtworkSearchDocument{nil, {}} {
 		if err := searcher.AddDocumentsAndWait(context.Background(), docs); err != nil {
 			t.Fatal(err)

@@ -18,6 +18,7 @@ import (
 type Service struct {
 	repos    repo.Repositories
 	searcher search.Searcher
+	indexer  search.Indexer
 	tagger   tagging.Tagger
 	storages map[shared.StorageType]storage.Storage
 	sources  map[shared.SourceType]source.ArtworkSource
@@ -32,6 +33,10 @@ type Option func(*Service)
 
 func WithImseek(e imseek.Engine) Option {
 	return func(s *Service) { s.imseek = e }
+}
+
+func WithIndexer(indexer search.Indexer) Option {
+	return func(s *Service) { s.indexer = indexer }
 }
 
 func NewService(

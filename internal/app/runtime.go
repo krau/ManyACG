@@ -59,6 +59,7 @@ func NewRuntime(ctx context.Context, cfg runtimecfg.Config) (*Runtime, error) {
 
 	dbRepo := database.Default()
 	searcher := search.Default(ctx)
+	indexer := search.DefaultIndexer(ctx)
 
 	// local feature-point search(Optional)
 	imCfg := cfg.Imseek
@@ -94,12 +95,12 @@ func NewRuntime(ctx context.Context, cfg runtimecfg.Config) (*Runtime, error) {
 	}
 
 	var artworkBus *eventbus.EventBus[*dtoArtworkEventItem]
-	needBus := search.Enabled() || (eng != nil && eng.Enabled())
+	needBus := indexer != nil || (eng != nil && eng.Enabled())
 	repos := repo.Repositories(dbRepo)
 	if needBus {
 		artworkBus = eventbus.New[*dtoArtworkEventItem]()
-		if search.Enabled() {
-			registerArtworkEventSearcherHandlers(ctx, artworkBus, searcher)
+		if indexer != nil {
+			registerArtworkEventSearcherHandlers(ctx, artworkBus, indexer)
 		}
 		repos = repo.NewWithArtworkEventImpl(dbRepo, artworkBus)
 	}
@@ -117,6 +118,7 @@ func NewRuntime(ctx context.Context, cfg runtimecfg.Config) (*Runtime, error) {
 		source.Sources(),
 		cfg.Storage,
 		service.WithImseek(eng),
+		service.WithIndexer(indexer),
 	)
 	if artworkBus != nil {
 		registerArtworkEventImseekHandlers(ctx, artworkBus, serv)

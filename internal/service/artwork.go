@@ -312,7 +312,7 @@ func (s *Service) SearchArtworks(ctx context.Context, que *query.ArtworkSearch) 
 }
 
 func (s *Service) ReIndexArtworks(ctx context.Context, ids []ouid.OUID) error {
-	if s.searcher == nil {
+	if s.indexer == nil {
 		return search.ErrNotEnabled
 	}
 	artworks, err := s.repos.Artwork().GetArtworksByIDs(ctx, ids)
@@ -324,7 +324,7 @@ func (s *Service) ReIndexArtworks(ctx context.Context, ids []ouid.OUID) error {
 		doc := converter.EntityArtworkToSearchDocument(aw)
 		docs = append(docs, doc)
 	}
-	err = s.searcher.AddDocuments(ctx, docs)
+	err = s.indexer.AddDocuments(ctx, docs)
 	if err != nil {
 		return fmt.Errorf("add documents to searcher failed: %w", err)
 	}
