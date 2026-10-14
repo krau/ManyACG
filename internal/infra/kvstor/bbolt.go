@@ -3,6 +3,7 @@ package kvstor
 import (
 	"context"
 	"encoding/binary"
+	"sync"
 	"time"
 
 	"github.com/krau/ManyACG/internal/shared/errs"
@@ -34,18 +35,28 @@ func newbboltItemWithTTL[T any](value T, ttl time.Duration) bboltItem[T] {
 type bboltDB struct {
 	db             *bbolt.DB
 	stop           chan struct{}
+	done           chan struct{}
+	closeOnce      sync.Once
+	closeErr       error
 	bucket         string
 	ttlBucket      string
 	ttlBatchLimit  int
 	ttlSweepPeriod time.Duration
 }
 
-// Close implements KVStore.
 func (b *bboltDB) Close() error {
-	return b.db.Close()
+	b.closeOnce.Do(func() {
+		if b.stop != nil {
+			close(b.stop)
+		}
+		if b.done != nil {
+			<-b.done
+		}
+		b.closeErr = b.db.Close()
+	})
+	return b.closeErr
 }
 
-// Delete implements KVStore.
 func (b *bboltDB) Delete(ctx context.Context, key string) error {
 	db := b.db
 	return db.Update(func(tx *bbolt.Tx) error {
@@ -67,7 +78,6 @@ func (b *bboltDB) Delete(ctx context.Context, key string) error {
 	})
 }
 
-// Get implements KVStore.
 func (b *bboltDB) Get(ctx context.Context, key string) (any, error) {
 	db := b.db
 	var val []byte
@@ -96,7 +106,6 @@ func (b *bboltDB) Get(ctx context.Context, key string) (any, error) {
 	return result.Value, nil
 }
 
-// SetWithTTL implements KVStore.
 func (b *bboltDB) Set(ctx context.Context, key string, value any, ttl time.Duration) error {
 	db := b.db
 	return db.Update(func(tx *bbolt.Tx) error {
@@ -186,7 +195,9 @@ func (b *bboltDB) sweepExpired() error {
 }
 
 func (b *bboltDB) startTTLReaper() {
+	b.done = make(chan struct{})
 	go func() {
+		defer close(b.done)
 		ticker := time.NewTicker(b.ttlSweepPeriod)
 		defer ticker.Stop()
 		for {

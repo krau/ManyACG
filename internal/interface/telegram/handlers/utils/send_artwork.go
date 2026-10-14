@@ -157,6 +157,7 @@ type CreateArtworkInfoReplyMarkupOptions struct {
 }
 
 func CreateArtworkInfoReplyMarkup(ctx context.Context,
+	store kvstor.KVStore,
 	meta *metautil.MetaData,
 	serv *service.Service,
 	artwork shared.ArtworkLike,
@@ -184,7 +185,7 @@ func CreateArtworkInfoReplyMarkup(ctx context.Context,
 		return telegoutil.InlineKeyboard(base), nil
 	}
 	cbId := ouid.New().Hex()
-	err := kvstor.SetWithTTL(ctx, cbId, artwork.GetSourceURL(), time.Hour*24*7)
+	err := store.Set(ctx, cbId, artwork.GetSourceURL(), time.Hour*24*7)
 	if err != nil {
 		return nil, oops.Wrapf(err, "failed to create callback data")
 	}
@@ -227,6 +228,7 @@ func ArtworkPostKeyboard(meta *metautil.MetaData, cbId string) [][]telego.Inline
 //
 // 需要区分已发布的作品, 已标记为删除的作品, 和未发布的作品
 func SendArtworkInfo(ctx context.Context,
+	store kvstor.KVStore,
 	bot *telego.Bot,
 	meta *metautil.MetaData,
 	serv *service.Service,
@@ -260,7 +262,7 @@ func SendArtworkInfo(ctx context.Context,
 		if artwork == nil {
 			// 既没有发布也没有缓存, 则尝试抓取
 			cbId := ouid.New().Hex()
-			err := kvstor.SetWithTTL(ctx, cbId, sourceUrl, time.Hour*24*7)
+			err := store.Set(ctx, cbId, sourceUrl, time.Hour*24*7)
 			if err != nil {
 				return oops.Wrapf(err, "failed to create callback data")
 			}
@@ -296,7 +298,7 @@ func SendArtworkInfo(ctx context.Context,
 	if opts.AppendCaption != "" {
 		caption += "\n" + opts.AppendCaption
 	}
-	replyMarkup, err := CreateArtworkInfoReplyMarkup(ctx, meta, serv, artwork, &CreateArtworkInfoReplyMarkupOptions{
+	replyMarkup, err := CreateArtworkInfoReplyMarkup(ctx, store, meta, serv, artwork, &CreateArtworkInfoReplyMarkupOptions{
 		CreatedArtwork: created,
 		HasPermission:  opts.HasPermission,
 	})

@@ -113,7 +113,7 @@ func openImseekRuntime(ctx context.Context, autoBuild bool) (*imseekRuntime, err
 	}
 	log.SetDefault(log.New(log.Config{LogFile: cfg.Log.FilePath, MaxBackups: int(cfg.Log.BackupNum)}))
 
-	closer, err := infra.Init(ctx, cfg)
+	resources, err := infra.Init(ctx, cfg)
 	if err != nil {
 		return nil, err
 	}
@@ -134,7 +134,7 @@ func openImseekRuntime(ctx context.Context, autoBuild bool) (*imseekRuntime, err
 		MinScore:         cfg.Imseek.MinScore,
 	})
 	if err != nil {
-		_ = closer()
+		_ = resources.Close()
 		return nil, err
 	}
 
@@ -146,6 +146,7 @@ func openImseekRuntime(ctx context.Context, autoBuild bool) (*imseekRuntime, err
 		source.Sources(),
 		cfg.Storage,
 		service.WithImseek(eng),
+		service.WithSourceNamers(source.Namers()),
 	)
 
 	return &imseekRuntime{
@@ -154,7 +155,7 @@ func openImseekRuntime(ctx context.Context, autoBuild bool) (*imseekRuntime, err
 		serv: serv,
 		stop: func() error {
 			_ = eng.Close()
-			return closer()
+			return resources.Close()
 		},
 	}, nil
 }

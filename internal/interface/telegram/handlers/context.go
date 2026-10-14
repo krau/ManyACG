@@ -1,11 +1,22 @@
 package handlers
 
 import (
+	"github.com/krau/ManyACG/internal/infra/kvstor"
 	"github.com/krau/ManyACG/internal/interface/telegram/metautil"
 	"github.com/krau/ManyACG/internal/service"
 	"github.com/mymmrac/telego/telegohandler"
 	"github.com/samber/oops"
 )
+
+type kvStoreContextKey struct{}
+
+func requireKVStore(ctx *telegohandler.Context) (kvstor.KVStore, error) {
+	store, ok := ctx.Value(kvStoreContextKey{}).(kvstor.KVStore)
+	if !ok || store == nil {
+		return nil, oops.New("telegram handler missing KV store in context")
+	}
+	return store, nil
+}
 
 func requireService(ctx *telegohandler.Context) (*service.Service, error) {
 	serv := service.FromContext(ctx)

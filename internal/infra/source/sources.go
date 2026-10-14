@@ -7,9 +7,13 @@ import (
 	"github.com/krau/ManyACG/internal/shared"
 )
 
-type ArtworkSource interface {
-	GetArtworkInfo(ctx context.Context, sourceUrl string) (*dto.FetchedArtwork, error)
+type ArtworkNamer interface {
 	MatchesSourceURL(sourceUrl string) (string, bool)
-	FetchNewArtworks(ctx context.Context, limit int) ([]*dto.FetchedArtwork, error)
 	PrettyFileName(artwork shared.ArtworkLike, picture shared.PictureLike) string
+}
+
+type ArtworkSource interface {
+	ArtworkNamer
+	GetArtworkInfo(ctx context.Context, sourceUrl string) (*dto.FetchedArtwork, error)
+	FetchNewArtworks(ctx context.Context, limit int) ([]*dto.FetchedArtwork, error)
 }

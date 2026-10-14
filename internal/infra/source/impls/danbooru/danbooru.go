@@ -15,7 +15,10 @@ import (
 	"github.com/krau/ManyACG/pkg/strutil"
 )
 
+type Namer struct{}
+
 type Danbooru struct {
+	Namer
 	reqClient *req.Client
 	cfg       runtimecfg.SourceDanbooruConfig
 }
@@ -61,7 +64,7 @@ func (d *Danbooru) GetArtworkInfo(ctx context.Context, sourceURL string) (*dto.F
 	return danbooruResp.ToArtwork()
 }
 
-func (d *Danbooru) MatchesSourceURL(text string) (string, bool) {
+func (Namer) MatchesSourceURL(text string) (string, bool) {
 	postID := GetPostID(text)
 	if postID == "" {
 		return "", false
@@ -69,8 +72,7 @@ func (d *Danbooru) MatchesSourceURL(text string) (string, bool) {
 	return "https://danbooru.donmai.us/posts/" + postID, true
 }
 
-// PrettyFileName implements source.ArtworkSource.
-func (d *Danbooru) PrettyFileName(artwork shared.ArtworkLike, picture shared.PictureLike) string {
+func (Namer) PrettyFileName(artwork shared.ArtworkLike, picture shared.PictureLike) string {
 	ext, _ := strutil.GetFileExtFromURL(picture.GetOriginal())
 	id := GetPostID(artwork.GetSourceURL())
 	if id == "" {
@@ -78,11 +80,6 @@ func (d *Danbooru) PrettyFileName(artwork shared.ArtworkLike, picture shared.Pic
 	}
 	return fmt.Sprintf("danbooru_%s_%d%s", id, picture.GetIndex(), ext)
 }
-
-// func (d *Danbooru) GetFileName(artwork *types.Artwork, picture *types.Picture) string {
-// 	idStr := GetPostID(artwork.SourceURL)
-// 	return fmt.Sprintf("%s_%d%s", idStr, picture.Index, path.Ext(picture.Original))
-// }
 
 // func (d *Danbooru) Config() *config.SourceCommonConfig {
 // 	return &config.SourceCommonConfig{

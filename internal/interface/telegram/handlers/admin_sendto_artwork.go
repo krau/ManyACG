@@ -19,6 +19,10 @@ func SendtoArtworkCallbackQuery(ctx *telegohandler.Context, query telego.Callbac
 	if err != nil {
 		return err
 	}
+	store, err := requireKVStore(ctx)
+	if err != nil {
+		return err
+	}
 	answerQuery := func(text string, showAlert bool) {
 		ctx.Bot().AnswerCallbackQuery(ctx, &telego.AnswerCallbackQueryParams{
 			CallbackQueryID: query.ID,
@@ -44,7 +48,7 @@ func SendtoArtworkCallbackQuery(ctx *telegohandler.Context, query telego.Callbac
 		answerQuery("无效的聊天ID", true)
 		return nil
 	}
-	sourceURL, err := kvstor.Get[string](ctx, dataID)
+	sourceURL, err := kvstor.Get[string](ctx, store, dataID)
 	if err != nil {
 		answerQuery("获取回调数据失败", true)
 		return nil

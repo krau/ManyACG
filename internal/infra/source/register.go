@@ -12,6 +12,7 @@ type Factory func() ArtworkSource
 var (
 	sources   = make(map[shared.SourceType]ArtworkSource)
 	factories = make(map[shared.SourceType]Factory)
+	namers    = make(map[shared.SourceType]ArtworkNamer)
 	factoryMu sync.RWMutex
 )
 
@@ -22,6 +23,21 @@ func Register(sourceType shared.SourceType, f Factory) {
 		panic("source: Register called twice for source type " + string(sourceType))
 	}
 	factories[sourceType] = f
+}
+
+func RegisterNamer(sourceType shared.SourceType, namer ArtworkNamer) {
+	factoryMu.Lock()
+	defer factoryMu.Unlock()
+	if _, exists := namers[sourceType]; exists {
+		panic("source: RegisterNamer called twice for source type " + string(sourceType))
+	}
+	namers[sourceType] = namer
+}
+
+func Namers() map[shared.SourceType]ArtworkNamer {
+	factoryMu.RLock()
+	defer factoryMu.RUnlock()
+	return maps.Clone(namers)
 }
 
 func InitAll() {

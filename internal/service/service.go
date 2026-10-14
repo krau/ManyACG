@@ -22,6 +22,7 @@ type Service struct {
 	tagger   tagging.Tagger
 	storages map[shared.StorageType]storage.Storage
 	sources  map[shared.SourceType]source.ArtworkSource
+	namers   map[shared.SourceType]source.ArtworkNamer
 	storCfg  runtimecfg.StorageConfig
 	imseek   imseek.Engine
 
@@ -37,6 +38,10 @@ func WithImseek(e imseek.Engine) Option {
 
 func WithIndexer(indexer search.Indexer) Option {
 	return func(s *Service) { s.indexer = indexer }
+}
+
+func WithSourceNamers(namers map[shared.SourceType]source.ArtworkNamer) Option {
+	return func(s *Service) { s.namers = namers }
 }
 
 func NewService(
@@ -58,6 +63,12 @@ func NewService(
 	}
 	for _, opt := range opts {
 		opt(s)
+	}
+	if s.namers == nil && len(sourceMap) > 0 {
+		s.namers = make(map[shared.SourceType]source.ArtworkNamer, len(sourceMap))
+		for sourceType, artworkSource := range sourceMap {
+			s.namers[sourceType] = artworkSource
+		}
 	}
 	return s
 }

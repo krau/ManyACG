@@ -15,6 +15,7 @@ import (
 const (
 	StateKeyQueryService = "query_service"
 	StateKeyWriteService = "write_service"
+	StateKeyKVStore      = "kv_store"
 	StateKeyConfig       = "cfg"
 	StateKeyLogger       = "logger"
 	StateKeyTelegramBot  = "telegrambot" // DO NOT USE MustGetState to get this value!

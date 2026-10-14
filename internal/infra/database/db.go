@@ -33,6 +33,14 @@ func Default() *DB {
 	return defaultDB
 }
 
+func (d *DB) Close() error {
+	sqlDB, err := d.db.DB()
+	if err != nil {
+		return err
+	}
+	return sqlDB.Close()
+}
+
 func Init(ctx context.Context, cfg runtimecfg.Config) {
 	initOnce.Do(func() {
 		okCh := make(chan struct{})
@@ -51,7 +59,7 @@ func initDB(ctx context.Context, cfg runtimecfg.Config, okCh chan struct{}) {
 	if err != nil {
 		log.Fatal("failed to initialize database", "err", err)
 	}
-	if cfg.App.Mode.Standalone() {
+	if !cfg.App.Mode.ReadOnly() && cfg.Database.AutoMigrate {
 		if err := migrateDatabase(ctx, db, cfg); err != nil {
 			log.Fatal("failed to migrate database", "err", err)
 		}

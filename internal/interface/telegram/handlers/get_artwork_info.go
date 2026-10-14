@@ -75,7 +75,11 @@ func GetArtworkInfo(ctx *telegohandler.Context, message telego.Message) error {
 		}
 		return nil
 	}
-	err = utils.SendArtworkInfo(ctx, ctx.Bot(), meta, serv, sourceURL, chatID, utils.SendArtworkInfoOptions{
+	store, err := requireKVStore(ctx)
+	if err != nil {
+		return err
+	}
+	err = utils.SendArtworkInfo(ctx, store, ctx.Bot(), meta, serv, sourceURL, chatID, utils.SendArtworkInfoOptions{
 		HasPermission:   hasPermission,
 		ReplyParameters: &telego.ReplyParameters{MessageID: message.MessageID},
 	})

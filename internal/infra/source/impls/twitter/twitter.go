@@ -15,7 +15,10 @@ import (
 	"github.com/krau/ManyACG/internal/shared"
 )
 
+type Namer struct{}
+
 type Twitter struct {
+	Namer
 	reqClient *req.Client
 	cfg       runtimecfg.SourceTwitterConfig
 }
@@ -54,7 +57,7 @@ func (t *Twitter) GetArtworkInfo(ctx context.Context, sourceURL string) (*dto.Fe
 	return resp.ToArtwork()
 }
 
-func (t *Twitter) MatchesSourceURL(text string) (string, bool) {
+func (Namer) MatchesSourceURL(text string) (string, bool) {
 	matches := twitterSourceURLRegexp.FindString(text)
 	if len(matches) == 0 {
 		return "", false
@@ -70,8 +73,7 @@ func (t *Twitter) MatchesSourceURL(text string) (string, bool) {
 	return commonUrl, true
 }
 
-// PrettyFileName implements source.ArtworkSource.
-func (t *Twitter) PrettyFileName(artwork shared.ArtworkLike, picture shared.PictureLike) string {
+func (Namer) PrettyFileName(artwork shared.ArtworkLike, picture shared.PictureLike) string {
 	original := picture.GetOriginal()
 	urlSplit := strings.Split(original, "?")
 	if len(urlSplit) > 1 {

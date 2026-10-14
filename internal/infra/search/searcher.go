@@ -43,7 +43,7 @@ func initDefault(ctx context.Context) {
 	switch cfg.Search.Engine {
 	case "meilisearch":
 		if cfg.App.Mode.ReadOnly() {
-			s, err := meilisearch.NewReader(cfg.Search.MeiliSearch)
+			s, err := meilisearch.NewReader(ctx, cfg.Search.MeiliSearch)
 			if err != nil {
 				log.Fatal("failed to initialize meilisearch reader", "err", err)
 			}

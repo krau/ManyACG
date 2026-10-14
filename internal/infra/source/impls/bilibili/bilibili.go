@@ -14,7 +14,10 @@ import (
 	"github.com/imroc/req/v3"
 )
 
+type Namer struct{}
+
 type Bilibili struct {
+	Namer
 	reqClient *req.Client
 	cfg       runtimecfg.SourceBilibiliConfig
 }
@@ -70,7 +73,7 @@ func (b *Bilibili) GetArtworkInfo(ctx context.Context, sourceURL string) (*dto.F
 	return nil, err
 }
 
-func (b *Bilibili) MatchesSourceURL(text string) (string, bool) {
+func (Namer) MatchesSourceURL(text string) (string, bool) {
 	dynamicID := getDynamicID(text)
 	if dynamicID == "" {
 		return "", false
@@ -78,8 +81,7 @@ func (b *Bilibili) MatchesSourceURL(text string) (string, bool) {
 	return "https://t.bilibili.com/" + dynamicID, true
 }
 
-// PrettyFileName implements source.ArtworkSource.
-func (b *Bilibili) PrettyFileName(artwork shared.ArtworkLike, picture shared.PictureLike) string {
+func (Namer) PrettyFileName(artwork shared.ArtworkLike, picture shared.PictureLike) string {
 	id := getDynamicID(artwork.GetSourceURL())
 	ext, _ := strutil.GetFileExtFromURL(picture.GetOriginal())
 	if id == "" {

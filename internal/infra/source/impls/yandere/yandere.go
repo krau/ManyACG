@@ -14,7 +14,10 @@ import (
 	"github.com/krau/ManyACG/pkg/strutil"
 )
 
+type Namer struct{}
+
 type Yandere struct {
+	Namer
 	reqClient *req.Client
 	cfg       runtimecfg.SourceYandereConfig
 }
@@ -80,7 +83,7 @@ func (y *Yandere) GetArtworkInfo(ctx context.Context, sourceURL string) (*dto.Fe
 	return parentResp.ToArtwork(), nil
 }
 
-func (y *Yandere) MatchesSourceURL(text string) (string, bool) {
+func (Namer) MatchesSourceURL(text string) (string, bool) {
 	postID := GetPostID(text)
 	if postID == "" {
 		return "", false
@@ -88,8 +91,7 @@ func (y *Yandere) MatchesSourceURL(text string) (string, bool) {
 	return sourceURLPrefix + postID, true
 }
 
-// PrettyFileName implements source.ArtworkSource.
-func (y *Yandere) PrettyFileName(artwork shared.ArtworkLike, picture shared.PictureLike) string {
+func (Namer) PrettyFileName(artwork shared.ArtworkLike, picture shared.PictureLike) string {
 	idStr := GetPostID(artwork.GetSourceURL())
 	ext, _ := strutil.GetFileExtFromURL(picture.GetOriginal())
 	if idStr == "" {

@@ -56,14 +56,13 @@ func indexArtworks(ctx context.Context) {
 		log.Fatal("only meilisearch is supported for indexing", "engine", cfg.Search.Engine)
 	}
 
-	// 初始化基础设施（数据库等）
-	closer, err := infra.Init(ctx, cfg)
+	resources, err := infra.Init(ctx, cfg)
 	if err != nil {
 		log.Fatal("failed to initialize infrastructure", "err", err)
 	}
 	defer func() {
-		if closer != nil {
-			if err := closer(); err != nil {
+		if resources != nil {
+			if err := resources.Close(); err != nil {
 				log.Error("failed to close infrastructure", "err", err)
 			}
 		}

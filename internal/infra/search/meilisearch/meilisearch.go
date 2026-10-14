@@ -160,9 +160,29 @@ func (m *SearcherMeilisearch) GetMissingArtworkIDs(ctx context.Context, ids []ou
 	return missing, nil
 }
 
-func NewReader(cfg runtimecfg.MeiliSearchConfig) (*ReaderMeilisearch, error) {
+func NewReader(ctx context.Context, cfg runtimecfg.MeiliSearchConfig) (*ReaderMeilisearch, error) {
 	if err := cfg.Valid(); err != nil {
 		return nil, err
+	}
+	probeCtx, cancel := context.WithTimeout(ctx, 3*time.Second)
+	defer cancel()
+	probe := meilisearch.New(cfg.Host,
+		meilisearch.WithAPIKey(cfg.Key),
+		meilisearch.DisableRetries(),
+		meilisearch.WithCustomJsonMarshaler(func(value any) ([]byte, error) {
+			if request, ok := value.(*meilisearch.SearchRequest); ok {
+				// The SDK omits zero limits; the startup probe must not retrieve hits.
+				return json.Marshal(struct {
+					*meilisearch.SearchRequest
+					Limit int64 `json:"limit"`
+				}{SearchRequest: request, Limit: request.Limit})
+			}
+			return json.Marshal(value)
+		}),
+	)
+	defer probe.Close()
+	if _, err := probe.Index(cfg.Index).SearchWithContext(probeCtx, "", &meilisearch.SearchRequest{Limit: 0}); err != nil {
+		return nil, fmt.Errorf("meilisearch reader startup search failed: %w", err)
 	}
 	manager := meilisearch.New(cfg.Host, meilisearch.WithAPIKey(cfg.Key))
 	return &ReaderMeilisearch{client: manager.Index(cfg.Index), cfg: cfg}, nil

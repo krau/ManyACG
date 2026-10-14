@@ -2,6 +2,7 @@ package infra
 
 import (
 	"context"
+	"sync"
 
 	"github.com/krau/ManyACG/internal/infra/config/runtimecfg"
 	"github.com/krau/ManyACG/internal/infra/database"
@@ -9,34 +10,44 @@ import (
 	"github.com/samber/oops"
 )
 
-func Init(ctx context.Context, cfg runtimecfg.Config) (func() error, error) {
-	var errs []error
-	var closerFuncs []func() error
-	if err := cfg.App.Mode.Valid(); err != nil {
-		return nil, err
-	}
-	if !cfg.App.Mode.ReadOnly() {
-		kvstor.Init(cfg.KVDB)
-		closerFuncs = append(closerFuncs, func() error {
-			return kvstor.Close()
-		})
-	}
-	initSource()
-	if err := initStorage(ctx); err != nil {
-		errs = append(errs, err)
-	}
-	database.Init(ctx, cfg)
+type Resources struct {
+	KV        kvstor.KVStore
+	closers   []func() error
+	closeOnce sync.Once
+	closeErr  error
+}
 
-	return func() error {
+func (r *Resources) Close() error {
+	r.closeOnce.Do(func() {
 		var errs []error
-		for _, closer := range closerFuncs {
-			if err := closer(); err != nil {
+		for i := len(r.closers) - 1; i >= 0; i-- {
+			if err := r.closers[i](); err != nil {
 				errs = append(errs, err)
 			}
 		}
-		if len(errs) > 0 {
-			return oops.Join(errs...)
+		r.closeErr = oops.Join(errs...)
+	})
+	return r.closeErr
+}
+
+func Init(ctx context.Context, cfg runtimecfg.Config) (*Resources, error) {
+	if err := cfg.App.Mode.Valid(); err != nil {
+		return nil, err
+	}
+	resources := &Resources{}
+	if !cfg.App.Mode.ReadOnly() {
+		store, err := kvstor.Open(cfg.KVDB)
+		if err != nil {
+			return nil, err
 		}
-		return nil
-	}, oops.Join(errs...)
+		resources.KV = store
+		resources.closers = append(resources.closers, store.Close)
+	}
+	initSource(cfg, resources.KV)
+	if err := initStorage(ctx); err != nil {
+		return nil, oops.Join(err, resources.Close())
+	}
+	database.Init(ctx, cfg)
+	resources.closers = append(resources.closers, database.Default().Close)
+	return resources, nil
 }

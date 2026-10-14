@@ -91,7 +91,7 @@ func loadConfig() Config {
 	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
 
 	defaults := map[string]any{
-		"app.mode": ModeStandalone,
+		"app.mode": "",
 
 		"log.file_path":  "logs/manyacg.log",
 		"log.backup_num": 7,
@@ -124,8 +124,9 @@ func loadConfig() Config {
 		"source.pixiv.img_proxy":           "pximg.manyacg.top",
 		"source.twitter.fx_twitter_domain": "fxtwitter.com",
 
-		"database.type": "sqlite",
-		"database.dsn":  `file:manyacg.db?_pragma=journal_mode(WAL)&_pragma=synchronous(NORMAL)&_pragma=busy_timeout(5000)&_txlock=deferred`,
+		"database.type":         "sqlite",
+		"database.dsn":          `file:manyacg.db?_pragma=journal_mode(WAL)&_pragma=synchronous(NORMAL)&_pragma=busy_timeout(5000)&_txlock=deferred`,
+		"database.auto_migrate": true,
 
 		"kvdb.type":             "bbolt",
 		"kvdb.path":             "data/kvdb.bbolt",

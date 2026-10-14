@@ -36,7 +36,7 @@ func (s *Service) FetchArtworkInfo(ctx context.Context, sourceURL string) (*dto.
 }
 
 func (s *Service) PrettyFileName(artwork shared.ArtworkLike, picture shared.PictureLike) string {
-	for _, sou := range s.sources {
+	for _, sou := range s.namers {
 		if _, ok := sou.MatchesSourceURL(artwork.GetSourceURL()); ok {
 			return sou.PrettyFileName(artwork, picture)
 		}

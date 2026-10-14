@@ -2,6 +2,8 @@ package app
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"net/http"
 	"time"
 
@@ -10,6 +12,7 @@ import (
 	"github.com/krau/ManyACG/internal/infra/database"
 	"github.com/krau/ManyACG/internal/infra/eventbus"
 	"github.com/krau/ManyACG/internal/infra/imseek"
+	"github.com/krau/ManyACG/internal/infra/kvstor"
 	"github.com/krau/ManyACG/internal/infra/search"
 	"github.com/krau/ManyACG/internal/infra/source"
 	"github.com/krau/ManyACG/internal/infra/storage"
@@ -27,11 +30,11 @@ import (
 type Runtime struct {
 	cfg      runtimecfg.Config
 	closer   func() error
-	cleanup  func(context.Context) error
 	restOpts []rest.RestAppOption
 	repos    repo.Repositories
 	search   search.Searcher
 	service  *service.Service
+	kv       kvstor.KVStore
 	poster   scheduler.ArtworkPoster
 	tgbot    restcommon.TelegramBot
 }
@@ -53,10 +56,11 @@ func NewRuntime(ctx context.Context, cfg runtimecfg.Config) (*Runtime, error) {
 		log.Info("removed stale temp files", "dir", cfg.Storage.CacheDir, "count", removed)
 	}
 
-	closer, err := infra.Init(ctx, cfg)
+	resources, err := infra.Init(ctx, cfg)
 	if err != nil {
 		return nil, err
 	}
+	closer := resources.Close
 
 	dbRepo := database.Default()
 	searcher := search.Default(ctx)
@@ -120,6 +124,7 @@ func NewRuntime(ctx context.Context, cfg runtimecfg.Config) (*Runtime, error) {
 		cfg.Storage,
 		service.WithImseek(eng),
 		service.WithIndexer(indexer),
+		service.WithSourceNamers(source.Namers()),
 	)
 	if artworkBus != nil {
 		registerArtworkEventImseekHandlers(ctx, artworkBus, serv)
@@ -127,27 +132,29 @@ func NewRuntime(ctx context.Context, cfg runtimecfg.Config) (*Runtime, error) {
 
 	var restOpts []rest.RestAppOption
 	if writable {
-		restOpts = append(restOpts, rest.WithWriteService(serv))
-	}
-	var cleanup func(context.Context) error
-	if cfg.App.Mode.Standalone() {
-		cleanup = serv.Cleanup
+		restOpts = append(restOpts, rest.WithWriteService(serv, resources.KV))
+		recoverCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
+		err := serv.RecoverPosting(recoverCtx)
+		cancel()
+		if err != nil {
+			return nil, errors.Join(fmt.Errorf("recover posting artworks: %w", err), closer())
+		}
 	}
 
 	return &Runtime{
 		cfg:      cfg,
 		closer:   closer,
-		cleanup:  cleanup,
 		restOpts: restOpts,
 		repos:    repos,
 		search:   searcher,
 		service:  serv,
+		kv:       resources.KV,
 	}, nil
 }
 
 func (r *Runtime) Start(ctx context.Context, stop func()) error {
 	if !r.cfg.Telegram.Disable {
-		botapp, err := telegram.Init(ctx, r.service, r.cfg.Telegram, r.cfg.App.Debug)
+		botapp, err := telegram.Init(ctx, r.service, r.kv, r.cfg.Telegram, r.cfg.App.Debug)
 		if err != nil {
 			return err
 		}
@@ -188,13 +195,6 @@ func (r *Runtime) Close() error {
 	return r.closer()
 }
 
-func (r *Runtime) Cleanup(ctx context.Context) error {
-	if r.cleanup == nil {
-		return nil
-	}
-	return r.cleanup(ctx)
-}
-
 func Run(ctx context.Context, cfg runtimecfg.Config, stop func()) error {
 	log.SetDefault(log.New(log.Config{
 		LogFile:    cfg.Log.FilePath,
@@ -232,7 +232,5 @@ func Run(ctx context.Context, cfg runtimecfg.Config, stop func()) error {
 	defer log.Info("Exited.")
 
 	<-ctx.Done()
-	cleanCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-	return runtime.Cleanup(cleanCtx)
+	return nil
 }

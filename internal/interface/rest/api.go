@@ -15,6 +15,7 @@ import (
 	"github.com/gofiber/fiber/v3/middleware/logger"
 	recoverer "github.com/gofiber/fiber/v3/middleware/recover"
 	"github.com/krau/ManyACG/internal/infra/config/runtimecfg"
+	"github.com/krau/ManyACG/internal/infra/kvstor"
 	"github.com/krau/ManyACG/internal/interface/rest/common"
 	"github.com/krau/ManyACG/internal/interface/rest/handlers"
 	"github.com/krau/ManyACG/internal/shared/errs"
@@ -27,6 +28,7 @@ type RestApp struct {
 	cfg      runtimecfg.RestConfig
 	tgbot    common.TelegramBot
 	writer   common.WriteService
+	store    kvstor.KVStore
 }
 
 type queryService struct {
@@ -45,12 +47,16 @@ func WithTelegramBot(bot common.TelegramBot) RestAppOption {
 	}
 }
 
-func WithWriteService(serv common.WriteService) RestAppOption {
+func WithWriteService(serv common.WriteService, store kvstor.KVStore) RestAppOption {
 	return func(app *RestApp) error {
 		if serv == nil {
 			return oops.New("write service is nil")
 		}
+		if store == nil {
+			return oops.New("write KV store is nil")
+		}
 		app.writer = serv
+		app.store = store
 		return nil
 	}
 }
@@ -123,6 +129,7 @@ func New(ctx context.Context, serv common.QueryService, cfg runtimecfg.RestConfi
 	}
 	if restApp.writer != nil {
 		app.State().Set(common.StateKeyWriteService, restApp.writer)
+		app.State().Set(common.StateKeyKVStore, restApp.store)
 	}
 	root := app.Group("/api/v1")
 	handlers.Register(root, cfg, restApp.writer)

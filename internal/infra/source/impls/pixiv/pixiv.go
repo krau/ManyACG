@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	config "github.com/krau/ManyACG/internal/infra/config/runtimecfg"
+	"github.com/krau/ManyACG/internal/infra/kvstor"
 	"github.com/krau/ManyACG/internal/infra/source"
 	"github.com/krau/ManyACG/internal/model/dto"
 	"github.com/krau/ManyACG/internal/shared"
@@ -16,12 +17,16 @@ import (
 	"github.com/imroc/req/v3"
 )
 
+type Namer struct{}
+
 type Pixiv struct {
+	Namer
 	reqClient *req.Client
 	cfg       config.SourcePixivConfig
+	kv        kvstor.KVStore
 }
 
-func Init() {
+func Init(store kvstor.KVStore) {
 	cfg := config.Get().Source.Pixiv
 	if cfg.Disable {
 		return
@@ -44,6 +49,7 @@ func Init() {
 		return &Pixiv{
 			cfg:       cfg,
 			reqClient: c,
+			kv:        store,
 		}
 	})
 }
@@ -75,7 +81,7 @@ func (p *Pixiv) GetArtworkInfo(ctx context.Context, sourceURL string) (*dto.Fetc
 	return ajaxResp.ToArtwork(ctx, p.reqClient, p.cfg.ImgProxy)
 }
 
-func (p *Pixiv) MatchesSourceURL(text string) (string, bool) {
+func (Namer) MatchesSourceURL(text string) (string, bool) {
 	pid := getPid(text)
 	if pid == "" {
 		return "", false
@@ -83,7 +89,7 @@ func (p *Pixiv) MatchesSourceURL(text string) (string, bool) {
 	return "https://www.pixiv.net/artworks/" + pid, true
 }
 
-func (p *Pixiv) PrettyFileName(artwork shared.ArtworkLike, picture shared.PictureLike) string {
+func (Namer) PrettyFileName(artwork shared.ArtworkLike, picture shared.PictureLike) string {
 	pid := getPid(artwork.GetSourceURL())
 	ext, _ := strutil.GetFileExtFromURL(picture.GetOriginal())
 	if pid != "" {

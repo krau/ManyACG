@@ -4,6 +4,6 @@ import (
 	"context"
 )
 
-func (s *Service) Cleanup(ctx context.Context) error {
+func (s *Service) RecoverPosting(ctx context.Context) error {
 	return s.repos.CachedArtwork().ResetPostingCachedArtworkStatus(ctx)
 }
