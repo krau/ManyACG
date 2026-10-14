@@ -126,6 +126,7 @@ func loadConfig() Config {
 		"source.remote.endpoints":          []string{},
 		"source.remote.token":              "",
 		"source.remote.timeout":            uint(30),
+		"source.remote.download_timeout":   uint(300),
 
 		"database.type":         "sqlite",
 		"database.dsn":          `file:manyacg.db?_pragma=journal_mode(WAL)&_pragma=synchronous(NORMAL)&_pragma=busy_timeout(5000)&_txlock=deferred`,

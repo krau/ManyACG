@@ -7,14 +7,13 @@ import (
 	"github.com/krau/ManyACG/internal/infra/config/runtimecfg"
 	"github.com/krau/ManyACG/internal/infra/database"
 	"github.com/krau/ManyACG/internal/infra/kvstor"
-	"github.com/krau/ManyACG/internal/infra/source"
 	"github.com/krau/ManyACG/internal/infra/source/remote"
 	"github.com/samber/oops"
 )
 
 type Resources struct {
 	KV             kvstor.KVStore
-	ArtworkFetcher source.ArtworkFetcher
+	ArtworkFetcher *remote.Client
 	closers        []func() error
 	closeOnce      sync.Once
 	closeErr       error

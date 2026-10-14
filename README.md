@@ -126,13 +126,15 @@ ManyACG 只有两种节点角色：默认完整节点和 `reader`。通过 `[app
 | 完整节点（默认） | 由 `database.auto_migrate` 控制 | 按原有开关启用 | 提供 | 执行 |
 | `reader` | 始终不执行 | 始终关闭 | 不提供 | 不执行 |
 
-默认完整节点负责 Telegram Bot、发布和搜索索引更新；多节点部署只允许一个活跃的完整节点，多个 `reader` 提供查询、媒体读取，并可为完整节点执行详情抓取委托。模式配置不会自动选主，也不会阻止误启动第二个完整节点。数据库复制、负载均衡及 CDN 需要单独配置。
+默认完整节点负责 Telegram Bot、发布和搜索索引更新；多节点部署只允许一个活跃的完整节点，多个 `reader` 提供查询、媒体读取，并可为完整节点执行详情抓取与原图直链下载委托。模式配置不会自动选主，也不会阻止误启动第二个完整节点。数据库复制、负载均衡及 CDN 需要单独配置。
 
 完整节点可以通过 `[source.remote]` 把单作品详情抓取委托给 `reader`：完整节点仍负责 API key 鉴权、配额检查、缓存入库、计费和 `cache_id` 写入，`reader` 只调用外站并返回作品详情，不写数据库、不写 KV、不计费。不配置 `source.remote.endpoints` 时完整节点仍使用本地图源抓取。
 
+同一配置也会把**原始直链下载**委托给 `reader`：图片原图、动图 zip 和视频等需要从直链取回的文件，由 `reader` 下载到自己的缓存目录后回传字节，完整节点仍负责压缩、上传存储、写数据库和计费。已经存在于存储端的文件不参与委托，仍由当前节点直接从存储读取。
+
 - 完整节点配置 `source.remote.endpoints`（reader 的 REST API 基地址，如 `https://reader-1.example.com/api/v1`）与 `source.remote.token`；`reader` 只配置 `source.remote.token`，且必须开启 `[rest]`。`reader` 配置 `endpoints` 会被拒绝启动。
-- `reader` 在 `POST /api/v1/internal/artwork/fetch` 校验 Bearer token 后执行本地图源抓取；该端点独立于公共 API key 与配额，不应对外暴露，只允许完整节点访问 reader 的 REST 端口。
-- 请求按 round-robin 逐个 endpoint 尝试，单次请求、不重试、不跟随重定向；委托失败直接报错，不会回落到完整节点本地抓取。`source.remote.timeout` 默认 30 秒，同时用于完整节点的远程请求和 reader 的内部端点。
+- `reader` 在 `POST /api/v1/internal/artwork/fetch` 与 `POST /api/v1/internal/artwork/download` 校验 Bearer token 后执行本地图源抓取与直链下载；这两个端点独立于公共 API key 与配额，不应对外暴露，只允许完整节点访问 reader 的 REST 端口。download 端点会按调用方给出的 http(s) 直链出网抓取，token 必须保密。
+- 请求按 round-robin 逐个 endpoint 尝试，单次请求、不重试、不跟随重定向；委托失败直接报错，不会回落到完整节点本地抓取。`source.remote.timeout` 默认 30 秒，用于详情接口；`source.remote.download_timeout` 默认 300 秒，用于文件传输。两者同时作用于完整节点侧请求和 reader 侧处理。
 
 完整节点配置示例（`mode` 可省略）：
 
@@ -151,6 +153,7 @@ base = "https://api.example.com/api/v1"
 endpoints = ["https://reader-1.example.com/api/v1", "https://reader-2.example.com/api/v1"]
 token = "请替换为随机长串"
 timeout = 30
+download_timeout = 300
 
 [storage]
 cache_dir = "./cache-writer"
@@ -175,6 +178,7 @@ base = "https://api.example.com/api/v1"
 [source.remote]
 token = "请替换为随机长串"
 timeout = 30
+download_timeout = 300
 
 [storage]
 cache_dir = "./cache-reader"

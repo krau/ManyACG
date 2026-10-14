@@ -121,7 +121,10 @@ func NewRuntime(ctx context.Context, cfg runtimecfg.Config) (*Runtime, error) {
 		service.WithSourcePollers(source.Pollers()),
 	}
 	if resources.ArtworkFetcher != nil {
-		servOpts = append(servOpts, service.WithArtworkFetcher(resources.ArtworkFetcher))
+		servOpts = append(servOpts,
+			service.WithArtworkFetcher(resources.ArtworkFetcher),
+			service.WithDownloader(resources.ArtworkFetcher),
+		)
 	}
 	serv := service.NewService(
 		repos,
@@ -146,7 +149,10 @@ func NewRuntime(ctx context.Context, cfg runtimecfg.Config) (*Runtime, error) {
 			return nil, errors.Join(fmt.Errorf("recover posting artworks: %w", err), closer())
 		}
 	} else if cfg.Source.Remote.Token != "" {
-		restOpts = append(restOpts, rest.WithArtworkFetcher(serv, cfg.Source.Remote.Token, time.Duration(cfg.Source.Remote.Timeout)*time.Second))
+		restOpts = append(restOpts,
+			rest.WithArtworkFetcher(serv, cfg.Source.Remote.Token, time.Duration(cfg.Source.Remote.Timeout)*time.Second),
+			rest.WithArtworkDownloader(serv, cfg.Source.Remote.Token, time.Duration(cfg.Source.Remote.DownloadTimeout)*time.Second),
+		)
 	}
 
 	return &Runtime{

@@ -10,7 +10,6 @@ import (
 
 	"github.com/gabriel-vasile/mimetype"
 	"github.com/gofiber/fiber/v3"
-	"github.com/krau/ManyACG/internal/common/httpclient"
 	"github.com/krau/ManyACG/internal/infra/config/runtimecfg"
 	"github.com/krau/ManyACG/internal/interface/rest/common"
 	"github.com/krau/ManyACG/internal/interface/rest/utils"
@@ -45,7 +44,7 @@ func HandleGetPictureFileByID(ctx fiber.Ctx) error {
 		defer file.Close()
 		filePath = file.Name()
 	} else {
-		file, err := httpclient.DownloadWithCache(safeCtx, picture.Original, nil)
+		file, err := serv.DownloadOriginFile(safeCtx, picture.Original)
 		if err != nil {
 			return err
 		}

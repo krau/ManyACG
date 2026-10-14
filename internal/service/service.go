@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"sync"
 
+	"github.com/krau/ManyACG/internal/common/httpclient"
 	"github.com/krau/ManyACG/internal/infra/config/runtimecfg"
 	"github.com/krau/ManyACG/internal/infra/imseek"
 	"github.com/krau/ManyACG/internal/infra/search"
@@ -16,16 +17,17 @@ import (
 )
 
 type Service struct {
-	repos    repo.Repositories
-	searcher search.Searcher
-	indexer  search.Indexer
-	tagger   tagging.Tagger
-	storages map[shared.StorageType]storage.Storage
-	sources  map[shared.SourceType]source.ArtworkSource
-	pollers  map[shared.SourceType]source.ArtworkPoller
-	fetcher  source.ArtworkFetcher
-	storCfg  runtimecfg.StorageConfig
-	imseek   imseek.Engine
+	repos      repo.Repositories
+	searcher   search.Searcher
+	indexer    search.Indexer
+	tagger     tagging.Tagger
+	storages   map[shared.StorageType]storage.Storage
+	sources    map[shared.SourceType]source.ArtworkSource
+	pollers    map[shared.SourceType]source.ArtworkPoller
+	fetcher    source.ArtworkFetcher
+	downloader httpclient.Fetcher
+	storCfg    runtimecfg.StorageConfig
+	imseek     imseek.Engine
 
 	indexRepairMu       sync.Mutex
 	indexRepairProgress ArtworkIndexProgress
@@ -49,6 +51,12 @@ func WithSourcePollers(pollers map[shared.SourceType]source.ArtworkPoller) Optio
 // Without it the local sources are used.
 func WithArtworkFetcher(fetcher source.ArtworkFetcher) Option {
 	return func(s *Service) { s.fetcher = fetcher }
+}
+
+// WithDownloader delegates origin file downloads to a remote node.
+// Without it files are downloaded from the origin by this node.
+func WithDownloader(downloader httpclient.Fetcher) Option {
+	return func(s *Service) { s.downloader = downloader }
 }
 
 func NewService(

@@ -21,10 +21,14 @@ type SourceConfig struct {
 }
 
 type SourceRemoteConfig struct {
-	Endpoints []string `toml:"endpoints" mapstructure:"endpoints" json:"endpoints" yaml:"endpoints"`
-	Token     string   `toml:"token" mapstructure:"token" json:"token" yaml:"token"`
-	Timeout   uint     `toml:"timeout" mapstructure:"timeout" json:"timeout" yaml:"timeout"`
+	Endpoints       []string `toml:"endpoints" mapstructure:"endpoints" json:"endpoints" yaml:"endpoints"`
+	Token           string   `toml:"token" mapstructure:"token" json:"token" yaml:"token"`
+	Timeout         uint     `toml:"timeout" mapstructure:"timeout" json:"timeout" yaml:"timeout"`
+	DownloadTimeout uint     `toml:"download_timeout" mapstructure:"download_timeout" json:"download_timeout" yaml:"download_timeout"`
 }
+
+// maxRemoteDurationSeconds 是 time.Duration 能表示的秒数上限.
+const maxRemoteDurationSeconds = uint64((1<<63 - 1) / int64(time.Second))
 
 func (c SourceRemoteConfig) Valid(mode Mode, restEnabled bool) error {
 	for i, endpoint := range c.Endpoints {
@@ -51,8 +55,11 @@ func (c SourceRemoteConfig) Valid(mode Mode, restEnabled bool) error {
 		return fmt.Errorf("source.remote.token requires REST to be enabled in reader mode")
 	}
 	if len(c.Endpoints) != 0 || (mode.ReadOnly() && c.Token != "") {
-		if c.Timeout == 0 || uint64(c.Timeout) > uint64((1<<63-1)/int64(time.Second)) {
+		if c.Timeout == 0 || uint64(c.Timeout) > maxRemoteDurationSeconds {
 			return fmt.Errorf("source.remote.timeout must be positive and fit a duration in seconds")
+		}
+		if c.DownloadTimeout == 0 || uint64(c.DownloadTimeout) > maxRemoteDurationSeconds {
+			return fmt.Errorf("source.remote.download_timeout must be positive and fit a duration in seconds")
 		}
 	}
 	return nil

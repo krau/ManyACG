@@ -22,7 +22,12 @@ const (
 	StateKeyTelegramBot  = "telegrambot" // DO NOT USE MustGetState to get this value!
 )
 
+type ArtworkDownloader interface {
+	DownloadOriginFile(ctx context.Context, url string) (*osutil.File, error)
+}
+
 type QueryService interface {
+	ArtworkDownloader
 	GetArtistByID(ctx context.Context, id ouid.OUID) (*entity.Artist, error)
 	GetArtworkByID(ctx context.Context, id ouid.OUID) (*entity.Artwork, error)
 	QueryArtworks(ctx context.Context, que query.ArtworksDB) ([]*entity.Artwork, error)

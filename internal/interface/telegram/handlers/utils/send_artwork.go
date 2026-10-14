@@ -7,7 +7,6 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/krau/ManyACG/internal/common/httpclient"
 	"github.com/krau/ManyACG/internal/infra/config/runtimecfg"
 	"github.com/krau/ManyACG/internal/infra/kvstor"
 	"github.com/krau/ManyACG/internal/interface/telegram/metautil"
@@ -42,7 +41,7 @@ func GetPicturePhotoInputFile(ctx context.Context, serv *service.Service, meta *
 		}
 		return ioutil.NewCloser(telegoutil.File(compressed), func() error { return compressed.Close() }), nil
 	}
-	file, err := httpclient.DownloadWithCache(ctx, picture.GetOriginal(), nil)
+	file, err := serv.DownloadOriginFile(ctx, picture.GetOriginal())
 	if err != nil {
 		return nil, oops.Wrapf(err, "failed to download file: %s", picture.GetOriginal())
 	}
@@ -75,7 +74,7 @@ func GetUgoiraVideoInputFile(ctx context.Context, serv *service.Service, meta *m
 		}
 		return ioutil.NewCloser(telegoutil.File(videoFile), func() error { return videoFile.Close() }), nil
 	}
-	file, err := httpclient.DownloadWithCache(ctx, ugoira.GetData().OriginalZip, nil)
+	file, err := serv.DownloadOriginFile(ctx, ugoira.GetData().OriginalZip)
 	if err != nil {
 		return nil, oops.Wrapf(err, "failed to download file: %s", ugoira.GetData().OriginalZip)
 	}
@@ -103,7 +102,7 @@ func GetVideoVideoInputFile(ctx context.Context, serv *service.Service, meta *me
 		}
 		return ioutil.NewCloser(telegoutil.File(file), func() error { return file.Close() }), nil
 	}
-	file, err := httpclient.DownloadWithCache(ctx, video.GetURL(), nil)
+	file, err := serv.DownloadOriginFile(ctx, video.GetURL())
 	if err != nil {
 		return nil, oops.Wrapf(err, "failed to download file: %s", video.GetURL())
 	}
@@ -512,7 +511,7 @@ func GetPictureDocumentInputFile(ctx context.Context, serv *service.Service, met
 		}
 		return ioutil.NewCloser(telegoutil.File(telegoutil.NameReader(rsc, serv.PrettyFileName(artwork, picture))), func() error { return rsc.Close() }), nil
 	}
-	file, err := httpclient.DownloadWithCache(ctx, picture.GetOriginal(), nil)
+	file, err := serv.DownloadOriginFile(ctx, picture.GetOriginal())
 	if err != nil {
 		return nil, oops.Wrapf(err, "failed to download file: %s", picture.GetOriginal())
 	}
@@ -553,7 +552,7 @@ func GetUgoiraVideoDocumentInputFile(ctx context.Context, serv *service.Service,
 		return buildInput(file)
 	}
 
-	file, err := httpclient.DownloadWithCache(ctx, data.OriginalZip, nil)
+	file, err := serv.DownloadOriginFile(ctx, data.OriginalZip)
 	if err != nil {
 		return nil, oops.Wrapf(err, "failed to download ugoira file: %s", data.OriginalZip)
 	}
@@ -572,7 +571,7 @@ func GetVideoDocumentInputFile(ctx context.Context, serv *service.Service, meta 
 		}
 		return ioutil.NewCloser(telegoutil.File(rsc), func() error { return rsc.Close() }), nil
 	}
-	file, err := httpclient.DownloadWithCache(ctx, video.GetURL(), nil)
+	file, err := serv.DownloadOriginFile(ctx, video.GetURL())
 	if err != nil {
 		return nil, oops.Wrapf(err, "failed to download video file: %s", video.GetURL())
 	}

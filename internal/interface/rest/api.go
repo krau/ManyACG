@@ -24,14 +24,15 @@ import (
 )
 
 type RestApp struct {
-	fiberApp     *fiber.App
-	cfg          runtimecfg.RestConfig
-	tgbot        common.TelegramBot
-	writer       common.WriteService
-	store        kvstor.KVStore
-	fetcher      common.ArtworkFetcher
-	fetchToken   string
-	fetchTimeout time.Duration
+	fiberApp        *fiber.App
+	cfg             runtimecfg.RestConfig
+	tgbot           common.TelegramBot
+	writer          common.WriteService
+	store           kvstor.KVStore
+	fetcher         common.ArtworkFetcher
+	downloader      common.ArtworkDownloader
+	internalToken   string
+	internalTimeout time.Duration
 }
 
 type queryService struct {
@@ -69,17 +70,37 @@ func WithArtworkFetcher(fetcher common.ArtworkFetcher, token string, timeout tim
 		if fetcher == nil {
 			return oops.New("artwork fetcher is nil")
 		}
-		if token == "" {
-			return oops.New("artwork fetch token is required")
-		}
-		if timeout <= 0 {
-			return oops.New("artwork fetch timeout must be positive")
+		if err := app.setInternalAuth(token, timeout); err != nil {
+			return err
 		}
 		app.fetcher = fetcher
-		app.fetchToken = token
-		app.fetchTimeout = timeout
 		return nil
 	}
+}
+
+func WithArtworkDownloader(downloader common.ArtworkDownloader, token string, timeout time.Duration) RestAppOption {
+	return func(app *RestApp) error {
+		if downloader == nil {
+			return oops.New("artwork downloader is nil")
+		}
+		if err := app.setInternalAuth(token, timeout); err != nil {
+			return err
+		}
+		app.downloader = downloader
+		return nil
+	}
+}
+
+func (app *RestApp) setInternalAuth(token string, timeout time.Duration) error {
+	if token == "" {
+		return oops.New("internal token is required")
+	}
+	if timeout <= 0 {
+		return oops.New("internal request timeout must be positive")
+	}
+	app.internalToken = token
+	app.internalTimeout = timeout
+	return nil
 }
 
 func New(ctx context.Context, serv common.QueryService, cfg runtimecfg.RestConfig, opts ...RestAppOption) (*RestApp, error) {
@@ -155,7 +176,10 @@ func New(ctx context.Context, serv common.QueryService, cfg runtimecfg.RestConfi
 	root := app.Group("/api/v1")
 	handlers.Register(root, cfg, restApp.writer)
 	if restApp.fetcher != nil {
-		root.Post("/internal/artwork/fetch", handlers.NewInternalArtworkFetchHandler(restApp.fetcher, restApp.fetchToken, restApp.fetchTimeout))
+		root.Post("/internal/artwork/fetch", handlers.NewInternalArtworkFetchHandler(restApp.fetcher, restApp.internalToken, restApp.internalTimeout))
+	}
+	if restApp.downloader != nil {
+		root.Post("/internal/artwork/download", handlers.NewInternalArtworkDownloadHandler(restApp.downloader, restApp.internalToken, restApp.internalTimeout))
 	}
 	return restApp, nil
 }

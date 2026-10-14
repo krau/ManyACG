@@ -10,6 +10,7 @@ import (
 	"net"
 	"net/http"
 	"net/url"
+	"os"
 	"strings"
 	"sync/atomic"
 	"time"
@@ -19,11 +20,17 @@ import (
 )
 
 type Client struct {
-	endpoints []string
+	endpoints []string // reader API 基地址, 结尾无 "/"
 	token     string
-	http      *http.Client
+	http      *http.Client // 详情接口
+	download  *http.Client // 文件传输
 	next      atomic.Uint64
 }
+
+const (
+	artworkFetchPath    = "/internal/artwork/fetch"
+	artworkDownloadPath = "/internal/artwork/download"
+)
 
 func New(cfg runtimecfg.SourceRemoteConfig) (*Client, error) {
 	if err := cfg.Valid("", false); err != nil {
@@ -38,21 +45,41 @@ func New(cfg runtimecfg.SourceRemoteConfig) (*Client, error) {
 		if err != nil {
 			return nil, fmt.Errorf("parse source.remote.endpoints[%d]: %w", i, err)
 		}
-		endpoints[i] = strings.TrimRight(u.String(), "/") + "/internal/artwork/fetch"
+		endpoints[i] = strings.TrimRight(u.String(), "/")
 	}
 	transport := http.DefaultTransport.(*http.Transport).Clone()
 	transport.Proxy = nil
+	noRedirect := func(_ *http.Request, _ []*http.Request) error {
+		return http.ErrUseLastResponse
+	}
 	return &Client{
 		endpoints: endpoints,
 		token:     cfg.Token,
 		http: &http.Client{
-			Transport: transport,
-			Timeout:   time.Duration(cfg.Timeout) * time.Second,
-			CheckRedirect: func(_ *http.Request, _ []*http.Request) error {
-				return http.ErrUseLastResponse
-			},
+			Transport:     transport,
+			Timeout:       time.Duration(cfg.Timeout) * time.Second,
+			CheckRedirect: noRedirect,
+		},
+		download: &http.Client{
+			Transport:     transport,
+			Timeout:       time.Duration(cfg.DownloadTimeout) * time.Second,
+			CheckRedirect: noRedirect,
 		},
 	}, nil
+}
+
+// newRequest 按 round-robin 选择下一个 reader 端点并构造 POST 请求.
+func (c *Client) newRequest(ctx context.Context, path string, payload []byte) (*http.Request, error) {
+	endpoint := c.endpoints[(c.next.Add(1)-1)%uint64(len(c.endpoints))] + path
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, endpoint, bytes.NewReader(payload))
+	if err != nil {
+		return nil, errors.New("creating reader request failed")
+	}
+	req.GetBody = nil
+	req.Header.Set("Authorization", "Bearer "+c.token)
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Accept", "application/json")
+	return req, nil
 }
 
 func (c *Client) GetArtworkInfo(ctx context.Context, sourceURL string) (*dto.FetchedArtwork, error) {
@@ -62,15 +89,10 @@ func (c *Client) GetArtworkInfo(ctx context.Context, sourceURL string) (*dto.Fet
 	if err != nil {
 		return nil, errors.New("encoding reader artwork request failed")
 	}
-	endpoint := c.endpoints[(c.next.Add(1)-1)%uint64(len(c.endpoints))]
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, endpoint, bytes.NewReader(body))
+	req, err := c.newRequest(ctx, artworkFetchPath, body)
 	if err != nil {
-		return nil, errors.New("creating reader artwork request failed")
+		return nil, err
 	}
-	req.GetBody = nil
-	req.Header.Set("Authorization", "Bearer "+c.token)
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Accept", "application/json")
 	response, err := c.http.Do(req)
 	if err != nil {
 		if transferErr := transferError(ctx, err); transferErr != nil {
@@ -101,6 +123,46 @@ func (c *Client) GetArtworkInfo(ctx context.Context, sourceURL string) (*dto.Fet
 		return nil, err
 	}
 	return artwork, nil
+}
+
+// FetchToFile 委托 reader 下载 url 的内容并写入 path, 实现 httpclient.Fetcher.
+func (c *Client) FetchToFile(ctx context.Context, url, path string) error {
+	payload, err := json.Marshal(struct {
+		URL string `json:"url"`
+	}{URL: url})
+	if err != nil {
+		return errors.New("encoding reader download request failed")
+	}
+	req, err := c.newRequest(ctx, artworkDownloadPath, payload)
+	if err != nil {
+		return err
+	}
+	response, err := c.download.Do(req)
+	if err != nil {
+		if transferErr := transferError(ctx, err); transferErr != nil {
+			return transferErr
+		}
+		return errors.New("reader download request failed")
+	}
+	defer response.Body.Close()
+	if response.StatusCode != http.StatusOK {
+		return fmt.Errorf("reader download request returned HTTP %d", response.StatusCode)
+	}
+	file, err := os.Create(path)
+	if err != nil {
+		return fmt.Errorf("create reader download file: %w", err)
+	}
+	if _, err := io.Copy(file, response.Body); err != nil {
+		file.Close()
+		if transferErr := transferError(ctx, err); transferErr != nil {
+			return transferErr
+		}
+		return errors.New("reader download response could not be read")
+	}
+	if err := file.Close(); err != nil {
+		return fmt.Errorf("close reader download file: %w", err)
+	}
+	return nil
 }
 
 func transferError(ctx context.Context, err error) error {

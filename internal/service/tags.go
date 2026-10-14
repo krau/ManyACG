@@ -7,7 +7,6 @@ import (
 
 	"github.com/duke-git/lancet/v2/maputil"
 	"github.com/duke-git/lancet/v2/slice"
-	"github.com/krau/ManyACG/internal/common/httpclient"
 	"github.com/krau/ManyACG/internal/infra/config/runtimecfg"
 	"github.com/krau/ManyACG/internal/infra/tagging"
 	"github.com/krau/ManyACG/internal/model/entity"
@@ -158,7 +157,7 @@ func (s *Service) PredictAndUpdateArtworkTags(ctx context.Context, artworkID oui
 				predictedTags = slice.Union(predictedTags, maputil.Keys(result))
 				return nil
 			}
-			file, err := httpclient.DownloadWithCache(ctx, picture.Original, nil)
+			file, err := s.DownloadOriginFile(ctx, picture.Original)
 			if err != nil {
 				return err
 			}

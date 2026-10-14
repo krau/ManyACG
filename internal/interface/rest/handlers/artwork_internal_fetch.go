@@ -3,10 +3,8 @@ package handlers
 import (
 	"context"
 	"crypto/sha256"
-	"crypto/subtle"
 	"errors"
 	"net/url"
-	"strings"
 	"time"
 
 	"github.com/goccy/go-json"
@@ -18,10 +16,7 @@ import (
 func NewInternalArtworkFetchHandler(fetcher common.ArtworkFetcher, token string, timeout time.Duration) fiber.Handler {
 	expectedToken := sha256.Sum256([]byte(token))
 	return func(ctx fiber.Ctx) error {
-		providedToken, isBearer := strings.CutPrefix(ctx.Get(fiber.HeaderAuthorization), "Bearer ")
-		providedDigest := sha256.Sum256([]byte(providedToken))
-		matches := subtle.ConstantTimeCompare(providedDigest[:], expectedToken[:])
-		if !isBearer || matches != 1 {
+		if !internalTokenMatches(ctx, expectedToken) {
 			return common.NewError(fiber.StatusUnauthorized, "invalid reader authorization")
 		}
 		var request struct {

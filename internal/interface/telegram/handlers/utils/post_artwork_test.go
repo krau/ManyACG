@@ -19,6 +19,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/krau/ManyACG/internal/service"
 	"github.com/krau/ManyACG/pkg/osutil"
 	"github.com/krau/ManyACG/pkg/strutil"
 )
@@ -114,7 +115,7 @@ func TestDownloadAndDecodePictureConcurrentRecovery(t *testing.T) {
 		err  error
 	}
 	call := func(callCtx context.Context, ch chan result) {
-		f, _, err := downloadAndDecodePicture(callCtx, url)
+		f, _, err := downloadAndDecodePicture(callCtx, &service.Service{}, url)
 		ch <- result{f, err}
 	}
 	firstResult, secondResult := make(chan result, 1), make(chan result, 1)
@@ -125,7 +126,7 @@ func TestDownloadAndDecodePictureConcurrentRecovery(t *testing.T) {
 		t.Fatal("first decoder did not start")
 	}
 
-	other, _, err := downloadAndDecodePicture(ctx, srv.URL+"/other.png")
+	other, _, err := downloadAndDecodePicture(ctx, &service.Service{}, srv.URL+"/other.png")
 	if err != nil {
 		t.Fatalf("unrelated URL blocked by recovery: %v", err)
 	}
