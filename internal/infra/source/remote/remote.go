@@ -9,7 +9,6 @@ import (
 	"io"
 	"net"
 	"net/http"
-	"net/url"
 	"os"
 	"strings"
 	"sync/atomic"
@@ -20,10 +19,9 @@ import (
 )
 
 type Client struct {
-	endpoints []string // reader API 基地址, 结尾无 "/"
+	endpoints []string
 	token     string
-	http      *http.Client // 详情接口
-	download  *http.Client // 文件传输
+	http      *http.Client
 	next      atomic.Uint64
 }
 
@@ -32,43 +30,35 @@ const (
 	artworkDownloadPath = "/internal/artwork/download"
 )
 
-func New(cfg runtimecfg.SourceRemoteConfig) (*Client, error) {
-	if err := cfg.Valid("", false); err != nil {
+func New(cfg runtimecfg.RemoteOperationConfig, token string) (*Client, error) {
+	if err := cfg.Validate(); err != nil {
 		return nil, err
 	}
 	if len(cfg.Endpoints) == 0 {
-		return nil, errors.New("source.remote.endpoints must contain at least one reader")
+		return nil, errors.New("remote endpoints must contain at least one node")
+	}
+	if strings.TrimSpace(token) == "" {
+		return nil, errors.New("remote token is required")
 	}
 	endpoints := make([]string, len(cfg.Endpoints))
 	for i, endpoint := range cfg.Endpoints {
-		u, err := url.Parse(endpoint)
-		if err != nil {
-			return nil, fmt.Errorf("parse source.remote.endpoints[%d]: %w", i, err)
-		}
-		endpoints[i] = strings.TrimRight(u.String(), "/")
+		endpoints[i] = strings.TrimRight(endpoint, "/")
 	}
 	transport := http.DefaultTransport.(*http.Transport).Clone()
 	transport.Proxy = nil
-	noRedirect := func(_ *http.Request, _ []*http.Request) error {
-		return http.ErrUseLastResponse
-	}
 	return &Client{
 		endpoints: endpoints,
-		token:     cfg.Token,
+		token:     token,
 		http: &http.Client{
-			Transport:     transport,
-			Timeout:       time.Duration(cfg.Timeout) * time.Second,
-			CheckRedirect: noRedirect,
-		},
-		download: &http.Client{
-			Transport:     transport,
-			Timeout:       time.Duration(cfg.DownloadTimeout) * time.Second,
-			CheckRedirect: noRedirect,
+			Transport: transport,
+			Timeout:   time.Duration(cfg.Timeout) * time.Second,
+			CheckRedirect: func(_ *http.Request, _ []*http.Request) error {
+				return http.ErrUseLastResponse
+			},
 		},
 	}, nil
 }
 
-// newRequest 按 round-robin 选择下一个 reader 端点并构造 POST 请求.
 func (c *Client) newRequest(ctx context.Context, path string, payload []byte) (*http.Request, error) {
 	endpoint := c.endpoints[(c.next.Add(1)-1)%uint64(len(c.endpoints))] + path
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, endpoint, bytes.NewReader(payload))
@@ -78,7 +68,6 @@ func (c *Client) newRequest(ctx context.Context, path string, payload []byte) (*
 	req.GetBody = nil
 	req.Header.Set("Authorization", "Bearer "+c.token)
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Accept", "application/json")
 	return req, nil
 }
 
@@ -93,6 +82,7 @@ func (c *Client) GetArtworkInfo(ctx context.Context, sourceURL string) (*dto.Fet
 	if err != nil {
 		return nil, err
 	}
+	req.Header.Set("Accept", "application/json")
 	response, err := c.http.Do(req)
 	if err != nil {
 		if transferErr := transferError(ctx, err); transferErr != nil {
@@ -125,7 +115,6 @@ func (c *Client) GetArtworkInfo(ctx context.Context, sourceURL string) (*dto.Fet
 	return artwork, nil
 }
 
-// FetchToFile 委托 reader 下载 url 的内容并写入 path, 实现 httpclient.Fetcher.
 func (c *Client) FetchToFile(ctx context.Context, url, path string) error {
 	payload, err := json.Marshal(struct {
 		URL string `json:"url"`
@@ -137,7 +126,8 @@ func (c *Client) FetchToFile(ctx context.Context, url, path string) error {
 	if err != nil {
 		return err
 	}
-	response, err := c.download.Do(req)
+	req.Header.Set("Accept", "application/octet-stream")
+	response, err := c.http.Do(req)
 	if err != nil {
 		if transferErr := transferError(ctx, err); transferErr != nil {
 			return transferErr
@@ -157,7 +147,7 @@ func (c *Client) FetchToFile(ctx context.Context, url, path string) error {
 		if transferErr := transferError(ctx, err); transferErr != nil {
 			return transferErr
 		}
-		return errors.New("reader download response could not be read")
+		return fmt.Errorf("reader download response could not be read: %w", err)
 	}
 	if err := file.Close(); err != nil {
 		return fmt.Errorf("close reader download file: %w", err)
@@ -167,11 +157,11 @@ func (c *Client) FetchToFile(ctx context.Context, url, path string) error {
 
 func transferError(ctx context.Context, err error) error {
 	if ctxErr := ctx.Err(); ctxErr != nil {
-		return fmt.Errorf("reader artwork request canceled: %w", ctxErr)
+		return fmt.Errorf("reader request canceled: %w", ctxErr)
 	}
 	var netErr net.Error
 	if errors.Is(err, context.DeadlineExceeded) || (errors.As(err, &netErr) && netErr.Timeout()) {
-		return fmt.Errorf("reader artwork request timed out: %w", context.DeadlineExceeded)
+		return fmt.Errorf("reader request timed out: %w", context.DeadlineExceeded)
 	}
 	return nil
 }

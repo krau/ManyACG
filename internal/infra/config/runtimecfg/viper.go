@@ -64,8 +64,43 @@ type SchedulerConfig struct {
 }
 
 type AppConfig struct {
-	Mode  Mode `toml:"mode" mapstructure:"mode" json:"mode" yaml:"mode"`
-	Debug bool `toml:"debug" mapstructure:"debug" json:"debug" yaml:"debug"`
+	Capabilities Capabilities `toml:"capabilities" mapstructure:"capabilities" json:"capabilities" yaml:"capabilities"`
+	Debug        bool         `toml:"debug" mapstructure:"debug" json:"debug" yaml:"debug"`
+}
+
+func (c Config) Validate() error {
+	if err := c.App.Capabilities.Validate(); err != nil {
+		return err
+	}
+	caps := c.App.Capabilities
+	writable := caps.Has(CapabilityWrite)
+	readable := caps.Has(CapabilityRead)
+	if !c.Rest.Enable && (caps.Has(CapabilityFetch) || caps.Has(CapabilityDownload) || (readable && !writable)) {
+		return fmt.Errorf("rest.enable is required for the configured capabilities")
+	}
+	remote := c.Source.Remote
+	if len(remote.Fetch.Endpoints) > 0 && !writable {
+		return fmt.Errorf("source.remote.fetch.endpoints requires the write capability")
+	}
+	if len(remote.Download.Endpoints) > 0 && !readable && !writable {
+		return fmt.Errorf("source.remote.download.endpoints requires the read or write capability")
+	}
+	usesFetch := c.App.Capabilities.Has(CapabilityFetch) || len(remote.Fetch.Endpoints) > 0
+	usesDownload := c.App.Capabilities.Has(CapabilityDownload) || len(remote.Download.Endpoints) > 0
+	if usesFetch {
+		if err := remote.Fetch.Validate(); err != nil {
+			return fmt.Errorf("source.remote.fetch: %w", err)
+		}
+	}
+	if usesDownload {
+		if err := remote.Download.Validate(); err != nil {
+			return fmt.Errorf("source.remote.download: %w", err)
+		}
+	}
+	if (usesFetch || usesDownload) && strings.TrimSpace(remote.Token) == "" {
+		return fmt.Errorf("source.remote.token is required for remote fetch or download")
+	}
+	return nil
 }
 
 var (
@@ -91,7 +126,7 @@ func loadConfig() Config {
 	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
 
 	defaults := map[string]any{
-		"app.mode": "",
+		"app.capabilities": []string{"read", "write"},
 
 		"log.file_path":  "logs/manyacg.log",
 		"log.backup_num": 7,
@@ -123,10 +158,11 @@ func loadConfig() Config {
 
 		"source.pixiv.img_proxy":           "pximg.manyacg.top",
 		"source.twitter.fx_twitter_domain": "fxtwitter.com",
-		"source.remote.endpoints":          []string{},
 		"source.remote.token":              "",
-		"source.remote.timeout":            uint(30),
-		"source.remote.download_timeout":   uint(300),
+		"source.remote.fetch.endpoints":    []string{},
+		"source.remote.fetch.timeout":      uint(30),
+		"source.remote.download.endpoints": []string{},
+		"source.remote.download.timeout":   uint(300),
 
 		"database.type":         "sqlite",
 		"database.dsn":          `file:manyacg.db?_pragma=journal_mode(WAL)&_pragma=synchronous(NORMAL)&_pragma=busy_timeout(5000)&_txlock=deferred`,
@@ -168,8 +204,8 @@ func loadConfig() Config {
 		fmt.Printf("error when unmarshal config: %s\n", err)
 		os.Exit(1)
 	}
-	if err := c.App.Mode.Valid(); err != nil {
-		fmt.Printf("invalid app mode: %s\n", err)
+	if err := c.Validate(); err != nil {
+		fmt.Printf("invalid config: %s\n", err)
 		os.Exit(1)
 	}
 	return c

@@ -10,7 +10,6 @@ import (
 	"github.com/krau/ManyACG/internal/infra/config/runtimecfg"
 	"github.com/krau/ManyACG/internal/infra/database"
 	"github.com/krau/ManyACG/internal/infra/imseek"
-	"github.com/krau/ManyACG/internal/infra/source"
 	"github.com/krau/ManyACG/internal/infra/storage"
 	"github.com/krau/ManyACG/internal/infra/tagging"
 	"github.com/krau/ManyACG/internal/model/query"
@@ -143,9 +142,10 @@ func openImseekRuntime(ctx context.Context, autoBuild bool) (*imseekRuntime, err
 		nil,
 		tagging.Default(),
 		storage.Storages(),
-		source.Sources(),
+		resources.SourceNamers,
 		cfg.Storage,
 		service.WithImseek(eng),
+		service.WithDownloader(resources.FileDownloader),
 	)
 
 	return &imseekRuntime{

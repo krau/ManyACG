@@ -8,17 +8,12 @@ import (
 	"github.com/krau/ManyACG/internal/infra/source"
 	"github.com/krau/ManyACG/internal/model/dto"
 	"github.com/krau/ManyACG/internal/shared"
-	"github.com/krau/ManyACG/internal/shared/errs"
 	"github.com/krau/ManyACG/pkg/strutil"
 )
 
-func (s *Service) Source(sourceType shared.SourceType) source.ArtworkSource {
-	return s.sources[sourceType]
-}
-
 func (s *Service) FindSourceURL(text string) string {
 	text = strings.ReplaceAll(text, "\n", " ")
-	for _, sou := range s.sources {
+	for _, sou := range s.namers {
 		if url, ok := sou.MatchesSourceURL(text); ok {
 			return url
 		}
@@ -32,16 +27,11 @@ func (s *Service) GetArtworkInfo(ctx context.Context, sourceURL string) (*dto.Fe
 	if s.fetcher != nil {
 		return s.fetcher.GetArtworkInfo(ctx, sourceURL)
 	}
-	for _, sou := range s.sources {
-		if canonicalURL, ok := sou.MatchesSourceURL(sourceURL); ok {
-			return sou.GetArtworkInfo(ctx, canonicalURL)
-		}
-	}
-	return nil, errs.ErrUnsupportedSource
+	return s.sources.GetArtworkInfo(ctx, sourceURL)
 }
 
 func (s *Service) PrettyFileName(artwork shared.ArtworkLike, picture shared.PictureLike) string {
-	for _, sou := range s.sources {
+	for _, sou := range s.namers {
 		if _, ok := sou.MatchesSourceURL(artwork.GetSourceURL()); ok {
 			return sou.PrettyFileName(artwork, picture)
 		}

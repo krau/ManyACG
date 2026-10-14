@@ -18,8 +18,8 @@ var rootCmd = &cobra.Command{
 			if current.Annotations[writeCommandAnnotation] != "true" {
 				continue
 			}
-			if runtimecfg.Get().App.Mode.ReadOnly() {
-				return fmt.Errorf("%s is unavailable in reader mode", cmd.CommandPath())
+			if !runtimecfg.Get().App.Capabilities.Has(runtimecfg.CapabilityWrite) {
+				return fmt.Errorf("%s requires the write capability", cmd.CommandPath())
 			}
 			break
 		}

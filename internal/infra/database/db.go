@@ -59,7 +59,7 @@ func initDB(ctx context.Context, cfg runtimecfg.Config, okCh chan struct{}) {
 	if err != nil {
 		log.Fatal("failed to initialize database", "err", err)
 	}
-	if !cfg.App.Mode.ReadOnly() && cfg.Database.AutoMigrate {
+	if cfg.App.Capabilities.Has(runtimecfg.CapabilityWrite) && cfg.Database.AutoMigrate {
 		if err := migrateDatabase(ctx, db, cfg); err != nil {
 			log.Fatal("failed to migrate database", "err", err)
 		}

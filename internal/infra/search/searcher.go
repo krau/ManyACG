@@ -3,14 +3,14 @@ package search
 import (
 	"context"
 	"errors"
-	"sync"
+	"fmt"
 
 	"github.com/krau/ManyACG/internal/infra/config/runtimecfg"
-	"github.com/krau/ManyACG/internal/infra/database"
 	"github.com/krau/ManyACG/internal/infra/search/meilisearch"
 	"github.com/krau/ManyACG/internal/infra/search/mocksearch"
 	"github.com/krau/ManyACG/internal/model/dto"
 	"github.com/krau/ManyACG/internal/model/query"
+	"github.com/krau/ManyACG/internal/repo"
 	"github.com/krau/ManyACG/pkg/log"
 	"github.com/unvgo/ouid"
 )
@@ -27,51 +27,34 @@ type Indexer interface {
 	DeleteDocuments(ctx context.Context, ids []string) error
 }
 
-var (
-	defaultSearcher Searcher
-	defaultIndexer  Indexer
-	once            sync.Once
-	ErrNotEnabled   = errors.New("search engine is not enabled")
-)
+var ErrNotEnabled = errors.New("search engine is not enabled")
 
-func initDefault(ctx context.Context) {
-	if !Enabled() {
-		defaultSearcher = &noopSearcher{}
-		return
+func New(ctx context.Context, cfg runtimecfg.SearchConfig, caps runtimecfg.Capabilities, artworks repo.Artwork) (Searcher, Indexer, error) {
+	writable := caps.Has(runtimecfg.CapabilityWrite)
+	if !cfg.Enable || (!caps.Has(runtimecfg.CapabilityRead) && !writable) {
+		return &noopSearcher{}, nil, nil
 	}
-	cfg := runtimecfg.Get()
-	switch cfg.Search.Engine {
+	switch cfg.Engine {
 	case "meilisearch":
-		if cfg.App.Mode.ReadOnly() {
-			s, err := meilisearch.NewReader(ctx, cfg.Search.MeiliSearch)
-			if err != nil {
-				log.Fatal("failed to initialize meilisearch reader", "err", err)
-			}
-			defaultSearcher = s
-			return
+		if !writable {
+			s, err := meilisearch.NewReader(ctx, cfg.MeiliSearch)
+			return s, nil, err
 		}
-		s, err := meilisearch.NewSearcher(ctx, cfg.Search.MeiliSearch)
+		s, err := meilisearch.NewSearcher(ctx, cfg.MeiliSearch)
 		if err != nil {
-			log.Fatal("failed to initialize meilisearch searcher", "err", err)
+			return nil, nil, err
 		}
-		defaultSearcher = s
-		defaultIndexer = s
+		return s, s, nil
 	case "mock":
 		log.Warn("using mock searcher, this is only for testing purposes")
-		s := mocksearch.NewSearcher(database.Default().Artwork())
-		if cfg.App.Mode.ReadOnly() {
-			defaultSearcher = &querySearcher{Searcher: s}
-			return
+		s := mocksearch.NewSearcher(artworks)
+		if !writable {
+			return &querySearcher{Searcher: s}, nil, nil
 		}
-		defaultSearcher = s
-		defaultIndexer = s
+		return s, s, nil
 	default:
-		log.Fatal("unknown search engine: %s", cfg.Search.Engine)
+		return nil, nil, fmt.Errorf("unknown search engine %q", cfg.Engine)
 	}
-}
-
-func Enabled() bool {
-	return runtimecfg.Get().Search.Enable
 }
 
 type querySearcher struct {
@@ -90,18 +73,4 @@ func (s *noopSearcher) FindSimilarArtworks(ctx context.Context, que *query.Artwo
 
 func IsNotEnabledErr(err error) bool {
 	return errors.Is(err, ErrNotEnabled)
-}
-
-func Default(ctx context.Context) Searcher {
-	once.Do(func() {
-		initDefault(ctx)
-	})
-	return defaultSearcher
-}
-
-func DefaultIndexer(ctx context.Context) Indexer {
-	once.Do(func() {
-		initDefault(ctx)
-	})
-	return defaultIndexer
 }

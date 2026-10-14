@@ -24,15 +24,14 @@ import (
 )
 
 type RestApp struct {
-	fiberApp        *fiber.App
-	cfg             runtimecfg.RestConfig
-	tgbot           common.TelegramBot
-	writer          common.WriteService
-	store           kvstor.KVStore
-	fetcher         common.ArtworkFetcher
-	downloader      common.ArtworkDownloader
-	internalToken   string
-	internalTimeout time.Duration
+	fiberApp         *fiber.App
+	cfg              runtimecfg.RestConfig
+	reader           common.QueryService
+	tgbot            common.TelegramBot
+	writer           common.WriteService
+	store            kvstor.KVStore
+	internalFetch    fiber.Handler
+	internalDownload fiber.Handler
 }
 
 type queryService struct {
@@ -47,6 +46,16 @@ func WithTelegramBot(bot common.TelegramBot) RestAppOption {
 			return oops.New("telegram bot is nil")
 		}
 		app.tgbot = bot
+		return nil
+	}
+}
+
+func WithReadService(serv common.QueryService) RestAppOption {
+	return func(app *RestApp) error {
+		if serv == nil {
+			return oops.New("read service is nil")
+		}
+		app.reader = queryService{QueryService: serv}
 		return nil
 	}
 }
@@ -70,10 +79,10 @@ func WithArtworkFetcher(fetcher common.ArtworkFetcher, token string, timeout tim
 		if fetcher == nil {
 			return oops.New("artwork fetcher is nil")
 		}
-		if err := app.setInternalAuth(token, timeout); err != nil {
-			return err
+		if token == "" || timeout <= 0 {
+			return oops.New("internal fetch requires a token and positive timeout")
 		}
-		app.fetcher = fetcher
+		app.internalFetch = handlers.NewInternalArtworkFetchHandler(fetcher, token, timeout)
 		return nil
 	}
 }
@@ -83,27 +92,15 @@ func WithArtworkDownloader(downloader common.ArtworkDownloader, token string, ti
 		if downloader == nil {
 			return oops.New("artwork downloader is nil")
 		}
-		if err := app.setInternalAuth(token, timeout); err != nil {
-			return err
+		if token == "" || timeout <= 0 {
+			return oops.New("internal download requires a token and positive timeout")
 		}
-		app.downloader = downloader
+		app.internalDownload = handlers.NewInternalArtworkDownloadHandler(downloader, token, timeout)
 		return nil
 	}
 }
 
-func (app *RestApp) setInternalAuth(token string, timeout time.Duration) error {
-	if token == "" {
-		return oops.New("internal token is required")
-	}
-	if timeout <= 0 {
-		return oops.New("internal request timeout must be positive")
-	}
-	app.internalToken = token
-	app.internalTimeout = timeout
-	return nil
-}
-
-func New(ctx context.Context, serv common.QueryService, cfg runtimecfg.RestConfig, opts ...RestAppOption) (*RestApp, error) {
+func New(cfg runtimecfg.RestConfig, opts ...RestAppOption) (*RestApp, error) {
 	errHandler := func(c fiber.Ctx, err error) error {
 		c.Set(fiber.HeaderContentType, fiber.MIMEApplicationJSONCharsetUTF8)
 		if e, ok := errors.AsType[*common.Error](err); ok {
@@ -138,7 +135,6 @@ func New(ctx context.Context, serv common.QueryService, cfg runtimecfg.RestConfi
 		EnableIPValidation: true,
 	})
 
-	app.State().Set(common.StateKeyQueryService, queryService{QueryService: serv})
 	app.State().Set(common.StateKeyConfig, cfg)
 
 	if cfg.Limit.Enable {
@@ -166,20 +162,29 @@ func New(ctx context.Context, serv common.QueryService, cfg runtimecfg.RestConfi
 			return nil, oops.Wrapf(err, "applying option")
 		}
 	}
+	root := app.Group("/api/v1")
+	root.Get("/myip", handlers.MyIP(cfg))
 	if restApp.tgbot != nil {
 		app.State().Set(common.StateKeyTelegramBot, restApp.tgbot)
 	}
 	if restApp.writer != nil {
 		app.State().Set(common.StateKeyWriteService, restApp.writer)
 		app.State().Set(common.StateKeyKVStore, restApp.store)
+		handlers.RegisterWriteRoutes(root)
 	}
-	root := app.Group("/api/v1")
-	handlers.Register(root, cfg, restApp.writer)
-	if restApp.fetcher != nil {
-		root.Post("/internal/artwork/fetch", handlers.NewInternalArtworkFetchHandler(restApp.fetcher, restApp.internalToken, restApp.internalTimeout))
+	if restApp.reader != nil {
+		app.State().Set(common.StateKeyQueryService, restApp.reader)
+		var observers []handlers.PictureMIMEObserver
+		if restApp.writer != nil {
+			observers = append(observers, handlers.NewPictureMIMEObserver(restApp.writer))
+		}
+		handlers.RegisterReadRoutes(root, cfg, observers...)
 	}
-	if restApp.downloader != nil {
-		root.Post("/internal/artwork/download", handlers.NewInternalArtworkDownloadHandler(restApp.downloader, restApp.internalToken, restApp.internalTimeout))
+	if restApp.internalFetch != nil {
+		root.Post("/internal/artwork/fetch", restApp.internalFetch)
+	}
+	if restApp.internalDownload != nil {
+		root.Post("/internal/artwork/download", restApp.internalDownload)
 	}
 	return restApp, nil
 }

@@ -1,11 +1,9 @@
 package handlers
 
 import (
-	"bufio"
 	"context"
 	"crypto/sha256"
 	"errors"
-	"io"
 	"net/url"
 	"time"
 
@@ -39,11 +37,12 @@ func NewInternalArtworkDownloadHandler(downloader common.ArtworkDownloader, toke
 		if err != nil || file == nil {
 			return common.NewError(fiber.StatusBadGateway, "file download failed")
 		}
+		info, err := file.Stat()
+		if err != nil {
+			file.Close()
+			return common.NewError(fiber.StatusBadGateway, "file download failed")
+		}
 		ctx.Set(fiber.HeaderContentType, fiber.MIMEOctetStream)
-		return ctx.SendStreamWriter(func(w *bufio.Writer) {
-			defer file.Close()
-			defer w.Flush()
-			_, _ = io.Copy(w, file)
-		})
+		return ctx.SendStream(file, int(info.Size()))
 	}
 }

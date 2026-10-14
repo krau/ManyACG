@@ -22,7 +22,8 @@ type Service struct {
 	indexer    search.Indexer
 	tagger     tagging.Tagger
 	storages   map[shared.StorageType]storage.Storage
-	sources    map[shared.SourceType]source.ArtworkSource
+	namers     map[shared.SourceType]source.ArtworkNamer
+	sources    source.LocalFetcher
 	pollers    map[shared.SourceType]source.ArtworkPoller
 	fetcher    source.ArtworkFetcher
 	downloader httpclient.Fetcher
@@ -47,14 +48,16 @@ func WithSourcePollers(pollers map[shared.SourceType]source.ArtworkPoller) Optio
 	return func(s *Service) { s.pollers = pollers }
 }
 
+func WithLocalSources(sources source.LocalFetcher) Option {
+	return func(s *Service) { s.sources = sources }
+}
+
 // WithArtworkFetcher delegates artwork detail fetching to a remote node.
 // Without it the local sources are used.
 func WithArtworkFetcher(fetcher source.ArtworkFetcher) Option {
 	return func(s *Service) { s.fetcher = fetcher }
 }
 
-// WithDownloader delegates origin file downloads to a remote node.
-// Without it files are downloaded from the origin by this node.
 func WithDownloader(downloader httpclient.Fetcher) Option {
 	return func(s *Service) { s.downloader = downloader }
 }
@@ -64,7 +67,7 @@ func NewService(
 	searcher search.Searcher,
 	tagger tagging.Tagger,
 	storageMap map[shared.StorageType]storage.Storage,
-	sourceMap map[shared.SourceType]source.ArtworkSource,
+	namers map[shared.SourceType]source.ArtworkNamer,
 	storCfg runtimecfg.StorageConfig,
 	opts ...Option,
 ) *Service {
@@ -73,7 +76,7 @@ func NewService(
 		tagger:   tagger,
 		searcher: searcher,
 		storages: storageMap,
-		sources:  sourceMap,
+		namers:   namers,
 		storCfg:  storCfg,
 	}
 	for _, opt := range opts {

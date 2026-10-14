@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"bufio"
 	"bytes"
 	"context"
 	"errors"
@@ -16,7 +15,9 @@ import (
 	"github.com/krau/ManyACG/internal/model/entity"
 	"github.com/krau/ManyACG/internal/shared"
 	"github.com/krau/ManyACG/internal/shared/errs"
+	"github.com/krau/ManyACG/pkg/log"
 	"github.com/unvgo/ouid"
+	"gorm.io/datatypes"
 )
 
 func HandleGetPictureFileByID(ctx fiber.Ctx) error {
@@ -57,6 +58,38 @@ func HandleGetPictureFileByID(ctx fiber.Ctx) error {
 
 type PictureMIMEObserver func(picture *entity.Picture, size string, detail shared.StorageDetail)
 
+func NewPictureMIMEObserver(serv common.WriteService) PictureMIMEObserver {
+	return func(picture *entity.Picture, size string, detail shared.StorageDetail) {
+		updatedPicture := *picture
+		storageInfo := picture.StorageInfo.Data()
+		switch size {
+		case "thumb":
+			storageInfo.Thumb = &detail
+		case "regular":
+			storageInfo.Regular = &detail
+		case "original":
+			storageInfo.Original = &detail
+		}
+		updatedPicture.StorageInfo = datatypes.NewJSONType(storageInfo)
+		go func() {
+			if err := serv.SavePicture(context.Background(), &updatedPicture); err != nil {
+				log.Errorf("failed to save picture mime: %v", err)
+			}
+		}()
+	}
+}
+
+type pictureStream struct {
+	io.Reader
+	pipe   *io.PipeReader
+	cancel context.CancelFunc
+}
+
+func (s *pictureStream) Close() error {
+	s.cancel()
+	return s.pipe.Close()
+}
+
 func NewSizedPictureFileHandler(observers ...PictureMIMEObserver) fiber.Handler {
 	return func(ctx fiber.Ctx) error {
 		requestCtx := ctx.RequestCtx()
@@ -90,19 +123,9 @@ func NewSizedPictureFileHandler(observers ...PictureMIMEObserver) fiber.Handler 
 			detail = picture.StorageInfo.Data().Original
 		}
 		if detail != nil {
-			if detail.Mime != "" {
-				ctx.Set(fiber.HeaderContentType, detail.Mime)
-				var sendErr error
-				sendWriter := func(w *bufio.Writer) {
-					defer w.Flush()
-					sendErr = serv.StorageStreamFile(requestCtx, *detail, w)
-				}
-				ctx.SendStreamWriter(sendWriter)
-				return sendErr
-			}
 
 			pr, pw := io.Pipe()
-			streamCtx, cancel := context.WithCancel(context.Background())
+			streamCtx, cancel := context.WithCancel(ctx.Context())
 
 			errChan := make(chan error, 1)
 			streamDetail := *detail
@@ -116,6 +139,10 @@ func NewSizedPictureFileHandler(observers ...PictureMIMEObserver) fiber.Handler 
 				}
 				pw.Close()
 			}()
+			if detail.Mime != "" {
+				ctx.Set(fiber.HeaderContentType, detail.Mime)
+				return ctx.SendStream(&pictureStream{Reader: pr, pipe: pr, cancel: cancel})
+			}
 
 			buf := make([]byte, 3072)
 			n, err := io.ReadAtLeast(pr, buf, 3072)
@@ -149,12 +176,7 @@ func NewSizedPictureFileHandler(observers ...PictureMIMEObserver) fiber.Handler 
 			if err == nil {
 				fullReader = io.MultiReader(fullReader, pr)
 			}
-			return ctx.SendStreamWriter(func(w *bufio.Writer) {
-				defer cancel()
-				defer pr.Close()
-				defer w.Flush()
-				io.Copy(w, fullReader)
-			})
+			return ctx.SendStream(&pictureStream{Reader: fullReader, pipe: pr, cancel: cancel})
 		}
 		return ctx.Redirect().To(picture.Thumbnail)
 	}
