@@ -39,10 +39,6 @@ func Init() {
 	})
 }
 
-func (b *Bilibili) FetchNewArtworks(ctx context.Context, limit int) ([]*dto.FetchedArtwork, error) {
-	return nil, nil
-}
-
 func (b *Bilibili) GetArtworkInfo(ctx context.Context, sourceURL string) (*dto.FetchedArtwork, error) {
 	dynamicID := getDynamicID(sourceURL)
 	if dynamicID == "" {

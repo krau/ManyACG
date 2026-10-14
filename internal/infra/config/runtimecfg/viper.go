@@ -123,6 +123,9 @@ func loadConfig() Config {
 
 		"source.pixiv.img_proxy":           "pximg.manyacg.top",
 		"source.twitter.fx_twitter_domain": "fxtwitter.com",
+		"source.remote.endpoints":          []string{},
+		"source.remote.token":              "",
+		"source.remote.timeout":            uint(30),
 
 		"database.type":         "sqlite",
 		"database.dsn":          `file:manyacg.db?_pragma=journal_mode(WAL)&_pragma=synchronous(NORMAL)&_pragma=busy_timeout(5000)&_txlock=deferred`,

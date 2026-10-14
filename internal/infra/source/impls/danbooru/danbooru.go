@@ -40,10 +40,6 @@ func Init() {
 	})
 }
 
-func (d *Danbooru) FetchNewArtworks(ctx context.Context, limit int) ([]*dto.FetchedArtwork, error) {
-	return nil, nil
-}
-
 func (d *Danbooru) GetArtworkInfo(ctx context.Context, sourceURL string) (*dto.FetchedArtwork, error) {
 	postID := GetPostID(sourceURL)
 	if postID == "" {

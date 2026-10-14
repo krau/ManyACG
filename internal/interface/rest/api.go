@@ -24,11 +24,14 @@ import (
 )
 
 type RestApp struct {
-	fiberApp *fiber.App
-	cfg      runtimecfg.RestConfig
-	tgbot    common.TelegramBot
-	writer   common.WriteService
-	store    kvstor.KVStore
+	fiberApp     *fiber.App
+	cfg          runtimecfg.RestConfig
+	tgbot        common.TelegramBot
+	writer       common.WriteService
+	store        kvstor.KVStore
+	fetcher      common.ArtworkFetcher
+	fetchToken   string
+	fetchTimeout time.Duration
 }
 
 type queryService struct {
@@ -57,6 +60,24 @@ func WithWriteService(serv common.WriteService, store kvstor.KVStore) RestAppOpt
 		}
 		app.writer = serv
 		app.store = store
+		return nil
+	}
+}
+
+func WithArtworkFetcher(fetcher common.ArtworkFetcher, token string, timeout time.Duration) RestAppOption {
+	return func(app *RestApp) error {
+		if fetcher == nil {
+			return oops.New("artwork fetcher is nil")
+		}
+		if token == "" {
+			return oops.New("artwork fetch token is required")
+		}
+		if timeout <= 0 {
+			return oops.New("artwork fetch timeout must be positive")
+		}
+		app.fetcher = fetcher
+		app.fetchToken = token
+		app.fetchTimeout = timeout
 		return nil
 	}
 }
@@ -133,6 +154,9 @@ func New(ctx context.Context, serv common.QueryService, cfg runtimecfg.RestConfi
 	}
 	root := app.Group("/api/v1")
 	handlers.Register(root, cfg, restApp.writer)
+	if restApp.fetcher != nil {
+		root.Post("/internal/artwork/fetch", handlers.NewInternalArtworkFetchHandler(restApp.fetcher, restApp.fetchToken, restApp.fetchTimeout))
+	}
 	return restApp, nil
 }
 

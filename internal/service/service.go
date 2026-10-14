@@ -22,7 +22,8 @@ type Service struct {
 	tagger   tagging.Tagger
 	storages map[shared.StorageType]storage.Storage
 	sources  map[shared.SourceType]source.ArtworkSource
-	namers   map[shared.SourceType]source.ArtworkNamer
+	pollers  map[shared.SourceType]source.ArtworkPoller
+	fetcher  source.ArtworkFetcher
 	storCfg  runtimecfg.StorageConfig
 	imseek   imseek.Engine
 
@@ -40,8 +41,14 @@ func WithIndexer(indexer search.Indexer) Option {
 	return func(s *Service) { s.indexer = indexer }
 }
 
-func WithSourceNamers(namers map[shared.SourceType]source.ArtworkNamer) Option {
-	return func(s *Service) { s.namers = namers }
+func WithSourcePollers(pollers map[shared.SourceType]source.ArtworkPoller) Option {
+	return func(s *Service) { s.pollers = pollers }
+}
+
+// WithArtworkFetcher delegates artwork detail fetching to a remote node.
+// Without it the local sources are used.
+func WithArtworkFetcher(fetcher source.ArtworkFetcher) Option {
+	return func(s *Service) { s.fetcher = fetcher }
 }
 
 func NewService(
@@ -63,12 +70,6 @@ func NewService(
 	}
 	for _, opt := range opts {
 		opt(s)
-	}
-	if s.namers == nil && len(sourceMap) > 0 {
-		s.namers = make(map[shared.SourceType]source.ArtworkNamer, len(sourceMap))
-		for sourceType, artworkSource := range sourceMap {
-			s.namers[sourceType] = artworkSource
-		}
 	}
 	return s
 }

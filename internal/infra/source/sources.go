@@ -12,8 +12,15 @@ type ArtworkNamer interface {
 	PrettyFileName(artwork shared.ArtworkLike, picture shared.PictureLike) string
 }
 
+type ArtworkFetcher interface {
+	GetArtworkInfo(ctx context.Context, sourceUrl string) (*dto.FetchedArtwork, error)
+}
+
 type ArtworkSource interface {
 	ArtworkNamer
-	GetArtworkInfo(ctx context.Context, sourceUrl string) (*dto.FetchedArtwork, error)
+	ArtworkFetcher
+}
+
+type ArtworkPoller interface {
 	FetchNewArtworks(ctx context.Context, limit int) ([]*dto.FetchedArtwork, error)
 }

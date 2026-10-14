@@ -37,10 +37,6 @@ func Init() {
 	})
 }
 
-func (n *Nhentai) FetchNewArtworks(ctx context.Context, limit int) ([]*dto.FetchedArtwork, error) {
-	return nil, nil
-}
-
 func (n *Nhentai) GetArtworkInfo(ctx context.Context, sourceURL string) (*dto.FetchedArtwork, error) {
 	galleryID := GetGalleryID(sourceURL)
 	if galleryID == "" {

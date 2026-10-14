@@ -115,6 +115,14 @@ func NewRuntime(ctx context.Context, cfg runtimecfg.Config) (*Runtime, error) {
 		tagger = tagging.Default()
 	}
 
+	servOpts := []service.Option{
+		service.WithImseek(eng),
+		service.WithIndexer(indexer),
+		service.WithSourcePollers(source.Pollers()),
+	}
+	if resources.ArtworkFetcher != nil {
+		servOpts = append(servOpts, service.WithArtworkFetcher(resources.ArtworkFetcher))
+	}
 	serv := service.NewService(
 		repos,
 		searcher,
@@ -122,9 +130,7 @@ func NewRuntime(ctx context.Context, cfg runtimecfg.Config) (*Runtime, error) {
 		storage.Storages(),
 		source.Sources(),
 		cfg.Storage,
-		service.WithImseek(eng),
-		service.WithIndexer(indexer),
-		service.WithSourceNamers(source.Namers()),
+		servOpts...,
 	)
 	if artworkBus != nil {
 		registerArtworkEventImseekHandlers(ctx, artworkBus, serv)
@@ -139,6 +145,8 @@ func NewRuntime(ctx context.Context, cfg runtimecfg.Config) (*Runtime, error) {
 		if err != nil {
 			return nil, errors.Join(fmt.Errorf("recover posting artworks: %w", err), closer())
 		}
+	} else if cfg.Source.Remote.Token != "" {
+		restOpts = append(restOpts, rest.WithArtworkFetcher(serv, cfg.Source.Remote.Token, time.Duration(cfg.Source.Remote.Timeout)*time.Second))
 	}
 
 	return &Runtime{

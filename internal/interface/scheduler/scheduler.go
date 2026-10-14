@@ -31,7 +31,7 @@ func StartPosterWithConfig(ctx context.Context, cfg runtimecfg.SchedulerConfig, 
 	}
 	ticker := time.NewTicker(time.Duration(cfg.Interval) * time.Second)
 	defer ticker.Stop()
-	sources := serv.Sources()
+	sources := serv.SourcePollers()
 	limit := cfg.Limit
 	if limit <= 0 {
 		limit = math.MaxInt

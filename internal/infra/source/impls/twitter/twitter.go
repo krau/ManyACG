@@ -40,10 +40,6 @@ func Init() {
 	})
 }
 
-func (t *Twitter) FetchNewArtworks(ctx context.Context, limit int) ([]*dto.FetchedArtwork, error) {
-	return nil, nil
-}
-
 func (t *Twitter) GetArtworkInfo(ctx context.Context, sourceURL string) (*dto.FetchedArtwork, error) {
 	tweetID := getTweetID(sourceURL)
 	if tweetID == "" {

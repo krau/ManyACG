@@ -39,10 +39,6 @@ func Init() {
 	})
 }
 
-func (y *Yandere) FetchNewArtworks(ctx context.Context, limit int) ([]*dto.FetchedArtwork, error) {
-	return nil, nil
-}
-
 func (y *Yandere) GetArtworkInfo(ctx context.Context, sourceURL string) (*dto.FetchedArtwork, error) {
 	postID := GetPostID(sourceURL)
 	if postID == "" {

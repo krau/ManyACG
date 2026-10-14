@@ -12,7 +12,7 @@ type Factory func() ArtworkSource
 var (
 	sources   = make(map[shared.SourceType]ArtworkSource)
 	factories = make(map[shared.SourceType]Factory)
-	namers    = make(map[shared.SourceType]ArtworkNamer)
+	pollers   = make(map[shared.SourceType]ArtworkPoller)
 	factoryMu sync.RWMutex
 )
 
@@ -25,34 +25,36 @@ func Register(sourceType shared.SourceType, f Factory) {
 	factories[sourceType] = f
 }
 
-func RegisterNamer(sourceType shared.SourceType, namer ArtworkNamer) {
+func RegisterPoller(sourceType shared.SourceType, poller ArtworkPoller) {
 	factoryMu.Lock()
 	defer factoryMu.Unlock()
-	if _, exists := namers[sourceType]; exists {
-		panic("source: RegisterNamer called twice for source type " + string(sourceType))
+	if _, exists := pollers[sourceType]; exists {
+		panic("source: RegisterPoller called twice for source type " + string(sourceType))
 	}
-	namers[sourceType] = namer
+	pollers[sourceType] = poller
 }
 
-func Namers() map[shared.SourceType]ArtworkNamer {
+func Pollers() map[shared.SourceType]ArtworkPoller {
 	factoryMu.RLock()
 	defer factoryMu.RUnlock()
-	return maps.Clone(namers)
+	return maps.Clone(pollers)
 }
 
 func InitAll() {
+	factoryMu.RLock()
+	registered := maps.Clone(factories)
+	factoryMu.RUnlock()
+	built := make(map[shared.SourceType]ArtworkSource, len(registered))
+	for sourceType, factory := range registered {
+		built[sourceType] = factory()
+	}
 	factoryMu.Lock()
 	defer factoryMu.Unlock()
-	for sourceType, factory := range factories {
-		source := factory()
-		sources[sourceType] = source
-	}
+	maps.Copy(sources, built)
 }
 
 func Sources() map[shared.SourceType]ArtworkSource {
 	factoryMu.RLock()
 	defer factoryMu.RUnlock()
-	ss := make(map[shared.SourceType]ArtworkSource)
-	maps.Copy(ss, sources)
-	return ss
+	return maps.Clone(sources)
 }

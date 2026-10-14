@@ -7,14 +7,17 @@ import (
 	"github.com/krau/ManyACG/internal/infra/config/runtimecfg"
 	"github.com/krau/ManyACG/internal/infra/database"
 	"github.com/krau/ManyACG/internal/infra/kvstor"
+	"github.com/krau/ManyACG/internal/infra/source"
+	"github.com/krau/ManyACG/internal/infra/source/remote"
 	"github.com/samber/oops"
 )
 
 type Resources struct {
-	KV        kvstor.KVStore
-	closers   []func() error
-	closeOnce sync.Once
-	closeErr  error
+	KV             kvstor.KVStore
+	ArtworkFetcher source.ArtworkFetcher
+	closers        []func() error
+	closeOnce      sync.Once
+	closeErr       error
 }
 
 func (r *Resources) Close() error {
@@ -34,6 +37,9 @@ func Init(ctx context.Context, cfg runtimecfg.Config) (*Resources, error) {
 	if err := cfg.App.Mode.Valid(); err != nil {
 		return nil, err
 	}
+	if err := cfg.Source.Remote.Valid(cfg.App.Mode, cfg.Rest.Enable); err != nil {
+		return nil, err
+	}
 	resources := &Resources{}
 	if !cfg.App.Mode.ReadOnly() {
 		store, err := kvstor.Open(cfg.KVDB)
@@ -42,8 +48,16 @@ func Init(ctx context.Context, cfg runtimecfg.Config) (*Resources, error) {
 		}
 		resources.KV = store
 		resources.closers = append(resources.closers, store.Close)
+		if len(cfg.Source.Remote.Endpoints) > 0 {
+			fetcher, err := remote.New(cfg.Source.Remote)
+			if err != nil {
+				return nil, oops.Join(err, resources.Close())
+			}
+			resources.ArtworkFetcher = fetcher
+			resources.closers = append(resources.closers, fetcher.Close)
+		}
 	}
-	initSource(cfg, resources.KV)
+	initSource(resources.KV)
 	if err := initStorage(ctx); err != nil {
 		return nil, oops.Join(err, resources.Close())
 	}

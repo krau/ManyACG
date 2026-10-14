@@ -43,10 +43,6 @@ func Init() {
 	})
 }
 
-func (k *Kemono) FetchNewArtworks(ctx context.Context, limit int) ([]*dto.FetchedArtwork, error) {
-	return nil, nil
-}
-
 func (k *Kemono) GetArtworkInfo(ctx context.Context, sourceURL string) (*dto.FetchedArtwork, error) {
 	kemonoPostURL := kemonoSourceURLRegex.FindString(sourceURL)
 	if kemonoPostURL == "" {
