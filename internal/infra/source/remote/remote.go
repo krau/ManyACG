@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
 	"net/url"
 	"strings"
@@ -33,7 +34,10 @@ func New(cfg runtimecfg.SourceRemoteConfig) (*Client, error) {
 	}
 	endpoints := make([]string, len(cfg.Endpoints))
 	for i, endpoint := range cfg.Endpoints {
-		u, _ := url.Parse(endpoint)
+		u, err := url.Parse(endpoint)
+		if err != nil {
+			return nil, fmt.Errorf("parse source.remote.endpoints[%d]: %w", i, err)
+		}
 		endpoints[i] = strings.TrimRight(u.String(), "/") + "/internal/artwork/fetch"
 	}
 	transport := http.DefaultTransport.(*http.Transport).Clone()
@@ -69,11 +73,8 @@ func (c *Client) GetArtworkInfo(ctx context.Context, sourceURL string) (*dto.Fet
 	req.Header.Set("Accept", "application/json")
 	response, err := c.http.Do(req)
 	if err != nil {
-		if ctx.Err() != nil {
-			return nil, fmt.Errorf("reader artwork request canceled: %w", ctx.Err())
-		}
-		if errors.Is(err, context.DeadlineExceeded) {
-			return nil, fmt.Errorf("reader artwork request timed out: %w", context.DeadlineExceeded)
+		if transferErr := transferError(ctx, err); transferErr != nil {
+			return nil, transferErr
 		}
 		return nil, errors.New("reader artwork request failed")
 	}
@@ -84,16 +85,33 @@ func (c *Client) GetArtworkInfo(ctx context.Context, sourceURL string) (*dto.Fet
 	var artwork *dto.FetchedArtwork
 	decoder := json.NewDecoder(response.Body)
 	if err := decoder.Decode(&artwork); err != nil {
+		if transferErr := transferError(ctx, err); transferErr != nil {
+			return nil, transferErr
+		}
 		return nil, errors.New("reader returned invalid artwork JSON")
 	}
 	var extra json.RawMessage
 	if err := decoder.Decode(&extra); err != io.EOF {
+		if transferErr := transferError(ctx, err); transferErr != nil {
+			return nil, transferErr
+		}
 		return nil, errors.New("reader returned trailing artwork response data")
 	}
 	if err := validateArtwork(artwork); err != nil {
 		return nil, err
 	}
 	return artwork, nil
+}
+
+func transferError(ctx context.Context, err error) error {
+	if ctxErr := ctx.Err(); ctxErr != nil {
+		return fmt.Errorf("reader artwork request canceled: %w", ctxErr)
+	}
+	var netErr net.Error
+	if errors.Is(err, context.DeadlineExceeded) || (errors.As(err, &netErr) && netErr.Timeout()) {
+		return fmt.Errorf("reader artwork request timed out: %w", context.DeadlineExceeded)
+	}
+	return nil
 }
 
 func validateArtwork(artwork *dto.FetchedArtwork) error {
