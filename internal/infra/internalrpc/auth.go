@@ -120,7 +120,39 @@ func readNodeSigner(path string) (ssh.Signer, error) {
 	return signer, nil
 }
 
+type authorizedKeysCacheEntry struct {
+	modTime time.Time
+	size    int64
+	keys    map[string]ssh.PublicKey
+}
+
+var (
+	authorizedKeysMu    sync.Mutex
+	authorizedKeysCache = make(map[string]authorizedKeysCacheEntry)
+)
+
 func readAuthorizedKeys(path string) (map[string]ssh.PublicKey, error) {
+	info, err := os.Stat(path)
+	if err != nil {
+		return nil, fmt.Errorf("read internal authorized_keys: %w", err)
+	}
+	authorizedKeysMu.Lock()
+	if entry, ok := authorizedKeysCache[path]; ok && entry.size == info.Size() && entry.modTime.Equal(info.ModTime()) {
+		authorizedKeysMu.Unlock()
+		return entry.keys, nil
+	}
+	authorizedKeysMu.Unlock()
+	keys, err := parseAuthorizedKeys(path)
+	if err != nil {
+		return nil, err
+	}
+	authorizedKeysMu.Lock()
+	authorizedKeysCache[path] = authorizedKeysCacheEntry{modTime: info.ModTime(), size: info.Size(), keys: keys}
+	authorizedKeysMu.Unlock()
+	return keys, nil
+}
+
+func parseAuthorizedKeys(path string) (map[string]ssh.PublicKey, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return nil, fmt.Errorf("read internal authorized_keys: %w", err)
