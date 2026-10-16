@@ -13,6 +13,8 @@ const mainCommandAnnotation = "manyacg.requires-main"
 var rootCmd = &cobra.Command{
 	Use:   "manyacg",
 	Short: "manyacg",
+	// Failures such as a forbidden role are not usage errors, so cobra should not print the help text.
+	SilenceUsage: true,
 	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 		for current := cmd; current != nil; current = current.Parent() {
 			if current.Annotations[mainCommandAnnotation] != "true" {
@@ -30,9 +32,13 @@ var rootCmd = &cobra.Command{
 	},
 }
 
+func init() {
+	// Subcommands defining their own PersistentPreRunE would otherwise skip the role check above.
+	cobra.EnableTraverseRunHooks = true
+}
+
 func Execute() {
 	if err := rootCmd.Execute(); err != nil {
-		fmt.Println(err)
 		os.Exit(1)
 	}
 }
