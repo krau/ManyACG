@@ -123,7 +123,7 @@ func New(cfg runtimecfg.RestConfig, app runtimecfg.AppConfig, serv *service.Serv
 	if restApp.tgbot != nil {
 		fiberApp.State().Set(common.StateKeyTelegramBot, restApp.tgbot)
 	}
-	handlers.Register(root, cfg, app)
+	handlers.Register(root, cfg, app, restApp.tgbot != nil)
 	return restApp, nil
 }
 

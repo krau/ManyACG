@@ -5,13 +5,14 @@ import (
 	"github.com/krau/ManyACG/internal/infra/config/runtimecfg"
 )
 
-func Register(router fiber.Router, cfg runtimecfg.RestConfig, app runtimecfg.AppConfig) {
+func Register(router fiber.Router, cfg runtimecfg.RestConfig, app runtimecfg.AppConfig, hasTelegramBot bool) {
 	router.Get("/myip", MyIP(cfg))
 	if app.IsMain() {
 		artworkGroup := router.Group("/artwork")
 		artworkGroup.Get("/fetch", HandleFetchArtwork)
 		artworkGroup.Post("/fetch", HandleFetchArtwork)
-
+	}
+	if app.IsMain() && hasTelegramBot {
 		tgbotGroup := router.Group("/bot")
 		tgbotGroup.Get("/send_artwork_info", HandleSendArtworkInfoByTelegramBot)
 		tgbotGroup.Post("/send_artwork_info", HandleSendArtworkInfoByTelegramBot)

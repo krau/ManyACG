@@ -34,7 +34,7 @@ func HandleSendArtworkInfoByTelegramBot(ctx fiber.Ctx) error {
 	}
 	bot, ok := common.GetState[common.TelegramBot](ctx, common.StateKeyTelegramBot)
 	if !ok {
-		return fiber.ErrInternalServerError
+		return common.NewError(fiber.StatusServiceUnavailable, "telegram bot is not enabled on this node")
 	}
 	req := new(RequestSendArtworkInfoByTelegramBot)
 	if err := ctx.Bind().All(req); err != nil {
