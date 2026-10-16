@@ -26,7 +26,7 @@ func validateArtworkResult(
 	}
 	requested, requestedOK := namer.MatchesSourceURL(requestedURL)
 	returned, returnedOK := namer.MatchesSourceURL(message.SourceUrl)
-	if !requestedOK || !returnedOK || requested == "" || requested != returned {
+	if !requestedOK || !returnedOK || requested == "" || !strings.EqualFold(requested, returned) {
 		return nil, errors.New("internal agent returned a different artwork or source")
 	}
 	artist := message.Artist
@@ -56,9 +56,7 @@ func validateArtworkResult(
 			return nil, fmt.Errorf("internal agent videos[%d] has no URL", i)
 		}
 	}
-	artwork := artworkFromProto(message)
-	artwork.SourceURL = requested
-	return artwork, nil
+	return artworkFromProto(message), nil
 }
 
 // Artist UIDs become directory components when media is stored.

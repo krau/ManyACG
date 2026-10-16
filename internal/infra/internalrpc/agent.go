@@ -207,14 +207,10 @@ func (a *Agent) execute(ctx context.Context, client internalpb.GatewayClient, as
 			a.completeFailure(ctx, client, assignedJob.GetJobId(), errs.ErrUnsupportedSource)
 			return
 		}
-		requestedURL := task.FetchArtwork.GetSourceUrl()
-		artwork, err := a.fetch.GetArtworkInfo(ctx, requestedURL)
+		artwork, err := a.fetch.GetArtworkInfo(ctx, task.FetchArtwork.GetSourceUrl())
 		if err != nil {
 			a.completeFailure(ctx, client, assignedJob.GetJobId(), err)
 			return
-		}
-		if artwork != nil {
-			artwork.SourceURL = requestedURL
 		}
 		if _, err := client.CompleteJob(ctx, &internalpb.JobCompletion{
 			JobId:  assignedJob.GetJobId(),
