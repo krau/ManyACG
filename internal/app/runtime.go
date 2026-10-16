@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"sync"
 	"time"
 
 	"github.com/krau/ManyACG/internal/infra"
@@ -35,6 +36,8 @@ type Runtime struct {
 	kv             kvstor.KVStore
 	internalServer *internalrpc.Server
 	internalAgent  *internalrpc.Agent
+	stop           func()
+	interfaces     sync.WaitGroup
 }
 
 func NewRuntime(ctx context.Context, cfg runtimecfg.Config) (*Runtime, error) {
@@ -149,32 +152,45 @@ func NewRuntime(ctx context.Context, cfg runtimecfg.Config) (*Runtime, error) {
 	return runtime, nil
 }
 
+func (r *Runtime) goInterface(fn func()) {
+	r.interfaces.Add(1)
+	go func() {
+		defer r.interfaces.Done()
+		fn()
+	}()
+}
+
 func (r *Runtime) Start(ctx context.Context, stop func()) error {
+	r.stop = stop
 	botEnabled := r.cfg.App.IsMain() && !r.cfg.Telegram.Disable
 	if !r.cfg.Rest.Enable && !botEnabled && r.internalServer == nil && r.internalAgent == nil {
 		return fmt.Errorf("no interfaces enabled: enable REST, Telegram, the internal gateway or an internal agent")
 	}
 	if r.internalServer != nil {
-		go func() {
+		r.goInterface(func() {
 			if err := r.internalServer.Run(ctx); err != nil {
 				log.Error(err)
 				stop()
 			}
-		}()
+		})
 	}
 	if r.internalAgent != nil {
-		go r.internalAgent.Run(ctx)
+		r.goInterface(func() { r.internalAgent.Run(ctx) })
 	}
 	var bot restcommon.TelegramBot
 	if botEnabled {
 		botapp, err := telegram.Init(ctx, r.service, r.kv, r.cfg.Telegram, r.cfg.App.Debug)
 		if err != nil {
+			stop()
 			return err
 		}
-		go botapp.Run(ctx, r.service)
+		r.goInterface(func() {
+			botapp.Run(ctx, r.service)
+			botapp.Wait()
+		})
 		bot = botapp
 		if r.cfg.Scheduler.Enable {
-			go scheduler.StartPoster(ctx, r.cfg.Scheduler, botapp, r.service)
+			r.goInterface(func() { scheduler.StartPoster(ctx, r.cfg.Scheduler, botapp, r.service) })
 		}
 	}
 
@@ -185,21 +201,26 @@ func (r *Runtime) Start(ctx context.Context, stop func()) error {
 		}
 		restApp, err := rest.New(r.cfg.Rest, r.cfg.App, r.service, r.kv, opts...)
 		if err != nil {
+			stop()
 			return err
 		}
-		go func() {
+		r.goInterface(func() {
 			log.Info("Starting RESTful API server", "addr", r.cfg.Rest.Addr)
 			if err := restApp.Run(ctx); err != nil {
 				log.Error(err)
 				stop()
 			}
-		}()
+		})
 	}
 
 	return nil
 }
 
 func (r *Runtime) Close() error {
+	if r.stop != nil {
+		r.stop()
+	}
+	r.interfaces.Wait()
 	if r.closer == nil {
 		return nil
 	}

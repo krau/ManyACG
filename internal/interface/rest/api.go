@@ -3,6 +3,7 @@ package rest
 import (
 	"context"
 	"errors"
+	"net"
 	"time"
 
 	"github.com/charmbracelet/log"
@@ -125,7 +126,18 @@ func New(cfg runtimecfg.RestConfig, app runtimecfg.AppConfig, serv *service.Serv
 }
 
 func (r *RestApp) Run(stopCtx context.Context) error {
-	return r.fiberApp.Listen(r.cfg.Addr, fiber.ListenConfig{
-		GracefulContext: stopCtx,
-	})
+	listener, err := net.Listen("tcp4", r.cfg.Addr)
+	if err != nil {
+		return err
+	}
+	defer listener.Close()
+	// Closing the listener also handles cancellation before Serve registers it.
+	stopClosing := context.AfterFunc(stopCtx, func() { _ = listener.Close() })
+	defer stopClosing()
+	err = r.fiberApp.Listener(listener)
+	shutdownErr := r.fiberApp.Shutdown()
+	if errors.Is(shutdownErr, net.ErrClosed) {
+		shutdownErr = nil
+	}
+	return errors.Join(err, shutdownErr)
 }

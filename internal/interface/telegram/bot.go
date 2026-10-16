@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/krau/ManyACG/internal/infra/config/runtimecfg"
@@ -33,6 +34,7 @@ type BotApp struct {
 	cfg              runtimecfg.TelegramConfig
 	debug            bool
 	artworkInfoQueue chan artworkInfoTask
+	background       sync.WaitGroup
 }
 
 func (app *BotApp) Bot() *telego.Bot {
@@ -128,7 +130,26 @@ func Init(ctx context.Context, serv *service.Service, store kvstor.KVStore, cfg 
 		}
 	}
 
+	metaopts := []metautil.Option{}
+	if cfg.GroupID != 0 {
+		metaopts = append(metaopts, metautil.WithGroupChatID(groupChatID))
+	}
+	metaopts = append(metaopts, metautil.WithBotID(int64(botId)))
+	meta := metautil.NewMetaData(channelChatID, botUsername, metaopts...)
+
+	artworkInfoQueue := make(chan artworkInfoTask, 100)
+	app := &BotApp{
+		bot:              bot,
+		serv:             serv,
+		store:            store,
+		meta:             meta,
+		cfg:              cfg,
+		debug:            debug,
+		artworkInfoQueue: artworkInfoQueue,
+	}
+	app.background.Add(1)
 	go func() {
+		defer app.background.Done()
 		sig, err := commandsSignature(cfg)
 		if err != nil {
 			log.Warnf("Error when calculating commands signature: %s", err)
@@ -173,27 +194,17 @@ func Init(ctx context.Context, serv *service.Service, store kvstor.KVStore, cfg 
 		}
 	}()
 
-	metaopts := []metautil.Option{}
-	if cfg.GroupID != 0 {
-		metaopts = append(metaopts, metautil.WithGroupChatID(groupChatID))
-	}
-	metaopts = append(metaopts, metautil.WithBotID(int64(botId)))
-	meta := metautil.NewMetaData(channelChatID, botUsername, metaopts...)
-
-	artworkInfoQueue := make(chan artworkInfoTask, 100)
-	app := &BotApp{
-		bot:              bot,
-		serv:             serv,
-		store:            store,
-		meta:             meta,
-		cfg:              cfg,
-		debug:            debug,
-		artworkInfoQueue: artworkInfoQueue,
-	}
-
-	go app.processArtworkInfoTasks(ctx)
+	app.background.Add(1)
+	go func() {
+		defer app.background.Done()
+		app.processArtworkInfoTasks(ctx)
+	}()
 
 	return app, nil
+}
+
+func (app *BotApp) Wait() {
+	app.background.Wait()
 }
 
 func setCommands(ctx context.Context, bot *telego.Bot, commands []telego.BotCommand, scope telego.BotCommandScope) {
@@ -258,16 +269,6 @@ func (app *BotApp) Run(ctx context.Context, serv *service.Service) {
 	if err != nil {
 		log.Fatalf("Error when creating bot handler: %s", err)
 	}
-	go func() {
-		<-ctx.Done()
-		log.Info("Shutting down telegram bot...")
-		stopCtx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
-		defer cancel()
-		if err := botHandler.StopWithContext(stopCtx); err != nil {
-			log.Warnf("Error when stopping bot handler: %s", err)
-		}
-		log.Info("Stopped bot handler")
-	}()
 
 	if !app.debug {
 		botHandler.Use(telegohandler.PanicRecoveryHandler(func(recovered any) error {
@@ -282,4 +283,9 @@ func (app *BotApp) Run(ctx context.Context, serv *service.Service) {
 	if err := botHandler.Start(); err != nil {
 		log.Fatalf("Error when starting bot handler: %s", err)
 	}
+	log.Info("Shutting down telegram bot...")
+	if err := botHandler.Stop(); err != nil {
+		log.Warnf("Error when stopping bot handler: %s", err)
+	}
+	log.Info("Stopped bot handler")
 }
