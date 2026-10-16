@@ -5,6 +5,7 @@ import (
 	"os"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/spf13/viper"
 )
@@ -71,14 +72,25 @@ const (
 	RoleWorker NodeRole = "worker"
 )
 
+const defaultShutdownTimeoutSeconds = 8
+
 type AppConfig struct {
-	Role         NodeRole     `toml:"role" mapstructure:"role" json:"role" yaml:"role"`
-	Capabilities Capabilities `toml:"capabilities" mapstructure:"capabilities" json:"capabilities" yaml:"capabilities"`
-	Debug        bool         `toml:"debug" mapstructure:"debug" json:"debug" yaml:"debug"`
+	Role            NodeRole     `toml:"role" mapstructure:"role" json:"role" yaml:"role"`
+	Capabilities    Capabilities `toml:"capabilities" mapstructure:"capabilities" json:"capabilities" yaml:"capabilities"`
+	Debug           bool         `toml:"debug" mapstructure:"debug" json:"debug" yaml:"debug"`
+	ShutdownTimeout uint         `toml:"shutdown_timeout" mapstructure:"shutdown_timeout" json:"shutdown_timeout" yaml:"shutdown_timeout"`
 }
 
 func (c AppConfig) IsMain() bool {
 	return c.Role == RoleMain
+}
+
+func (c AppConfig) ShutdownDuration() time.Duration {
+	seconds := c.ShutdownTimeout
+	if seconds == 0 {
+		seconds = defaultShutdownTimeoutSeconds
+	}
+	return time.Duration(seconds) * time.Second
 }
 
 func (c AppConfig) Validate() error {
@@ -86,6 +98,9 @@ func (c AppConfig) Validate() error {
 	case RoleMain, RoleWorker:
 	default:
 		return fmt.Errorf("app.role contains unknown role %q, valid values are main, worker", c.Role)
+	}
+	if uint64(c.ShutdownTimeout) > maxDurationSeconds {
+		return fmt.Errorf("app.shutdown_timeout is too large to fit a duration in seconds")
 	}
 	return c.Capabilities.Validate()
 }
@@ -142,8 +157,9 @@ func loadConfig() Config {
 	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
 
 	defaults := map[string]any{
-		"app.role":         string(RoleMain),
-		"app.capabilities": []string{"read"},
+		"app.role":             string(RoleMain),
+		"app.capabilities":     []string{"read"},
+		"app.shutdown_timeout": defaultShutdownTimeoutSeconds,
 
 		"log.file_path":  "logs/manyacg.log",
 		"log.backup_num": 7,

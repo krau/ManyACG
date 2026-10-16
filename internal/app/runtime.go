@@ -224,11 +224,29 @@ func (r *Runtime) Close() error {
 	if r.stop != nil {
 		r.stop()
 	}
-	r.interfaces.Wait()
+	r.waitInterfaces()
 	if r.closer == nil {
 		return nil
 	}
 	return r.closer()
+}
+
+const interfaceReturnSlack = time.Second
+
+func (r *Runtime) waitInterfaces() {
+	budget := r.cfg.App.ShutdownDuration() + interfaceReturnSlack
+	done := make(chan struct{})
+	go func() {
+		r.interfaces.Wait()
+		close(done)
+	}()
+	timer := time.NewTimer(budget)
+	defer timer.Stop()
+	select {
+	case <-done:
+	case <-timer.C:
+		log.Warn("interfaces did not stop in time, closing resources anyway", "budget", budget)
+	}
 }
 
 func Run(ctx context.Context, cfg runtimecfg.Config, stop func()) error {

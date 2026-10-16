@@ -26,9 +26,10 @@ import (
 )
 
 type RestApp struct {
-	fiberApp *fiber.App
-	cfg      runtimecfg.RestConfig
-	tgbot    common.TelegramBot
+	fiberApp        *fiber.App
+	cfg             runtimecfg.RestConfig
+	tgbot           common.TelegramBot
+	shutdownTimeout time.Duration
 }
 
 type RestAppOption func(app *RestApp) error
@@ -108,8 +109,9 @@ func New(cfg runtimecfg.RestConfig, app runtimecfg.AppConfig, serv *service.Serv
 	fiberApp.Use(logger.New(loggerCfg))
 
 	restApp := &RestApp{
-		fiberApp: fiberApp,
-		cfg:      cfg,
+		fiberApp:        fiberApp,
+		cfg:             cfg,
+		shutdownTimeout: app.ShutdownDuration(),
 	}
 
 	for _, opt := range opts {
@@ -135,9 +137,16 @@ func (r *RestApp) Run(stopCtx context.Context) error {
 	stopClosing := context.AfterFunc(stopCtx, func() { _ = listener.Close() })
 	defer stopClosing()
 	err = r.fiberApp.Listener(listener)
-	shutdownErr := r.fiberApp.Shutdown()
-	if errors.Is(shutdownErr, net.ErrClosed) {
+	shutdownErr := r.fiberApp.ShutdownWithTimeout(r.shutdownTimeout)
+	switch {
+	case errors.Is(shutdownErr, context.DeadlineExceeded):
+		log.Warn("REST server did not drain in time, exiting anyway", "timeout", r.shutdownTimeout)
 		shutdownErr = nil
+	case errors.Is(shutdownErr, net.ErrClosed), errors.Is(shutdownErr, fiber.ErrNotRunning):
+		shutdownErr = nil
+	}
+	if errors.Is(err, net.ErrClosed) {
+		err = nil
 	}
 	return errors.Join(err, shutdownErr)
 }
