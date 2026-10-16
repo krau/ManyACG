@@ -12,7 +12,7 @@ import (
 	"github.com/krau/ManyACG/internal/infra/config/runtimecfg"
 	"github.com/krau/ManyACG/internal/interface/rest/common"
 	"github.com/krau/ManyACG/internal/interface/rest/utils"
-	"github.com/krau/ManyACG/internal/model/entity"
+	"github.com/krau/ManyACG/internal/service"
 	"github.com/krau/ManyACG/internal/shared"
 	"github.com/krau/ManyACG/internal/shared/errs"
 	"github.com/krau/ManyACG/pkg/log"
@@ -31,7 +31,7 @@ func HandleGetPictureFileByID(ctx fiber.Ctx) error {
 	if err != nil {
 		return fiber.NewError(fiber.StatusBadRequest, "invalid picture ID")
 	}
-	serv := common.MustGetState[common.QueryService](ctx, common.StateKeyQueryService)
+	serv := common.MustGetState[*service.Service](ctx, common.StateKeyService)
 	picture, err := serv.GetPictureByID(requestCtx, id)
 	if err != nil {
 		return err
@@ -56,29 +56,6 @@ func HandleGetPictureFileByID(ctx fiber.Ctx) error {
 	return ctx.SendFile(filePath, fiber.SendFile{Compress: true})
 }
 
-type PictureMIMEObserver func(picture *entity.Picture, size string, detail shared.StorageDetail)
-
-func NewPictureMIMEObserver(serv common.WriteService) PictureMIMEObserver {
-	return func(picture *entity.Picture, size string, detail shared.StorageDetail) {
-		updatedPicture := *picture
-		storageInfo := picture.StorageInfo.Data()
-		switch size {
-		case "thumb":
-			storageInfo.Thumb = &detail
-		case "regular":
-			storageInfo.Regular = &detail
-		case "original":
-			storageInfo.Original = &detail
-		}
-		updatedPicture.StorageInfo = datatypes.NewJSONType(storageInfo)
-		go func() {
-			if err := serv.SavePicture(context.Background(), &updatedPicture); err != nil {
-				log.Errorf("failed to save picture mime: %v", err)
-			}
-		}()
-	}
-}
-
 type pictureStream struct {
 	io.Reader
 	pipe   *io.PipeReader
@@ -90,7 +67,7 @@ func (s *pictureStream) Close() error {
 	return s.pipe.Close()
 }
 
-func NewSizedPictureFileHandler(observers ...PictureMIMEObserver) fiber.Handler {
+func NewSizedPictureFileHandler(updateMIME bool) fiber.Handler {
 	return func(ctx fiber.Ctx) error {
 		requestCtx := ctx.RequestCtx()
 		size := ctx.Params("size")
@@ -105,7 +82,7 @@ func NewSizedPictureFileHandler(observers ...PictureMIMEObserver) fiber.Handler 
 		if err != nil {
 			return fiber.NewError(fiber.StatusBadRequest, "invalid picture ID")
 		}
-		serv := common.MustGetState[common.QueryService](ctx, common.StateKeyQueryService)
+		serv := common.MustGetState[*service.Service](ctx, common.StateKeyService)
 		picture, err := serv.GetPictureByID(requestCtx, id)
 		if errors.Is(err, errs.ErrRecordNotFound) {
 			return common.NewError(fiber.StatusNotFound, "picture not found")
@@ -164,10 +141,25 @@ func NewSizedPictureFileHandler(observers ...PictureMIMEObserver) fiber.Handler 
 			mtype := mimetype.Detect(buf)
 			if mtype != nil {
 				ctx.Set(fiber.HeaderContentType, mtype.String())
-				detectedDetail := streamDetail
-				detectedDetail.Mime = mtype.String()
-				for _, observer := range observers {
-					observer(picture, size, detectedDetail)
+				if updateMIME {
+					detectedDetail := streamDetail
+					detectedDetail.Mime = mtype.String()
+					updatedPicture := *picture
+					storageInfo := picture.StorageInfo.Data()
+					switch size {
+					case "thumb":
+						storageInfo.Thumb = &detectedDetail
+					case "regular":
+						storageInfo.Regular = &detectedDetail
+					case "original":
+						storageInfo.Original = &detectedDetail
+					}
+					updatedPicture.StorageInfo = datatypes.NewJSONType(storageInfo)
+					go func() {
+						if err := serv.SavePicture(context.Background(), &updatedPicture); err != nil {
+							log.Errorf("failed to save picture mime: %v", err)
+						}
+					}()
 				}
 			}
 			ctx.Set(fiber.HeaderContentDisposition, "inline")
@@ -183,7 +175,7 @@ func NewSizedPictureFileHandler(observers ...PictureMIMEObserver) fiber.Handler 
 }
 
 func HandleGetRandomPicture(ctx fiber.Ctx) error {
-	serv := common.MustGetState[common.QueryService](ctx, common.StateKeyQueryService)
+	serv := common.MustGetState[*service.Service](ctx, common.StateKeyService)
 	picture, err := serv.RandomPictures(ctx.RequestCtx(), 1)
 	if err != nil {
 		return err

@@ -29,15 +29,14 @@ type Indexer interface {
 
 var ErrNotEnabled = errors.New("search engine is not enabled")
 
-func New(ctx context.Context, cfg runtimecfg.SearchConfig, app runtimecfg.AppConfig, artworks repo.Artwork) (Searcher, Indexer, error) {
-	mainNode := app.IsMain()
-	if !cfg.Enable || (!app.Capabilities.Has(runtimecfg.CapabilityRead) && !mainNode) {
+func New(ctx context.Context, cfg runtimecfg.SearchConfig, artworks repo.Artwork, initializeIndex bool) (Searcher, Indexer, error) {
+	if !cfg.Enable {
 		return &noopSearcher{}, nil, nil
 	}
 	switch cfg.Engine {
 	case "meilisearch":
-		if !mainNode {
-			s, err := meilisearch.NewReader(ctx, cfg.MeiliSearch)
+		if !initializeIndex {
+			s, err := meilisearch.Open(ctx, cfg.MeiliSearch)
 			return s, nil, err
 		}
 		s, err := meilisearch.NewSearcher(ctx, cfg.MeiliSearch)
@@ -48,17 +47,13 @@ func New(ctx context.Context, cfg runtimecfg.SearchConfig, app runtimecfg.AppCon
 	case "mock":
 		log.Warn("using mock searcher, this is only for testing purposes")
 		s := mocksearch.NewSearcher(artworks)
-		if !mainNode {
-			return &querySearcher{Searcher: s}, nil, nil
+		if !initializeIndex {
+			return s, nil, nil
 		}
 		return s, s, nil
 	default:
 		return nil, nil, fmt.Errorf("unknown search engine %q", cfg.Engine)
 	}
-}
-
-type querySearcher struct {
-	Searcher
 }
 
 type noopSearcher struct{}

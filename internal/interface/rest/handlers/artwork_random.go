@@ -9,6 +9,7 @@ import (
 	"github.com/krau/ManyACG/internal/interface/rest/utils"
 	"github.com/krau/ManyACG/internal/model/entity"
 	"github.com/krau/ManyACG/internal/model/query"
+	"github.com/krau/ManyACG/internal/service"
 	"github.com/krau/ManyACG/internal/shared"
 	"github.com/krau/ManyACG/internal/shared/errs"
 	"github.com/unvgo/ouid"
@@ -30,7 +31,7 @@ type RequestCountArtwork struct {
 }
 
 func HandleRandomArtworks(ctx fiber.Ctx) error {
-	serv := common.MustGetState[common.QueryService](ctx, common.StateKeyQueryService)
+	serv := common.MustGetState[*service.Service](ctx, common.StateKeyService)
 	requestCtx := ctx.RequestCtx()
 	req := new(RequestRandomArtworks)
 	if err := ctx.Bind().All(req); err != nil {
@@ -49,7 +50,7 @@ func HandleRandomArtworks(ctx fiber.Ctx) error {
 }
 
 func HandleRandomPreviewArtworks(ctx fiber.Ctx) error {
-	serv := common.MustGetState[common.QueryService](ctx, common.StateKeyQueryService)
+	serv := common.MustGetState[*service.Service](ctx, common.StateKeyService)
 	requestCtx := ctx.RequestCtx()
 	req := new(RequestRandomArtworks)
 	if err := ctx.Bind().All(req); err != nil {
@@ -71,7 +72,7 @@ func HandleRandomPreviewArtworks(ctx fiber.Ctx) error {
 	return ctx.Redirect().To(regular)
 }
 
-func queryRandomArtworks(ctx context.Context, serv common.QueryService, req *RequestRandomArtworks, limit int) ([]*entity.Artwork, error) {
+func queryRandomArtworks(ctx context.Context, serv *service.Service, req *RequestRandomArtworks, limit int) ([]*entity.Artwork, error) {
 	if limit <= 0 {
 		limit = 1
 	}
@@ -88,7 +89,7 @@ func queryRandomArtworks(ctx context.Context, serv common.QueryService, req *Req
 }
 
 func HandleCountArtwork(ctx fiber.Ctx) error {
-	serv := common.MustGetState[common.QueryService](ctx, common.StateKeyQueryService)
+	serv := common.MustGetState[*service.Service](ctx, common.StateKeyService)
 	requestCtx := ctx.RequestCtx()
 	req := new(RequestCountArtwork)
 	if err := ctx.Bind().All(req); err != nil {
@@ -118,7 +119,7 @@ func HandleGetArtworkByID(ctx fiber.Ctx) error {
 	if err != nil {
 		return common.NewError(fiber.StatusBadRequest, "invalid artwork id")
 	}
-	serv := common.MustGetState[common.QueryService](ctx, common.StateKeyQueryService)
+	serv := common.MustGetState[*service.Service](ctx, common.StateKeyService)
 	artwork, err := serv.GetArtworkByID(requestCtx, artworkUUID)
 	if err != nil {
 		if err == errs.ErrRecordNotFound {

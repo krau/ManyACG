@@ -17,13 +17,9 @@ import (
 	"github.com/meilisearch/meilisearch-go"
 )
 
-type ReaderMeilisearch struct {
+type SearcherMeilisearch struct {
 	client meilisearch.IndexManager
 	cfg    runtimecfg.MeiliSearchConfig
-}
-
-type SearcherMeilisearch struct {
-	ReaderMeilisearch
 }
 
 func meilisearchIndexSettings() *meilisearch.Settings {
@@ -160,7 +156,7 @@ func (m *SearcherMeilisearch) GetMissingArtworkIDs(ctx context.Context, ids []ou
 	return missing, nil
 }
 
-func NewReader(ctx context.Context, cfg runtimecfg.MeiliSearchConfig) (*ReaderMeilisearch, error) {
+func Open(ctx context.Context, cfg runtimecfg.MeiliSearchConfig) (*SearcherMeilisearch, error) {
 	if err := cfg.Valid(); err != nil {
 		return nil, err
 	}
@@ -182,10 +178,10 @@ func NewReader(ctx context.Context, cfg runtimecfg.MeiliSearchConfig) (*ReaderMe
 	)
 	defer probe.Close()
 	if _, err := probe.Index(cfg.Index).SearchWithContext(probeCtx, "", &meilisearch.SearchRequest{Limit: 0}); err != nil {
-		return nil, fmt.Errorf("meilisearch reader startup search failed: %w", err)
+		return nil, fmt.Errorf("meilisearch startup search failed: %w", err)
 	}
 	manager := meilisearch.New(cfg.Host, meilisearch.WithAPIKey(cfg.Key))
-	return &ReaderMeilisearch{client: manager.Index(cfg.Index), cfg: cfg}, nil
+	return &SearcherMeilisearch{client: manager.Index(cfg.Index), cfg: cfg}, nil
 }
 
 func NewSearcher(ctx context.Context, cfg runtimecfg.MeiliSearchConfig) (*SearcherMeilisearch, error) {
@@ -233,10 +229,10 @@ func NewSearcher(ctx context.Context, cfg runtimecfg.MeiliSearchConfig) (*Search
 	if err != nil {
 		return nil, fmt.Errorf("meilisearch fetch index info failed: %w", err)
 	}
-	return &SearcherMeilisearch{ReaderMeilisearch: ReaderMeilisearch{client: manager.Index(cfg.Index), cfg: cfg}}, nil
+	return &SearcherMeilisearch{client: manager.Index(cfg.Index), cfg: cfg}, nil
 }
 
-func (m *ReaderMeilisearch) SearchArtworks(ctx context.Context, que *query.ArtworkSearch) (*dto.ArtworkSearchResult, error) {
+func (m *SearcherMeilisearch) SearchArtworks(ctx context.Context, que *query.ArtworkSearch) (*dto.ArtworkSearchResult, error) {
 	filter := map[shared.R18Type]string{
 		shared.R18TypeAll:  "",
 		shared.R18TypeNone: "r18 = false",
@@ -282,7 +278,7 @@ func (m *ReaderMeilisearch) SearchArtworks(ctx context.Context, que *query.Artwo
 	}, nil
 }
 
-func (m *ReaderMeilisearch) FindSimilarArtworks(ctx context.Context, que *query.ArtworkSimilar) (*dto.ArtworkSearchResult, error) {
+func (m *SearcherMeilisearch) FindSimilarArtworks(ctx context.Context, que *query.ArtworkSimilar) (*dto.ArtworkSearchResult, error) {
 	filter := map[shared.R18Type]string{
 		shared.R18TypeAll:  "",
 		shared.R18TypeNone: "r18 = false",

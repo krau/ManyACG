@@ -18,6 +18,7 @@ import (
 	"github.com/krau/ManyACG/internal/infra/kvstor"
 	"github.com/krau/ManyACG/internal/interface/rest/common"
 	"github.com/krau/ManyACG/internal/interface/rest/handlers"
+	"github.com/krau/ManyACG/internal/service"
 	"github.com/krau/ManyACG/internal/shared/errs"
 
 	"github.com/samber/oops"
@@ -26,14 +27,7 @@ import (
 type RestApp struct {
 	fiberApp *fiber.App
 	cfg      runtimecfg.RestConfig
-	reader   common.QueryService
 	tgbot    common.TelegramBot
-	writer   common.WriteService
-	store    kvstor.KVStore
-}
-
-type queryService struct {
-	common.QueryService
 }
 
 type RestAppOption func(app *RestApp) error
@@ -48,31 +42,13 @@ func WithTelegramBot(bot common.TelegramBot) RestAppOption {
 	}
 }
 
-func WithReadService(serv common.QueryService) RestAppOption {
-	return func(app *RestApp) error {
-		if serv == nil {
-			return oops.New("read service is nil")
-		}
-		app.reader = queryService{QueryService: serv}
-		return nil
+func New(cfg runtimecfg.RestConfig, app runtimecfg.AppConfig, serv *service.Service, store kvstor.KVStore, opts ...RestAppOption) (*RestApp, error) {
+	if (app.IsMain() || app.Capabilities.Has(runtimecfg.CapabilityRead)) && serv == nil {
+		return nil, oops.New("service is required for main or read REST routes")
 	}
-}
-
-func WithWriteService(serv common.WriteService, store kvstor.KVStore) RestAppOption {
-	return func(app *RestApp) error {
-		if serv == nil {
-			return oops.New("write service is nil")
-		}
-		if store == nil {
-			return oops.New("write KV store is nil")
-		}
-		app.writer = serv
-		app.store = store
-		return nil
+	if app.IsMain() && store == nil {
+		return nil, oops.New("KV store is required for main REST routes")
 	}
-}
-
-func New(cfg runtimecfg.RestConfig, opts ...RestAppOption) (*RestApp, error) {
 	errHandler := func(c fiber.Ctx, err error) error {
 		c.Set(fiber.HeaderContentType, fiber.MIMEApplicationJSONCharsetUTF8)
 		if e, ok := errors.AsType[*common.Error](err); ok {
@@ -92,7 +68,7 @@ func New(cfg runtimecfg.RestConfig, opts ...RestAppOption) (*RestApp, error) {
 		return c.Status(code).JSON(common.NewError(code, "internal server error").Response())
 	}
 
-	app := fiber.New(fiber.Config{
+	fiberApp := fiber.New(fiber.Config{
 		JSONEncoder:     json.Marshal,
 		JSONDecoder:     json.Unmarshal,
 		ErrorHandler:    errHandler,
@@ -107,25 +83,31 @@ func New(cfg runtimecfg.RestConfig, opts ...RestAppOption) (*RestApp, error) {
 		EnableIPValidation: true,
 	})
 
-	app.State().Set(common.StateKeyConfig, cfg)
+	fiberApp.State().Set(common.StateKeyConfig, cfg)
+	if serv != nil {
+		fiberApp.State().Set(common.StateKeyService, serv)
+	}
+	if store != nil {
+		fiberApp.State().Set(common.StateKeyKVStore, store)
+	}
 
 	if cfg.Limit.Enable {
-		app.Use(limiter.New(limiter.Config{
+		fiberApp.Use(limiter.New(limiter.Config{
 			Expiration: time.Duration(cfg.Limit.Expiration) * time.Second,
 			Max:        cfg.Limit.Max,
 		}))
 	}
-	app.Use(cors.New())
-	app.Use(etag.New())
-	app.Use(compress.New())
-	app.Use(recoverer.New())
+	fiberApp.Use(cors.New())
+	fiberApp.Use(etag.New())
+	fiberApp.Use(compress.New())
+	fiberApp.Use(recoverer.New())
 
 	loggerCfg := logger.ConfigDefault
 	loggerCfg.Format = "${time} | ${status} | ${latency} | ${ip} | ${method} | ${path} | ${queryParams} | ${error}\n"
-	app.Use(logger.New(loggerCfg))
+	fiberApp.Use(logger.New(loggerCfg))
 
 	restApp := &RestApp{
-		fiberApp: app,
+		fiberApp: fiberApp,
 		cfg:      cfg,
 	}
 
@@ -134,24 +116,11 @@ func New(cfg runtimecfg.RestConfig, opts ...RestAppOption) (*RestApp, error) {
 			return nil, oops.Wrapf(err, "applying option")
 		}
 	}
-	root := app.Group("/api/v1")
-	root.Get("/myip", handlers.MyIP(cfg))
+	root := fiberApp.Group("/api/v1")
 	if restApp.tgbot != nil {
-		app.State().Set(common.StateKeyTelegramBot, restApp.tgbot)
+		fiberApp.State().Set(common.StateKeyTelegramBot, restApp.tgbot)
 	}
-	if restApp.writer != nil {
-		app.State().Set(common.StateKeyWriteService, restApp.writer)
-		app.State().Set(common.StateKeyKVStore, restApp.store)
-		handlers.RegisterWriteRoutes(root)
-	}
-	if restApp.reader != nil {
-		app.State().Set(common.StateKeyQueryService, restApp.reader)
-		var observers []handlers.PictureMIMEObserver
-		if restApp.writer != nil {
-			observers = append(observers, handlers.NewPictureMIMEObserver(restApp.writer))
-		}
-		handlers.RegisterReadRoutes(root, cfg, observers...)
-	}
+	handlers.Register(root, cfg, app)
 	return restApp, nil
 }
 

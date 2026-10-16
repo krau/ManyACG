@@ -31,23 +31,14 @@ import (
 type Runtime struct {
 	cfg            runtimecfg.Config
 	closer         func() error
-	restOpts       []rest.RestAppOption
 	service        *service.Service
 	kv             kvstor.KVStore
-	poster         scheduler.ArtworkPoster
-	tgbot          restcommon.TelegramBot
 	internalServer *internalrpc.Server
 	internalAgent  *internalrpc.Agent
 }
 
 func NewRuntime(ctx context.Context, cfg runtimecfg.Config) (*Runtime, error) {
 	mainNode := cfg.App.IsMain()
-	readable := cfg.App.Capabilities.Has(runtimecfg.CapabilityRead)
-	if !mainNode {
-		cfg.Telegram.Disable = true
-		cfg.Scheduler.Enable = false
-		cfg.Imseek.Enable = false
-	}
 	// 清理上次异常退出(如被强杀)残留在缓存目录的临时文件
 	if removed, err := osutil.RemoveStaleTempFiles(cfg.Storage.CacheDir, time.Hour); err != nil {
 		log.Warn("failed to remove stale temp files", "dir", cfg.Storage.CacheDir, "err", err)
@@ -67,19 +58,19 @@ func NewRuntime(ctx context.Context, cfg runtimecfg.Config) (*Runtime, error) {
 		internalServer: resources.InternalServer,
 		internalAgent:  resources.Agent,
 	}
-	if !readable && !mainNode {
+	if !mainNode && !cfg.App.Capabilities.Has(runtimecfg.CapabilityRead) {
 		return runtime, nil
 	}
 
 	var repos repo.Repositories = database.Default()
-	searcher, indexer, err := search.New(ctx, cfg.Search, cfg.App, repos.Artwork())
+	searcher, indexer, err := search.New(ctx, cfg.Search, repos.Artwork(), mainNode)
 	if err != nil {
 		return nil, errors.Join(fmt.Errorf("initialize search: %w", err), closer())
 	}
 	// local feature-point search(Optional)
 	imCfg := cfg.Imseek
 	var eng imseek.Engine
-	if imCfg.Enable {
+	if mainNode && imCfg.Enable {
 		eng, err = imseek.Init(ctx, imseek.Config{
 			Enable:           imCfg.Enable,
 			DataDir:          imCfg.DataDir,
@@ -145,12 +136,7 @@ func NewRuntime(ctx context.Context, cfg runtimecfg.Config) (*Runtime, error) {
 		registerArtworkEventImseekHandlers(ctx, artworkBus, serv)
 	}
 
-	var restOpts []rest.RestAppOption
-	if readable {
-		restOpts = append(restOpts, rest.WithReadService(serv))
-	}
 	if mainNode {
-		restOpts = append(restOpts, rest.WithWriteService(serv, resources.KV))
 		recoverCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
 		err := serv.RecoverPosting(recoverCtx)
 		cancel()
@@ -159,13 +145,13 @@ func NewRuntime(ctx context.Context, cfg runtimecfg.Config) (*Runtime, error) {
 		}
 	}
 	runtime.closer = closer
-	runtime.restOpts = append(runtime.restOpts, restOpts...)
 	runtime.service = serv
 	return runtime, nil
 }
 
 func (r *Runtime) Start(ctx context.Context, stop func()) error {
-	if !r.cfg.Rest.Enable && r.cfg.Telegram.Disable && r.internalServer == nil && r.internalAgent == nil {
+	botEnabled := r.cfg.App.IsMain() && !r.cfg.Telegram.Disable
+	if !r.cfg.Rest.Enable && !botEnabled && r.internalServer == nil && r.internalAgent == nil {
 		return fmt.Errorf("no interfaces enabled: enable REST, Telegram, the internal gateway or an internal agent")
 	}
 	if r.internalServer != nil {
@@ -179,26 +165,25 @@ func (r *Runtime) Start(ctx context.Context, stop func()) error {
 	if r.internalAgent != nil {
 		go r.internalAgent.Run(ctx)
 	}
-	if !r.cfg.Telegram.Disable {
+	var bot restcommon.TelegramBot
+	if botEnabled {
 		botapp, err := telegram.Init(ctx, r.service, r.kv, r.cfg.Telegram, r.cfg.App.Debug)
 		if err != nil {
 			return err
 		}
 		go botapp.Run(ctx, r.service)
-		r.poster = botapp
-		r.tgbot = botapp
-	}
-
-	if r.cfg.Scheduler.Enable && r.poster != nil {
-		go scheduler.StartPosterWithConfig(ctx, r.cfg.Scheduler, r.poster, r.service)
+		bot = botapp
+		if r.cfg.Scheduler.Enable {
+			go scheduler.StartPoster(ctx, r.cfg.Scheduler, botapp, r.service)
+		}
 	}
 
 	if r.cfg.Rest.Enable {
-		opts := r.restOpts
-		if r.tgbot != nil {
-			opts = append(opts, rest.WithTelegramBot(r.tgbot))
+		var opts []rest.RestAppOption
+		if bot != nil {
+			opts = append(opts, rest.WithTelegramBot(bot))
 		}
-		restApp, err := rest.New(r.cfg.Rest, opts...)
+		restApp, err := rest.New(r.cfg.Rest, r.cfg.App, r.service, r.kv, opts...)
 		if err != nil {
 			return err
 		}

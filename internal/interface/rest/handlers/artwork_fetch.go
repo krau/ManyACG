@@ -4,6 +4,7 @@ import (
 	"github.com/gofiber/fiber/v3"
 	"github.com/krau/ManyACG/internal/infra/kvstor"
 	"github.com/krau/ManyACG/internal/interface/rest/common"
+	"github.com/krau/ManyACG/internal/service"
 	"github.com/krau/ManyACG/internal/shared"
 	"github.com/krau/ManyACG/pkg/log"
 	"github.com/unvgo/ouid"
@@ -57,7 +58,7 @@ type ResponseFetchedUgoiraMeta struct {
 	Index uint                  `json:"index"`
 }
 
-func fetchArtworkResponse(cacheID string, art shared.ArtworkLike, serv common.WriteService) *ResponseFetchArtwork {
+func fetchArtworkResponse(cacheID string, art shared.ArtworkLike, serv *service.Service) *ResponseFetchArtwork {
 	pics := make([]*ResponseFetchedPicture, 0, len(art.GetPictures()))
 	for _, pic := range art.GetPictures() {
 		width, height := pic.GetSize()
@@ -115,7 +116,7 @@ func HandleFetchArtwork(ctx fiber.Ctx) error {
 	if key == "" {
 		return common.NewError(fiber.StatusUnauthorized, "api key is required")
 	}
-	serv := common.MustGetState[common.WriteService](ctx, common.StateKeyWriteService)
+	serv := common.MustGetState[*service.Service](ctx, common.StateKeyService)
 	keyEnt, err := serv.GetApiKeyByKey(requestCtx, key)
 	if err != nil {
 		return common.NewError(fiber.StatusUnauthorized, "invalid api key")

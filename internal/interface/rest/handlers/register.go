@@ -5,7 +5,21 @@ import (
 	"github.com/krau/ManyACG/internal/infra/config/runtimecfg"
 )
 
-func RegisterReadRoutes(router fiber.Router, cfg runtimecfg.RestConfig, observers ...PictureMIMEObserver) {
+func Register(router fiber.Router, cfg runtimecfg.RestConfig, app runtimecfg.AppConfig) {
+	router.Get("/myip", MyIP(cfg))
+	if app.IsMain() {
+		artworkGroup := router.Group("/artwork")
+		artworkGroup.Get("/fetch", HandleFetchArtwork)
+		artworkGroup.Post("/fetch", HandleFetchArtwork)
+
+		tgbotGroup := router.Group("/bot")
+		tgbotGroup.Get("/send_artwork_info", HandleSendArtworkInfoByTelegramBot)
+		tgbotGroup.Post("/send_artwork_info", HandleSendArtworkInfoByTelegramBot)
+	}
+	if !app.Capabilities.Has(runtimecfg.CapabilityRead) {
+		return
+	}
+
 	router.Get("/atom", GenerateAtomFeed)
 
 	artworkGroup := router.Group("/artwork")
@@ -18,7 +32,7 @@ func RegisterReadRoutes(router fiber.Router, cfg runtimecfg.RestConfig, observer
 	artworkGroup.Get("/:id", HandleGetArtworkByID)
 
 	pictureGroup := router.Group("/picture")
-	pictureGroup.Get("/file/:size/:id", NewSizedPictureFileHandler(observers...))
+	pictureGroup.Get("/file/:size/:id", NewSizedPictureFileHandler(app.IsMain()))
 	pictureGroup.Get("/file/:id", HandleGetPictureFileByID)
 	pictureGroup.Get("/random", HandleGetRandomPicture)
 
@@ -27,14 +41,4 @@ func RegisterReadRoutes(router fiber.Router, cfg runtimecfg.RestConfig, observer
 
 	tagGroup := router.Group("/tag")
 	tagGroup.Get("/random", HandleGetRandomTags)
-}
-
-func RegisterWriteRoutes(router fiber.Router) {
-	artworkGroup := router.Group("/artwork")
-	artworkGroup.Get("/fetch", HandleFetchArtwork)
-	artworkGroup.Post("/fetch", HandleFetchArtwork)
-
-	tgbotGroup := router.Group("/bot")
-	tgbotGroup.Get("/send_artwork_info", HandleSendArtworkInfoByTelegramBot)
-	tgbotGroup.Post("/send_artwork_info", HandleSendArtworkInfoByTelegramBot)
 }

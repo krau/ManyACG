@@ -3,9 +3,9 @@ package handlers
 import (
 	"github.com/gofiber/fiber/v3"
 	"github.com/krau/ManyACG/internal/infra/config/runtimecfg"
-	"github.com/krau/ManyACG/internal/interface/rest/common"
 	"github.com/krau/ManyACG/internal/interface/rest/utils"
 	"github.com/krau/ManyACG/internal/model/entity"
+	"github.com/krau/ManyACG/internal/service"
 	"github.com/krau/ManyACG/internal/shared"
 )
 
@@ -44,7 +44,7 @@ type ResponsePicture struct {
 	Regular   string `json:"regular"`
 }
 
-func artworksResponseFromEntity(ctx fiber.Ctx, artworks []*entity.Artwork, cfg runtimecfg.RestConfig, serv common.QueryService) []ResponseArtworkItem {
+func artworksResponseFromEntity(ctx fiber.Ctx, artworks []*entity.Artwork, cfg runtimecfg.RestConfig, serv *service.Service) []ResponseArtworkItem {
 	resp := make([]ResponseArtworkItem, 0, len(artworks))
 	for _, art := range artworks {
 		if len(art.Pictures) == 0 {

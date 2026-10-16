@@ -9,11 +9,12 @@ import (
 	"github.com/krau/ManyACG/internal/interface/rest/common"
 	"github.com/krau/ManyACG/internal/interface/rest/utils"
 	"github.com/krau/ManyACG/internal/model/query"
+	"github.com/krau/ManyACG/internal/service"
 	"github.com/krau/ManyACG/internal/shared"
 )
 
 func GenerateAtomFeed(ctx fiber.Ctx) error {
-	serv := common.MustGetState[common.QueryService](ctx, common.StateKeyQueryService)
+	serv := common.MustGetState[*service.Service](ctx, common.StateKeyService)
 	cfg := common.MustGetState[runtimecfg.RestConfig](ctx, common.StateKeyConfig)
 	requestCtx := ctx.RequestCtx()
 
