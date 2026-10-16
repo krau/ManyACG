@@ -110,7 +110,7 @@ func (n *Nhentai) crawlGallery(ctx context.Context, galleryID string) (*dto.Fetc
 	for _, tag := range apiData.Tags {
 		if artistName == "" && tag.Type == "artist" {
 			artistName = tag.Name
-			artistUid = tag.Name
+			artistUid = normalizeArtistUID(tag.Name)
 			continue
 		}
 		if tag.Type == "tag" {
@@ -155,6 +155,20 @@ func (n *Nhentai) crawlGallery(ctx context.Context, galleryID string) (*dto.Fetc
 		R18:        true,
 		SourceType: shared.SourceTypeNhentai,
 	}, nil
+}
+
+// normalizeArtistUID keeps free-form artist tags usable as cross-node identifiers.
+func normalizeArtistUID(name string) string {
+	uid := strings.Map(func(r rune) rune {
+		if r < ' ' || r == 0x7f || r == '/' || r == '\\' || r == ':' {
+			return '_'
+		}
+		return r
+	}, strings.TrimSpace(name))
+	if strings.Trim(uid, ".") == "" {
+		return "nhentai"
+	}
+	return uid
 }
 
 // func getOriginalUrl(thumbUrl string) (string, error) {
