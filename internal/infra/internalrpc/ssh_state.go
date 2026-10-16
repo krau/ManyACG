@@ -170,8 +170,7 @@ func sshHostTrustError(address string, key ssh.PublicKey, err error) error {
 		}
 		return fmt.Errorf("internal SSH host key mismatch for %q: presented %s, trusted %s: %w", address, fingerprint, strings.Join(trusted, ", "), err)
 	}
-	var revoked *knownhosts.RevokedError
-	if errors.As(err, &revoked) {
+	if _, ok := errors.AsType[*knownhosts.RevokedError](err); ok {
 		return fmt.Errorf("internal SSH host key revoked for %q (%s): %w", address, fingerprint, err)
 	}
 	return fmt.Errorf("internal SSH host verification failed for %q (%s)", address, fingerprint)

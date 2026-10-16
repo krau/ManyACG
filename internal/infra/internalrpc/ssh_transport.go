@@ -132,11 +132,9 @@ func (c *sshTransportCredentials) ClientHandshake(ctx context.Context, _ string,
 	}()
 	algorithms := ssh.SupportedAlgorithms()
 	config := &ssh.ClientConfig{
-		Config: ssh.Config{
-			KeyExchanges: algorithms.KeyExchanges,
-			Ciphers:      algorithms.Ciphers,
-			MACs:         algorithms.MACs,
-		},
+		KeyExchanges:      algorithms.KeyExchanges,
+		Ciphers:           algorithms.Ciphers,
+		MACs:              algorithms.MACs,
 		User:              sshRPCUser,
 		Auth:              []ssh.AuthMethod{ssh.PublicKeys(signer)},
 		HostKeyCallback:   tofuHostKeyCallback(hostContext, c.knownHostsPath),
@@ -170,7 +168,7 @@ func (c *sshTransportCredentials) ClientHandshake(ctx context.Context, _ string,
 		return nil, nil, err
 	}
 	complete = true
-	return conn, sshAuthInfo{CommonAuthInfo: credentials.CommonAuthInfo{SecurityLevel: credentials.PrivacyAndIntegrity}}, nil
+	return conn, sshAuthInfo{SecurityLevel: credentials.PrivacyAndIntegrity}, nil
 }
 
 func (c *sshTransportCredentials) ServerHandshake(raw net.Conn) (net.Conn, credentials.AuthInfo, error) {
@@ -203,11 +201,9 @@ func (c *sshTransportCredentials) ServerHandshake(raw net.Conn) (net.Conn, crede
 		}
 	}
 	config := &ssh.ServerConfig{
-		Config: ssh.Config{
-			KeyExchanges: algorithms.KeyExchanges,
-			Ciphers:      algorithms.Ciphers,
-			MACs:         algorithms.MACs,
-		},
+		KeyExchanges:            algorithms.KeyExchanges,
+		Ciphers:                 algorithms.Ciphers,
+		MACs:                    algorithms.MACs,
 		PublicKeyAuthAlgorithms: userAlgorithms,
 		PublicKeyCallback: func(metadata ssh.ConnMetadata, key ssh.PublicKey) (*ssh.Permissions, error) {
 			if metadata.User() != sshRPCUser {
@@ -259,9 +255,9 @@ func (c *sshTransportCredentials) ServerHandshake(raw net.Conn) (net.Conn, crede
 	}
 	extensions := sshConn.Permissions.Extensions
 	auth := sshAuthInfo{
-		CommonAuthInfo: credentials.CommonAuthInfo{SecurityLevel: credentials.PrivacyAndIntegrity},
-		publicKey:      []byte(extensions[sshPublicKeyPermission]),
-		nodeID:         extensions[sshNodeIDPermission],
+		SecurityLevel: credentials.PrivacyAndIntegrity,
+		publicKey:     []byte(extensions[sshPublicKeyPermission]),
+		nodeID:        extensions[sshNodeIDPermission],
 	}
 	if len(auth.publicKey) == 0 || auth.nodeID == "" {
 		return nil, nil, errors.New("missing authenticated SSH node identity")

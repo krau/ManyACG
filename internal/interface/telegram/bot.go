@@ -147,9 +147,7 @@ func Init(ctx context.Context, serv *service.Service, store kvstor.KVStore, cfg 
 		debug:            debug,
 		artworkInfoQueue: artworkInfoQueue,
 	}
-	app.background.Add(1)
-	go func() {
-		defer app.background.Done()
+	app.background.Go(func() {
 		sig, err := commandsSignature(cfg)
 		if err != nil {
 			log.Warnf("Error when calculating commands signature: %s", err)
@@ -192,13 +190,11 @@ func Init(ctx context.Context, serv *service.Service, store kvstor.KVStore, cfg 
 			log.Warnf("Error when setting commands signature: %s", err)
 			return
 		}
-	}()
+	})
 
-	app.background.Add(1)
-	go func() {
-		defer app.background.Done()
+	app.background.Go(func() {
 		app.processArtworkInfoTasks(ctx)
-	}()
+	})
 
 	return app, nil
 }

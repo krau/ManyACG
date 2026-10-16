@@ -2,6 +2,7 @@ package infra
 
 import (
 	"context"
+	"slices"
 	"sync"
 
 	"github.com/krau/ManyACG/internal/common/httpclient"
@@ -28,8 +29,8 @@ type Resources struct {
 func (r *Resources) Close() error {
 	r.closeOnce.Do(func() {
 		var errs []error
-		for i := len(r.closers) - 1; i >= 0; i-- {
-			if err := r.closers[i](); err != nil {
+		for _, v := range slices.Backward(r.closers) {
+			if err := v(); err != nil {
 				errs = append(errs, err)
 			}
 		}

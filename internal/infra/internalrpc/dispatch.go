@@ -136,8 +136,8 @@ func (d *Dispatcher) downloadFromAgent(ctx context.Context, url, path string) (e
 	defer stopAbort()
 	assignment := &internalpb.Assignment{
 		Payload: &internalpb.Assignment_Job{Job: &internalpb.Job{
-			JobId:          dispatchJob.id,
-			TimeoutMs:      timeoutMillis(d.downloadTimeout),
+			JobId:     dispatchJob.id,
+			TimeoutMs: timeoutMillis(d.downloadTimeout),
 			Task: &internalpb.Job_DownloadOriginFile{DownloadOriginFile: &internalpb.DownloadOriginFile{
 				Url: url,
 			}},

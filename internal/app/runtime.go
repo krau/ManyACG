@@ -183,11 +183,9 @@ func NewRuntime(ctx context.Context, cfg runtimecfg.Config) (*Runtime, error) {
 }
 
 func (r *Runtime) goInterface(fn func()) {
-	r.interfaces.Add(1)
-	go func() {
-		defer r.interfaces.Done()
+	r.interfaces.Go(func() {
 		fn()
-	}()
+	})
 }
 
 func (r *Runtime) Start(ctx context.Context, stop func()) error {
