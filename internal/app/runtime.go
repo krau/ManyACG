@@ -38,6 +38,29 @@ type Runtime struct {
 	internalAgent  *internalrpc.Agent
 	stop           func()
 	interfaces     sync.WaitGroup
+	errMu          sync.Mutex
+	interfaceErr   error
+}
+
+// failInterface records the first interface failure and cancels the run, so the
+// process exits non-zero instead of silently staying down.
+func (r *Runtime) failInterface(err error) {
+	log.Error(err)
+	r.errMu.Lock()
+	if r.interfaceErr == nil {
+		r.interfaceErr = err
+	}
+	r.errMu.Unlock()
+	if r.stop != nil {
+		r.stop()
+	}
+}
+
+// err returns the first interface failure, if any.
+func (r *Runtime) err() error {
+	r.errMu.Lock()
+	defer r.errMu.Unlock()
+	return r.interfaceErr
 }
 
 func NewRuntime(ctx context.Context, cfg runtimecfg.Config) (*Runtime, error) {
@@ -173,8 +196,7 @@ func (r *Runtime) Start(ctx context.Context, stop func()) error {
 	if r.internalServer != nil {
 		r.goInterface(func() {
 			if err := r.internalServer.Run(ctx); err != nil {
-				log.Error(err)
-				stop()
+				r.failInterface(err)
 			}
 		})
 	}
@@ -211,8 +233,7 @@ func (r *Runtime) Start(ctx context.Context, stop func()) error {
 		r.goInterface(func() {
 			log.Info("Starting RESTful API server", "addr", r.cfg.Rest.Addr)
 			if err := restApp.Run(ctx); err != nil {
-				log.Error(err)
-				stop()
+				r.failInterface(err)
 			}
 		})
 	}
@@ -286,5 +307,5 @@ func Run(ctx context.Context, cfg runtimecfg.Config, stop func()) error {
 	defer log.Info("Exited.")
 
 	<-ctx.Done()
-	return nil
+	return runtime.err()
 }
