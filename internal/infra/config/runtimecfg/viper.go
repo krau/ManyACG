@@ -46,6 +46,31 @@ type KVDBConfig struct {
 
 }
 
+func (c KVDBConfig) Validate() error {
+	switch c.Type {
+	case "bbolt":
+		if c.Path == "" {
+			return fmt.Errorf("kvdb.path is required for the bbolt backend")
+		}
+		if c.Bucket == "" || c.TTLBucket == "" {
+			return fmt.Errorf("kvdb.bucket and kvdb.ttl_bucket are required for the bbolt backend")
+		}
+		if c.TTLSweepPeriod == 0 {
+			return fmt.Errorf("kvdb.ttl_sweep_period must be greater than 0, expired entries are only swept periodically")
+		}
+		if c.TTLBatchLimit <= 0 {
+			return fmt.Errorf("kvdb.ttl_batch_limit must be greater than 0")
+		}
+	case "redis":
+		if c.Redis.URL == "" && len(c.Redis.Addrs) == 0 {
+			return fmt.Errorf("kvdb.redis.url or kvdb.redis.addrs is required for the redis backend")
+		}
+	default:
+		return fmt.Errorf("kvdb.type contains unknown type %q, valid values are bbolt, redis", c.Type)
+	}
+	return nil
+}
+
 type RedisConfig struct {
 	// URL like redis://user:pass@host:port/db?addr=... for cluster/sentinel
 	URL      string `toml:"url" mapstructure:"url" json:"url" yaml:"url"`
@@ -124,6 +149,12 @@ func (c Config) Validate() error {
 	}
 	if c.Internal.Gateway.Addr != "" && !readable && !mainNode {
 		return fmt.Errorf("internal.gateway.addr requires app.role = main or the read capability")
+	}
+	if mainNode {
+		// The key-value store is only opened by the main node, the other roles never read this section.
+		if err := c.KVDB.Validate(); err != nil {
+			return err
+		}
 	}
 	if err := c.Internal.Gateway.Validate(); err != nil {
 		return err

@@ -19,32 +19,44 @@ type KVStore interface {
 }
 
 func Open(cfg runtimecfg.KVDBConfig) (KVStore, error) {
-	if cfg.Type == "redis" {
-		rc := cfg.Redis
-		var opt rueidis.ClientOption
-		if rc.URL != "" {
-			var err error
-			opt, err = rueidis.ParseURL(rc.URL)
-			if err != nil {
-				return nil, err
-			}
-		} else {
-			opt = rueidis.ClientOption{
-				InitAddress: rc.Addrs,
-				Username:    rc.Username,
-				Password:    rc.Password,
-				SelectDB:    rc.DB,
-			}
-		}
-		if rc.TLS {
-			opt.TLSConfig = &tls.Config{MinVersion: tls.VersionTLS12, InsecureSkipVerify: rc.TLSInsecure}
-		}
-		client, err := rueidis.NewClient(opt)
+	switch cfg.Type {
+	case "bbolt":
+		return openBbolt(cfg)
+	case "redis":
+		return openRedis(cfg)
+	default:
+		return nil, oops.Errorf("unsupported kvdb type %q", cfg.Type)
+	}
+}
+
+func openRedis(cfg runtimecfg.KVDBConfig) (KVStore, error) {
+	rc := cfg.Redis
+	var opt rueidis.ClientOption
+	if rc.URL != "" {
+		var err error
+		opt, err = rueidis.ParseURL(rc.URL)
 		if err != nil {
 			return nil, err
 		}
-		return &redisDB{client: client, prefix: rc.Prefix}, nil
+	} else {
+		opt = rueidis.ClientOption{
+			InitAddress: rc.Addrs,
+			Username:    rc.Username,
+			Password:    rc.Password,
+			SelectDB:    rc.DB,
+		}
 	}
+	if rc.TLS {
+		opt.TLSConfig = &tls.Config{MinVersion: tls.VersionTLS12, InsecureSkipVerify: rc.TLSInsecure}
+	}
+	client, err := rueidis.NewClient(opt)
+	if err != nil {
+		return nil, err
+	}
+	return &redisDB{client: client, prefix: rc.Prefix}, nil
+}
+
+func openBbolt(cfg runtimecfg.KVDBConfig) (KVStore, error) {
 	bdb, err := bbolt.Open(cfg.Path, 0600, nil)
 	if err != nil {
 		return nil, err
