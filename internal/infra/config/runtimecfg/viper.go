@@ -99,7 +99,7 @@ func (c AppConfig) Validate() error {
 	default:
 		return fmt.Errorf("app.role contains unknown role %q, valid values are main, worker", c.Role)
 	}
-	if uint64(c.ShutdownTimeout) > maxDurationSeconds {
+	if uint64(c.ShutdownTimeout) > maxDurationSeconds-1 {
 		return fmt.Errorf("app.shutdown_timeout is too large to fit a duration in seconds")
 	}
 	return c.Capabilities.Validate()

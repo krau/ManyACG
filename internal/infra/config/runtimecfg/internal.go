@@ -44,14 +44,30 @@ func validateSeconds(value uint, name string) error {
 	return nil
 }
 
+func validatePort(port string) error {
+	parsed, err := strconv.ParseUint(port, 10, 16)
+	if err != nil || parsed == 0 {
+		return fmt.Errorf("port %q must be a number between 1 and 65535", port)
+	}
+	return nil
+}
+
 func (c InternalGatewayConfig) Validate() error {
-	if c.Addr != "" {
-		if _, _, err := net.SplitHostPort(c.Addr); err != nil {
-			return fmt.Errorf("internal.gateway.addr must be a host:port listen address")
-		}
-		if strings.TrimSpace(c.AuthorizedKeys) == "" {
-			return fmt.Errorf("internal.gateway.authorized_keys is required for the internal gateway")
-		}
+	if c.Addr == "" {
+		return nil
+	}
+	if strings.TrimSpace(c.Addr) != c.Addr {
+		return fmt.Errorf("internal.gateway.addr must not contain surrounding spaces")
+	}
+	_, port, err := net.SplitHostPort(c.Addr)
+	if err != nil {
+		return fmt.Errorf("internal.gateway.addr must be a host:port listen address")
+	}
+	if err := validatePort(port); err != nil {
+		return fmt.Errorf("internal.gateway.addr has an invalid port: %w", err)
+	}
+	if strings.TrimSpace(c.AuthorizedKeys) == "" {
+		return fmt.Errorf("internal.gateway.authorized_keys is required for the internal gateway")
 	}
 	return nil
 }
@@ -67,12 +83,15 @@ func (c InternalAgentConfig) Validate() error {
 	if c.Gateway == "" {
 		return nil
 	}
+	if strings.TrimSpace(c.Gateway) != c.Gateway {
+		return fmt.Errorf("internal.agent.gateway must not contain surrounding spaces")
+	}
 	host, port, err := net.SplitHostPort(c.Gateway)
 	if err != nil || strings.TrimSpace(host) == "" {
 		return fmt.Errorf("internal.agent.gateway must be a host:port address")
 	}
-	if parsed, err := strconv.ParseUint(port, 10, 16); err != nil || parsed == 0 {
-		return fmt.Errorf("internal.agent.gateway has an invalid port")
+	if err := validatePort(port); err != nil {
+		return fmt.Errorf("internal.agent.gateway has an invalid port: %w", err)
 	}
 	if strings.TrimSpace(c.PrivateKey) == "" {
 		return fmt.Errorf("internal.agent.private_key is required for an internal agent")
