@@ -3,7 +3,6 @@ package cmd
 import (
 	"context"
 	"fmt"
-	"os"
 	"time"
 
 	"github.com/krau/ManyACG/internal/infra"
@@ -23,8 +22,8 @@ var indexCmd = &cobra.Command{
 	Short:       "Index all artworks to MeiliSearch",
 	Long:        "Index all artworks from database to the specified MeiliSearch index",
 	Annotations: map[string]string{mainCommandAnnotation: "true"},
-	Run: func(cmd *cobra.Command, args []string) {
-		indexArtworks(cmd.Context())
+	RunE: func(cmd *cobra.Command, args []string) error {
+		return indexArtworks(cmd.Context())
 	},
 }
 
@@ -39,7 +38,7 @@ func init() {
 	indexCmd.Flags().BoolVarP(&indexClearAll, "clear", "c", false, "Clear all existing documents before indexing")
 }
 
-func indexArtworks(ctx context.Context) {
+func indexArtworks(ctx context.Context) error {
 	// 读取配置
 	cfg := runtimecfg.Get()
 
@@ -99,7 +98,7 @@ func indexArtworks(ctx context.Context) {
 
 	if total == 0 {
 		log.Info("No artworks found in database")
-		return
+		return nil
 	}
 
 	// 批量读取并索引
@@ -168,7 +167,7 @@ func indexArtworks(ctx context.Context) {
 		"rate", fmt.Sprintf("%.2f/s", float64(indexed)/duration.Seconds()))
 
 	if failed > 0 {
-		log.Warn("Some artworks failed to index", "failed", failed)
-		os.Exit(1)
+		return fmt.Errorf("%d artworks failed to index", failed)
 	}
+	return nil
 }
