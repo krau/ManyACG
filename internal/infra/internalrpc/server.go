@@ -13,11 +13,14 @@ import (
 	"google.golang.org/grpc/keepalive"
 )
 
-const stopGrace = 10 * time.Second
+const stopGrace = 5 * time.Second
+
+var errServerStopped = errors.New("internal RPC server stopped")
 
 type Server struct {
 	addr string
 	grpc *grpc.Server
+	hub  *Hub
 }
 
 func NewServer(cfg runtimecfg.InternalConfig, hub *Hub) (*Server, error) {
@@ -25,7 +28,7 @@ func NewServer(cfg runtimecfg.InternalConfig, hub *Hub) (*Server, error) {
 	if err != nil {
 		return nil, err
 	}
-	gateway := NewGateway(hub, cfg.Dispatch.MaxDownloadBytes, cfg.Gateway.AuthorizedKeys)
+	gateway := NewGateway(hub, cfg.Gateway.AuthorizedKeys)
 	options := []grpc.ServerOption{
 		grpc.StatsHandler(connectionAuthHandler{}),
 		grpc.MaxRecvMsgSize(maxMessageSize),
@@ -44,7 +47,7 @@ func NewServer(cfg runtimecfg.InternalConfig, hub *Hub) (*Server, error) {
 	}
 	server := grpc.NewServer(options...)
 	internalpb.RegisterGatewayServer(server, gateway)
-	return &Server{addr: cfg.Gateway.Addr, grpc: server}, nil
+	return &Server{addr: cfg.Gateway.Addr, grpc: server, hub: hub}, nil
 }
 
 func (s *Server) Run(ctx context.Context) error {
@@ -78,6 +81,7 @@ func (s *Server) Close() error {
 }
 
 func (s *Server) stopGracefully() {
+	s.hub.closeAll(errServerStopped)
 	stopped := make(chan struct{})
 	go func() {
 		s.grpc.GracefulStop()

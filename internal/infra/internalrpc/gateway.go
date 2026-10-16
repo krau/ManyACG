@@ -18,11 +18,10 @@ type Gateway struct {
 	internalpb.UnimplementedGatewayServer
 	hub                *Hub
 	authorizedKeysFile string
-	maxDownloadBytes   int64
 }
 
-func NewGateway(hub *Hub, maxDownloadBytes int64, authorizedKeysFile string) *Gateway {
-	return &Gateway{hub: hub, maxDownloadBytes: maxDownloadBytes, authorizedKeysFile: authorizedKeysFile}
+func NewGateway(hub *Hub, authorizedKeysFile string) *Gateway {
+	return &Gateway{hub: hub, authorizedKeysFile: authorizedKeysFile}
 }
 
 func (g *Gateway) unaryAuth(ctx context.Context, req any, _ *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (any, error) {
@@ -88,6 +87,8 @@ func (g *Gateway) Attach(stream internalpb.Gateway_AttachServer) error {
 					errorsCh <- err
 					return
 				}
+			case <-session.closed:
+				return
 			case <-ctx.Done():
 				return
 			}
@@ -107,6 +108,9 @@ func (g *Gateway) Attach(stream internalpb.Gateway_AttachServer) error {
 			return nil
 		}
 		return err
+	case <-session.closed:
+		// Replaced by a newer connection or the gateway is shutting down.
+		return nil
 	case <-ctx.Done():
 		return ctx.Err()
 	}
@@ -143,9 +147,6 @@ func (g *Gateway) PushDownload(stream internalpb.Gateway_PushDownloadServer) (er
 	expected := first.GetTotalSize()
 	if expected < 0 || len(first.GetChunk()) != 0 {
 		return status.Error(codes.InvalidArgument, "download must start with a non-negative size and no data")
-	}
-	if g.maxDownloadBytes <= 0 || expected > g.maxDownloadBytes {
-		return status.Error(codes.ResourceExhausted, "download exceeds the configured byte limit")
 	}
 	written := int64(0)
 	for {

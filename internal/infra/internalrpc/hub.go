@@ -13,17 +13,18 @@ import (
 )
 
 const (
-	protocolVersion     = 3
-	maxAgentConcurrency = 8
-	assignQueueSize     = 32
+	protocolVersion = 3
+	assignQueueSize = 32
 )
 
 var (
-	errNoAgent          = errors.New("no idle internal agent available")
-	errSessionClosed    = errors.New("internal agent session closed")
-	errUnknownJob       = errors.New("unknown internal job")
-	errJobCompleted     = errors.New("internal job already has a result")
-	errInvalidJobResult = errors.New("invalid internal job result")
+	errNoAgent           = errors.New("no idle internal agent available")
+	errSessionClosed     = errors.New("internal agent session closed")
+	errSessionReplaced   = errors.New("internal agent session replaced by a newer connection")
+	errUnknownJob        = errors.New("unknown internal job")
+	errJobCompleted      = errors.New("internal job already has a result")
+	errInvalidJobResult  = errors.New("invalid internal job result")
+	errInvalidJobRequest = errors.New("internal job request is invalid")
 )
 
 type session struct {
@@ -115,10 +116,7 @@ func (h *Hub) register(nodeID, connectionID string, reg *internalpb.Register) (*
 	if concurrency == 0 {
 		concurrency = 1
 	}
-	if concurrency > maxAgentConcurrency {
-		concurrency = maxAgentConcurrency
-	}
-	session := &session{
+	attached := &session{
 		id:           newID(),
 		nodeID:       nodeID,
 		connectionID: connectionID,
@@ -130,20 +128,59 @@ func (h *Hub) register(nodeID, connectionID string, reg *internalpb.Register) (*
 	for _, capability := range reg.GetCapabilities() {
 		switch capability {
 		case internalpb.Capability_CAPABILITY_FETCH:
-			session.fetch = true
+			attached.fetch = true
 		case internalpb.Capability_CAPABILITY_DOWNLOAD:
-			session.download = true
+			attached.download = true
 		}
 	}
 	h.mu.Lock()
-	defer h.mu.Unlock()
+	var replaced []*session
+	kept := h.sessions[:0]
 	for _, existing := range h.sessions {
 		if existing.nodeID == nodeID || existing.connectionID == connectionID {
-			return nil, errors.New("this node already has an active session")
+			replaced = append(replaced, existing)
+			continue
 		}
+		kept = append(kept, existing)
 	}
-	h.sessions = append(h.sessions, session)
-	return session, nil
+	h.sessions = append(kept, attached)
+	var orphans []*job
+	for _, old := range replaced {
+		for id, orphan := range old.jobs {
+			delete(h.jobs, id)
+			orphans = append(orphans, orphan)
+		}
+		old.jobs = nil
+	}
+	h.mu.Unlock()
+	for _, old := range replaced {
+		old.close()
+	}
+	for _, orphan := range orphans {
+		orphan.abort(errSessionReplaced)
+	}
+	return attached, nil
+}
+
+func (h *Hub) closeAll(reason error) {
+	h.mu.Lock()
+	sessions := h.sessions
+	h.sessions = nil
+	var orphans []*job
+	for _, session := range sessions {
+		for id, orphan := range session.jobs {
+			delete(h.jobs, id)
+			orphans = append(orphans, orphan)
+		}
+		session.jobs = nil
+	}
+	h.mu.Unlock()
+	for _, session := range sessions {
+		session.close()
+	}
+	for _, orphan := range orphans {
+		orphan.abort(reason)
+	}
 }
 
 func (h *Hub) dropSession(session *session) {
@@ -213,7 +250,7 @@ func (h *Hub) complete(connectionID string, completion *internalpb.JobCompletion
 	}
 	failure := completion.GetFailure()
 	validFailure := failure != nil && failure.GetCode() >= internalpb.FailureCode_FAILURE_CODE_UNSUPPORTED_SOURCE &&
-		failure.GetCode() <= internalpb.FailureCode_FAILURE_CODE_INTERNAL && len(failure.GetMessage()) <= 4096
+		failure.GetCode() <= internalpb.FailureCode_FAILURE_CODE_INTERNAL && len(failure.GetMessage()) <= maxFailureMessageBytes
 	validResult := validFailure || dispatchJob.writer == nil && completion.GetArtwork() != nil
 	dispatchJob.completed = true
 	h.mu.Unlock()

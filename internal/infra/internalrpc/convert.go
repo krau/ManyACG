@@ -165,5 +165,18 @@ func failureFromError(err error) *internalpb.JobFailure {
 	if errors.Is(err, errs.ErrUnsupportedSource) {
 		code = internalpb.FailureCode_FAILURE_CODE_UNSUPPORTED_SOURCE
 	}
-	return &internalpb.JobFailure{Code: code, Message: err.Error()}
+	if err == nil {
+		return &internalpb.JobFailure{Code: code, Message: "internal agent job failed"}
+	}
+	return &internalpb.JobFailure{Code: code, Message: truncateFailureMessage(err.Error())}
+}
+
+const maxFailureMessageBytes = 4096
+
+func truncateFailureMessage(message string) string {
+	if len(message) <= maxFailureMessageBytes {
+		return message
+	}
+	const ellipsis = "..."
+	return message[:maxFailureMessageBytes-len(ellipsis)] + ellipsis
 }
