@@ -41,7 +41,14 @@ type Runtime struct {
 }
 
 func NewRuntime(ctx context.Context, cfg runtimecfg.Config) (*Runtime, error) {
+	if err := cfg.Validate(); err != nil {
+		return nil, err
+	}
 	mainNode := cfg.App.IsMain()
+	botEnabled := mainNode && !cfg.Telegram.Disable
+	if !cfg.Rest.Enable && !botEnabled && cfg.Internal.Gateway.Addr == "" && cfg.Internal.Agent.Gateway == "" {
+		return nil, fmt.Errorf("no interfaces enabled: enable REST, Telegram, the internal gateway or an internal agent")
+	}
 	// 清理上次异常退出(如被强杀)残留在缓存目录的临时文件
 	if removed, err := osutil.RemoveStaleTempFiles(cfg.Storage.CacheDir, time.Hour); err != nil {
 		log.Warn("failed to remove stale temp files", "dir", cfg.Storage.CacheDir, "err", err)
@@ -163,9 +170,6 @@ func (r *Runtime) goInterface(fn func()) {
 func (r *Runtime) Start(ctx context.Context, stop func()) error {
 	r.stop = stop
 	botEnabled := r.cfg.App.IsMain() && !r.cfg.Telegram.Disable
-	if !r.cfg.Rest.Enable && !botEnabled && r.internalServer == nil && r.internalAgent == nil {
-		return fmt.Errorf("no interfaces enabled: enable REST, Telegram, the internal gateway or an internal agent")
-	}
 	if r.internalServer != nil {
 		r.goInterface(func() {
 			if err := r.internalServer.Run(ctx); err != nil {
