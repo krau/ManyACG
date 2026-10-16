@@ -20,8 +20,10 @@ func safeSSHStateDirectory(info os.FileInfo, final bool) bool {
 	if !ok || (stat.Uid != 0 && stat.Uid != uint32(os.Geteuid())) {
 		return false
 	}
-	// A sticky ancestor such as /tmp is safe; the state directory itself is not shared.
-	return info.Mode().Perm()&0o022 == 0 || (!final && info.Mode()&os.ModeSticky != 0)
+	if final {
+		return info.Mode().Perm()&0o022 == 0
+	}
+	return info.Mode().Perm()&0o002 == 0 || info.Mode()&os.ModeSticky != 0
 }
 
 func safeSSHStateFile(info os.FileInfo, private, writable bool) bool {
