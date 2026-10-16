@@ -3,6 +3,8 @@ package database
 import (
 	"context"
 	"fmt"
+	"os"
+	"strings"
 	"sync"
 
 	"github.com/krau/ManyACG/internal/infra/config/runtimecfg"
@@ -110,6 +112,12 @@ func Migrate(ctx context.Context, cfg runtimecfg.Config) error {
 	if !cfg.App.IsMain() {
 		return fmt.Errorf("database migration requires app.role = main")
 	}
+	if path, ok := sqliteFilePath(cfg); ok {
+		// gormlite creates a missing sqlite file, so a wrong DSN would silently migrate an empty database.
+		if _, err := os.Stat(path); err != nil {
+			return fmt.Errorf("refusing to migrate: sqlite database %q is not accessible: %w", path, err)
+		}
+	}
 	db, err := openDatabase(ctx, cfg)
 	if err != nil {
 		return err
@@ -120,6 +128,23 @@ func Migrate(ctx context.Context, cfg runtimecfg.Config) error {
 	}
 	defer sqlDB.Close()
 	return migrateDatabase(ctx, db, cfg)
+}
+
+// sqliteFilePath reports the file a sqlite DSN points at, if the configured driver is sqlite.
+func sqliteFilePath(cfg runtimecfg.Config) (string, bool) {
+	switch cfg.Database.Type {
+	case "sqlite", "sqlite3":
+	default:
+		return "", false
+	}
+	path := strings.TrimPrefix(cfg.Database.DSN, "file:")
+	if i := strings.IndexByte(path, '?'); i >= 0 {
+		path = path[:i]
+	}
+	if path == "" || path == ":memory:" {
+		return "", false
+	}
+	return path, true
 }
 
 func migrateDatabase(ctx context.Context, db *gorm.DB, cfg runtimecfg.Config) error {
