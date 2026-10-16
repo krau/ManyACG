@@ -66,6 +66,12 @@ func initDB(ctx context.Context, cfg runtimecfg.Config, okCh chan struct{}) {
 			log.Fatal("failed to migrate database", "err", err)
 		}
 	}
+	if !cfg.App.IsMain() {
+		// Worker nodes never migrate, so they have to check the schema the main node created.
+		if err := verifySchema(ctx, db); err != nil {
+			log.Fatal("database schema check failed", "err", err)
+		}
+	}
 	defaultDB = &DB{db: db}
 	log.Info("Database initialized")
 	okCh <- struct{}{}
@@ -147,24 +153,41 @@ func sqliteFilePath(cfg runtimecfg.Config) (string, bool) {
 	return path, true
 }
 
+var schemaModels = []any{
+	&entity.Admin{},
+	&entity.Artist{},
+	&entity.Tag{},
+	&entity.TagAlias{},
+	&entity.Artwork{},
+	&entity.Picture{},
+	&entity.UgoiraMeta{},
+	&entity.Video{},
+	&entity.CachedArtwork{},
+	&entity.DeletedRecord{},
+	&entity.ApiKey{},
+	&entity.User{},
+}
+
 func migrateDatabase(ctx context.Context, db *gorm.DB, cfg runtimecfg.Config) error {
-	if err := db.WithContext(ctx).AutoMigrate(
-		&entity.Admin{},
-		&entity.Artist{},
-		&entity.Tag{},
-		&entity.TagAlias{},
-		&entity.Artwork{},
-		&entity.Picture{},
-		&entity.UgoiraMeta{},
-		&entity.Video{},
-		&entity.CachedArtwork{},
-		&entity.DeletedRecord{},
-		&entity.ApiKey{},
-		&entity.User{},
-	); err != nil {
+	if err := db.WithContext(ctx).AutoMigrate(schemaModels...); err != nil {
 		return fmt.Errorf("migrate database: %w", err)
 	}
 	return optimizePgSQL(ctx, db, cfg)
+}
+
+// verifySchema fails fast on nodes that never migrate when the database is not migrated yet.
+func verifySchema(ctx context.Context, db *gorm.DB) error {
+	missing := make([]string, 0)
+	for _, model := range schemaModels {
+		if !db.WithContext(ctx).Migrator().HasTable(model) {
+			missing = append(missing, strings.TrimPrefix(fmt.Sprintf("%T", model), "*entity."))
+		}
+	}
+	if len(missing) == 0 {
+		return nil
+	}
+	return fmt.Errorf("database schema is outdated, missing tables: %s (run `manyacg migrate` on the main node)",
+		strings.Join(missing, ", "))
 }
 
 func optimizePgSQL(ctx context.Context, db *gorm.DB, cfg runtimecfg.Config) error {
