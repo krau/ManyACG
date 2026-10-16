@@ -8,6 +8,7 @@ import (
 	"github.com/krau/ManyACG/internal/infra/config/runtimecfg"
 	"github.com/redis/rueidis"
 	"github.com/samber/oops"
+	"github.com/vmihailenco/msgpack/v5"
 	"go.etcd.io/bbolt"
 )
 
@@ -80,8 +81,17 @@ func Get[T any](ctx context.Context, store KVStore, key string) (T, error) {
 		return zero, err
 	}
 	typedVal, ok := val.(T)
-	if !ok {
+	if ok {
+		return typedVal, nil
+	}
+	// Values are decoded back from msgpack as maps, so struct types need a round trip.
+	raw, err := msgpack.Marshal(val)
+	if err != nil {
+		return zero, oops.Wrapf(err, "failed to encode value of %T", val)
+	}
+	var decoded T
+	if err := msgpack.Unmarshal(raw, &decoded); err != nil {
 		return zero, oops.New("type assertion failed in kvstor.Get")
 	}
-	return typedVal, nil
+	return decoded, nil
 }
