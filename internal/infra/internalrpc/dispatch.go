@@ -24,7 +24,6 @@ type Dispatcher struct {
 	downloadTimeout  time.Duration
 	maxDownloadBytes int64
 	namers           map[shared.SourceType]source.ArtworkNamer
-	sourceConfig     runtimecfg.SourceConfig
 }
 
 func NewDispatcher(
@@ -42,7 +41,6 @@ func NewDispatcher(
 		downloadTimeout:  time.Duration(cfg.Internal.Dispatch.DownloadTimeout) * time.Second,
 		maxDownloadBytes: cfg.Internal.Dispatch.MaxDownloadBytes,
 		namers:           namers,
-		sourceConfig:     cfg.Source,
 	}
 }
 
@@ -111,7 +109,7 @@ func (d *Dispatcher) fetchFromAgent(ctx context.Context, sourceURL string) (*dto
 		if failure := completion.GetFailure(); failure != nil {
 			return nil, failureToError(failure)
 		}
-		return validateArtworkResult(jobCtx, sourceURL, completion.GetArtwork(), d.namers, d.sourceConfig)
+		return validateArtworkResult(sourceURL, completion.GetArtwork(), d.namers)
 	case <-jobCtx.Done():
 		dispatchJob.cancel()
 		return nil, jobCtx.Err()
