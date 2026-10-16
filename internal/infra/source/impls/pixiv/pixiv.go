@@ -70,7 +70,7 @@ func (p *Pixiv) GetArtworkInfo(ctx context.Context, sourceURL string) (*dto.Fetc
 		return nil, err
 	}
 	if ajaxResp.Err {
-		return nil, oops.Wrapf(err, "pixiv ajax response error: %s", ajaxResp.Message)
+		return nil, oops.Errorf("pixiv ajax response error: %s", ajaxResp.Message)
 	}
 	return ajaxResp.ToArtwork(ctx, p.reqClient, p.cfg.ImgProxy)
 }
