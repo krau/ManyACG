@@ -22,9 +22,8 @@ type InternalGatewayConfig struct {
 }
 
 type InternalDispatchConfig struct {
-	FetchTimeout     uint  `toml:"fetch_timeout" mapstructure:"fetch_timeout" json:"fetch_timeout" yaml:"fetch_timeout"`
-	DownloadTimeout  uint  `toml:"download_timeout" mapstructure:"download_timeout" json:"download_timeout" yaml:"download_timeout"`
-	MaxDownloadBytes int64 `toml:"max_download_bytes" mapstructure:"max_download_bytes" json:"max_download_bytes" yaml:"max_download_bytes"`
+	FetchTimeout    uint `toml:"fetch_timeout" mapstructure:"fetch_timeout" json:"fetch_timeout" yaml:"fetch_timeout"`
+	DownloadTimeout uint `toml:"download_timeout" mapstructure:"download_timeout" json:"download_timeout" yaml:"download_timeout"`
 }
 
 type InternalAgentConfig struct {
@@ -61,13 +60,7 @@ func (c InternalDispatchConfig) Validate() error {
 	if err := validateSeconds(c.FetchTimeout, "internal.dispatch.fetch_timeout"); err != nil {
 		return err
 	}
-	if err := validateSeconds(c.DownloadTimeout, "internal.dispatch.download_timeout"); err != nil {
-		return err
-	}
-	if c.MaxDownloadBytes <= 0 {
-		return fmt.Errorf("internal.dispatch.max_download_bytes must be positive")
-	}
-	return nil
+	return validateSeconds(c.DownloadTimeout, "internal.dispatch.download_timeout")
 }
 
 func (c InternalAgentConfig) Validate() error {

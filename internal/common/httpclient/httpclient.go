@@ -43,6 +43,10 @@ type Fetcher interface {
 	FetchToFile(ctx context.Context, url, path string) error
 }
 
+func LocalFetcher() Fetcher {
+	return localFetcher{}
+}
+
 type localFetcher struct {
 	client *req.Client
 }

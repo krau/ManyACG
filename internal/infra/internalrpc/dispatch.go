@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"io"
+	"math"
 	"os"
 	"time"
 
@@ -17,13 +18,12 @@ import (
 )
 
 type Dispatcher struct {
-	hub              *Hub
-	localFetch       source.ArtworkFetcher
-	localDownload    httpclient.Fetcher
-	fetchTimeout     time.Duration
-	downloadTimeout  time.Duration
-	maxDownloadBytes int64
-	namers           map[shared.SourceType]source.ArtworkNamer
+	hub             *Hub
+	localFetch      source.ArtworkFetcher
+	localDownload   httpclient.Fetcher
+	fetchTimeout    time.Duration
+	downloadTimeout time.Duration
+	namers          map[shared.SourceType]source.ArtworkNamer
 }
 
 func NewDispatcher(
@@ -34,13 +34,12 @@ func NewDispatcher(
 	cfg runtimecfg.Config,
 ) *Dispatcher {
 	return &Dispatcher{
-		hub:              hub,
-		localFetch:       localFetch,
-		localDownload:    localDownload,
-		fetchTimeout:     time.Duration(cfg.Internal.Dispatch.FetchTimeout) * time.Second,
-		downloadTimeout:  time.Duration(cfg.Internal.Dispatch.DownloadTimeout) * time.Second,
-		maxDownloadBytes: cfg.Internal.Dispatch.MaxDownloadBytes,
-		namers:           namers,
+		hub:             hub,
+		localFetch:      localFetch,
+		localDownload:   localDownload,
+		fetchTimeout:    time.Duration(cfg.Internal.Dispatch.FetchTimeout) * time.Second,
+		downloadTimeout: time.Duration(cfg.Internal.Dispatch.DownloadTimeout) * time.Second,
+		namers:          namers,
 	}
 }
 
@@ -62,9 +61,6 @@ func (d *Dispatcher) GetArtworkInfo(ctx context.Context, sourceURL string) (*dto
 }
 
 func (d *Dispatcher) FetchToFile(ctx context.Context, url, path string) error {
-	if err := httpclient.ValidatePublicURL(ctx, url); err != nil {
-		return err
-	}
 	err := d.downloadFromAgent(ctx, url, path)
 	if err == nil {
 		return nil
@@ -74,12 +70,12 @@ func (d *Dispatcher) FetchToFile(ctx context.Context, url, path string) error {
 	}
 	if !errors.Is(err, errNoAgent) {
 		log.Warn("internal agent download failed, falling back to local download", "url", url, "err", err)
+		if removeErr := os.Remove(path); removeErr != nil && !os.IsNotExist(removeErr) {
+			log.Warn("failed to remove partial download", "path", path, "err", removeErr)
+		}
 	}
 	if d.localDownload == nil {
 		return err
-	}
-	if removeErr := os.Remove(path); removeErr != nil && !os.IsNotExist(removeErr) {
-		return removeErr
 	}
 	return d.localDownload.FetchToFile(ctx, url, path)
 }
@@ -94,8 +90,8 @@ func (d *Dispatcher) fetchFromAgent(ctx context.Context, sourceURL string) (*dto
 	defer cancel()
 	assignment := &internalpb.Assignment{
 		Payload: &internalpb.Assignment_Job{Job: &internalpb.Job{
-			JobId:          dispatchJob.id,
-			DeadlineUnixMs: deadlineMillis(jobCtx),
+			JobId:     dispatchJob.id,
+			TimeoutMs: timeoutMillis(d.fetchTimeout),
 			Task: &internalpb.Job_FetchArtwork{FetchArtwork: &internalpb.FetchArtwork{
 				SourceUrl: sourceURL,
 			}},
@@ -141,10 +137,9 @@ func (d *Dispatcher) downloadFromAgent(ctx context.Context, url, path string) (e
 	assignment := &internalpb.Assignment{
 		Payload: &internalpb.Assignment_Job{Job: &internalpb.Job{
 			JobId:          dispatchJob.id,
-			DeadlineUnixMs: deadlineMillis(jobCtx),
+			TimeoutMs:      timeoutMillis(d.downloadTimeout),
 			Task: &internalpb.Job_DownloadOriginFile{DownloadOriginFile: &internalpb.DownloadOriginFile{
-				Url:      url,
-				MaxBytes: d.maxDownloadBytes,
+				Url: url,
 			}},
 		}},
 	}
@@ -155,10 +150,12 @@ func (d *Dispatcher) downloadFromAgent(ctx context.Context, url, path string) (e
 	return err
 }
 
-func deadlineMillis(ctx context.Context) int64 {
-	deadline, ok := ctx.Deadline()
-	if !ok {
+func timeoutMillis(timeout time.Duration) uint32 {
+	if timeout <= 0 {
 		return 0
 	}
-	return deadline.UnixMilli()
+	if millis := timeout.Milliseconds(); millis > math.MaxUint32 {
+		return math.MaxUint32
+	}
+	return uint32(timeout.Milliseconds())
 }

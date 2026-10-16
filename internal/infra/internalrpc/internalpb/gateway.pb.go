@@ -595,9 +595,10 @@ func (x *SessionAccepted) GetConcurrency() uint32 {
 }
 
 type Job struct {
-	state          protoimpl.MessageState `protogen:"open.v1"`
-	JobId          string                 `protobuf:"bytes,1,opt,name=job_id,json=jobId,proto3" json:"job_id,omitempty"`
-	DeadlineUnixMs int64                  `protobuf:"varint,2,opt,name=deadline_unix_ms,json=deadlineUnixMs,proto3" json:"deadline_unix_ms,omitempty"`
+	state protoimpl.MessageState `protogen:"open.v1"`
+	JobId string                 `protobuf:"bytes,1,opt,name=job_id,json=jobId,proto3" json:"job_id,omitempty"`
+	// Remaining budget in milliseconds, relative to dispatch time.
+	TimeoutMs uint32 `protobuf:"varint,2,opt,name=timeout_ms,json=timeoutMs,proto3" json:"timeout_ms,omitempty"`
 	// Types that are valid to be assigned to Task:
 	//
 	//	*Job_FetchArtwork
@@ -644,9 +645,9 @@ func (x *Job) GetJobId() string {
 	return ""
 }
 
-func (x *Job) GetDeadlineUnixMs() int64 {
+func (x *Job) GetTimeoutMs() uint32 {
 	if x != nil {
-		return x.DeadlineUnixMs
+		return x.TimeoutMs
 	}
 	return 0
 }
@@ -739,7 +740,6 @@ func (x *FetchArtwork) GetSourceUrl() string {
 type DownloadOriginFile struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Url           string                 `protobuf:"bytes,1,opt,name=url,proto3" json:"url,omitempty"`
-	MaxBytes      int64                  `protobuf:"varint,2,opt,name=max_bytes,json=maxBytes,proto3" json:"max_bytes,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -779,13 +779,6 @@ func (x *DownloadOriginFile) GetUrl() string {
 		return x.Url
 	}
 	return ""
-}
-
-func (x *DownloadOriginFile) GetMaxBytes() int64 {
-	if x != nil {
-		return x.MaxBytes
-	}
-	return 0
 }
 
 type CancelJob struct {
@@ -1675,19 +1668,19 @@ const file_gateway_proto_rawDesc = "" +
 	"\x0fSessionAccepted\x12\x1d\n" +
 	"\n" +
 	"session_id\x18\x01 \x01(\tR\tsessionId\x12 \n" +
-	"\vconcurrency\x18\x02 \x01(\rR\vconcurrency\"\xef\x01\n" +
+	"\vconcurrency\x18\x02 \x01(\rR\vconcurrency\"\xe4\x01\n" +
 	"\x03Job\x12\x15\n" +
-	"\x06job_id\x18\x01 \x01(\tR\x05jobId\x12(\n" +
-	"\x10deadline_unix_ms\x18\x02 \x01(\x03R\x0edeadlineUnixMs\x12E\n" +
+	"\x06job_id\x18\x01 \x01(\tR\x05jobId\x12\x1d\n" +
+	"\n" +
+	"timeout_ms\x18\x02 \x01(\rR\ttimeoutMs\x12E\n" +
 	"\rfetch_artwork\x18\x03 \x01(\v2\x1e.manyacg.internal.FetchArtworkH\x00R\ffetchArtwork\x12X\n" +
 	"\x14download_origin_file\x18\x04 \x01(\v2$.manyacg.internal.DownloadOriginFileH\x00R\x12downloadOriginFileB\x06\n" +
 	"\x04task\"-\n" +
 	"\fFetchArtwork\x12\x1d\n" +
 	"\n" +
-	"source_url\x18\x01 \x01(\tR\tsourceUrl\"C\n" +
+	"source_url\x18\x01 \x01(\tR\tsourceUrl\"&\n" +
 	"\x12DownloadOriginFile\x12\x10\n" +
-	"\x03url\x18\x01 \x01(\tR\x03url\x12\x1b\n" +
-	"\tmax_bytes\x18\x02 \x01(\x03R\bmaxBytes\"\"\n" +
+	"\x03url\x18\x01 \x01(\tR\x03url\"\"\n" +
 	"\tCancelJob\x12\x15\n" +
 	"\x06job_id\x18\x01 \x01(\tR\x05jobId\"\xa8\x01\n" +
 	"\rJobCompletion\x12\x15\n" +

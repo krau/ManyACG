@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"io"
+	"math"
 	"math/rand/v2"
 	"os"
 	"strings"
@@ -119,7 +120,7 @@ func (a *Agent) session(ctx context.Context) error {
 		ProtocolVersion: protocolVersion,
 		Name:            a.name,
 		Capabilities:    a.caps,
-		Concurrency:     uint32(a.cfg.Agent.Concurrency),
+		Concurrency:     uint32(min(a.cfg.Agent.Concurrency, math.MaxUint32)),
 		PublicKey:       a.signer.PublicKey().Marshal(),
 	}
 	if err := stream.Send(&internalpb.AgentMessage{Payload: &internalpb.AgentMessage_Register{Register: register}}); err != nil {
@@ -196,9 +197,9 @@ func (a *Agent) session(ctx context.Context) error {
 }
 
 func (a *Agent) execute(ctx context.Context, client internalpb.GatewayClient, assignedJob *internalpb.Job) {
-	if deadline := assignedJob.GetDeadlineUnixMs(); deadline > 0 {
+	if timeout := assignedJob.GetTimeoutMs(); timeout > 0 {
 		var cancel context.CancelFunc
-		ctx, cancel = context.WithDeadline(ctx, time.UnixMilli(deadline))
+		ctx, cancel = context.WithTimeout(ctx, time.Duration(timeout)*time.Millisecond)
 		defer cancel()
 	}
 	switch task := assignedJob.Task.(type) {
@@ -219,30 +220,29 @@ func (a *Agent) execute(ctx context.Context, client internalpb.GatewayClient, as
 			log.Warn("internal agent failed to return artwork", "job", assignedJob.GetJobId(), "err", err)
 		}
 	case *internalpb.Job_DownloadOriginFile:
-		limit := task.DownloadOriginFile.GetMaxBytes()
-		if limit <= 0 || limit > a.cfg.Dispatch.MaxDownloadBytes {
-			limit = a.cfg.Dispatch.MaxDownloadBytes
-		}
-		if err := a.pushDownload(ctx, client, assignedJob.GetJobId(), task.DownloadOriginFile.GetUrl(), limit); err != nil {
+		if err := a.pushDownload(ctx, client, assignedJob.GetJobId(), task.DownloadOriginFile.GetUrl()); err != nil {
 			a.completeFailure(ctx, client, assignedJob.GetJobId(), err)
 		}
+	default:
+		a.completeFailure(ctx, client, assignedJob.GetJobId(), errInvalidJobRequest)
 	}
 }
 
 func (a *Agent) completeFailure(ctx context.Context, client internalpb.GatewayClient, jobID string, cause error) {
 	if ctx.Err() != nil {
+		log.Warn("internal agent job cancelled before reporting failure", "job", jobID, "err", cause)
 		return
 	}
 	if _, err := client.CompleteJob(ctx, &internalpb.JobCompletion{
 		JobId:  jobID,
 		Result: &internalpb.JobCompletion_Failure{Failure: failureFromError(cause)},
 	}); err != nil {
-		log.Warn("internal agent failed to report job failure", "job", jobID, "err", err)
+		log.Warn("internal agent failed to report job failure", "job", jobID, "cause", cause, "err", err)
 	}
 }
 
-func (a *Agent) pushDownload(ctx context.Context, client internalpb.GatewayClient, jobID, url string, maxBytes int64) error {
-	file, err := httpclient.DownloadPublicOriginFile(ctx, url, maxBytes)
+func (a *Agent) pushDownload(ctx context.Context, client internalpb.GatewayClient, jobID, url string) error {
+	file, err := httpclient.DownloadWithCache(ctx, url, nil)
 	if err != nil {
 		return err
 	}

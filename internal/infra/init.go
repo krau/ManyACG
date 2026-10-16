@@ -67,8 +67,7 @@ func Init(ctx context.Context, cfg runtimecfg.Config) (*Resources, error) {
 		resources.closers = append(resources.closers, database.Default().Close)
 	}
 	hub := internalrpc.NewHub()
-	resources.Dispatcher = internalrpc.NewDispatcher(hub, localFetch,
-		httpclient.PublicFetcher{MaxBytes: cfg.Internal.Dispatch.MaxDownloadBytes}, resources.SourceNamers, cfg)
+	resources.Dispatcher = internalrpc.NewDispatcher(hub, localFetch, httpclient.LocalFetcher(), resources.SourceNamers, cfg)
 	if cfg.Internal.Gateway.Addr != "" {
 		server, err := internalrpc.NewServer(cfg.Internal, hub)
 		if err != nil {
