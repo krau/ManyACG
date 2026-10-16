@@ -23,7 +23,6 @@ type Service struct {
 	tagger     tagging.Tagger
 	storages   map[shared.StorageType]storage.Storage
 	namers     map[shared.SourceType]source.ArtworkNamer
-	sources    source.LocalFetcher
 	pollers    map[shared.SourceType]source.ArtworkPoller
 	fetcher    source.ArtworkFetcher
 	downloader httpclient.Fetcher
@@ -48,12 +47,7 @@ func WithSourcePollers(pollers map[shared.SourceType]source.ArtworkPoller) Optio
 	return func(s *Service) { s.pollers = pollers }
 }
 
-func WithLocalSources(sources source.LocalFetcher) Option {
-	return func(s *Service) { s.sources = sources }
-}
-
-// WithArtworkFetcher delegates artwork detail fetching to a remote node.
-// Without it the local sources are used.
+// WithArtworkFetcher sets the artwork detail fetcher, which may delegate to other nodes.
 func WithArtworkFetcher(fetcher source.ArtworkFetcher) Option {
 	return func(s *Service) { s.fetcher = fetcher }
 }

@@ -7,12 +7,12 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/krau/ManyACG/internal/common/httpclient"
 	"github.com/krau/ManyACG/internal/infra"
 	"github.com/krau/ManyACG/internal/infra/config/runtimecfg"
 	"github.com/krau/ManyACG/internal/infra/database"
 	"github.com/krau/ManyACG/internal/infra/eventbus"
 	"github.com/krau/ManyACG/internal/infra/imseek"
+	"github.com/krau/ManyACG/internal/infra/internalrpc"
 	"github.com/krau/ManyACG/internal/infra/kvstor"
 	"github.com/krau/ManyACG/internal/infra/search"
 	"github.com/krau/ManyACG/internal/infra/source"
@@ -29,13 +29,15 @@ import (
 )
 
 type Runtime struct {
-	cfg      runtimecfg.Config
-	closer   func() error
-	restOpts []rest.RestAppOption
-	service  *service.Service
-	kv       kvstor.KVStore
-	poster   scheduler.ArtworkPoster
-	tgbot    restcommon.TelegramBot
+	cfg            runtimecfg.Config
+	closer         func() error
+	restOpts       []rest.RestAppOption
+	service        *service.Service
+	kv             kvstor.KVStore
+	poster         scheduler.ArtworkPoster
+	tgbot          restcommon.TelegramBot
+	internalServer *internalrpc.Server
+	internalAgent  *internalrpc.Agent
 }
 
 func NewRuntime(ctx context.Context, cfg runtimecfg.Config) (*Runtime, error) {
@@ -59,15 +61,11 @@ func NewRuntime(ctx context.Context, cfg runtimecfg.Config) (*Runtime, error) {
 	}
 	closer := resources.Close
 	runtime := &Runtime{
-		cfg:    cfg,
-		closer: closer,
-		kv:     resources.KV,
-	}
-	if cfg.App.Capabilities.Has(runtimecfg.CapabilityFetch) {
-		runtime.restOpts = append(runtime.restOpts, rest.WithArtworkFetcher(source.LocalFetcher(source.Sources()), cfg.Source.Remote.Token, time.Duration(cfg.Source.Remote.Fetch.Timeout)*time.Second))
-	}
-	if cfg.App.Capabilities.Has(runtimecfg.CapabilityDownload) {
-		runtime.restOpts = append(runtime.restOpts, rest.WithArtworkDownloader(httpclient.LocalDownloader{}, cfg.Source.Remote.Token, time.Duration(cfg.Source.Remote.Download.Timeout)*time.Second))
+		cfg:            cfg,
+		closer:         closer,
+		kv:             resources.KV,
+		internalServer: resources.InternalServer,
+		internalAgent:  resources.Agent,
 	}
 	if !readable && !writable {
 		return runtime, nil
@@ -128,18 +126,11 @@ func NewRuntime(ctx context.Context, cfg runtimecfg.Config) (*Runtime, error) {
 	servOpts := []service.Option{
 		service.WithImseek(eng),
 		service.WithIndexer(indexer),
+		service.WithArtworkFetcher(resources.Dispatcher),
+		service.WithDownloader(resources.Dispatcher),
 	}
 	if writable {
-		servOpts = append(servOpts,
-			service.WithLocalSources(source.LocalFetcher(source.Sources())),
-			service.WithSourcePollers(source.Pollers()),
-		)
-	}
-	if resources.ArtworkFetcher != nil {
-		servOpts = append(servOpts, service.WithArtworkFetcher(resources.ArtworkFetcher))
-	}
-	if resources.FileDownloader != nil {
-		servOpts = append(servOpts, service.WithDownloader(resources.FileDownloader))
+		servOpts = append(servOpts, service.WithSourcePollers(source.Pollers()))
 	}
 	serv := service.NewService(
 		repos,
@@ -174,8 +165,19 @@ func NewRuntime(ctx context.Context, cfg runtimecfg.Config) (*Runtime, error) {
 }
 
 func (r *Runtime) Start(ctx context.Context, stop func()) error {
-	if !r.cfg.Rest.Enable && r.cfg.Telegram.Disable {
-		return fmt.Errorf("no interfaces enabled: enable REST or Telegram with the write capability")
+	if !r.cfg.Rest.Enable && r.cfg.Telegram.Disable && r.internalServer == nil && r.internalAgent == nil {
+		return fmt.Errorf("no interfaces enabled: enable REST, Telegram, the internal gateway or an internal agent")
+	}
+	if r.internalServer != nil {
+		go func() {
+			if err := r.internalServer.Run(ctx); err != nil {
+				log.Error(err)
+				stop()
+			}
+		}()
+	}
+	if r.internalAgent != nil {
+		go r.internalAgent.Run(ctx)
 	}
 	if !r.cfg.Telegram.Disable {
 		botapp, err := telegram.Init(ctx, r.service, r.kv, r.cfg.Telegram, r.cfg.App.Debug)

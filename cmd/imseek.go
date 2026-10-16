@@ -145,7 +145,7 @@ func openImseekRuntime(ctx context.Context, autoBuild bool) (*imseekRuntime, err
 		resources.SourceNamers,
 		cfg.Storage,
 		service.WithImseek(eng),
-		service.WithDownloader(resources.FileDownloader),
+		service.WithDownloader(resources.Dispatcher),
 	)
 
 	return &imseekRuntime{

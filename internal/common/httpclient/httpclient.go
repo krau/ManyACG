@@ -122,9 +122,3 @@ func DownloadWithCache(ctx context.Context, url string, fetcher Fetcher) (
 		return nil, ctx.Err()
 	}
 }
-
-type LocalDownloader struct{}
-
-func (LocalDownloader) DownloadOriginFile(ctx context.Context, url string) (*osutil.File, error) {
-	return DownloadWithCache(ctx, url, nil)
-}

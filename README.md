@@ -123,10 +123,10 @@ chmod +x manyacg
 | --- | --- |
 | `read` | 公共只读查询与媒体接口（`/atom`、`/artwork`、`/picture`、`/artist`、`/tag`） |
 | `write` | 公共写接口、数据库迁移、发布恢复，以及按各自开关启用的 Bot、调度、本地图像索引和搜索索引维护 |
-| `fetch` | 内部接口 `POST /api/v1/internal/artwork/fetch`，代抓单作品详情 |
-| `download` | 内部接口 `POST /api/v1/internal/artwork/download`，代下原始直链文件 |
+| `fetch` | 作为边缘节点注册到主节点，代抓单作品详情 |
+| `download` | 作为边缘节点注册到主节点，代下原始直链文件 |
 
-常见组合：`["read", "write"]` = 完整节点；`["read"]` = 只读查询/媒体节点；`["read", "fetch", "download"]` = 查询与委托协助节点；`["download"]` = 纯下载节点。`write` 不隐含 `read`，`["write"]` 不提供公共查询接口。启用 REST 时，任何节点都提供 `/myip`；其余接口只按对应能力注册。
+常见组合：`["read", "write"]` = 主节点；`["read"]` = 只读查询/媒体节点；`["download"]` 或 `["fetch"]` = 纯边缘节点；`["read", "write", "download"]` = 主节点同时贡献算力。`write` 不隐含 `read`，`["write"]` 不提供公共查询接口。启用 REST 时，任何节点都提供 `/myip`；其余接口只按对应能力注册。
 
 | 配置 | 数据库和媒体存储 | KV | Bot、调度、本地图像索引、搜索索引维护 | 自动迁移与发布恢复 |
 | --- | --- | --- | --- | --- |
@@ -134,19 +134,39 @@ chmod +x manyacg
 | 含 `read`，不含 `write` | 初始化 | 不初始化 | 不启用 | 不执行 |
 | 只有 `fetch`、`download` 或 `[]` | 不初始化 | 不初始化 | 不启用 | 不执行 |
 
-`fetch`、`download` 和不含 `write` 的 `read` 节点必须启用 REST；内部委托能力还必须配置 `source.remote.token`。不提供任何已启用接口的实例会拒绝启动。含 `write` 的节点可以只启用 Telegram、不启用 REST。
+不含 `write` 的 `read` 节点必须启用 REST。边缘节点不需要 REST、数据库、KV、媒体存储或搜索服务，只需要可写缓存目录。声明了 `fetch`/`download` 能力的节点必须配置 `internal.agent.gateway`；配置了 `internal.gateway.addr` 的节点必须声明 `read` 或 `write`。不提供任何已启用接口的实例会拒绝启动。
 
-多节点部署只能有一个活跃的 `write` 节点，其余节点不声明 `write`。能力配置不会自动选主，也不会阻止误启动第二个写节点。数据库复制、负载均衡及 CDN 需要单独配置。
+内部 RPC 与委托：
 
-出站委托按操作分别配置：
+- 声明 `fetch`/`download` 的节点是**边缘节点**：它只出网，主动连接 `internal.agent.gateway` 注册自己的能力、名称与并发数（`internal.agent.concurrency`，默认 1，主节点最多接受 8），随后由主节点派发任务。同一公钥只允许一个活跃会话；每个边缘节点应使用独立密钥。它不监听任何端口，因此不需要公网 IP，位于 NAT、家用宽带或防火墙后都能接入。
+- 主节点配置 `internal.gateway.addr` 后开启内部 RPC 端口，按能力与空闲度轮询派发；主节点不需要配置任何边缘节点地址，边缘节点上下线立即生效。
+- 失败回落：没有空闲边缘节点，或委托任务失败、超时、连接中断时，主节点立即在本地完成同一任务；不重试该节点，也不切换到其他节点。请求取消时会同时取消边缘任务，不再本地重试。
+- 委托方仍负责 API key 鉴权、配额、缓存入库、计费、`cache_id`、压缩与存储写入；边缘节点只执行详情抓取或原始直链下载并回传结果。
+- 边缘节点收到任务后永远本地执行，不会再次派发，因此任意注册关系都不会形成环路。
+- 主节点只按 `internal.gateway.authorized_keys` 中人工登记的公钥允许边缘节点接入；边缘节点用 `internal.agent.private_key` 对应的私钥证明身份。可选 SSH 加密直接复用这份授权；主节点主机密钥自动生成，边缘节点通过 TOFU 自动记录首次主机身份，无需双方手工交换公钥或配置共享 token。节点名称只用于区分日志，不作为授权依据。
+- 内部 RPC 使用独立端口，与公开 REST 端口无关，也不存在任何 HTTP 内部路由。默认不加密，只能用于可信网络或已有加密隧道；开启 SSH 后该端口只接受 SSH 加密连接，不自动降级。只有正常启动服务时才监听该端口，`index` 和 `imseek` 子命令不会占用它。
+- 只有开启 `internal.gateway.addr` 的节点会使用边缘算力，其他节点一律本地抓取与下载；派发节点不做选主，重复开启会让边缘节点分散注册到不同节点。
+- 主节点只接收任务所属连接的结果，并核对作品来源、作品编号、媒体结构与来源 CDN；合法来源链接会规范化后再使用。非法结果按委托失败处理，回落到本地抓取。
+- 原始文件下载仅允许公网 HTTP(S) 目标及各自默认端口，每次重定向和 DNS 结果都要满足限制。Pixiv 图片代理需在派发主节点的 `source.pixiv.img_proxy` 中配置，且也必须指向公网；默认每个文件最多 1 GiB，由正整数 `internal.dispatch.max_download_bytes` 调整。主节点接收和边缘下载都执行上限，边缘还会取自身上限与任务上限的较小值；压缩响应按解压后的大小限制，上传声明长度必须与实际字节数一致。
+- 新下载器只使用显式配置的 `http_client.proxy`，不使用环境变量代理。配置代理时，目标仍需通过公网检查；代理自身的解析与路由由管理员负责限制，不能允许其绕过公网出网边界访问内网。
+- 公钥认证证明节点身份，不证明已授权节点返回的内容真实。长度与结构校验不能保证媒体与源站一致，授权仍只应授予可信节点。
 
-- `[source.remote.fetch] endpoints` 把单作品详情抓取委托给提供 `fetch` 的节点，仅供 `write` 节点使用。调用方仍负责 API key 鉴权、配额检查、缓存入库、计费和 `cache_id` 写入；协助节点只返回作品详情。不配置时使用本地图源。
-- `[source.remote.download] endpoints` 把**原始直链下载**委托给提供 `download` 的节点，可供 `read` 或 `write` 节点使用。图片原图、动图 zip 和视频等直链文件由协助节点下载后回传字节；调用方保留压缩、上传存储和入库等职责。已存在于媒体存储的文件仍由调用方直接读取。不配置时在本地下载。
-- 两个节点池独立轮询。每次请求只选择一个 endpoint，不重试、不跟随节点响应的重定向，失败直接报错，不回落到本地。`source.remote.fetch.timeout` 默认 30 秒，`source.remote.download.timeout` 默认 300 秒；调用方分别用于对应请求，协助节点分别用于对应处理。
-- endpoint 是协助节点的 REST API 基地址，例如 `https://fetch-1.example.com/api/v1`。双方配置同一个 `source.remote.token`。节点可同时提供内部能力和使用出站委托，但收到的内部请求始终在本地执行，不再次委托。
-- 两个内部接口使用 Bearer token，独立于公共 API key 和配额。不要向公网开放，只允许受信任节点访问。下载接口会按调用方提供的 http(s) 直链出网抓取，必须保密 token。
+接入边缘节点：
 
-完整节点配置示例（也可省略 `[app]` 使用默认能力）：
+1. 只需在边缘节点手工生成专用密钥，例如在部署目录执行 `ssh-keygen -t ed25519 -N '' -f ./edge_key`。私钥需无口令且只对运行账号可读；每个节点使用独立密钥，不要传输私钥。可使用现有 Ed25519、ECDSA 或至少 2048 位的 RSA 服务密钥。
+2. 将 `edge_key.pub` 的完整公钥行人工加入主节点 `authorized_keys`。支持空行和注释，不支持公钥行前的 options 或证书；空文件、格式错误或读取失败都会拒绝新的认证。
+3. 边缘节点配置主节点地址和自己的私钥路径后启动即可。主节点每次认证都会重新读取 `authorized_keys`，添加公钥无需重启；移除公钥只阻止后续认证，不会踢掉已有会话，立即撤权需断开该节点或重启主节点。
+4. 需要加密时，在主节点 `[internal.gateway]` 和边缘节点 `[internal.agent]` 中都设置 `ssh = true`。主节点首次启用时自动生成并保存主机密钥，边缘节点首次连接自动保存主机公钥；无需运行系统 SSH 服务，也无需手工分发主节点公钥。
+
+SSH 状态默认保存在各实例工作目录的 `data/internalrpc/`：主节点为 `ssh_host_ed25519_key`，边缘节点为 OpenSSH 格式的 `known_hosts`。可分别用 `internal.gateway.host_key`、`internal.agent.known_hosts` 修改路径，留空即使用默认值；这些路径不是必填认证配置。请持久化该目录，勿放入会定期清理的缓存；Unix 新文件使用 `0600`、新目录使用 `0700`，已有主机私钥必须为 `0600`，状态目录和文件不能允许其他用户写入。Windows 使用部署账号的文件 ACL。
+
+TOFU 会自动接受并保存首次看到的主机公钥，后续连接和服务重启都沿用该记录；主机身份以配置的地址和端口区分。主机密钥变化、记录损坏或状态无法读写时拒绝连接，不覆盖旧记录、不回退明文。合法换钥时，先通过可信渠道确认新指纹，再用 `ssh-keygen -R '[main.example.com]:8085' -f ./data/internalrpc/known_hosts` 删除对应旧记录，下一次连接才会重新首次信任；使用自定义路径时替换 `-f` 参数。
+
+TOFU 无法识别首次连接时的中间人，请确保首次连接环境可信；它不是事先核验的主机身份。SSH 加密也不改变任务结果的信任边界，授权节点仍需可信。
+
+从旧版本迁移时，删除 `internal.token`、`internal.gateway.tls_cert`、`internal.gateway.tls_key` 和 `internal.agent.tls`，保留现有边缘私钥及主节点 `authorized_keys`。不开启 SSH 时仍使用原生 gRPC 公钥认证；开启时需两侧一并升级并设置 `ssh = true`，无需重新生成边缘密钥或建立双向手工信任。数据库 DSN 的 TLS 设置不受影响。
+
+主节点配置示例（也可省略 `[app]` 使用默认能力）：
 
 ```toml
 [app]
@@ -162,26 +182,25 @@ enable = true
 addr = ":8080"
 base = "https://api.example.com/api/v1"
 
-[source.remote]
-token = "请替换为随机长串"
+[internal.gateway]
+addr = ":8085"
+authorized_keys = "./authorized_keys"
+ssh = true
 
-[source.remote.fetch]
-endpoints = ["https://fetch-1.example.com/api/v1", "https://fetch-2.example.com/api/v1"]
-timeout = 30
-
-[source.remote.download]
-endpoints = ["https://download-1.example.com/api/v1", "https://download-2.example.com/api/v1"]
-timeout = 300
+[internal.dispatch]
+fetch_timeout = 30
+download_timeout = 300
+max_download_bytes = 1073741824
 
 [storage]
 cache_dir = "./cache-writer"
 ```
 
-只读节点配置示例（承担查询、详情抓取与下载）：
+只读查询节点配置示例：
 
 ```toml
 [app]
-capabilities = ["read", "fetch", "download"]
+capabilities = ["read"]
 
 [database]
 type = "pgsql"
@@ -193,28 +212,40 @@ enable = true
 addr = ":8080"
 base = "https://api.example.com/api/v1"
 
-[source.remote]
-token = "请替换为随机长串"
-
-[source.remote.fetch]
-timeout = 30
-
-[source.remote.download]
-timeout = 300
-
 [storage]
 cache_dir = "./cache-reader"
 ```
 
-DSN 中的主机、用户和 TLS 设置需按部署环境填写。含 `read` 且不含 `write` 的节点应使用只读数据库账号并连接读副本；写节点连接主库。各实例使用独立缓存目录；媒体存储必须对查询节点可读，写节点本地磁盘上的文件不会自动复制。查询节点需要配置相应存储驱动，`storage.telegram` 用于媒体读取，与交互 Bot 的开关不同。纯 `fetch`、`download` 节点不需要数据库、KV、媒体存储或搜索服务；下载节点只需要可写缓存目录。
+边缘节点配置示例（只出网，贡献抓取与下载算力）：
+
+```toml
+[app]
+capabilities = ["fetch", "download"]
+
+[internal.agent]
+gateway = "main.example.com:8085"
+name = "edge-tokyo-1"
+concurrency = 1
+private_key = "./edge_key"
+ssh = true
+
+[internal.dispatch]
+max_download_bytes = 1073741824
+
+[storage]
+cache_dir = "./cache-edge"
+```
+
+DSN 中的主机、用户和 TLS 设置需按部署环境填写。含 `read` 且不含 `write` 的节点应使用只读数据库账号并连接读副本；写节点连接主库。各实例使用独立缓存目录；媒体存储必须对查询节点可读，写节点本地磁盘上的文件不会自动复制。查询节点需要配置相应存储驱动，`storage.telegram` 用于媒体读取，与交互 Bot 的开关不同。边缘节点不需要数据库、KV、媒体存储或搜索服务，只需要可写缓存目录和到主节点内部 RPC 端口的出网连通性。
 
 部署或升级顺序：
 
 1. 维护期间先停掉所有 ManyACG 节点，用连接主库且具备 `write` 能力与数据库迁移权限的配置执行 `./manyacg migrate`。该命令只更新数据库结构与配置的数据库索引，不启动 Bot、调度或媒体存储。
 2. 等待数据库结构同步到读副本，再启动一个写节点。启用 MeiliSearch 时，写节点负责共享索引的初始化与更新；首次部署可在写节点执行 `./manyacg index` 导入已有作品。
-3. 启动查询和委托协助节点，将普通查询和媒体请求路由到声明了 `read` 的节点；将 `/api/v1/artwork/fetch` 和 `/api/v1/bot/send_artwork_info` 的 GET、POST 请求只路由到写节点。POST `/artwork/list` 和 `/artwork/random` 仍是读接口。
+3. 启动查询节点，将普通查询和媒体请求路由到声明了 `read` 的节点；将 `/api/v1/artwork/fetch` 和 `/api/v1/bot/send_artwork_info` 的 GET、POST 请求只路由到写节点。POST `/artwork/list` 和 `/artwork/random` 仍是读接口。
+4. 启动边缘节点，它们会自动注册到开启 `internal.gateway.addr` 的节点；反向代理只需暴露公开 REST 端口，内部 RPC 端口仅对受信任网络开放。
 
-不含 `write` 的查询节点可使用仅有目标索引 `search` 权限的 MeiliSearch 密钥，必须与写节点使用相同的 Host 和 Index。启用搜索时，查询节点启动会用一次零结果查询验证目标索引、权限和连接，不创建索引、不修改搜索设置，也不补写图片 MIME。缺失索引或搜索服务故障会阻止查询节点启动；纯委托协助节点不会连接搜索服务。读副本和搜索索引可能存在同步延迟，新发布作品不保证立即在所有查询节点可见。`migrate`、`index` 和所有 `imseek` 子命令（包括 `status`）都需要 `write` 能力。
+不含 `write` 的查询节点可使用仅有目标索引 `search` 权限的 MeiliSearch 密钥，必须与写节点使用相同的 Host 和 Index。启用搜索时，查询节点启动会用一次零结果查询验证目标索引、权限和连接，不创建索引、不修改搜索设置，也不补写图片 MIME。缺失索引或搜索服务故障会阻止查询节点启动；边缘节点不会连接搜索服务。读副本和搜索索引可能存在同步延迟，新发布作品不保证立即在所有查询节点可见。`migrate`、`index` 和所有 `imseek` 子命令（包括 `status`）都需要 `write` 能力。
 
 写节点启动时会把上次异常退出遗留的 `posting` 缓存状态恢复为可发布状态，然后才启动 Bot 和调度。必须先确认旧写节点已停止，再启动替代实例；恢复可能重新发布已经发送 Telegram 消息但尚未写入数据库的作品，因此不保证 exactly-once。不含 `write` 的节点不执行发布恢复。
 

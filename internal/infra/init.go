@@ -7,17 +7,18 @@ import (
 	"github.com/krau/ManyACG/internal/common/httpclient"
 	"github.com/krau/ManyACG/internal/infra/config/runtimecfg"
 	"github.com/krau/ManyACG/internal/infra/database"
+	"github.com/krau/ManyACG/internal/infra/internalrpc"
 	"github.com/krau/ManyACG/internal/infra/kvstor"
 	"github.com/krau/ManyACG/internal/infra/source"
-	"github.com/krau/ManyACG/internal/infra/source/remote"
 	"github.com/krau/ManyACG/internal/shared"
 	"github.com/samber/oops"
 )
 
 type Resources struct {
 	KV             kvstor.KVStore
-	ArtworkFetcher source.ArtworkFetcher
-	FileDownloader httpclient.Fetcher
+	Dispatcher     *internalrpc.Dispatcher
+	InternalServer *internalrpc.Server
+	Agent          *internalrpc.Agent
 	SourceNamers   map[shared.SourceType]source.ArtworkNamer
 	closers        []func() error
 	closeOnce      sync.Once
@@ -52,8 +53,10 @@ func Init(ctx context.Context, cfg runtimecfg.Config) (*Resources, error) {
 		resources.KV = store
 		resources.closers = append(resources.closers, store.Close)
 	}
+	var localFetch source.ArtworkFetcher
 	if writable || cfg.App.Capabilities.Has(runtimecfg.CapabilityFetch) {
 		initSource(resources.KV)
+		localFetch = source.LocalFetcher(source.Sources())
 	}
 	if readable || writable {
 		resources.SourceNamers = sourceNamers(cfg.Source)
@@ -63,21 +66,23 @@ func Init(ctx context.Context, cfg runtimecfg.Config) (*Resources, error) {
 		database.Init(ctx, cfg)
 		resources.closers = append(resources.closers, database.Default().Close)
 	}
-	if writable && len(cfg.Source.Remote.Fetch.Endpoints) > 0 {
-		fetcher, err := remote.New(cfg.Source.Remote.Fetch, cfg.Source.Remote.Token)
+	hub := internalrpc.NewHub()
+	resources.Dispatcher = internalrpc.NewDispatcher(hub, localFetch,
+		httpclient.PublicFetcher{MaxBytes: cfg.Internal.Dispatch.MaxDownloadBytes}, resources.SourceNamers, cfg)
+	if cfg.Internal.Gateway.Addr != "" {
+		server, err := internalrpc.NewServer(cfg.Internal, hub)
 		if err != nil {
 			return nil, oops.Join(err, resources.Close())
 		}
-		resources.ArtworkFetcher = fetcher
-		resources.closers = append(resources.closers, fetcher.Close)
+		resources.InternalServer = server
+		resources.closers = append(resources.closers, server.Close)
 	}
-	if (writable || readable) && len(cfg.Source.Remote.Download.Endpoints) > 0 {
-		downloader, err := remote.New(cfg.Source.Remote.Download, cfg.Source.Remote.Token)
+	if cfg.Internal.Agent.Gateway != "" {
+		agent, err := internalrpc.NewAgent(cfg.Internal, cfg.App.Capabilities, localFetch)
 		if err != nil {
 			return nil, oops.Join(err, resources.Close())
 		}
-		resources.FileDownloader = downloader
-		resources.closers = append(resources.closers, downloader.Close)
+		resources.Agent = agent
 	}
 	return resources, nil
 }

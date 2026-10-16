@@ -24,14 +24,12 @@ import (
 )
 
 type RestApp struct {
-	fiberApp         *fiber.App
-	cfg              runtimecfg.RestConfig
-	reader           common.QueryService
-	tgbot            common.TelegramBot
-	writer           common.WriteService
-	store            kvstor.KVStore
-	internalFetch    fiber.Handler
-	internalDownload fiber.Handler
+	fiberApp *fiber.App
+	cfg      runtimecfg.RestConfig
+	reader   common.QueryService
+	tgbot    common.TelegramBot
+	writer   common.WriteService
+	store    kvstor.KVStore
 }
 
 type queryService struct {
@@ -70,32 +68,6 @@ func WithWriteService(serv common.WriteService, store kvstor.KVStore) RestAppOpt
 		}
 		app.writer = serv
 		app.store = store
-		return nil
-	}
-}
-
-func WithArtworkFetcher(fetcher common.ArtworkFetcher, token string, timeout time.Duration) RestAppOption {
-	return func(app *RestApp) error {
-		if fetcher == nil {
-			return oops.New("artwork fetcher is nil")
-		}
-		if token == "" || timeout <= 0 {
-			return oops.New("internal fetch requires a token and positive timeout")
-		}
-		app.internalFetch = handlers.NewInternalArtworkFetchHandler(fetcher, token, timeout)
-		return nil
-	}
-}
-
-func WithArtworkDownloader(downloader common.ArtworkDownloader, token string, timeout time.Duration) RestAppOption {
-	return func(app *RestApp) error {
-		if downloader == nil {
-			return oops.New("artwork downloader is nil")
-		}
-		if token == "" || timeout <= 0 {
-			return oops.New("internal download requires a token and positive timeout")
-		}
-		app.internalDownload = handlers.NewInternalArtworkDownloadHandler(downloader, token, timeout)
 		return nil
 	}
 }
@@ -179,12 +151,6 @@ func New(cfg runtimecfg.RestConfig, opts ...RestAppOption) (*RestApp, error) {
 			observers = append(observers, handlers.NewPictureMIMEObserver(restApp.writer))
 		}
 		handlers.RegisterReadRoutes(root, cfg, observers...)
-	}
-	if restApp.internalFetch != nil {
-		root.Post("/internal/artwork/fetch", restApp.internalFetch)
-	}
-	if restApp.internalDownload != nil {
-		root.Post("/internal/artwork/download", restApp.internalDownload)
 	}
 	return restApp, nil
 }

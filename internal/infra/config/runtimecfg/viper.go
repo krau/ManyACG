@@ -30,6 +30,7 @@ type Config struct {
 	Scheduler SchedulerConfig `toml:"scheduler" mapstructure:"scheduler" json:"scheduler" yaml:"scheduler"`
 	Imseek    ImseekConfig    `toml:"imseek" mapstructure:"imseek" json:"imseek" yaml:"imseek"`
 	App       AppConfig       `toml:"app" mapstructure:"app" json:"app" yaml:"app"`
+	Internal  InternalConfig  `toml:"internal" mapstructure:"internal" json:"internal" yaml:"internal"`
 }
 
 type KVDBConfig struct {
@@ -75,32 +76,26 @@ func (c Config) Validate() error {
 	caps := c.App.Capabilities
 	writable := caps.Has(CapabilityWrite)
 	readable := caps.Has(CapabilityRead)
-	if !c.Rest.Enable && (caps.Has(CapabilityFetch) || caps.Has(CapabilityDownload) || (readable && !writable)) {
-		return fmt.Errorf("rest.enable is required for the configured capabilities")
+	if !c.Rest.Enable && readable && !writable {
+		return fmt.Errorf("rest.enable is required for the read capability without write")
 	}
-	remote := c.Source.Remote
-	if len(remote.Fetch.Endpoints) > 0 && !writable {
-		return fmt.Errorf("source.remote.fetch.endpoints requires the write capability")
+	servesAgent := caps.Has(CapabilityFetch) || caps.Has(CapabilityDownload)
+	if servesAgent && c.Internal.Agent.Gateway == "" {
+		return fmt.Errorf("internal.agent.gateway is required for the fetch or download capability")
 	}
-	if len(remote.Download.Endpoints) > 0 && !readable && !writable {
-		return fmt.Errorf("source.remote.download.endpoints requires the read or write capability")
+	if c.Internal.Agent.Gateway != "" && !servesAgent {
+		return fmt.Errorf("internal.agent.gateway requires the fetch or download capability")
 	}
-	usesFetch := c.App.Capabilities.Has(CapabilityFetch) || len(remote.Fetch.Endpoints) > 0
-	usesDownload := c.App.Capabilities.Has(CapabilityDownload) || len(remote.Download.Endpoints) > 0
-	if usesFetch {
-		if err := remote.Fetch.Validate(); err != nil {
-			return fmt.Errorf("source.remote.fetch: %w", err)
-		}
+	if c.Internal.Gateway.Addr != "" && !readable && !writable {
+		return fmt.Errorf("internal.gateway.addr requires the read or write capability")
 	}
-	if usesDownload {
-		if err := remote.Download.Validate(); err != nil {
-			return fmt.Errorf("source.remote.download: %w", err)
-		}
+	if err := c.Internal.Gateway.Validate(); err != nil {
+		return err
 	}
-	if (usesFetch || usesDownload) && strings.TrimSpace(remote.Token) == "" {
-		return fmt.Errorf("source.remote.token is required for remote fetch or download")
+	if err := c.Internal.Dispatch.Validate(); err != nil {
+		return err
 	}
-	return nil
+	return c.Internal.Agent.Validate()
 }
 
 var (
@@ -156,13 +151,21 @@ func loadConfig() Config {
 		"storage.cache_dir":                    "./imgcache",
 		"storage.cache_ttl":                    60 * 60 * 4, // in seconds
 
-		"source.pixiv.img_proxy":           "pximg.manyacg.top",
-		"source.twitter.fx_twitter_domain": "fxtwitter.com",
-		"source.remote.token":              "",
-		"source.remote.fetch.endpoints":    []string{},
-		"source.remote.fetch.timeout":      uint(30),
-		"source.remote.download.endpoints": []string{},
-		"source.remote.download.timeout":   uint(300),
+		"source.pixiv.img_proxy":               "pximg.manyacg.top",
+		"source.twitter.fx_twitter_domain":     "fxtwitter.com",
+		"internal.gateway.addr":                "",
+		"internal.gateway.authorized_keys":     "",
+		"internal.gateway.ssh":                 false,
+		"internal.gateway.host_key":            "",
+		"internal.dispatch.fetch_timeout":      uint(30),
+		"internal.dispatch.download_timeout":   uint(300),
+		"internal.dispatch.max_download_bytes": int64(1 << 30),
+		"internal.agent.gateway":               "",
+		"internal.agent.name":                  "",
+		"internal.agent.concurrency":           uint(1),
+		"internal.agent.private_key":           "",
+		"internal.agent.ssh":                   false,
+		"internal.agent.known_hosts":           "",
 
 		"database.type":         "sqlite",
 		"database.dsn":          `file:manyacg.db?_pragma=journal_mode(WAL)&_pragma=synchronous(NORMAL)&_pragma=busy_timeout(5000)&_txlock=deferred`,

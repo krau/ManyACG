@@ -8,6 +8,7 @@ import (
 	"github.com/krau/ManyACG/internal/infra/source"
 	"github.com/krau/ManyACG/internal/model/dto"
 	"github.com/krau/ManyACG/internal/shared"
+	"github.com/krau/ManyACG/internal/shared/errs"
 	"github.com/krau/ManyACG/pkg/strutil"
 )
 
@@ -21,13 +22,12 @@ func (s *Service) FindSourceURL(text string) string {
 	return ""
 }
 
-// GetArtworkInfo fetches artwork details from the configured remote fetcher,
-// or from the matching local source when no remote fetcher is configured.
+// GetArtworkInfo fetches artwork details from the configured fetcher.
 func (s *Service) GetArtworkInfo(ctx context.Context, sourceURL string) (*dto.FetchedArtwork, error) {
-	if s.fetcher != nil {
-		return s.fetcher.GetArtworkInfo(ctx, sourceURL)
+	if s.fetcher == nil {
+		return nil, errs.ErrUnsupportedSource
 	}
-	return s.sources.GetArtworkInfo(ctx, sourceURL)
+	return s.fetcher.GetArtworkInfo(ctx, sourceURL)
 }
 
 func (s *Service) PrettyFileName(artwork shared.ArtworkLike, picture shared.PictureLike) string {

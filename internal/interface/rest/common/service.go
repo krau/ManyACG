@@ -5,7 +5,6 @@ import (
 	"io"
 
 	"github.com/gofiber/fiber/v3"
-	"github.com/krau/ManyACG/internal/model/dto"
 	"github.com/krau/ManyACG/internal/model/entity"
 	"github.com/krau/ManyACG/internal/model/query"
 	"github.com/krau/ManyACG/internal/shared"
@@ -41,10 +40,6 @@ type QueryService interface {
 	StorageGetFile(ctx context.Context, detail shared.StorageDetail) (*osutil.File, error)
 	StorageStreamFile(ctx context.Context, detail shared.StorageDetail, w io.Writer) error
 	PrettyFileName(artwork shared.ArtworkLike, picture shared.PictureLike) string
-}
-
-type ArtworkFetcher interface {
-	GetArtworkInfo(ctx context.Context, sourceURL string) (*dto.FetchedArtwork, error)
 }
 
 type WriteService interface {
