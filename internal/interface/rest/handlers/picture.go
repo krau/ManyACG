@@ -116,11 +116,7 @@ func NewSizedPictureFileHandler(updateMIME bool) fiber.Handler {
 				}
 				pw.Close()
 			}()
-			if detail.Mime != "" {
-				ctx.Set(fiber.HeaderContentType, detail.Mime)
-				return ctx.SendStream(&pictureStream{Reader: pr, pipe: pr, cancel: cancel})
-			}
-
+			// Read the first chunk before committing a response, so storage errors surface as status codes.
 			buf := make([]byte, 3072)
 			n, err := io.ReadAtLeast(pr, buf, 3072)
 			if err != nil {
@@ -138,8 +134,9 @@ func NewSizedPictureFileHandler(updateMIME bool) fiber.Handler {
 			}
 
 			buf = buf[:n]
-			mtype := mimetype.Detect(buf)
-			if mtype != nil {
+			if detail.Mime != "" {
+				ctx.Set(fiber.HeaderContentType, detail.Mime)
+			} else if mtype := mimetype.Detect(buf); mtype != nil {
 				ctx.Set(fiber.HeaderContentType, mtype.String())
 				if updateMIME {
 					detectedDetail := streamDetail
