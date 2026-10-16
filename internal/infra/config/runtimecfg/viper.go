@@ -64,20 +64,41 @@ type SchedulerConfig struct {
 	Limit    int  `toml:"limit" mapstructure:"limit" json:"limit" yaml:"limit"` // 0 or negative means no limit
 }
 
+type NodeRole string
+
+const (
+	RoleMain   NodeRole = "main"
+	RoleWorker NodeRole = "worker"
+)
+
 type AppConfig struct {
+	Role         NodeRole     `toml:"role" mapstructure:"role" json:"role" yaml:"role"`
 	Capabilities Capabilities `toml:"capabilities" mapstructure:"capabilities" json:"capabilities" yaml:"capabilities"`
 	Debug        bool         `toml:"debug" mapstructure:"debug" json:"debug" yaml:"debug"`
 }
 
+func (c AppConfig) IsMain() bool {
+	return c.Role == RoleMain
+}
+
+func (c AppConfig) Validate() error {
+	switch c.Role {
+	case RoleMain, RoleWorker:
+	default:
+		return fmt.Errorf("app.role contains unknown role %q, valid values are main, worker", c.Role)
+	}
+	return c.Capabilities.Validate()
+}
+
 func (c Config) Validate() error {
-	if err := c.App.Capabilities.Validate(); err != nil {
+	if err := c.App.Validate(); err != nil {
 		return err
 	}
 	caps := c.App.Capabilities
-	writable := caps.Has(CapabilityWrite)
+	mainNode := c.App.IsMain()
 	readable := caps.Has(CapabilityRead)
-	if !c.Rest.Enable && readable && !writable {
-		return fmt.Errorf("rest.enable is required for the read capability without write")
+	if !c.Rest.Enable && readable && !mainNode {
+		return fmt.Errorf("rest.enable is required for the read capability on a worker node")
 	}
 	servesAgent := caps.Has(CapabilityFetch) || caps.Has(CapabilityDownload)
 	if servesAgent && c.Internal.Agent.Gateway == "" {
@@ -86,8 +107,8 @@ func (c Config) Validate() error {
 	if c.Internal.Agent.Gateway != "" && !servesAgent {
 		return fmt.Errorf("internal.agent.gateway requires the fetch or download capability")
 	}
-	if c.Internal.Gateway.Addr != "" && !readable && !writable {
-		return fmt.Errorf("internal.gateway.addr requires the read or write capability")
+	if c.Internal.Gateway.Addr != "" && !readable && !mainNode {
+		return fmt.Errorf("internal.gateway.addr requires app.role = main or the read capability")
 	}
 	if err := c.Internal.Gateway.Validate(); err != nil {
 		return err
@@ -121,7 +142,8 @@ func loadConfig() Config {
 	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
 
 	defaults := map[string]any{
-		"app.capabilities": []string{"read", "write"},
+		"app.role":         string(RoleMain),
+		"app.capabilities": []string{"read"},
 
 		"log.file_path":  "logs/manyacg.log",
 		"log.backup_num": 7,

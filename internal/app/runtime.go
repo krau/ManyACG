@@ -41,9 +41,9 @@ type Runtime struct {
 }
 
 func NewRuntime(ctx context.Context, cfg runtimecfg.Config) (*Runtime, error) {
-	writable := cfg.App.Capabilities.Has(runtimecfg.CapabilityWrite)
+	mainNode := cfg.App.IsMain()
 	readable := cfg.App.Capabilities.Has(runtimecfg.CapabilityRead)
-	if !writable {
+	if !mainNode {
 		cfg.Telegram.Disable = true
 		cfg.Scheduler.Enable = false
 		cfg.Imseek.Enable = false
@@ -67,12 +67,12 @@ func NewRuntime(ctx context.Context, cfg runtimecfg.Config) (*Runtime, error) {
 		internalServer: resources.InternalServer,
 		internalAgent:  resources.Agent,
 	}
-	if !readable && !writable {
+	if !readable && !mainNode {
 		return runtime, nil
 	}
 
 	var repos repo.Repositories = database.Default()
-	searcher, indexer, err := search.New(ctx, cfg.Search, cfg.App.Capabilities, repos.Artwork())
+	searcher, indexer, err := search.New(ctx, cfg.Search, cfg.App, repos.Artwork())
 	if err != nil {
 		return nil, errors.Join(fmt.Errorf("initialize search: %w", err), closer())
 	}
@@ -119,7 +119,7 @@ func NewRuntime(ctx context.Context, cfg runtimecfg.Config) (*Runtime, error) {
 	}
 
 	var tagger tagging.Tagger
-	if writable {
+	if mainNode {
 		tagger = tagging.Default()
 	}
 
@@ -129,7 +129,7 @@ func NewRuntime(ctx context.Context, cfg runtimecfg.Config) (*Runtime, error) {
 		service.WithArtworkFetcher(resources.Dispatcher),
 		service.WithDownloader(resources.Dispatcher),
 	}
-	if writable {
+	if mainNode {
 		servOpts = append(servOpts, service.WithSourcePollers(source.Pollers()))
 	}
 	serv := service.NewService(
@@ -149,7 +149,7 @@ func NewRuntime(ctx context.Context, cfg runtimecfg.Config) (*Runtime, error) {
 	if readable {
 		restOpts = append(restOpts, rest.WithReadService(serv))
 	}
-	if writable {
+	if mainNode {
 		restOpts = append(restOpts, rest.WithWriteService(serv, resources.KV))
 		recoverCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
 		err := serv.RecoverPosting(recoverCtx)

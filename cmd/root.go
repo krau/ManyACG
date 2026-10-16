@@ -8,18 +8,18 @@ import (
 	"github.com/spf13/cobra"
 )
 
-const writeCommandAnnotation = "manyacg.requires-write"
+const mainCommandAnnotation = "manyacg.requires-main"
 
 var rootCmd = &cobra.Command{
 	Use:   "manyacg",
 	Short: "manyacg",
 	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 		for current := cmd; current != nil; current = current.Parent() {
-			if current.Annotations[writeCommandAnnotation] != "true" {
+			if current.Annotations[mainCommandAnnotation] != "true" {
 				continue
 			}
-			if !runtimecfg.Get().App.Capabilities.Has(runtimecfg.CapabilityWrite) {
-				return fmt.Errorf("%s requires the write capability", cmd.CommandPath())
+			if !runtimecfg.Get().App.IsMain() {
+				return fmt.Errorf("%s requires app.role = main", cmd.CommandPath())
 			}
 			break
 		}

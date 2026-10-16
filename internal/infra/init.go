@@ -43,9 +43,9 @@ func Init(ctx context.Context, cfg runtimecfg.Config) (*Resources, error) {
 		return nil, err
 	}
 	resources := &Resources{}
-	writable := cfg.App.Capabilities.Has(runtimecfg.CapabilityWrite)
+	mainNode := cfg.App.IsMain()
 	readable := cfg.App.Capabilities.Has(runtimecfg.CapabilityRead)
-	if writable {
+	if mainNode {
 		store, err := kvstor.Open(cfg.KVDB)
 		if err != nil {
 			return nil, err
@@ -54,11 +54,11 @@ func Init(ctx context.Context, cfg runtimecfg.Config) (*Resources, error) {
 		resources.closers = append(resources.closers, store.Close)
 	}
 	var localFetch source.ArtworkFetcher
-	if writable || cfg.App.Capabilities.Has(runtimecfg.CapabilityFetch) {
+	if mainNode || cfg.App.Capabilities.Has(runtimecfg.CapabilityFetch) {
 		initSource(resources.KV)
 		localFetch = source.LocalFetcher(source.Sources())
 	}
-	if readable || writable {
+	if readable || mainNode {
 		resources.SourceNamers = sourceNamers(cfg.Source)
 		if err := initStorage(ctx); err != nil {
 			return nil, oops.Join(err, resources.Close())

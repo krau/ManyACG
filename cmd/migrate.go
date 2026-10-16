@@ -10,7 +10,7 @@ var migrateCmd = &cobra.Command{
 	Use:         "migrate",
 	Short:       "Initialize or update the database schema",
 	Args:        cobra.NoArgs,
-	Annotations: map[string]string{writeCommandAnnotation: "true"},
+	Annotations: map[string]string{mainCommandAnnotation: "true"},
 	RunE: func(cmd *cobra.Command, args []string) error {
 		return database.Migrate(cmd.Context(), runtimecfg.Get())
 	},

@@ -29,14 +29,14 @@ type Indexer interface {
 
 var ErrNotEnabled = errors.New("search engine is not enabled")
 
-func New(ctx context.Context, cfg runtimecfg.SearchConfig, caps runtimecfg.Capabilities, artworks repo.Artwork) (Searcher, Indexer, error) {
-	writable := caps.Has(runtimecfg.CapabilityWrite)
-	if !cfg.Enable || (!caps.Has(runtimecfg.CapabilityRead) && !writable) {
+func New(ctx context.Context, cfg runtimecfg.SearchConfig, app runtimecfg.AppConfig, artworks repo.Artwork) (Searcher, Indexer, error) {
+	mainNode := app.IsMain()
+	if !cfg.Enable || (!app.Capabilities.Has(runtimecfg.CapabilityRead) && !mainNode) {
 		return &noopSearcher{}, nil, nil
 	}
 	switch cfg.Engine {
 	case "meilisearch":
-		if !writable {
+		if !mainNode {
 			s, err := meilisearch.NewReader(ctx, cfg.MeiliSearch)
 			return s, nil, err
 		}
@@ -48,7 +48,7 @@ func New(ctx context.Context, cfg runtimecfg.SearchConfig, caps runtimecfg.Capab
 	case "mock":
 		log.Warn("using mock searcher, this is only for testing purposes")
 		s := mocksearch.NewSearcher(artworks)
-		if !writable {
+		if !mainNode {
 			return &querySearcher{Searcher: s}, nil, nil
 		}
 		return s, s, nil

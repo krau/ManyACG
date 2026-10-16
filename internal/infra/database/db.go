@@ -59,7 +59,7 @@ func initDB(ctx context.Context, cfg runtimecfg.Config, okCh chan struct{}) {
 	if err != nil {
 		log.Fatal("failed to initialize database", "err", err)
 	}
-	if cfg.App.Capabilities.Has(runtimecfg.CapabilityWrite) && cfg.Database.AutoMigrate {
+	if cfg.App.IsMain() && cfg.Database.AutoMigrate {
 		if err := migrateDatabase(ctx, db, cfg); err != nil {
 			log.Fatal("failed to migrate database", "err", err)
 		}
@@ -107,6 +107,9 @@ func openDatabase(ctx context.Context, cfg runtimecfg.Config) (*gorm.DB, error) 
 }
 
 func Migrate(ctx context.Context, cfg runtimecfg.Config) error {
+	if !cfg.App.IsMain() {
+		return fmt.Errorf("database migration requires app.role = main")
+	}
 	db, err := openDatabase(ctx, cfg)
 	if err != nil {
 		return err

@@ -22,7 +22,7 @@ var indexCmd = &cobra.Command{
 	Use:         "index",
 	Short:       "Index all artworks to MeiliSearch",
 	Long:        "Index all artworks from database to the specified MeiliSearch index",
-	Annotations: map[string]string{writeCommandAnnotation: "true"},
+	Annotations: map[string]string{mainCommandAnnotation: "true"},
 	Run: func(cmd *cobra.Command, args []string) {
 		indexArtworks(cmd.Context())
 	},

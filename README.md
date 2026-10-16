@@ -117,28 +117,33 @@ chmod +x manyacg
 
 #### 多节点部署
 
-节点通过 `[app] capabilities` 声明自己提供的能力，各项能力独立，可任意组合；环境变量 `MANYACG_APP_CAPABILITIES` 用逗号分隔（如 `read,fetch,download`）。未配置时默认 `["read", "write"]`；显式空列表 `[]` 不提供业务能力，也不具备写权限。修改能力后需重启。
+节点角色由 `[app] role` 指定：`main` 为主节点，`worker` 为非主节点，默认 `main`，保留未配置角色的旧单机用法；环境变量为 `MANYACG_APP_ROLE`。查询和纯边缘节点必须显式配置 `role = "worker"`。能力列表不改变节点角色；角色和能力修改后需重启。
+
+节点通过 `[app] capabilities` 声明查询和边缘执行能力，各项可独立组合；环境变量 `MANYACG_APP_CAPABILITIES` 用逗号分隔（如 `read,fetch,download`）。默认 `["read"]`；显式空列表 `[]` 不提供这些能力，但不会取消主节点职责。
 
 | 能力 | 提供 |
 | --- | --- |
 | `read` | 公共只读查询与媒体接口（`/atom`、`/artwork`、`/picture`、`/artist`、`/tag`） |
-| `write` | 公共写接口、数据库迁移、发布恢复，以及按各自开关启用的 Bot、调度、本地图像索引和搜索索引维护 |
 | `fetch` | 作为边缘节点注册到主节点，代抓单作品详情 |
 | `download` | 作为边缘节点注册到主节点，代下原始直链文件 |
 
-常见组合：`["read", "write"]` = 主节点；`["read"]` = 只读查询/媒体节点；`["download"]` 或 `["fetch"]` = 纯边缘节点；`["read", "write", "download"]` = 主节点同时贡献算力。`write` 不隐含 `read`，`["write"]` 不提供公共查询接口。启用 REST 时，任何节点都提供 `/myip`；其余接口只按对应能力注册。
+公共写接口、数据库迁移、发布恢复，以及按各自开关启用的 Bot、调度、本地图像索引和搜索索引维护，均为 `role = "main"` 的专属职责，不属于能力枚举。非主节点即使开启相关开关也不会执行这些职责。
+
+常见配置：`role = "main"` 配合 `["read"]` = 主节点；`role = "worker"` 配合 `["read"]` = 只读查询/媒体节点；`role = "worker"` 配合 `["fetch", "download"]` = 纯边缘节点。主节点也可声明 `fetch`/`download` 向其他派发节点贡献算力，但须配置自己的 Agent。主节点角色不隐含 `read`，`role = "main"` 配合 `[]` 不提供公共查询接口。启用 REST 时，任何节点都提供 `/myip`。
 
 | 配置 | 数据库和媒体存储 | KV | Bot、调度、本地图像索引、搜索索引维护 | 自动迁移与发布恢复 |
 | --- | --- | --- | --- | --- |
-| 含 `write` | 初始化 | 初始化 | 按各自开关启用 | 迁移由 `database.auto_migrate` 控制；执行发布恢复 |
-| 含 `read`，不含 `write` | 初始化 | 不初始化 | 不启用 | 不执行 |
-| 只有 `fetch`、`download` 或 `[]` | 不初始化 | 不初始化 | 不启用 | 不执行 |
+| `role = "main"`，任意能力列表 | 初始化 | 初始化 | 按各自开关启用 | 迁移由 `database.auto_migrate` 控制；执行发布恢复 |
+| `role = "worker"`，含 `read` | 初始化 | 不初始化 | 不启用 | 不执行 |
+| `role = "worker"`，不含 `read` | 不初始化 | 不初始化 | 不启用 | 不执行 |
 
-不含 `write` 的 `read` 节点必须启用 REST。边缘节点不需要 REST、数据库、KV、媒体存储或搜索服务，只需要可写缓存目录。声明了 `fetch`/`download` 能力的节点必须配置 `internal.agent.gateway`；配置了 `internal.gateway.addr` 的节点必须声明 `read` 或 `write`。不提供任何已启用接口的实例会拒绝启动。
+非主节点声明 `read` 时必须启用 REST。纯边缘节点不需要 REST、数据库、KV、媒体存储或搜索服务，只需要可写缓存目录。声明了 `fetch`/`download` 必须配置 `internal.agent.gateway`；配置 `internal.gateway.addr` 的节点必须为主节点或声明 `read`。查询节点可以接入边缘下载，但不会因此获得主节点职责。不提供任何已启用接口的实例会拒绝启动。
+
+多节点部署只能有一个活跃主节点。`app.role` 不提供自动选主或分布式锁，也不会阻止误启动第二个主节点；数据库复制、负载均衡及 CDN 需单独配置。
 
 内部 RPC 与委托：
 
-- 声明 `fetch`/`download` 的节点是**边缘节点**：它只出网，主动连接 `internal.agent.gateway` 注册自己的能力、名称与并发数（`internal.agent.concurrency`，默认 1，主节点最多接受 8），随后由主节点派发任务。同一公钥只允许一个活跃会话；每个边缘节点应使用独立密钥。它不监听任何端口，因此不需要公网 IP，位于 NAT、家用宽带或防火墙后都能接入。
+- 声明 `fetch`/`download` 的节点主动连接 `internal.agent.gateway` 注册能力、名称与并发数（`internal.agent.concurrency`，默认 1，派发节点最多接受 8），随后接收任务。同一公钥只允许一个活跃会话；每个边缘节点应使用独立密钥。纯边缘节点不监听端口，不需要公网 IP，位于 NAT、家用宽带或防火墙后也能接入；叠加 `read` 或主节点角色时仍可提供相应服务。
 - 主节点配置 `internal.gateway.addr` 后开启内部 RPC 端口，按能力与空闲度轮询派发；主节点不需要配置任何边缘节点地址，边缘节点上下线立即生效。
 - 失败回落：没有空闲边缘节点，或委托任务失败、超时、连接中断时，主节点立即在本地完成同一任务；不重试该节点，也不切换到其他节点。请求取消时会同时取消边缘任务，不再本地重试。
 - 委托方仍负责 API key 鉴权、配额、缓存入库、计费、`cache_id`、压缩与存储写入；边缘节点只执行详情抓取或原始直链下载并回传结果。
@@ -166,11 +171,12 @@ TOFU 无法识别首次连接时的中间人，请确保首次连接环境可信
 
 从旧版本迁移时，删除 `internal.token`、`internal.gateway.tls_cert`、`internal.gateway.tls_key` 和 `internal.agent.tls`，保留现有边缘私钥及主节点 `authorized_keys`。不开启 SSH 时仍使用原生 gRPC 公钥认证；开启时需两侧一并升级并设置 `ssh = true`，无需重新生成边缘密钥或建立双向手工信任。数据库 DSN 的 TLS 设置不受影响。
 
-主节点配置示例（也可省略 `[app]` 使用默认能力）：
+主节点配置示例（也可省略 `[app]`，使用默认主节点角色和 `read` 能力）：
 
 ```toml
 [app]
-capabilities = ["read", "write"]
+role = "main"
+capabilities = ["read"]
 
 [database]
 type = "pgsql"
@@ -200,6 +206,7 @@ cache_dir = "./cache-writer"
 
 ```toml
 [app]
+role = "worker"
 capabilities = ["read"]
 
 [database]
@@ -220,6 +227,7 @@ cache_dir = "./cache-reader"
 
 ```toml
 [app]
+role = "worker"
 capabilities = ["fetch", "download"]
 
 [internal.agent]
@@ -236,18 +244,20 @@ max_download_bytes = 1073741824
 cache_dir = "./cache-edge"
 ```
 
-DSN 中的主机、用户和 TLS 设置需按部署环境填写。含 `read` 且不含 `write` 的节点应使用只读数据库账号并连接读副本；写节点连接主库。各实例使用独立缓存目录；媒体存储必须对查询节点可读，写节点本地磁盘上的文件不会自动复制。查询节点需要配置相应存储驱动，`storage.telegram` 用于媒体读取，与交互 Bot 的开关不同。边缘节点不需要数据库、KV、媒体存储或搜索服务，只需要可写缓存目录和到主节点内部 RPC 端口的出网连通性。
+DSN 中的主机、用户和 TLS 设置需按部署环境填写。非主节点的 `read` 实例应使用只读数据库账号并连接读副本；主节点连接主库。各实例使用独立缓存目录；媒体存储必须对查询节点可读，主节点本地磁盘上的文件不会自动复制。查询节点需要配置相应存储驱动，`storage.telegram` 用于媒体读取，与交互 Bot 的开关不同。纯边缘节点只需要可写缓存目录和到派发节点内部 RPC 端口的出网连通性。
 
 部署或升级顺序：
 
-1. 维护期间先停掉所有 ManyACG 节点，用连接主库且具备 `write` 能力与数据库迁移权限的配置执行 `./manyacg migrate`。该命令只更新数据库结构与配置的数据库索引，不启动 Bot、调度或媒体存储。
-2. 等待数据库结构同步到读副本，再启动一个写节点。启用 MeiliSearch 时，写节点负责共享索引的初始化与更新；首次部署可在写节点执行 `./manyacg index` 导入已有作品。
-3. 启动查询节点，将普通查询和媒体请求路由到声明了 `read` 的节点；将 `/api/v1/artwork/fetch` 和 `/api/v1/bot/send_artwork_info` 的 GET、POST 请求只路由到写节点。POST `/artwork/list` 和 `/artwork/random` 仍是读接口。
+升级时从所有能力列表及 `MANYACG_APP_CAPABILITIES` 中删除 `write`，该值已移除，保留会拒绝启动。未配置角色时默认 `main`，原单机或主节点无需增加角色字段；查询和纯边缘节点须显式配置 `app.role = "worker"`（或 `MANYACG_APP_ROLE=worker`）。能力列表不会改变节点角色。
+
+1. 维护期间先停掉所有 ManyACG 节点，用 `role = "main"`、连接主库且具备数据库迁移权限的配置执行 `./manyacg migrate`。该命令只更新数据库结构与配置的数据库索引，不启动 Bot、调度或媒体存储。
+2. 等待数据库结构同步到读副本，再启动一个主节点。启用 MeiliSearch 时，主节点负责共享索引的初始化与更新；首次部署可在主节点执行 `./manyacg index` 导入已有作品。
+3. 启动查询节点，将普通查询和媒体请求路由到声明了 `read` 的节点；将 `/api/v1/artwork/fetch` 和 `/api/v1/bot/send_artwork_info` 的 GET、POST 请求只路由到主节点。POST `/artwork/list` 和 `/artwork/random` 仍是读接口。
 4. 启动边缘节点，它们会自动注册到开启 `internal.gateway.addr` 的节点；反向代理只需暴露公开 REST 端口，内部 RPC 端口仅对受信任网络开放。
 
-不含 `write` 的查询节点可使用仅有目标索引 `search` 权限的 MeiliSearch 密钥，必须与写节点使用相同的 Host 和 Index。启用搜索时，查询节点启动会用一次零结果查询验证目标索引、权限和连接，不创建索引、不修改搜索设置，也不补写图片 MIME。缺失索引或搜索服务故障会阻止查询节点启动；边缘节点不会连接搜索服务。读副本和搜索索引可能存在同步延迟，新发布作品不保证立即在所有查询节点可见。`migrate`、`index` 和所有 `imseek` 子命令（包括 `status`）都需要 `write` 能力。
+非主节点的查询实例可使用仅有目标索引 `search` 权限的 MeiliSearch 密钥，必须与主节点使用相同的 Host 和 Index。启用搜索时，查询节点启动会用一次零结果查询验证目标索引、权限和连接，不创建索引、不修改搜索设置，也不补写图片 MIME。缺失索引或搜索服务故障会阻止查询节点启动；纯边缘节点不会连接搜索服务。读副本和搜索索引可能存在同步延迟，新发布作品不保证立即在所有查询节点可见。`migrate`、`index` 和所有 `imseek` 子命令（包括 `status`）只允许主节点执行。
 
-写节点启动时会把上次异常退出遗留的 `posting` 缓存状态恢复为可发布状态，然后才启动 Bot 和调度。必须先确认旧写节点已停止，再启动替代实例；恢复可能重新发布已经发送 Telegram 消息但尚未写入数据库的作品，因此不保证 exactly-once。不含 `write` 的节点不执行发布恢复。
+主节点启动时会把上次异常退出遗留的 `posting` 缓存状态恢复为可发布状态，然后才启动 Bot 和调度。必须先确认旧主节点已停止，再启动替代实例；恢复可能重新发布已经发送 Telegram 消息但尚未写入数据库的作品，因此不保证 exactly-once。非主节点不执行发布恢复。
 
 #### 安装为服务
 
