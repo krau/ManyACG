@@ -21,17 +21,13 @@ type ArtworkPoster interface {
 	PostAndCreateArtwork(ctx context.Context, artwork *entity.CachedArtworkData) error
 }
 
-func StartPoster(ctx context.Context, poster ArtworkPoster, serv *service.Service) {
-	StartPosterWithConfig(ctx, runtimecfg.Get().Scheduler, poster, serv)
-}
-
-func StartPosterWithConfig(ctx context.Context, cfg runtimecfg.SchedulerConfig, poster ArtworkPoster, serv *service.Service) {
+func StartPoster(ctx context.Context, cfg runtimecfg.SchedulerConfig, poster ArtworkPoster, serv *service.Service) {
 	if !cfg.Enable || poster == nil {
 		return
 	}
 	ticker := time.NewTicker(time.Duration(cfg.Interval) * time.Second)
 	defer ticker.Stop()
-	sources := serv.Sources()
+	sources := serv.SourcePollers()
 	limit := cfg.Limit
 	if limit <= 0 {
 		limit = math.MaxInt

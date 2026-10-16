@@ -22,7 +22,7 @@ func (s *Service) GetOrFetchCachedArtwork(ctx context.Context, sourceURL string)
 	if err == nil {
 		return cached, nil
 	}
-	fetched, err := s.FetchArtworkInfo(ctx, sourceURL)
+	fetched, err := s.GetArtworkInfo(ctx, sourceURL)
 	if err != nil {
 		return nil, err
 	}

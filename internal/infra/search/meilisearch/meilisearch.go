@@ -68,7 +68,6 @@ func settingsEqual(a, b *meilisearch.Settings) bool {
 	return true
 }
 
-// AddDocuments implements search.Searcher.
 func (m *SearcherMeilisearch) AddDocuments(ctx context.Context, docs []*dto.ArtworkSearchDocument) error {
 	primaryKey := "id"
 	_, err := m.client.AddDocumentsWithContext(ctx, docs, &meilisearch.DocumentOptions{
@@ -104,13 +103,11 @@ func (m *SearcherMeilisearch) AddDocumentsAndWait(ctx context.Context, docs []*d
 	return nil
 }
 
-// DeleteDocuments implements search.Searcher.
 func (m *SearcherMeilisearch) DeleteDocuments(ctx context.Context, ids []string) error {
 	_, err := m.client.DeleteDocumentsWithContext(ctx, ids, nil)
 	return err
 }
 
-// DeleteAllDocuments implements search.Searcher.
 func (m *SearcherMeilisearch) DeleteAllDocuments(ctx context.Context) error {
 	_, err := m.client.DeleteAllDocumentsWithContext(ctx, nil)
 	return err
@@ -157,6 +154,34 @@ func (m *SearcherMeilisearch) GetMissingArtworkIDs(ctx context.Context, ids []ou
 		}
 	}
 	return missing, nil
+}
+
+func Open(ctx context.Context, cfg runtimecfg.MeiliSearchConfig) (*SearcherMeilisearch, error) {
+	if err := cfg.Valid(); err != nil {
+		return nil, err
+	}
+	probeCtx, cancel := context.WithTimeout(ctx, 3*time.Second)
+	defer cancel()
+	probe := meilisearch.New(cfg.Host,
+		meilisearch.WithAPIKey(cfg.Key),
+		meilisearch.DisableRetries(),
+		meilisearch.WithCustomJsonMarshaler(func(value any) ([]byte, error) {
+			if request, ok := value.(*meilisearch.SearchRequest); ok {
+				// The SDK omits zero limits; the startup probe must not retrieve hits.
+				return json.Marshal(struct {
+					*meilisearch.SearchRequest
+					Limit int64 `json:"limit"`
+				}{SearchRequest: request, Limit: request.Limit})
+			}
+			return json.Marshal(value)
+		}),
+	)
+	defer probe.Close()
+	if _, err := probe.Index(cfg.Index).SearchWithContext(probeCtx, "", &meilisearch.SearchRequest{Limit: 0}); err != nil {
+		return nil, fmt.Errorf("meilisearch startup search failed: %w", err)
+	}
+	manager := meilisearch.New(cfg.Host, meilisearch.WithAPIKey(cfg.Key))
+	return &SearcherMeilisearch{client: manager.Index(cfg.Index), cfg: cfg}, nil
 }
 
 func NewSearcher(ctx context.Context, cfg runtimecfg.MeiliSearchConfig) (*SearcherMeilisearch, error) {

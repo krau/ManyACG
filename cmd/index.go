@@ -19,11 +19,12 @@ import (
 )
 
 var indexCmd = &cobra.Command{
-	Use:   "index",
-	Short: "Index all artworks to MeiliSearch",
-	Long:  "Index all artworks from database to the specified MeiliSearch index",
+	Use:         "index",
+	Short:       "Index all artworks to MeiliSearch",
+	Long:        "Index all artworks from database to the specified MeiliSearch index",
+	Annotations: map[string]string{mainCommandAnnotation: "true"},
 	Run: func(cmd *cobra.Command, args []string) {
-		IndexArtworks(cmd.Context())
+		indexArtworks(cmd.Context())
 	},
 }
 
@@ -38,7 +39,7 @@ func init() {
 	indexCmd.Flags().BoolVarP(&indexClearAll, "clear", "c", false, "Clear all existing documents before indexing")
 }
 
-func IndexArtworks(ctx context.Context) {
+func indexArtworks(ctx context.Context) {
 	// 读取配置
 	cfg := runtimecfg.Get()
 
@@ -55,14 +56,13 @@ func IndexArtworks(ctx context.Context) {
 		log.Fatal("only meilisearch is supported for indexing", "engine", cfg.Search.Engine)
 	}
 
-	// 初始化基础设施（数据库等）
-	closer, err := infra.Init(ctx, cfg)
+	resources, err := infra.Init(ctx, cfg)
 	if err != nil {
 		log.Fatal("failed to initialize infrastructure", "err", err)
 	}
 	defer func() {
-		if closer != nil {
-			if err := closer(); err != nil {
+		if resources != nil {
+			if err := resources.Close(); err != nil {
 				log.Error("failed to close infrastructure", "err", err)
 			}
 		}

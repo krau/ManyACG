@@ -3,14 +3,14 @@ package search
 import (
 	"context"
 	"errors"
-	"sync"
+	"fmt"
 
 	"github.com/krau/ManyACG/internal/infra/config/runtimecfg"
-	"github.com/krau/ManyACG/internal/infra/database"
 	"github.com/krau/ManyACG/internal/infra/search/meilisearch"
 	"github.com/krau/ManyACG/internal/infra/search/mocksearch"
 	"github.com/krau/ManyACG/internal/model/dto"
 	"github.com/krau/ManyACG/internal/model/query"
+	"github.com/krau/ManyACG/internal/repo"
 	"github.com/krau/ManyACG/pkg/log"
 	"github.com/unvgo/ouid"
 )
@@ -18,58 +18,45 @@ import (
 type Searcher interface {
 	SearchArtworks(ctx context.Context, que *query.ArtworkSearch) (*dto.ArtworkSearchResult, error)
 	FindSimilarArtworks(ctx context.Context, que *query.ArtworkSimilar) (*dto.ArtworkSearchResult, error)
+}
+
+type Indexer interface {
 	GetMissingArtworkIDs(ctx context.Context, ids []ouid.OUID) ([]ouid.OUID, error)
 	AddDocuments(ctx context.Context, docs []*dto.ArtworkSearchDocument) error
 	AddDocumentsAndWait(ctx context.Context, docs []*dto.ArtworkSearchDocument) error
 	DeleteDocuments(ctx context.Context, ids []string) error
 }
 
-var (
-	defaultSearcher Searcher
-	once            sync.Once
-	ErrNotEnabled   = errors.New("search engine is not enabled")
-)
+var ErrNotEnabled = errors.New("search engine is not enabled")
 
-func initDefault(ctx context.Context) {
-	if !Enabled() {
-		defaultSearcher = &noopSearcher{}
-		return
+func New(ctx context.Context, cfg runtimecfg.SearchConfig, artworks repo.Artwork, initializeIndex bool) (Searcher, Indexer, error) {
+	if !cfg.Enable {
+		return &noopSearcher{}, nil, nil
 	}
-	cfg := runtimecfg.Get().Search
 	switch cfg.Engine {
 	case "meilisearch":
+		if !initializeIndex {
+			s, err := meilisearch.Open(ctx, cfg.MeiliSearch)
+			return s, nil, err
+		}
 		s, err := meilisearch.NewSearcher(ctx, cfg.MeiliSearch)
 		if err != nil {
-			log.Fatal("failed to initialize meilisearch searcher", "err", err)
+			return nil, nil, err
 		}
-		defaultSearcher = s
+		return s, s, nil
 	case "mock":
 		log.Warn("using mock searcher, this is only for testing purposes")
-		defaultSearcher = mocksearch.NewSearcher(database.Default().Artwork())
+		s := mocksearch.NewSearcher(artworks)
+		if !initializeIndex {
+			return s, nil, nil
+		}
+		return s, s, nil
 	default:
-		log.Fatal("unknown search engine: %s", cfg.Engine)
+		return nil, nil, fmt.Errorf("unknown search engine %q", cfg.Engine)
 	}
-}
-
-func Enabled() bool {
-	return runtimecfg.Get().Search.Enable
 }
 
 type noopSearcher struct{}
-
-// AddDocuments implements Searcher.
-func (s *noopSearcher) AddDocuments(ctx context.Context, docs []*dto.ArtworkSearchDocument) error {
-	return ErrNotEnabled
-}
-
-func (s *noopSearcher) AddDocumentsAndWait(ctx context.Context, docs []*dto.ArtworkSearchDocument) error {
-	return ErrNotEnabled
-}
-
-// DeleteDocuments implements Searcher.
-func (s *noopSearcher) DeleteDocuments(ctx context.Context, ids []string) error {
-	return ErrNotEnabled
-}
 
 func (s *noopSearcher) SearchArtworks(ctx context.Context, que *query.ArtworkSearch) (*dto.ArtworkSearchResult, error) {
 	return nil, ErrNotEnabled
@@ -79,17 +66,6 @@ func (s *noopSearcher) FindSimilarArtworks(ctx context.Context, que *query.Artwo
 	return nil, ErrNotEnabled
 }
 
-func (s *noopSearcher) GetMissingArtworkIDs(ctx context.Context, ids []ouid.OUID) ([]ouid.OUID, error) {
-	return nil, ErrNotEnabled
-}
-
 func IsNotEnabledErr(err error) bool {
 	return errors.Is(err, ErrNotEnabled)
-}
-
-func Default(ctx context.Context) Searcher {
-	once.Do(func() {
-		initDefault(ctx)
-	})
-	return defaultSearcher
 }

@@ -8,7 +8,6 @@ import (
 	"sync"
 
 	"github.com/gabriel-vasile/mimetype"
-	"github.com/krau/ManyACG/internal/common/httpclient"
 	"github.com/krau/ManyACG/internal/interface/telegram/metautil"
 	"github.com/krau/ManyACG/internal/model/command"
 	"github.com/krau/ManyACG/internal/model/entity"
@@ -87,7 +86,7 @@ func doPostAndCreateArtwork(
 	for i, pic := range artwork.Pictures {
 		// 下载并存储图片, 同时计算 phash, thumbhash, width, height
 		err = func() error {
-			file, img, err := downloadAndDecodePicture(ctx, pic.Original)
+			file, img, err := downloadAndDecodePicture(ctx, serv, pic.Original)
 			if err != nil {
 				return oops.Wrapf(err, "failed to load picture %d", i)
 			}
@@ -141,7 +140,7 @@ func doPostAndCreateArtwork(
 	for _, ugoira := range artwork.UgoiraMetas {
 		err := func() error {
 			origZip := ugoira.MetaData.OriginalZip
-			file, err := httpclient.DownloadWithCache(ctx, origZip, nil)
+			file, err := serv.DownloadOriginFile(ctx, origZip)
 			if err != nil {
 				return oops.Wrapf(err, "failed to download ugoira original zip")
 			}
@@ -161,7 +160,7 @@ func doPostAndCreateArtwork(
 	for _, video := range artwork.Videos {
 		// 下载并存储视频
 		err := func() error {
-			file, err := httpclient.DownloadWithCache(ctx, video.URL, nil)
+			file, err := serv.DownloadOriginFile(ctx, video.URL)
 			if err != nil {
 				return oops.Wrapf(err, "failed to download video")
 			}
@@ -210,7 +209,7 @@ func doPostAndCreateArtwork(
 					}
 					return nil
 				}
-				file, err := httpclient.DownloadWithCache(ctx, pic.Original, nil)
+				file, err := serv.DownloadOriginFile(ctx, pic.Original)
 				if err != nil {
 					return oops.Wrapf(err, "failed to download picture for tagging")
 				}
@@ -472,7 +471,7 @@ func forgetPictureCacheLock(url string, lock *pictureCacheLock) {
 
 // downloadAndDecodePicture 下载图片并解码.
 // 若缓存中的文件无法解码(例如上次下载被中断留下的截断文件), 则删除缓存并重新下载一次.
-func downloadAndDecodePicture(ctx context.Context, url string) (*osutil.File, image.Image, error) {
+func downloadAndDecodePicture(ctx context.Context, serv *service.Service, url string) (*osutil.File, image.Image, error) {
 	// 同一 URL 的解码与缓存失效处理必须串行, 避免旧文件的错误删除新缓存.
 	lock, err := acquirePictureCacheLock(ctx, url)
 	if err != nil {
@@ -480,7 +479,7 @@ func downloadAndDecodePicture(ctx context.Context, url string) (*osutil.File, im
 	}
 	defer releasePictureCacheLock(url, lock)
 
-	file, err := httpclient.DownloadWithCache(ctx, url, nil)
+	file, err := serv.DownloadOriginFile(ctx, url)
 	if err != nil {
 		return nil, nil, oops.Wrapf(err, "failed to download")
 	}
@@ -494,7 +493,7 @@ func downloadAndDecodePicture(ctx context.Context, url string) (*osutil.File, im
 	if rmErr := osutil.RemoveNow(path); rmErr != nil {
 		log.Warn("failed to remove undecodable cache file", "path", path, "err", rmErr)
 	}
-	file, err = httpclient.DownloadWithCache(ctx, url, nil)
+	file, err = serv.DownloadOriginFile(ctx, url)
 	if err != nil {
 		return nil, nil, oops.Wrapf(err, "failed to download")
 	}

@@ -69,7 +69,7 @@ func (r *RequestListArtworks) ID() uint64 {
 	return h.Sum64()
 }
 
-func GetHandleListArtworks(serv *service.Service, cfg runtimecfg.RestConfig) fiber.Handler {
+func GetHandleListArtworks(cfg runtimecfg.RestConfig) fiber.Handler {
 	var cache *ristretto.Cache[uint64, common.Response[[]ResponseArtworkItem]]
 	var err error
 	if !cfg.Cache.Disable {
@@ -90,6 +90,7 @@ func GetHandleListArtworks(serv *service.Service, cfg runtimecfg.RestConfig) fib
 	ttl := time.Duration(cfg.Cache.DefaultTTL) * time.Second
 
 	return func(ctx fiber.Ctx) error {
+		serv := common.MustGetState[*service.Service](ctx, common.StateKeyService)
 		requestCtx := ctx.RequestCtx()
 		req := new(RequestListArtworks)
 		if err := ctx.Bind().All(req); err != nil {

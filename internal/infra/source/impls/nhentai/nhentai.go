@@ -12,7 +12,10 @@ import (
 	"github.com/krau/ManyACG/pkg/strutil"
 )
 
+type Namer struct{}
+
 type Nhentai struct {
+	Namer
 	reqClient *req.Client
 	cfg       config.SourceNhentaiConfig
 }
@@ -34,10 +37,6 @@ func Init() {
 	})
 }
 
-func (n *Nhentai) FetchNewArtworks(ctx context.Context, limit int) ([]*dto.FetchedArtwork, error) {
-	return nil, nil
-}
-
 func (n *Nhentai) GetArtworkInfo(ctx context.Context, sourceURL string) (*dto.FetchedArtwork, error) {
 	galleryID := GetGalleryID(sourceURL)
 	if galleryID == "" {
@@ -46,7 +45,7 @@ func (n *Nhentai) GetArtworkInfo(ctx context.Context, sourceURL string) (*dto.Fe
 	return n.crawlGallery(ctx, galleryID)
 }
 
-func (n *Nhentai) MatchesSourceURL(text string) (string, bool) {
+func (Namer) MatchesSourceURL(text string) (string, bool) {
 	galleryID := GetGalleryID(text)
 	if galleryID == "" {
 		return "", false
@@ -54,8 +53,7 @@ func (n *Nhentai) MatchesSourceURL(text string) (string, bool) {
 	return sourceURLPrefix + galleryID, true
 }
 
-// PrettyFileName implements source.ArtworkSource.
-func (n *Nhentai) PrettyFileName(artwork shared.ArtworkLike, picture shared.PictureLike) string {
+func (Namer) PrettyFileName(artwork shared.ArtworkLike, picture shared.PictureLike) string {
 	galleryID := GetGalleryID(artwork.GetSourceURL())
 	ext, _ := strutil.GetFileExtFromURL(picture.GetOriginal())
 	if galleryID == "" {

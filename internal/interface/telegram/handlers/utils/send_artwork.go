@@ -7,7 +7,6 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/krau/ManyACG/internal/common/httpclient"
 	"github.com/krau/ManyACG/internal/infra/config/runtimecfg"
 	"github.com/krau/ManyACG/internal/infra/kvstor"
 	"github.com/krau/ManyACG/internal/interface/telegram/metautil"
@@ -42,7 +41,7 @@ func GetPicturePhotoInputFile(ctx context.Context, serv *service.Service, meta *
 		}
 		return ioutil.NewCloser(telegoutil.File(compressed), func() error { return compressed.Close() }), nil
 	}
-	file, err := httpclient.DownloadWithCache(ctx, picture.GetOriginal(), nil)
+	file, err := serv.DownloadOriginFile(ctx, picture.GetOriginal())
 	if err != nil {
 		return nil, oops.Wrapf(err, "failed to download file: %s", picture.GetOriginal())
 	}
@@ -75,7 +74,7 @@ func GetUgoiraVideoInputFile(ctx context.Context, serv *service.Service, meta *m
 		}
 		return ioutil.NewCloser(telegoutil.File(videoFile), func() error { return videoFile.Close() }), nil
 	}
-	file, err := httpclient.DownloadWithCache(ctx, ugoira.GetData().OriginalZip, nil)
+	file, err := serv.DownloadOriginFile(ctx, ugoira.GetData().OriginalZip)
 	if err != nil {
 		return nil, oops.Wrapf(err, "failed to download file: %s", ugoira.GetData().OriginalZip)
 	}
@@ -103,7 +102,7 @@ func GetVideoVideoInputFile(ctx context.Context, serv *service.Service, meta *me
 		}
 		return ioutil.NewCloser(telegoutil.File(file), func() error { return file.Close() }), nil
 	}
-	file, err := httpclient.DownloadWithCache(ctx, video.GetURL(), nil)
+	file, err := serv.DownloadOriginFile(ctx, video.GetURL())
 	if err != nil {
 		return nil, oops.Wrapf(err, "failed to download file: %s", video.GetURL())
 	}
@@ -157,6 +156,7 @@ type CreateArtworkInfoReplyMarkupOptions struct {
 }
 
 func CreateArtworkInfoReplyMarkup(ctx context.Context,
+	store kvstor.KVStore,
 	meta *metautil.MetaData,
 	serv *service.Service,
 	artwork shared.ArtworkLike,
@@ -184,7 +184,7 @@ func CreateArtworkInfoReplyMarkup(ctx context.Context,
 		return telegoutil.InlineKeyboard(base), nil
 	}
 	cbId := ouid.New().Hex()
-	err := kvstor.SetWithTTL(ctx, cbId, artwork.GetSourceURL(), time.Hour*24*7)
+	err := store.Set(ctx, cbId, artwork.GetSourceURL(), time.Hour*24*7)
 	if err != nil {
 		return nil, oops.Wrapf(err, "failed to create callback data")
 	}
@@ -227,6 +227,7 @@ func ArtworkPostKeyboard(meta *metautil.MetaData, cbId string) [][]telego.Inline
 //
 // 需要区分已发布的作品, 已标记为删除的作品, 和未发布的作品
 func SendArtworkInfo(ctx context.Context,
+	store kvstor.KVStore,
 	bot *telego.Bot,
 	meta *metautil.MetaData,
 	serv *service.Service,
@@ -260,7 +261,7 @@ func SendArtworkInfo(ctx context.Context,
 		if artwork == nil {
 			// 既没有发布也没有缓存, 则尝试抓取
 			cbId := ouid.New().Hex()
-			err := kvstor.SetWithTTL(ctx, cbId, sourceUrl, time.Hour*24*7)
+			err := store.Set(ctx, cbId, sourceUrl, time.Hour*24*7)
 			if err != nil {
 				return oops.Wrapf(err, "failed to create callback data")
 			}
@@ -296,7 +297,7 @@ func SendArtworkInfo(ctx context.Context,
 	if opts.AppendCaption != "" {
 		caption += "\n" + opts.AppendCaption
 	}
-	replyMarkup, err := CreateArtworkInfoReplyMarkup(ctx, meta, serv, artwork, &CreateArtworkInfoReplyMarkupOptions{
+	replyMarkup, err := CreateArtworkInfoReplyMarkup(ctx, store, meta, serv, artwork, &CreateArtworkInfoReplyMarkupOptions{
 		CreatedArtwork: created,
 		HasPermission:  opts.HasPermission,
 	})
@@ -510,7 +511,7 @@ func GetPictureDocumentInputFile(ctx context.Context, serv *service.Service, met
 		}
 		return ioutil.NewCloser(telegoutil.File(telegoutil.NameReader(rsc, serv.PrettyFileName(artwork, picture))), func() error { return rsc.Close() }), nil
 	}
-	file, err := httpclient.DownloadWithCache(ctx, picture.GetOriginal(), nil)
+	file, err := serv.DownloadOriginFile(ctx, picture.GetOriginal())
 	if err != nil {
 		return nil, oops.Wrapf(err, "failed to download file: %s", picture.GetOriginal())
 	}
@@ -551,7 +552,7 @@ func GetUgoiraVideoDocumentInputFile(ctx context.Context, serv *service.Service,
 		return buildInput(file)
 	}
 
-	file, err := httpclient.DownloadWithCache(ctx, data.OriginalZip, nil)
+	file, err := serv.DownloadOriginFile(ctx, data.OriginalZip)
 	if err != nil {
 		return nil, oops.Wrapf(err, "failed to download ugoira file: %s", data.OriginalZip)
 	}
@@ -570,7 +571,7 @@ func GetVideoDocumentInputFile(ctx context.Context, serv *service.Service, meta 
 		}
 		return ioutil.NewCloser(telegoutil.File(rsc), func() error { return rsc.Close() }), nil
 	}
-	file, err := httpclient.DownloadWithCache(ctx, video.GetURL(), nil)
+	file, err := serv.DownloadOriginFile(ctx, video.GetURL())
 	if err != nil {
 		return nil, oops.Wrapf(err, "failed to download video file: %s", video.GetURL())
 	}

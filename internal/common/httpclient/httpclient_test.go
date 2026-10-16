@@ -51,7 +51,7 @@ func TestDownloadToFileIsAtomic(t *testing.T) {
 	path := filepath.Join(dir, "data.bin")
 	errCh := make(chan error, 1)
 	go func() {
-		errCh <- downloadToFile(context.Background(), req.C(), srv.URL+"/slow.bin", path)
+		errCh <- downloadToFile(context.Background(), localFetcher{client: req.C()}, srv.URL+"/slow.bin", path)
 	}()
 
 	<-started
@@ -113,7 +113,7 @@ func TestDownloadToFileFailureLeavesNoFile(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			dir := t.TempDir()
 			path := filepath.Join(dir, "data.bin")
-			if err := downloadToFile(context.Background(), req.C(), tt.url, path); err == nil {
+			if err := downloadToFile(context.Background(), localFetcher{client: req.C()}, tt.url, path); err == nil {
 				t.Fatal("expected an error")
 			} else if tt.name == "error status" && !strings.Contains(err.Error(), fmt.Sprint(http.StatusNotFound)) {
 				t.Errorf("error should mention the status code, got: %v", err)

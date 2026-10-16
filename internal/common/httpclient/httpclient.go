@@ -16,9 +16,10 @@ import (
 )
 
 var (
-	defaultClient *req.Client
-	once          sync.Once
-	dlGroup       singleflight.Group
+	defaultClient  *req.Client
+	once           sync.Once
+	dlGroup        singleflight.Group
+	delegatedGroup singleflight.Group
 )
 
 func initDefaultClient() {
@@ -38,10 +39,41 @@ func getCachePath(url string) string {
 	return filepath.Join(runtimecfg.Get().Storage.CacheDir, "req", strutil.MD5Hash(url)+ext)
 }
 
+type Fetcher interface {
+	FetchToFile(ctx context.Context, url, path string) error
+}
+
+func LocalFetcher() Fetcher {
+	return localFetcher{}
+}
+
+type localFetcher struct {
+	client *req.Client
+}
+
+func (f localFetcher) FetchToFile(ctx context.Context, url, path string) error {
+	client := f.client
+	if client == nil {
+		once.Do(initDefaultClient)
+		client = defaultClient
+	}
+	resp, err := client.R().
+		SetContext(ctx).
+		SetOutputFile(path).
+		Get(url)
+	if err != nil {
+		return err
+	}
+	if resp.IsErrorState() {
+		return fmt.Errorf("http error: %d", resp.GetStatusCode())
+	}
+	return nil
+}
+
 // downloadToFile 下载 url 的内容并写入 path.
 // 内容会先写入同目录下的临时文件, 下载完成后重命名到 path,
 // 保证 path 上出现的文件一定是完整的, 不会被并发读取到写入中的内容.
-func downloadToFile(ctx context.Context, client *req.Client, url, path string) error {
+func downloadToFile(ctx context.Context, fetcher Fetcher, url, path string) error {
 	if err := os.MkdirAll(filepath.Dir(path), os.ModePerm); err != nil {
 		return err
 	}
@@ -55,40 +87,34 @@ func downloadToFile(ctx context.Context, client *req.Client, url, path string) e
 		return err
 	}
 	defer os.Remove(tmpPath)
-	resp, err := client.R().
-		SetContext(ctx).
-		SetOutputFile(tmpPath).
-		Get(url)
-	if err != nil {
+	if err := fetcher.FetchToFile(ctx, url, tmpPath); err != nil {
 		return err
-	}
-	if resp.IsErrorState() {
-		return fmt.Errorf("http error: %d", resp.GetStatusCode())
 	}
 	return osutil.CommitTempFile(tmpPath, path)
 }
 
 // DownloadWithCache downloads a file with caching. If the file is already cached, it returns the cached file.
-func DownloadWithCache(ctx context.Context, url string, client *req.Client) (
+func DownloadWithCache(ctx context.Context, url string, fetcher Fetcher) (
 	*osutil.File,
 	error,
 ) {
-	once.Do(initDefaultClient)
-	if client == nil {
-		client = defaultClient
-	}
 	cachePath := getCachePath(url)
 	if fi, err := os.Stat(cachePath); err == nil && !fi.IsDir() {
 		return osutil.OpenCache(cachePath)
 	} else if err != nil && !os.IsNotExist(err) {
 		return nil, err
 	}
+	group := &delegatedGroup
+	if fetcher == nil {
+		fetcher = localFetcher{}
+		group = &dlGroup
+	}
 
-	ch := dlGroup.DoChan(cachePath, func() (any, error) {
+	ch := group.DoChan(cachePath, func() (any, error) {
 		if fi, err := os.Stat(cachePath); err == nil && !fi.IsDir() {
 			return nil, nil
 		}
-		return nil, downloadToFile(ctx, client, url, cachePath)
+		return nil, downloadToFile(ctx, fetcher, url, cachePath)
 	})
 	select {
 	case r := <-ch:

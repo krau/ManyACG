@@ -5,6 +5,7 @@ import (
 	"os"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/spf13/viper"
 )
@@ -30,6 +31,7 @@ type Config struct {
 	Scheduler SchedulerConfig `toml:"scheduler" mapstructure:"scheduler" json:"scheduler" yaml:"scheduler"`
 	Imseek    ImseekConfig    `toml:"imseek" mapstructure:"imseek" json:"imseek" yaml:"imseek"`
 	App       AppConfig       `toml:"app" mapstructure:"app" json:"app" yaml:"app"`
+	Internal  InternalConfig  `toml:"internal" mapstructure:"internal" json:"internal" yaml:"internal"`
 }
 
 type KVDBConfig struct {
@@ -63,9 +65,73 @@ type SchedulerConfig struct {
 	Limit    int  `toml:"limit" mapstructure:"limit" json:"limit" yaml:"limit"` // 0 or negative means no limit
 }
 
+type NodeRole string
+
+const (
+	RoleMain   NodeRole = "main"
+	RoleWorker NodeRole = "worker"
+)
+
+const defaultShutdownTimeoutSeconds = 8
+
 type AppConfig struct {
-	// Something globally used in app
-	Debug bool `toml:"debug" mapstructure:"debug" json:"debug" yaml:"debug"`
+	Role            NodeRole     `toml:"role" mapstructure:"role" json:"role" yaml:"role"`
+	Capabilities    Capabilities `toml:"capabilities" mapstructure:"capabilities" json:"capabilities" yaml:"capabilities"`
+	Debug           bool         `toml:"debug" mapstructure:"debug" json:"debug" yaml:"debug"`
+	ShutdownTimeout uint         `toml:"shutdown_timeout" mapstructure:"shutdown_timeout" json:"shutdown_timeout" yaml:"shutdown_timeout"`
+}
+
+func (c AppConfig) IsMain() bool {
+	return c.Role == RoleMain
+}
+
+func (c AppConfig) ShutdownDuration() time.Duration {
+	seconds := c.ShutdownTimeout
+	if seconds == 0 {
+		seconds = defaultShutdownTimeoutSeconds
+	}
+	return time.Duration(seconds) * time.Second
+}
+
+func (c AppConfig) Validate() error {
+	switch c.Role {
+	case RoleMain, RoleWorker:
+	default:
+		return fmt.Errorf("app.role contains unknown role %q, valid values are main, worker", c.Role)
+	}
+	if uint64(c.ShutdownTimeout) > maxDurationSeconds-1 {
+		return fmt.Errorf("app.shutdown_timeout is too large to fit a duration in seconds")
+	}
+	return c.Capabilities.Validate()
+}
+
+func (c Config) Validate() error {
+	if err := c.App.Validate(); err != nil {
+		return err
+	}
+	caps := c.App.Capabilities
+	mainNode := c.App.IsMain()
+	readable := caps.Has(CapabilityRead)
+	if !c.Rest.Enable && readable && !mainNode {
+		return fmt.Errorf("rest.enable is required for the read capability on a worker node")
+	}
+	servesAgent := caps.Has(CapabilityFetch) || caps.Has(CapabilityDownload)
+	if servesAgent && c.Internal.Agent.Gateway == "" {
+		return fmt.Errorf("internal.agent.gateway is required for the fetch or download capability")
+	}
+	if c.Internal.Agent.Gateway != "" && !servesAgent {
+		return fmt.Errorf("internal.agent.gateway requires the fetch or download capability")
+	}
+	if c.Internal.Gateway.Addr != "" && !readable && !mainNode {
+		return fmt.Errorf("internal.gateway.addr requires app.role = main or the read capability")
+	}
+	if err := c.Internal.Gateway.Validate(); err != nil {
+		return err
+	}
+	if err := c.Internal.Dispatch.Validate(); err != nil {
+		return err
+	}
+	return c.Internal.Agent.Validate()
 }
 
 var (
@@ -91,6 +157,10 @@ func loadConfig() Config {
 	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
 
 	defaults := map[string]any{
+		"app.role":             string(RoleMain),
+		"app.capabilities":     []string{"read"},
+		"app.shutdown_timeout": defaultShutdownTimeoutSeconds,
+
 		"log.file_path":  "logs/manyacg.log",
 		"log.backup_num": 7,
 
@@ -119,11 +189,24 @@ func loadConfig() Config {
 		"storage.cache_dir":                    "./imgcache",
 		"storage.cache_ttl":                    60 * 60 * 4, // in seconds
 
-		"source.pixiv.img_proxy":           "pximg.manyacg.top",
-		"source.twitter.fx_twitter_domain": "fxtwitter.com",
+		"source.pixiv.img_proxy":             "pximg.manyacg.top",
+		"source.twitter.fx_twitter_domain":   "fxtwitter.com",
+		"internal.gateway.addr":              "",
+		"internal.gateway.authorized_keys":   "",
+		"internal.gateway.ssh":               false,
+		"internal.gateway.host_key":          "",
+		"internal.dispatch.fetch_timeout":    uint(30),
+		"internal.dispatch.download_timeout": uint(300),
+		"internal.agent.gateway":             "",
+		"internal.agent.name":                "",
+		"internal.agent.concurrency":         uint(1),
+		"internal.agent.private_key":         "",
+		"internal.agent.ssh":                 false,
+		"internal.agent.known_hosts":         "",
 
-		"database.type": "sqlite",
-		"database.dsn":  `file:manyacg.db?_pragma=journal_mode(WAL)&_pragma=synchronous(NORMAL)&_pragma=busy_timeout(5000)&_txlock=deferred`,
+		"database.type":         "sqlite",
+		"database.dsn":          `file:manyacg.db?_pragma=journal_mode(WAL)&_pragma=synchronous(NORMAL)&_pragma=busy_timeout(5000)&_txlock=deferred`,
+		"database.auto_migrate": true,
 
 		"kvdb.type":             "bbolt",
 		"kvdb.path":             "data/kvdb.bbolt",
@@ -159,6 +242,10 @@ func loadConfig() Config {
 	c := Config{}
 	if err := viper.Unmarshal(&c); err != nil {
 		fmt.Printf("error when unmarshal config: %s\n", err)
+		os.Exit(1)
+	}
+	if err := c.Validate(); err != nil {
+		fmt.Printf("invalid config: %s\n", err)
 		os.Exit(1)
 	}
 	return c

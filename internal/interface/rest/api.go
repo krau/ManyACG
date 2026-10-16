@@ -3,6 +3,7 @@ package rest
 import (
 	"context"
 	"errors"
+	"net"
 	"time"
 
 	"github.com/charmbracelet/log"
@@ -15,6 +16,7 @@ import (
 	"github.com/gofiber/fiber/v3/middleware/logger"
 	recoverer "github.com/gofiber/fiber/v3/middleware/recover"
 	"github.com/krau/ManyACG/internal/infra/config/runtimecfg"
+	"github.com/krau/ManyACG/internal/infra/kvstor"
 	"github.com/krau/ManyACG/internal/interface/rest/common"
 	"github.com/krau/ManyACG/internal/interface/rest/handlers"
 	"github.com/krau/ManyACG/internal/service"
@@ -24,9 +26,10 @@ import (
 )
 
 type RestApp struct {
-	fiberApp *fiber.App
-	cfg      runtimecfg.RestConfig
-	tgbot    common.TelegramBot
+	fiberApp        *fiber.App
+	cfg             runtimecfg.RestConfig
+	tgbot           common.TelegramBot
+	shutdownTimeout time.Duration
 }
 
 type RestAppOption func(app *RestApp) error
@@ -41,7 +44,13 @@ func WithTelegramBot(bot common.TelegramBot) RestAppOption {
 	}
 }
 
-func New(ctx context.Context, serv *service.Service, cfg runtimecfg.RestConfig, opts ...RestAppOption) (*RestApp, error) {
+func New(cfg runtimecfg.RestConfig, app runtimecfg.AppConfig, serv *service.Service, store kvstor.KVStore, opts ...RestAppOption) (*RestApp, error) {
+	if (app.IsMain() || app.Capabilities.Has(runtimecfg.CapabilityRead)) && serv == nil {
+		return nil, oops.New("service is required for main or read REST routes")
+	}
+	if app.IsMain() && store == nil {
+		return nil, oops.New("KV store is required for main REST routes")
+	}
 	errHandler := func(c fiber.Ctx, err error) error {
 		c.Set(fiber.HeaderContentType, fiber.MIMEApplicationJSONCharsetUTF8)
 		if e, ok := errors.AsType[*common.Error](err); ok {
@@ -61,7 +70,7 @@ func New(ctx context.Context, serv *service.Service, cfg runtimecfg.RestConfig, 
 		return c.Status(code).JSON(common.NewError(code, "internal server error").Response())
 	}
 
-	app := fiber.New(fiber.Config{
+	fiberApp := fiber.New(fiber.Config{
 		JSONEncoder:     json.Marshal,
 		JSONDecoder:     json.Unmarshal,
 		ErrorHandler:    errHandler,
@@ -76,30 +85,33 @@ func New(ctx context.Context, serv *service.Service, cfg runtimecfg.RestConfig, 
 		EnableIPValidation: true,
 	})
 
-	app.State().Set(common.StateKeyService, serv)
-	app.State().Set(common.StateKeyConfig, cfg)
+	fiberApp.State().Set(common.StateKeyConfig, cfg)
+	if serv != nil {
+		fiberApp.State().Set(common.StateKeyService, serv)
+	}
+	if store != nil {
+		fiberApp.State().Set(common.StateKeyKVStore, store)
+	}
 
 	if cfg.Limit.Enable {
-		app.Use(limiter.New(limiter.Config{
+		fiberApp.Use(limiter.New(limiter.Config{
 			Expiration: time.Duration(cfg.Limit.Expiration) * time.Second,
 			Max:        cfg.Limit.Max,
 		}))
 	}
-	app.Use(cors.New())
-	app.Use(etag.New())
-	app.Use(compress.New())
-	app.Use(recoverer.New())
+	fiberApp.Use(cors.New())
+	fiberApp.Use(etag.New())
+	fiberApp.Use(compress.New())
+	fiberApp.Use(recoverer.New())
 
 	loggerCfg := logger.ConfigDefault
 	loggerCfg.Format = "${time} | ${status} | ${latency} | ${ip} | ${method} | ${path} | ${queryParams} | ${error}\n"
-	app.Use(logger.New(loggerCfg))
-
-	v1group := app.Group("/api/v1")
-	handlers.Register(v1group, serv, cfg)
+	fiberApp.Use(logger.New(loggerCfg))
 
 	restApp := &RestApp{
-		fiberApp: app,
-		cfg:      cfg,
+		fiberApp:        fiberApp,
+		cfg:             cfg,
+		shutdownTimeout: app.ShutdownDuration(),
 	}
 
 	for _, opt := range opts {
@@ -107,14 +119,34 @@ func New(ctx context.Context, serv *service.Service, cfg runtimecfg.RestConfig, 
 			return nil, oops.Wrapf(err, "applying option")
 		}
 	}
+	root := fiberApp.Group("/api/v1")
 	if restApp.tgbot != nil {
-		app.State().Set(common.StateKeyTelegramBot, restApp.tgbot)
+		fiberApp.State().Set(common.StateKeyTelegramBot, restApp.tgbot)
 	}
+	handlers.Register(root, cfg, app)
 	return restApp, nil
 }
 
 func (r *RestApp) Run(stopCtx context.Context) error {
-	return r.fiberApp.Listen(r.cfg.Addr, fiber.ListenConfig{
-		GracefulContext: stopCtx,
-	})
+	listener, err := net.Listen("tcp4", r.cfg.Addr)
+	if err != nil {
+		return err
+	}
+	defer listener.Close()
+	// Closing the listener also handles cancellation before Serve registers it.
+	stopClosing := context.AfterFunc(stopCtx, func() { _ = listener.Close() })
+	defer stopClosing()
+	err = r.fiberApp.Listener(listener)
+	shutdownErr := r.fiberApp.ShutdownWithTimeout(r.shutdownTimeout)
+	switch {
+	case errors.Is(shutdownErr, context.DeadlineExceeded):
+		log.Warn("REST server did not drain in time, exiting anyway", "timeout", r.shutdownTimeout)
+		shutdownErr = nil
+	case errors.Is(shutdownErr, net.ErrClosed), errors.Is(shutdownErr, fiber.ErrNotRunning):
+		shutdownErr = nil
+	}
+	if errors.Is(err, net.ErrClosed) {
+		err = nil
+	}
+	return errors.Join(err, shutdownErr)
 }

@@ -15,7 +15,6 @@ type SearcherMock struct {
 	repo repo.Artwork
 }
 
-// AddDocuments implements search.Searcher.
 func (m *SearcherMock) AddDocuments(ctx context.Context, docs []*dto.ArtworkSearchDocument) error {
 	log.Debug("[MockSearch] AddDocuments called with %d documents", len(docs))
 	return nil
@@ -25,13 +24,11 @@ func (m *SearcherMock) AddDocumentsAndWait(ctx context.Context, docs []*dto.Artw
 	return m.AddDocuments(ctx, docs)
 }
 
-// DeleteDocuments implements search.Searcher.
 func (m *SearcherMock) DeleteDocuments(ctx context.Context, ids []string) error {
 	log.Debug("[MockSearch] DeleteDocuments called with %d ids", len(ids))
 	return nil
 }
 
-// DeleteAllDocuments implements search.Searcher.
 func (m *SearcherMock) DeleteAllDocuments(ctx context.Context) error {
 	log.Debug("[MockSearch] DeleteAllDocuments called")
 	return nil

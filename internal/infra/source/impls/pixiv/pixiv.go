@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	config "github.com/krau/ManyACG/internal/infra/config/runtimecfg"
+	"github.com/krau/ManyACG/internal/infra/kvstor"
 	"github.com/krau/ManyACG/internal/infra/source"
 	"github.com/krau/ManyACG/internal/model/dto"
 	"github.com/krau/ManyACG/internal/shared"
@@ -16,52 +17,51 @@ import (
 	"github.com/imroc/req/v3"
 )
 
+type Namer struct{}
+
 type Pixiv struct {
+	Namer
 	reqClient *req.Client
 	cfg       config.SourcePixivConfig
 }
 
-func Init() {
+// Init registers the Pixiv detail source. A non-nil store additionally
+// registers an RSS poller that caches fetched artworks in the store.
+func Init(store kvstor.KVStore) {
 	cfg := config.Get().Source.Pixiv
 	if cfg.Disable {
 		return
 	}
-
+	client := newRequestClient(cfg)
 	source.Register(shared.SourceTypePixiv, func() source.ArtworkSource {
-		cfg := config.Get().Source.Pixiv
-		cookies := make([]*http.Cookie, 0)
-		for _, cookie := range cfg.Cookies {
-			cookies = append(cookies, &http.Cookie{
-				Name:  cookie.Name,
-				Value: cookie.Value,
-			})
-		}
-		c := req.C().ImpersonateChrome().SetCommonCookies(cookies...)
-		c = c.SetLogger(log.Default()).EnableDebugLog().SetCommonRetryCount(3)
-		if config.Get().Source.Proxy != "" {
-			c.SetProxyURL(config.Get().Source.Proxy)
-		}
 		return &Pixiv{
 			cfg:       cfg,
-			reqClient: c,
+			reqClient: client,
 		}
 	})
+	if store != nil {
+		source.RegisterPoller(shared.SourceTypePixiv, &Poller{
+			cfg:       cfg,
+			reqClient: client,
+			kv:        store,
+		})
+	}
 }
 
-func (p *Pixiv) FetchNewArtworks(ctx context.Context, limit int) ([]*dto.FetchedArtwork, error) {
-	artworks := make([]*dto.FetchedArtwork, 0)
-	errs := make([]error, 0)
-	for _, url := range p.cfg.RssURLs {
-		artworksForURL, err := p.fetchNewArtworksForRSSURL(ctx, url, limit)
-		if err != nil {
-			errs = append(errs, err)
-		}
-		artworks = append(artworks, artworksForURL...)
+func newRequestClient(cfg config.SourcePixivConfig) *req.Client {
+	cookies := make([]*http.Cookie, 0)
+	for _, cookie := range cfg.Cookies {
+		cookies = append(cookies, &http.Cookie{
+			Name:  cookie.Name,
+			Value: cookie.Value,
+		})
 	}
-	if len(errs) > 0 {
-		return artworks, fmt.Errorf("fetching pixiv encountered %d errors: %v", len(errs), errs)
+	c := req.C().ImpersonateChrome().SetCommonCookies(cookies...)
+	c = c.SetLogger(log.Default()).EnableDebugLog().SetCommonRetryCount(3)
+	if config.Get().Source.Proxy != "" {
+		c.SetProxyURL(config.Get().Source.Proxy)
 	}
-	return artworks, nil
+	return c
 }
 
 func (p *Pixiv) GetArtworkInfo(ctx context.Context, sourceURL string) (*dto.FetchedArtwork, error) {
@@ -75,7 +75,7 @@ func (p *Pixiv) GetArtworkInfo(ctx context.Context, sourceURL string) (*dto.Fetc
 	return ajaxResp.ToArtwork(ctx, p.reqClient, p.cfg.ImgProxy)
 }
 
-func (p *Pixiv) MatchesSourceURL(text string) (string, bool) {
+func (Namer) MatchesSourceURL(text string) (string, bool) {
 	pid := getPid(text)
 	if pid == "" {
 		return "", false
@@ -83,7 +83,7 @@ func (p *Pixiv) MatchesSourceURL(text string) (string, bool) {
 	return "https://www.pixiv.net/artworks/" + pid, true
 }
 
-func (p *Pixiv) PrettyFileName(artwork shared.ArtworkLike, picture shared.PictureLike) string {
+func (Namer) PrettyFileName(artwork shared.ArtworkLike, picture shared.PictureLike) string {
 	pid := getPid(artwork.GetSourceURL())
 	ext, _ := strutil.GetFileExtFromURL(picture.GetOriginal())
 	if pid != "" {

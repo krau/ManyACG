@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"sync"
 
+	"github.com/krau/ManyACG/internal/common/httpclient"
 	"github.com/krau/ManyACG/internal/infra/config/runtimecfg"
 	"github.com/krau/ManyACG/internal/infra/imseek"
 	"github.com/krau/ManyACG/internal/infra/search"
@@ -16,13 +17,17 @@ import (
 )
 
 type Service struct {
-	repos    repo.Repositories
-	searcher search.Searcher
-	tagger   tagging.Tagger
-	storages map[shared.StorageType]storage.Storage
-	sources  map[shared.SourceType]source.ArtworkSource
-	storCfg  runtimecfg.StorageConfig
-	imseek   imseek.Engine
+	repos      repo.Repositories
+	searcher   search.Searcher
+	indexer    search.Indexer
+	tagger     tagging.Tagger
+	storages   map[shared.StorageType]storage.Storage
+	namers     map[shared.SourceType]source.ArtworkNamer
+	pollers    map[shared.SourceType]source.ArtworkPoller
+	fetcher    source.ArtworkFetcher
+	downloader httpclient.Fetcher
+	storCfg    runtimecfg.StorageConfig
+	imseek     imseek.Engine
 
 	indexRepairMu       sync.Mutex
 	indexRepairProgress ArtworkIndexProgress
@@ -34,12 +39,29 @@ func WithImseek(e imseek.Engine) Option {
 	return func(s *Service) { s.imseek = e }
 }
 
+func WithIndexer(indexer search.Indexer) Option {
+	return func(s *Service) { s.indexer = indexer }
+}
+
+func WithSourcePollers(pollers map[shared.SourceType]source.ArtworkPoller) Option {
+	return func(s *Service) { s.pollers = pollers }
+}
+
+// WithArtworkFetcher sets the artwork detail fetcher, which may delegate to other nodes.
+func WithArtworkFetcher(fetcher source.ArtworkFetcher) Option {
+	return func(s *Service) { s.fetcher = fetcher }
+}
+
+func WithDownloader(downloader httpclient.Fetcher) Option {
+	return func(s *Service) { s.downloader = downloader }
+}
+
 func NewService(
 	repos repo.Repositories,
 	searcher search.Searcher,
 	tagger tagging.Tagger,
 	storageMap map[shared.StorageType]storage.Storage,
-	sourceMap map[shared.SourceType]source.ArtworkSource,
+	namers map[shared.SourceType]source.ArtworkNamer,
 	storCfg runtimecfg.StorageConfig,
 	opts ...Option,
 ) *Service {
@@ -48,7 +70,7 @@ func NewService(
 		tagger:   tagger,
 		searcher: searcher,
 		storages: storageMap,
-		sources:  sourceMap,
+		namers:   namers,
 		storCfg:  storCfg,
 	}
 	for _, opt := range opts {

@@ -17,7 +17,10 @@ import (
 	"github.com/krau/ManyACG/pkg/strutil"
 )
 
+type Namer struct{}
+
 type Kemono struct {
+	Namer
 	reqClient *req.Client
 	cfg       config.SourceKemonoConfig
 }
@@ -38,10 +41,6 @@ func Init() {
 			reqClient: client,
 		}
 	})
-}
-
-func (k *Kemono) FetchNewArtworks(ctx context.Context, limit int) ([]*dto.FetchedArtwork, error) {
-	return nil, nil
 }
 
 func (k *Kemono) GetArtworkInfo(ctx context.Context, sourceURL string) (*dto.FetchedArtwork, error) {
@@ -76,7 +75,7 @@ func (k *Kemono) GetArtworkInfo(ctx context.Context, sourceURL string) (*dto.Fet
 	return k.convertToFetchedArtwork(ctx, &kemonoResp)
 }
 
-func (k *Kemono) MatchesSourceURL(text string) (string, bool) {
+func (Namer) MatchesSourceURL(text string) (string, bool) {
 	kemonoPostURL := kemonoSourceURLRegex.FindString(text)
 	if kemonoPostURL == "" {
 		return "", false
@@ -91,8 +90,7 @@ func (k *Kemono) MatchesSourceURL(text string) (string, bool) {
 	return fmt.Sprintf("https://kemono.cr/%s/user/%s/post/%s", service, userID, postID), true
 }
 
-// PrettyFileName implements source.ArtworkSource.
-func (k *Kemono) PrettyFileName(artwork shared.ArtworkLike, picture shared.PictureLike) string {
+func (Namer) PrettyFileName(artwork shared.ArtworkLike, picture shared.PictureLike) string {
 	ext, _ := strutil.GetFileExtFromURL(picture.GetOriginal())
 	defaultName := fmt.Sprintf("kemono_%s%s", strutil.MD5Hash(picture.GetOriginal()), ext)
 	postUrl := kemonoSourceURLRegex.FindString(artwork.GetSourceURL())

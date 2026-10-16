@@ -1,0 +1,170 @@
+syntax = "proto3";
+
+package manyacg.internal;
+
+option go_package = "github.com/krau/ManyACG/internal/infra/internalrpc/internalpb";
+
+service Gateway {
+  rpc Attach(stream AgentMessage) returns (stream Assignment);
+  rpc CompleteJob(JobCompletion) returns (Ack);
+  rpc PushDownload(stream DownloadChunk) returns (Ack);
+}
+
+enum Capability {
+  CAPABILITY_UNSPECIFIED = 0;
+  CAPABILITY_FETCH = 1;
+  CAPABILITY_DOWNLOAD = 2;
+}
+
+enum FailureCode {
+  FAILURE_CODE_UNSPECIFIED = 0;
+  FAILURE_CODE_UNSUPPORTED_SOURCE = 1;
+  FAILURE_CODE_INVALID_REQUEST = 2;
+  FAILURE_CODE_INTERNAL = 3;
+}
+
+message AgentMessage {
+  oneof payload {
+    Register register = 1;
+    Heartbeat heartbeat = 2;
+    AuthenticationProof proof = 3;
+  }
+}
+
+message Heartbeat {}
+
+message Register {
+  uint32 protocol_version = 1;
+  string name = 2;
+  repeated Capability capabilities = 3;
+  uint32 concurrency = 4;
+  bytes public_key = 5;
+}
+
+message AuthenticationChallenge {
+  bytes nonce = 1;
+}
+
+message AuthenticationProof {
+  string algorithm = 1;
+  bytes signature = 2;
+}
+
+message Assignment {
+  oneof payload {
+    SessionAccepted accepted = 1;
+    Job job = 2;
+    CancelJob cancel = 3;
+    AuthenticationChallenge challenge = 4;
+  }
+}
+
+message SessionAccepted {
+  string session_id = 1;
+  uint32 concurrency = 2;
+}
+
+message Job {
+  string job_id = 1;
+  // Remaining budget in milliseconds, relative to dispatch time.
+  uint32 timeout_ms = 2;
+  oneof task {
+    FetchArtwork fetch_artwork = 3;
+    DownloadOriginFile download_origin_file = 4;
+  }
+}
+
+message FetchArtwork {
+  string source_url = 1;
+}
+
+message DownloadOriginFile {
+  string url = 1;
+}
+
+message CancelJob {
+  string job_id = 1;
+}
+
+message JobCompletion {
+  string job_id = 1;
+  oneof result {
+    FetchedArtwork artwork = 2;
+    JobFailure failure = 3;
+  }
+}
+
+message JobFailure {
+  FailureCode code = 1;
+  string message = 2;
+}
+
+message DownloadChunk {
+  string job_id = 1;
+  int64 total_size = 2;
+  bytes chunk = 3;
+}
+
+message Ack {
+  bool ok = 1;
+  string message = 2;
+}
+
+message FetchedArtwork {
+  FetchedArtist artist = 1;
+  string title = 2;
+  string description = 3;
+  string source_type = 4;
+  string source_url = 5;
+  repeated string tags = 6;
+  repeated FetchedPicture pictures = 7;
+  repeated FetchedUgoiraMeta ugoira_metas = 8;
+  repeated FetchedVideo videos = 9;
+  bool r18 = 10;
+}
+
+message FetchedArtist {
+  string name = 1;
+  string type = 2;
+  string uid = 3;
+  string username = 4;
+}
+
+message FetchedPicture {
+  string thumbnail = 1;
+  string original = 2;
+  uint32 index = 3;
+  uint32 width = 4;
+  uint32 height = 5;
+}
+
+message FetchedUgoiraMeta {
+  FetchedUgoiraData data = 1;
+  uint32 index = 2;
+}
+
+message FetchedUgoiraData {
+  string poster_original = 1;
+  string poster_thumb = 2;
+  string original_zip = 3;
+  string thumb_zip = 4;
+  string mime_type = 5;
+  repeated FetchedUgoiraFrame frames = 6;
+  int32 width = 7;
+  int32 height = 8;
+}
+
+message FetchedUgoiraFrame {
+  string file = 1;
+  int32 delay = 2;
+}
+
+message FetchedVideo {
+  string url = 1;
+  string poster = 2;
+  string mime_type = 3;
+  uint32 index = 4;
+  uint32 width = 5;
+  uint32 height = 6;
+  uint32 duration = 7;
+}

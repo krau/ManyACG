@@ -55,7 +55,7 @@ func (r *indexRepairArtworkRepo) GetArtworkSearchDocuments(ctx context.Context, 
 }
 
 type indexRepairSearcher struct {
-	search.Searcher
+	search.Indexer
 	docs       map[string]*dto.ArtworkSearchDocument
 	failure    error
 	failLookup bool
@@ -110,8 +110,8 @@ func indexRepairFixture(t *testing.T, count int) (*Service, *indexRepairSearcher
 	}
 	searcher := &indexRepairSearcher{docs: make(map[string]*dto.ArtworkSearchDocument)}
 	serv := &Service{
-		repos:    &indexRepairRepo{artwork: &indexRepairArtworkRepo{artworks: artworks}},
-		searcher: searcher,
+		repos:   &indexRepairRepo{artwork: &indexRepairArtworkRepo{artworks: artworks}},
+		indexer: searcher,
 	}
 	return serv, searcher, artworks
 }
@@ -171,7 +171,7 @@ func TestFixArtworkIndexDoesNotCountRejectedBatch(t *testing.T) {
 func TestFixArtworkIndexUnavailableAndCancelled(t *testing.T) {
 	serv := &Service{}
 	if _, err := serv.FixArtworkIndex(context.Background()); !errors.Is(err, search.ErrNotEnabled) {
-		t.Fatalf("repair without searcher: %v", err)
+		t.Fatalf("repair without indexer: %v", err)
 	}
 	serv, _, _ = indexRepairFixture(t, 1)
 	ctx, cancel := context.WithCancel(context.Background())

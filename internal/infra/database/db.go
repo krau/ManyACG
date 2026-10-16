@@ -2,6 +2,7 @@ package database
 
 import (
 	"context"
+	"fmt"
 	"sync"
 
 	"github.com/krau/ManyACG/internal/infra/config/runtimecfg"
@@ -32,10 +33,18 @@ func Default() *DB {
 	return defaultDB
 }
 
-func Init(ctx context.Context) {
+func (d *DB) Close() error {
+	sqlDB, err := d.db.DB()
+	if err != nil {
+		return err
+	}
+	return sqlDB.Close()
+}
+
+func Init(ctx context.Context, cfg runtimecfg.Config) {
 	initOnce.Do(func() {
 		okCh := make(chan struct{})
-		go initDB(ctx, okCh)
+		go initDB(ctx, cfg, okCh)
 		select {
 		case <-ctx.Done():
 			log.Fatal("Database initialization canceled")
@@ -44,10 +53,25 @@ func Init(ctx context.Context) {
 	})
 }
 
-func initDB(ctx context.Context, okCh chan struct{}) {
+func initDB(ctx context.Context, cfg runtimecfg.Config, okCh chan struct{}) {
 	log.Info("Initializing database...")
-	dbType := runtimecfg.Get().Database.Type
-	dsn := runtimecfg.Get().Database.DSN
+	db, err := openDatabase(ctx, cfg)
+	if err != nil {
+		log.Fatal("failed to initialize database", "err", err)
+	}
+	if cfg.App.IsMain() && cfg.Database.AutoMigrate {
+		if err := migrateDatabase(ctx, db, cfg); err != nil {
+			log.Fatal("failed to migrate database", "err", err)
+		}
+	}
+	defaultDB = &DB{db: db}
+	log.Info("Database initialized")
+	okCh <- struct{}{}
+}
+
+func openDatabase(ctx context.Context, cfg runtimecfg.Config) (*gorm.DB, error) {
+	dbType := cfg.Database.Type
+	dsn := cfg.Database.DSN
 
 	var db *gorm.DB
 	var err error
@@ -65,12 +89,41 @@ func initDB(ctx context.Context, okCh chan struct{}) {
 	case "mysql":
 		db, err = gorm.Open(mysql.Open(dsn), gcfg)
 	default:
-		log.Fatal("unsupported database type", "type", dbType)
+		return nil, fmt.Errorf("unsupported database type %q", dbType)
 	}
 	if err != nil {
-		log.Fatal("failed to connect database", "err", err)
+		return nil, fmt.Errorf("connect database: %w", err)
 	}
-	err = db.AutoMigrate(
+	sqlDB, err := db.DB()
+	if err != nil {
+		return nil, fmt.Errorf("get database instance: %w", err)
+	}
+	if err := sqlDB.PingContext(ctx); err != nil {
+		_ = sqlDB.Close()
+		return nil, fmt.Errorf("ping database: %w", err)
+	}
+
+	return db, nil
+}
+
+func Migrate(ctx context.Context, cfg runtimecfg.Config) error {
+	if !cfg.App.IsMain() {
+		return fmt.Errorf("database migration requires app.role = main")
+	}
+	db, err := openDatabase(ctx, cfg)
+	if err != nil {
+		return err
+	}
+	sqlDB, err := db.DB()
+	if err != nil {
+		return err
+	}
+	defer sqlDB.Close()
+	return migrateDatabase(ctx, db, cfg)
+}
+
+func migrateDatabase(ctx context.Context, db *gorm.DB, cfg runtimecfg.Config) error {
+	if err := db.WithContext(ctx).AutoMigrate(
 		&entity.Admin{},
 		&entity.Artist{},
 		&entity.Tag{},
@@ -83,32 +136,17 @@ func initDB(ctx context.Context, okCh chan struct{}) {
 		&entity.DeletedRecord{},
 		&entity.ApiKey{},
 		&entity.User{},
-	)
-	if err != nil {
-		log.Fatal("failed to migrate database", "err", err)
+	); err != nil {
+		return fmt.Errorf("migrate database: %w", err)
 	}
-	sqlDB, err := db.DB()
-	if err != nil {
-		log.Fatal("failed to get database instance", "err", err)
-	}
-	if err := sqlDB.PingContext(ctx); err != nil {
-		log.Fatal("failed to ping database", "err", err)
-	}
-	if err := optimizePgSQL(ctx, db); err != nil {
-		log.Fatal("failed to optimize pgsql database", "err", err)
-	}
-
-	defaultDB = &DB{db: db}
-	log.Info("Database initialized")
-
-	okCh <- struct{}{}
+	return optimizePgSQL(ctx, db, cfg)
 }
 
-func optimizePgSQL(ctx context.Context, db *gorm.DB) error {
+func optimizePgSQL(ctx context.Context, db *gorm.DB, cfg runtimecfg.Config) error {
 	if db.Dialector.Name() != "postgres" {
 		return nil
 	}
-	pgroongaEnabled := runtimecfg.Get().Database.Pgsql.PGroonga
+	pgroongaEnabled := cfg.Database.Pgsql.PGroonga
 	if pgroongaEnabled {
 		// use pgroonga indexes
 		log.Debug("Applying pgroonga index optimizations...")
@@ -146,7 +184,7 @@ func optimizePgSQL(ctx context.Context, db *gorm.DB) error {
 			}
 		}
 		log.Debug("pgroonga index optimizations applied")
-		if runtimecfg.Get().Database.Pgsql.ReindexPGroonga {
+		if cfg.Database.Pgsql.ReindexPGroonga {
 			log.Debug("Reindexing pgroonga indexes...")
 			pgroongaIndexes := []string{
 				"pgroonga_artworks_title_like",

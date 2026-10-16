@@ -2,7 +2,10 @@ package app
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"net/http"
+	"sync"
 	"time"
 
 	"github.com/krau/ManyACG/internal/infra"
@@ -10,6 +13,8 @@ import (
 	"github.com/krau/ManyACG/internal/infra/database"
 	"github.com/krau/ManyACG/internal/infra/eventbus"
 	"github.com/krau/ManyACG/internal/infra/imseek"
+	"github.com/krau/ManyACG/internal/infra/internalrpc"
+	"github.com/krau/ManyACG/internal/infra/kvstor"
 	"github.com/krau/ManyACG/internal/infra/search"
 	"github.com/krau/ManyACG/internal/infra/source"
 	"github.com/krau/ManyACG/internal/infra/storage"
@@ -25,16 +30,48 @@ import (
 )
 
 type Runtime struct {
-	cfg     runtimecfg.Config
-	closer  func() error
-	repos   repo.Repositories
-	search  search.Searcher
-	service *service.Service
-	poster  scheduler.ArtworkPoster
-	tgbot   restcommon.TelegramBot
+	cfg            runtimecfg.Config
+	closer         func() error
+	service        *service.Service
+	kv             kvstor.KVStore
+	internalServer *internalrpc.Server
+	internalAgent  *internalrpc.Agent
+	stop           func()
+	interfaces     sync.WaitGroup
+	errMu          sync.Mutex
+	interfaceErr   error
+}
+
+// failInterface records the first interface failure and cancels the run, so the
+// process exits non-zero instead of silently staying down.
+func (r *Runtime) failInterface(err error) {
+	log.Error(err)
+	r.errMu.Lock()
+	if r.interfaceErr == nil {
+		r.interfaceErr = err
+	}
+	r.errMu.Unlock()
+	if r.stop != nil {
+		r.stop()
+	}
+}
+
+// err returns the first interface failure, if any.
+func (r *Runtime) err() error {
+	r.errMu.Lock()
+	defer r.errMu.Unlock()
+	return r.interfaceErr
 }
 
 func NewRuntime(ctx context.Context, cfg runtimecfg.Config) (*Runtime, error) {
+	if err := cfg.Validate(); err != nil {
+		return nil, err
+	}
+	mainNode := cfg.App.IsMain()
+	botEnabled := mainNode && !cfg.Telegram.Disable
+	if !cfg.Rest.Enable && !botEnabled && cfg.Internal.Gateway.Addr == "" && cfg.Internal.Agent.Gateway == "" {
+		return nil, fmt.Errorf("no interfaces enabled: enable REST, Telegram, the internal gateway or an internal agent")
+	}
 	// 清理上次异常退出(如被强杀)残留在缓存目录的临时文件
 	if removed, err := osutil.RemoveStaleTempFiles(cfg.Storage.CacheDir, time.Hour); err != nil {
 		log.Warn("failed to remove stale temp files", "dir", cfg.Storage.CacheDir, "err", err)
@@ -42,125 +79,195 @@ func NewRuntime(ctx context.Context, cfg runtimecfg.Config) (*Runtime, error) {
 		log.Info("removed stale temp files", "dir", cfg.Storage.CacheDir, "count", removed)
 	}
 
-	closer, err := infra.Init(ctx, cfg)
+	resources, err := infra.Init(ctx, cfg)
 	if err != nil {
 		return nil, err
 	}
+	closer := resources.Close
+	runtime := &Runtime{
+		cfg:            cfg,
+		closer:         closer,
+		kv:             resources.KV,
+		internalServer: resources.InternalServer,
+		internalAgent:  resources.Agent,
+	}
+	if !mainNode && !cfg.App.Capabilities.Has(runtimecfg.CapabilityRead) {
+		return runtime, nil
+	}
 
-	dbRepo := database.Default()
-	searcher := search.Default(ctx)
-
+	var repos repo.Repositories = database.Default()
+	searcher, indexer, err := search.New(ctx, cfg.Search, repos.Artwork(), mainNode)
+	if err != nil {
+		return nil, errors.Join(fmt.Errorf("initialize search: %w", err), closer())
+	}
 	// local feature-point search(Optional)
 	imCfg := cfg.Imseek
-	eng, err := imseek.Init(ctx, imseek.Config{
-		Enable:           imCfg.Enable,
-		DataDir:          imCfg.DataDir,
-		Distance:         imCfg.Distance,
-		Count:            imCfg.Count,
-		K:                imCfg.K,
-		NProbe:           imCfg.NProbe,
-		NFeatures:        imCfg.NFeatures,
-		MaxHeight:        imCfg.MaxHeight,
-		MaxWidth:         imCfg.MaxWidth,
-		AutoBuild:        imCfg.AutoBuild,
-		BuildDebounceSec: imCfg.BuildDebounceSec,
-		MinMatches:       imCfg.MinMatches,
-		MinScore:         imCfg.MinScore,
-	})
-	if err != nil {
-		log.Error("imseek init failed, continuing without feature search", "err", err)
-		eng, _ = imseek.Init(ctx, imseek.DefaultConfig())
-	}
-	if eng != nil && eng.Enabled() {
-		log.Info("imseek feature search enabled", "data_dir", imCfg.DataDir)
-		oldCloser := closer
-		closer = func() error {
-			_ = eng.Close()
-			if oldCloser != nil {
-				return oldCloser()
+	var eng imseek.Engine
+	if mainNode && imCfg.Enable {
+		eng, err = imseek.Init(ctx, imseek.Config{
+			Enable:           imCfg.Enable,
+			DataDir:          imCfg.DataDir,
+			Distance:         imCfg.Distance,
+			Count:            imCfg.Count,
+			K:                imCfg.K,
+			NProbe:           imCfg.NProbe,
+			NFeatures:        imCfg.NFeatures,
+			MaxHeight:        imCfg.MaxHeight,
+			MaxWidth:         imCfg.MaxWidth,
+			AutoBuild:        imCfg.AutoBuild,
+			BuildDebounceSec: imCfg.BuildDebounceSec,
+			MinMatches:       imCfg.MinMatches,
+			MinScore:         imCfg.MinScore,
+		})
+		if err != nil {
+			log.Error("imseek init failed, continuing without feature search", "err", err)
+			eng, _ = imseek.Init(ctx, imseek.DefaultConfig())
+		}
+		if eng != nil && eng.Enabled() {
+			log.Info("imseek feature search enabled", "data_dir", imCfg.DataDir)
+			oldCloser := closer
+			closer = func() error {
+				return errors.Join(eng.Close(), oldCloser())
 			}
-			return nil
 		}
 	}
 
 	var artworkBus *eventbus.EventBus[*dtoArtworkEventItem]
-	needBus := search.Enabled() || (eng != nil && eng.Enabled())
-	repos := repo.Repositories(dbRepo)
+	needBus := indexer != nil || (eng != nil && eng.Enabled())
 	if needBus {
 		artworkBus = eventbus.New[*dtoArtworkEventItem]()
-		if search.Enabled() {
-			registerArtworkEventSearcherHandlers(ctx, artworkBus, searcher)
+		if indexer != nil {
+			registerArtworkEventSearcherHandlers(ctx, artworkBus, indexer)
 		}
-		repos = repo.NewWithArtworkEventImpl(dbRepo, artworkBus)
+		repos = repo.NewWithArtworkEventImpl(repos, artworkBus)
 	}
 
+	var tagger tagging.Tagger
+	if mainNode {
+		tagger = tagging.Default()
+	}
+
+	servOpts := []service.Option{
+		service.WithImseek(eng),
+		service.WithIndexer(indexer),
+		service.WithArtworkFetcher(resources.Dispatcher),
+		service.WithDownloader(resources.Dispatcher),
+	}
+	if mainNode {
+		servOpts = append(servOpts, service.WithSourcePollers(source.Pollers()))
+	}
 	serv := service.NewService(
 		repos,
 		searcher,
-		tagging.Default(),
+		tagger,
 		storage.Storages(),
-		source.Sources(),
+		resources.SourceNamers,
 		cfg.Storage,
-		service.WithImseek(eng),
+		servOpts...,
 	)
 	if artworkBus != nil {
 		registerArtworkEventImseekHandlers(ctx, artworkBus, serv)
 	}
 
-	return &Runtime{
-		cfg:     cfg,
-		closer:  closer,
-		repos:   repos,
-		search:  searcher,
-		service: serv,
-	}, nil
+	if mainNode {
+		recoverCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
+		err := serv.RecoverPosting(recoverCtx)
+		cancel()
+		if err != nil {
+			return nil, errors.Join(fmt.Errorf("recover posting artworks: %w", err), closer())
+		}
+	}
+	runtime.closer = closer
+	runtime.service = serv
+	return runtime, nil
+}
+
+func (r *Runtime) goInterface(fn func()) {
+	r.interfaces.Add(1)
+	go func() {
+		defer r.interfaces.Done()
+		fn()
+	}()
 }
 
 func (r *Runtime) Start(ctx context.Context, stop func()) error {
-	if !r.cfg.Telegram.Disable {
-		botapp, err := telegram.Init(ctx, r.service, r.cfg.Telegram, r.cfg.App.Debug)
+	r.stop = stop
+	botEnabled := r.cfg.App.IsMain() && !r.cfg.Telegram.Disable
+	if r.internalServer != nil {
+		r.goInterface(func() {
+			if err := r.internalServer.Run(ctx); err != nil {
+				r.failInterface(err)
+			}
+		})
+	}
+	if r.internalAgent != nil {
+		r.goInterface(func() { r.internalAgent.Run(ctx) })
+	}
+	var bot restcommon.TelegramBot
+	if botEnabled {
+		botapp, err := telegram.Init(ctx, r.service, r.kv, r.cfg.Telegram, r.cfg.App.Debug)
 		if err != nil {
+			stop()
 			return err
 		}
-		go botapp.Run(ctx, r.service)
-		r.poster = botapp
-		r.tgbot = botapp
-	}
-
-	if r.cfg.Scheduler.Enable && r.poster != nil {
-		go scheduler.StartPosterWithConfig(ctx, r.cfg.Scheduler, r.poster, r.service)
+		r.goInterface(func() {
+			botapp.Run(ctx, r.service)
+			botapp.Wait()
+		})
+		bot = botapp
+		if r.cfg.Scheduler.Enable {
+			r.goInterface(func() { scheduler.StartPoster(ctx, r.cfg.Scheduler, botapp, r.service) })
+		}
 	}
 
 	if r.cfg.Rest.Enable {
-		opts := []rest.RestAppOption{}
-		if r.tgbot != nil {
-			opts = append(opts, rest.WithTelegramBot(r.tgbot))
+		var opts []rest.RestAppOption
+		if bot != nil {
+			opts = append(opts, rest.WithTelegramBot(bot))
 		}
-		restApp, err := rest.New(ctx, r.service, r.cfg.Rest, opts...)
+		restApp, err := rest.New(r.cfg.Rest, r.cfg.App, r.service, r.kv, opts...)
 		if err != nil {
+			stop()
 			return err
 		}
-		go func() {
+		r.goInterface(func() {
 			log.Info("Starting RESTful API server", "addr", r.cfg.Rest.Addr)
 			if err := restApp.Run(ctx); err != nil {
-				log.Error(err)
-				stop()
+				r.failInterface(err)
 			}
-		}()
+		})
 	}
 
 	return nil
 }
 
 func (r *Runtime) Close() error {
+	if r.stop != nil {
+		r.stop()
+	}
+	r.waitInterfaces()
 	if r.closer == nil {
 		return nil
 	}
 	return r.closer()
 }
 
-func (r *Runtime) Cleanup(ctx context.Context) error {
-	return r.service.Cleanup(ctx)
+const interfaceReturnSlack = time.Second
+
+func (r *Runtime) waitInterfaces() {
+	budget := r.cfg.App.ShutdownDuration() + interfaceReturnSlack
+	done := make(chan struct{})
+	go func() {
+		r.interfaces.Wait()
+		close(done)
+	}()
+	timer := time.NewTimer(budget)
+	defer timer.Stop()
+	select {
+	case <-done:
+	case <-timer.C:
+		log.Warn("interfaces did not stop in time, closing resources anyway", "budget", budget)
+	}
 }
 
 func Run(ctx context.Context, cfg runtimecfg.Config, stop func()) error {
@@ -200,7 +307,5 @@ func Run(ctx context.Context, cfg runtimecfg.Config, stop func()) error {
 	defer log.Info("Exited.")
 
 	<-ctx.Done()
-	cleanCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-	return runtime.Cleanup(cleanCtx)
+	return runtime.err()
 }

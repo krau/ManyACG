@@ -142,7 +142,8 @@ func HandleFetchArtwork(ctx fiber.Ctx) error {
 	}
 	serv.IncreaseApiKeyUsed(requestCtx, key)
 	cacheID := ouid.New().Hex()
-	if err := kvstor.Set(requestCtx, cacheID, artwork.GetSourceURL()); err != nil {
+	store := common.MustGetState[kvstor.KVStore](ctx, common.StateKeyKVStore)
+	if err := store.Set(requestCtx, cacheID, artwork.GetSourceURL(), 0); err != nil {
 		log.Warn("failed to set cacheid", "data", artwork.GetSourceURL(), "err", err)
 	}
 	resp := fetchArtworkResponse(cacheID, artwork, serv)

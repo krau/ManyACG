@@ -8,17 +8,13 @@ import (
 	"github.com/krau/ManyACG/internal/infra/source"
 	"github.com/krau/ManyACG/internal/model/dto"
 	"github.com/krau/ManyACG/internal/shared"
+	"github.com/krau/ManyACG/internal/shared/errs"
 	"github.com/krau/ManyACG/pkg/strutil"
-	"github.com/samber/oops"
 )
-
-func (s *Service) Source(sourceType shared.SourceType) source.ArtworkSource {
-	return s.sources[sourceType]
-}
 
 func (s *Service) FindSourceURL(text string) string {
 	text = strings.ReplaceAll(text, "\n", " ")
-	for _, sou := range s.sources {
+	for _, sou := range s.namers {
 		if url, ok := sou.MatchesSourceURL(text); ok {
 			return url
 		}
@@ -26,17 +22,16 @@ func (s *Service) FindSourceURL(text string) string {
 	return ""
 }
 
-func (s *Service) FetchArtworkInfo(ctx context.Context, sourceURL string) (*dto.FetchedArtwork, error) {
-	for _, sou := range s.sources {
-		if _, ok := sou.MatchesSourceURL(sourceURL); ok {
-			return sou.GetArtworkInfo(ctx, sourceURL)
-		}
+// GetArtworkInfo fetches artwork details from the configured fetcher.
+func (s *Service) GetArtworkInfo(ctx context.Context, sourceURL string) (*dto.FetchedArtwork, error) {
+	if s.fetcher == nil {
+		return nil, errs.ErrUnsupportedSource
 	}
-	return nil, oops.New("no supported source found")
+	return s.fetcher.GetArtworkInfo(ctx, sourceURL)
 }
 
 func (s *Service) PrettyFileName(artwork shared.ArtworkLike, picture shared.PictureLike) string {
-	for _, sou := range s.sources {
+	for _, sou := range s.namers {
 		if _, ok := sou.MatchesSourceURL(artwork.GetSourceURL()); ok {
 			return sou.PrettyFileName(artwork, picture)
 		}
@@ -45,6 +40,6 @@ func (s *Service) PrettyFileName(artwork shared.ArtworkLike, picture shared.Pict
 	return strings.ToLower(strutil.MD5Hash(picture.GetOriginal())) + ext
 }
 
-func (s *Service) Sources() map[shared.SourceType]source.ArtworkSource {
-	return maps.Clone(s.sources)
+func (s *Service) SourcePollers() map[shared.SourceType]source.ArtworkPoller {
+	return maps.Clone(s.pollers)
 }

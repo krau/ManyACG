@@ -1,9 +1,10 @@
 package runtimecfg
 
 type databaseConfig struct {
-	Type  string      `toml:"type" mapstructure:"type" json:"type" yaml:"type"`
-	DSN   string      `toml:"dsn" mapstructure:"dsn" json:"dsn" yaml:"dsn"`
-	Pgsql pgsqlConfig `toml:"pgsql" mapstructure:"pgsql" json:"pgsql" yaml:"pgsql"`
+	Type        string      `toml:"type" mapstructure:"type" json:"type" yaml:"type"`
+	DSN         string      `toml:"dsn" mapstructure:"dsn" json:"dsn" yaml:"dsn"`
+	AutoMigrate bool        `toml:"auto_migrate" mapstructure:"auto_migrate" json:"auto_migrate" yaml:"auto_migrate"`
+	Pgsql       pgsqlConfig `toml:"pgsql" mapstructure:"pgsql" json:"pgsql" yaml:"pgsql"`
 }
 
 type pgsqlConfig struct {

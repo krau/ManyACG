@@ -4,7 +4,6 @@ import (
 	"context"
 	"io"
 
-	"github.com/krau/ManyACG/internal/common/httpclient"
 	"github.com/krau/ManyACG/internal/interface/telegram/metautil"
 	"github.com/krau/ManyACG/internal/pkg/mediatool"
 	"github.com/krau/ManyACG/internal/service"
@@ -214,7 +213,7 @@ func ArtworkInputMedias(
 						photo = telegoutil.MediaPhoto(telegoutil.File(compressed))
 						closers = append(closers, func() error { return compressed.Close() })
 					} else {
-						file, err := httpclient.DownloadWithCache(ctx, picture.GetOriginal(), nil)
+						file, err := serv.DownloadOriginFile(ctx, picture.GetOriginal())
 						if err != nil {
 							return oops.Wrapf(err, "failed to download file: %s", picture.GetOriginal())
 						}
@@ -262,7 +261,7 @@ func ArtworkInputMedias(
 						video = telegoutil.MediaVideo(telegoutil.File(videoFile))
 						closers = append(closers, func() error { return videoFile.Close() })
 					} else {
-						file, err := httpclient.DownloadWithCache(ctx, ugoira.GetData().OriginalZip, nil)
+						file, err := serv.DownloadOriginFile(ctx, ugoira.GetData().OriginalZip)
 						if err != nil {
 							return oops.Wrapf(err, "failed to download file: %s", ugoira.GetData().OriginalZip)
 						}
@@ -310,7 +309,7 @@ func ArtworkInputMedias(
 						video = telegoutil.MediaVideo(telegoutil.File(videoFile))
 						closers = append(closers, func() error { return videoFile.Close() })
 					} else {
-						file, err := httpclient.DownloadWithCache(ctx, v.GetURL(), nil)
+						file, err := serv.DownloadOriginFile(ctx, v.GetURL())
 						if err != nil {
 							return oops.Wrapf(err, "failed to download file: %s", v.GetURL())
 						}

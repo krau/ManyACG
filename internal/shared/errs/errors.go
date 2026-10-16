@@ -15,4 +15,5 @@ var (
 	ErrAliasAlreadyUsed       = errors.New("alias already used")
 	ErrSearchEngineNotEnabled = search.ErrNotEnabled
 	ErrTaggingNotEnabled      = tagging.ErrNotEnabled
+	ErrUnsupportedSource      = errors.New("no supported source found")
 )
