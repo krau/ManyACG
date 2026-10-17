@@ -241,7 +241,7 @@ func (app *BotApp) processArtworkInfoTasks(ctx context.Context) {
 	}
 }
 
-func (app *BotApp) Run(ctx context.Context, serv *service.Service) {
+func (app *BotApp) Run(ctx context.Context, serv *service.Service, stopTimeout time.Duration) {
 	log.Info("Start polling")
 	updates, err := app.Bot().UpdatesViaLongPolling(ctx, &telego.GetUpdatesParams{
 		Offset: -1,
@@ -280,7 +280,9 @@ func (app *BotApp) Run(ctx context.Context, serv *service.Service) {
 		log.Fatalf("Error when starting bot handler: %s", err)
 	}
 	log.Info("Shutting down telegram bot...")
-	if err := botHandler.Stop(); err != nil {
+	stopCtx, cancel := context.WithTimeout(context.Background(), stopTimeout)
+	defer cancel()
+	if err := botHandler.StopWithContext(stopCtx); err != nil {
 		log.Warnf("Error when stopping bot handler: %s", err)
 	}
 	log.Info("Stopped bot handler")

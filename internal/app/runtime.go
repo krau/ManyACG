@@ -209,7 +209,7 @@ func (r *Runtime) Start(ctx context.Context, stop func()) error {
 			return err
 		}
 		r.goInterface(func() {
-			botapp.Run(ctx, r.service)
+			botapp.Run(ctx, r.service, r.cfg.App.ShutdownDuration())
 			botapp.Wait()
 		})
 		bot = botapp
