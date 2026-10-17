@@ -57,10 +57,12 @@ func openRedis(cfg runtimecfg.KVDBConfig) (KVStore, error) {
 	return &redisDB{client: client, prefix: rc.Prefix}, nil
 }
 
+const bboltLockTimeout = 30 * time.Second
+
 func openBbolt(cfg runtimecfg.KVDBConfig) (KVStore, error) {
-	bdb, err := bbolt.Open(cfg.Path, 0600, nil)
+	bdb, err := bbolt.Open(cfg.Path, 0600, &bbolt.Options{Timeout: bboltLockTimeout})
 	if err != nil {
-		return nil, err
+		return nil, oops.Wrapf(err, "open bbolt database %s", cfg.Path)
 	}
 	db := &bboltDB{
 		db:             bdb,
