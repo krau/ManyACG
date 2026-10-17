@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"net"
+	"strings"
 	"time"
 
 	"github.com/charmbracelet/log"
@@ -43,6 +44,8 @@ func WithTelegramBot(bot common.TelegramBot) RestAppOption {
 		return nil
 	}
 }
+
+const pictureFileRoutePrefix = "/api/v1/picture/file/"
 
 func New(cfg runtimecfg.RestConfig, app runtimecfg.AppConfig, serv *service.Service, store kvstor.KVStore, opts ...RestAppOption) (*RestApp, error) {
 	if (app.IsMain() || app.Capabilities.Has(runtimecfg.CapabilityRead)) && serv == nil {
@@ -100,7 +103,12 @@ func New(cfg runtimecfg.RestConfig, app runtimecfg.AppConfig, serv *service.Serv
 		}))
 	}
 	fiberApp.Use(cors.New())
-	fiberApp.Use(etag.New())
+	fiberApp.Use(etag.New(etag.Config{
+		Next: func(c fiber.Ctx) bool {
+			// Picture files are streamed from storage, hashing them would buffer the whole body in memory.
+			return strings.HasPrefix(c.Path(), pictureFileRoutePrefix)
+		},
+	}))
 	fiberApp.Use(compress.New())
 	fiberApp.Use(recoverer.New())
 
