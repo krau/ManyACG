@@ -90,6 +90,17 @@ type SchedulerConfig struct {
 	Limit    int  `toml:"limit" mapstructure:"limit" json:"limit" yaml:"limit"` // 0 or negative means no limit
 }
 
+func (c SchedulerConfig) Validate() error {
+	if !c.Enable {
+		return nil
+	}
+	if c.Interval <= 10 {
+		// The fetch timeout is derived from the interval, a shorter interval would underflow it.
+		return fmt.Errorf("scheduler.interval must be greater than 10 seconds")
+	}
+	return nil
+}
+
 type NodeRole string
 
 const (
@@ -155,6 +166,9 @@ func (c Config) Validate() error {
 		if err := c.KVDB.Validate(); err != nil {
 			return err
 		}
+	}
+	if err := c.Scheduler.Validate(); err != nil {
+		return err
 	}
 	if err := c.Internal.Gateway.Validate(); err != nil {
 		return err

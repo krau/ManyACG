@@ -25,9 +25,13 @@ func StartPoster(ctx context.Context, cfg runtimecfg.SchedulerConfig, poster Art
 	if !cfg.Enable || poster == nil {
 		return
 	}
+	sources := serv.SourcePollers()
+	if len(sources) == 0 {
+		log.Warn("scheduler: no source pollers registered, not starting")
+		return
+	}
 	ticker := time.NewTicker(time.Duration(cfg.Interval) * time.Second)
 	defer ticker.Stop()
-	sources := serv.SourcePollers()
 	limit := cfg.Limit
 	if limit <= 0 {
 		limit = math.MaxInt
