@@ -245,7 +245,7 @@ func (m *SearcherMeilisearch) SearchArtworks(ctx context.Context, que *query.Art
 		Offset:               int64(que.Offset),
 		Limit:                int64(que.Limit),
 	}
-	if que.Hybrid {
+	if que.Hybrid && que.HybridSemanticRatio != 0 {
 		req.Hybrid = &meilisearch.SearchRequestHybrid{
 			Embedder:      m.cfg.Embedder,
 			SemanticRatio: que.HybridSemanticRatio,
