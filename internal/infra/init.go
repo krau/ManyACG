@@ -42,6 +42,8 @@ func (r *Resources) Close() error {
 type InitOptions struct {
 	// InternalInterfaces builds the internal RPC gateway and agent, which only the runtime serves.
 	InternalInterfaces bool
+	// KeyValueStore opens the key-value database, which only the runtime uses.
+	KeyValueStore bool
 }
 
 type InitOption func(*InitOptions)
@@ -49,6 +51,12 @@ type InitOption func(*InitOptions)
 func WithInternalInterfaces() InitOption {
 	return func(o *InitOptions) {
 		o.InternalInterfaces = true
+	}
+}
+
+func WithKeyValueStore() InitOption {
+	return func(o *InitOptions) {
+		o.KeyValueStore = true
 	}
 }
 
@@ -63,7 +71,7 @@ func Init(ctx context.Context, cfg runtimecfg.Config, opts ...InitOption) (*Reso
 	resources := &Resources{}
 	mainNode := cfg.App.IsMain()
 	readable := cfg.App.Capabilities.Has(runtimecfg.CapabilityRead)
-	if mainNode {
+	if options.KeyValueStore && mainNode {
 		store, err := kvstor.Open(cfg.KVDB)
 		if err != nil {
 			return nil, err
