@@ -9,6 +9,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/krau/ManyACG/internal/common/restclient"
 	"github.com/krau/ManyACG/internal/infra/config/runtimecfg"
 	"github.com/krau/ManyACG/internal/infra/kvstor"
 	"github.com/krau/ManyACG/internal/interface/telegram/handlers"
@@ -275,7 +276,7 @@ func (app *BotApp) Run(ctx context.Context, serv *service.Service, stopTimeout t
 	botHandler.Use(messageLogger)
 
 	baseGroup := botHandler.BaseGroup()
-	handlers.New(app.meta, serv, app.store).Register(baseGroup)
+	handlers.New(app.meta, serv, app.store, restclient.New(app.cfg.QueryBase)).Register(baseGroup)
 	if err := botHandler.Start(); err != nil {
 		log.Fatalf("Error when starting bot handler: %s", err)
 	}

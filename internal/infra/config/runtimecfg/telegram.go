@@ -1,8 +1,10 @@
 package runtimecfg
 
 type TelegramConfig struct {
-	BotToken        string                      `toml:"bot_token" mapstructure:"bot_token" json:"bot_token" yaml:"bot_token"`
-	APIURL          string                      `toml:"api_url" mapstructure:"api_url" json:"api_url" yaml:"api_url"`
+	BotToken string `toml:"bot_token" mapstructure:"bot_token" json:"bot_token" yaml:"bot_token"`
+	APIURL   string `toml:"api_url" mapstructure:"api_url" json:"api_url" yaml:"api_url"`
+	// QueryBase 为查询 REST API 前缀; 留空时使用本地查询。
+	QueryBase       string                      `toml:"query_base" mapstructure:"query_base" json:"query_base" yaml:"query_base"`
 	Username        string                      `toml:"username" mapstructure:"username" json:"username" yaml:"username"`
 	CaptionTemplate string                      `toml:"caption_template" mapstructure:"caption_template" json:"caption_template" yaml:"caption_template"`
 	Admins          []int64                     `toml:"admins" mapstructure:"admins" json:"admins" yaml:"admins"`

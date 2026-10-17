@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"github.com/krau/ManyACG/internal/common/restclient"
 	"github.com/krau/ManyACG/internal/infra/kvstor"
 	"github.com/krau/ManyACG/internal/interface/telegram/metautil"
 	"github.com/krau/ManyACG/internal/service"
@@ -9,6 +10,8 @@ import (
 )
 
 type kvStoreContextKey struct{}
+
+type restClientContextKey struct{}
 
 func requireKVStore(ctx *telegohandler.Context) (kvstor.KVStore, error) {
 	store, ok := ctx.Value(kvStoreContextKey{}).(kvstor.KVStore)
@@ -41,4 +44,9 @@ func requireSourceURL(ctx *telegohandler.Context) (string, error) {
 		return "", oops.New("telegram handler missing source_url in context")
 	}
 	return sourceURL, nil
+}
+
+func restClient(ctx *telegohandler.Context) *restclient.Client {
+	client, _ := ctx.Value(restClientContextKey{}).(*restclient.Client)
+	return client
 }

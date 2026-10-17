@@ -8,9 +8,7 @@ import (
 	"github.com/krau/ManyACG/internal/interface/rest/common"
 	"github.com/krau/ManyACG/internal/interface/rest/utils"
 	"github.com/krau/ManyACG/internal/model/entity"
-	"github.com/krau/ManyACG/internal/model/query"
 	"github.com/krau/ManyACG/internal/service"
-	"github.com/krau/ManyACG/internal/shared"
 	"github.com/krau/ManyACG/internal/shared/errs"
 	"github.com/unvgo/ouid"
 )
@@ -20,14 +18,14 @@ type RequestRandomArtworks struct {
 	Limit    int    `query:"limit,default=1" form:"limit,default=1" json:"limit" validate:"lte=200" message:"limit must be between 1 and 200"`
 	ArtistID string `query:"artist_id" form:"artist_id" json:"artist_id" validate:"omitempty,objectid" message:"artist_id must be a valid ObjectID"`
 	Tag      string `query:"tag" form:"tag" json:"tag"`
-	Keyword  string `query:"keyword" form:"keyword" json:"keyword" validate:"max=50" message:"keyword max length is 50"`
+	Keyword  string `query:"keyword" form:"keyword" json:"keyword" validate:"max=200" message:"keyword max length is 200"`
 }
 
 type RequestCountArtwork struct {
 	R18      int    `query:"r18" form:"r18" json:"r18" validate:"omitempty,gte=0,lte=2" message:"r18 must be 0 (no R18), 1 (only R18) or 2 (both)"`
 	ArtistID string `query:"artist_id" form:"artist_id" json:"artist_id" validate:"omitempty,objectid" message:"artist_id must be a valid ObjectID"`
 	Tag      string `query:"tag" form:"tag" json:"tag"`
-	Keyword  string `query:"keyword" form:"keyword" json:"keyword" validate:"max=50" message:"keyword max length is 50"`
+	Keyword  string `query:"keyword" form:"keyword" json:"keyword" validate:"max=200" message:"keyword max length is 200"`
 }
 
 func HandleRandomArtworks(ctx fiber.Ctx) error {
@@ -39,7 +37,7 @@ func HandleRandomArtworks(ctx fiber.Ctx) error {
 	}
 	artworks, err := queryRandomArtworks(requestCtx, serv, req, req.Limit)
 	if err != nil {
-		return err
+		return mapArtworkQueryError(err)
 	}
 	cfg := common.MustGetState[runtimecfg.RestConfig](ctx, common.StateKeyConfig)
 	resp := artworksResponseFromEntity(ctx, artworks, cfg, serv)
@@ -58,7 +56,7 @@ func HandleRandomPreviewArtworks(ctx fiber.Ctx) error {
 	}
 	artworks, err := queryRandomArtworks(requestCtx, serv, req, 1)
 	if err != nil {
-		return err
+		return mapArtworkQueryError(err)
 	}
 	if len(artworks) == 0 {
 		return common.NewError(fiber.StatusNotFound, "no artworks found")
@@ -76,16 +74,15 @@ func queryRandomArtworks(ctx context.Context, serv *service.Service, req *Reques
 	if limit <= 0 {
 		limit = 1
 	}
-	dbQuery := query.ArtworksDB{
-		R18:        shared.R18TypeFromInt(req.R18),
-		HasPicture: true,
+	return serv.QueryArtworksFiltered(ctx, service.ArtworkQueryParams{
+		R18:        req.R18,
+		ArtistID:   req.ArtistID,
+		Tag:        req.Tag,
+		Keyword:    req.Keyword,
 		Random:     true,
+		HasPicture: true,
 		Limit:      limit,
-	}
-	if err := applyArtworkDBFilters(ctx, serv, &dbQuery, req.ArtistID, req.Tag, req.Keyword); err != nil {
-		return nil, err
-	}
-	return serv.QueryArtworks(ctx, dbQuery)
+	})
 }
 
 func HandleCountArtwork(ctx fiber.Ctx) error {
@@ -95,12 +92,15 @@ func HandleCountArtwork(ctx fiber.Ctx) error {
 	if err := ctx.Bind().All(req); err != nil {
 		return err
 	}
-	dbQuery := query.ArtworksDB{
-		R18:        shared.R18TypeFromInt(req.R18),
+	dbQuery, err := serv.ResolveArtworkDBQuery(requestCtx, service.ArtworkQueryParams{
+		R18:        req.R18,
+		ArtistID:   req.ArtistID,
+		Tag:        req.Tag,
+		Keyword:    req.Keyword,
 		HasPicture: true,
-	}
-	if err := applyArtworkDBFilters(requestCtx, serv, &dbQuery, req.ArtistID, req.Tag, req.Keyword); err != nil {
-		return err
+	})
+	if err != nil {
+		return mapArtworkQueryError(err)
 	}
 	count, err := serv.CountArtworks(requestCtx, dbQuery)
 	if err != nil {

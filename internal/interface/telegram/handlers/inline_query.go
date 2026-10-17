@@ -6,7 +6,7 @@ import (
 
 	"github.com/krau/ManyACG/internal/infra/config/runtimecfg"
 	"github.com/krau/ManyACG/internal/interface/telegram/handlers/utils"
-	"github.com/krau/ManyACG/internal/model/query"
+	"github.com/krau/ManyACG/internal/service"
 	"github.com/krau/ManyACG/internal/shared"
 	"github.com/krau/ManyACG/pkg/log"
 	"github.com/krau/ManyACG/pkg/strutil"
@@ -62,13 +62,12 @@ func InlineQuery(ctx *telegohandler.Context, inlineQuery telego.InlineQuery) err
 		return nil
 	}
 	texts := strutil.ParseTo2DArray(queryText, "|", " ")
-	artworks, err := serv.QueryArtworks(ctx, query.ArtworksDB{
-		R18:        shared.R18TypeAll,
-		Keywords:   texts,
+	artworks, err := queryRandomArtworks(ctx, serv, service.ArtworkQueryParams{
+		R18:        int(shared.R18TypeAll),
+		Keyword:    keywordParam(texts),
+		Random:     true,
 		HasPicture: true,
 		Limit:      48,
-		Offset:     0,
-		Random:     true,
 	})
 	if err != nil || len(artworks) == 0 {
 		log.Errorf("获取图片失败: %s", err)

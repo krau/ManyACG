@@ -9,11 +9,13 @@ import (
 	"strings"
 
 	"github.com/duke-git/lancet/v2/slice"
+	"github.com/krau/ManyACG/internal/common/restclient"
 	"github.com/krau/ManyACG/internal/infra/config/runtimecfg"
 	"github.com/krau/ManyACG/internal/interface/telegram/handlers/utils"
 	"github.com/krau/ManyACG/internal/interface/telegram/metautil"
 	"github.com/krau/ManyACG/internal/model/entity"
 	"github.com/krau/ManyACG/internal/model/query"
+	"github.com/krau/ManyACG/internal/service"
 	"github.com/krau/ManyACG/internal/shared"
 	"github.com/krau/ManyACG/internal/shared/errs"
 	"github.com/krau/ManyACG/pkg/strutil"
@@ -36,29 +38,31 @@ func RandomPicture(ctx *telegohandler.Context, message telego.Message) error {
 	if err != nil {
 		return err
 	}
-	artwork, err := serv.QueryArtworks(ctx, query.ArtworksDB{
-		R18:        r18Type,
-		Keywords:   textArray,
-		HasPicture: true,
-		Offset:     0,
-		Limit:      1,
+	artworks, err := queryRandomArtworks(ctx, serv, service.ArtworkQueryParams{
+		R18:        int(r18Type),
+		Keyword:    keywordParam(textArray),
 		Random:     true,
+		HasPicture: true,
+		Limit:      1,
 	})
 	if err != nil {
-		if errors.Is(err, errs.ErrRecordNotFound) {
+		if errors.Is(err, errs.ErrRecordNotFound) || errors.Is(err, restclient.ErrNoArtworks) {
 			utils.ReplyMessage(ctx, message, "未找到相关图片")
 			return nil
 		}
 		utils.ReplyMessage(ctx, message, "查询图片失败")
 		return oops.Wrapf(err, "failed to query artworks for random picture")
 	}
-	if len(artwork) == 0 {
+	if len(artworks) == 0 {
 		utils.ReplyMessage(ctx, message, "未找到相关图片")
 		return nil
 	}
-	pictures := artwork[0].Pictures
-	picIndex := rand.Intn(len(pictures))
-	picture := pictures[picIndex]
+	aw := artworks[0]
+	if len(aw.Pictures) == 0 {
+		utils.ReplyMessage(ctx, message, "未找到相关图片")
+		return nil
+	}
+	picture := aw.Pictures[rand.Intn(len(aw.Pictures))]
 	meta, err := requireMeta(ctx)
 	if err != nil {
 		return err
@@ -69,7 +73,6 @@ func RandomPicture(ctx *telegohandler.Context, message telego.Message) error {
 		return oops.Wrapf(err, "failed to get picture input file")
 	}
 	defer file.Close()
-	aw := artwork[0]
 	photo := telegoutil.
 		Photo(message.Chat.ChatID(), file.Value).
 		WithCaption(fmt.Sprintf("<a href=\"%s\">%s</a>", aw.SourceURL, utils.EscapeHTML(aw.Title))).
@@ -108,6 +111,7 @@ func HybridSearchArtworks(ctx *telegohandler.Context, message telego.Message) er
 <b>使用 /hybrid 命令并提供查询参数, 将使用混合搜索引擎搜索相关图片</b>
 
 命令语法: /hybrid 搜索内容 [语义比例]
+搜索内容最多200个字符, 超出部分自动截断。
 
 语义比例为0-1的浮点数, 应位于参数列表最后, 越大越趋向于基于语义搜索, 若不提供, 使用默认值0.8
 
@@ -129,18 +133,14 @@ func HybridSearchArtworks(ctx *telegohandler.Context, message telego.Message) er
 		}
 		queryText = strings.Join(args[:len(args)-1], " ")
 	}
-	artworks, err := serv.SearchArtworks(ctx, &query.ArtworkSearch{
-		//  queryText, hybridSemanticRatio, 0, 50, types.R18TypeAll
-		Query:               queryText,
-		Hybrid:              true,
-		HybridSemanticRatio: hybridSemanticRatio,
-		Offset:              0,
-		Limit:               50,
-		R18:                 shared.R18TypeAll,
-	})
+	artworks, err := searchHybridArtworks(ctx, serv, queryText, hybridSemanticRatio, 50)
 	if err != nil {
 		if errors.Is(err, errs.ErrSearchEngineNotEnabled) {
 			utils.ReplyMessage(ctx, message, "搜索引擎未启用")
+			return nil
+		}
+		if errors.Is(err, restclient.ErrNoArtworks) {
+			utils.ReplyMessage(ctx, message, "未找到相关图片")
 			return nil
 		}
 		utils.ReplyMessage(ctx, message, "搜索失败")

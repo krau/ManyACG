@@ -3,6 +3,7 @@ package handlers
 import (
 	"context"
 
+	"github.com/krau/ManyACG/internal/common/restclient"
 	"github.com/krau/ManyACG/internal/infra/kvstor"
 	"github.com/krau/ManyACG/internal/interface/telegram/handlers/filter"
 	"github.com/krau/ManyACG/internal/interface/telegram/handlers/utils"
@@ -15,14 +16,16 @@ import (
 type HandlerManager struct {
 	*metautil.MetaData
 	*service.Service
-	store kvstor.KVStore
+	store  kvstor.KVStore
+	client *restclient.Client
 }
 
-func New(meta *metautil.MetaData, serv *service.Service, store kvstor.KVStore) *HandlerManager {
+func New(meta *metautil.MetaData, serv *service.Service, store kvstor.KVStore, client *restclient.Client) *HandlerManager {
 	return &HandlerManager{
 		MetaData: meta,
 		Service:  serv,
 		store:    store,
+		client:   client,
 	}
 }
 
@@ -31,7 +34,8 @@ func (m HandlerManager) Register(hg *telegohandler.HandlerGroup) {
 		servCtx := service.WithContext(ctx, m.Service)
 		metaCtx := metautil.WithContext(servCtx, m.MetaData)
 		storeCtx := context.WithValue(metaCtx, kvStoreContextKey{}, m.store)
-		ctx = ctx.WithContext(storeCtx)
+		clientCtx := context.WithValue(storeCtx, restClientContextKey{}, m.client)
+		ctx = ctx.WithContext(clientCtx)
 		return ctx.Next(update)
 	})
 	mg := hg.Group(telegohandler.AnyMessage(), filter.CommandToMe)

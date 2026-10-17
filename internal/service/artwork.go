@@ -17,6 +17,7 @@ import (
 	"github.com/krau/ManyACG/internal/repo"
 	"github.com/krau/ManyACG/internal/shared"
 	"github.com/krau/ManyACG/internal/shared/errs"
+	"github.com/krau/ManyACG/pkg/strutil"
 	"github.com/unvgo/ouid"
 	"gorm.io/datatypes"
 )
@@ -273,6 +274,62 @@ func (s *Service) UpdateArtworkTitleByURL(ctx context.Context, sourceURL, title 
 
 func (s *Service) QueryArtworks(ctx context.Context, que query.ArtworksDB) ([]*entity.Artwork, error) {
 	return s.repos.Artwork().QueryArtworks(ctx, que)
+}
+
+type ArtworkQueryParams struct {
+	R18        int
+	ArtistID   string
+	Tag        string
+	Keyword    string
+	Random     bool
+	HasPicture bool
+	Limit      int
+	Offset     int
+}
+
+// keyword 使用逗号连接 OR, 竖线分隔 AND 组。
+func (s *Service) ResolveArtworkDBQuery(ctx context.Context, params ArtworkQueryParams) (query.ArtworksDB, error) {
+	dbQuery := query.ArtworksDB{
+		R18:        shared.R18TypeFromInt(params.R18),
+		HasPicture: params.HasPicture,
+		Random:     params.Random,
+		Limit:      params.Limit,
+		Offset:     params.Offset,
+	}
+	if params.ArtistID != "" {
+		parsed, err := ouid.FromObjectIDHex(params.ArtistID)
+		if err != nil {
+			return dbQuery, fmt.Errorf("invalid artist id %q: %w", params.ArtistID, err)
+		}
+		dbQuery.ArtistID = parsed
+	}
+	if params.Tag != "" {
+		tagEntity, err := s.GetTagByNameWithAlias(ctx, params.Tag)
+		switch {
+		case errors.Is(err, errs.ErrRecordNotFound):
+			return dbQuery, errs.ErrTagNotFound
+		case err != nil:
+			return dbQuery, fmt.Errorf("resolve tag %q: %w", params.Tag, err)
+		}
+		dbQuery.Tags = [][]ouid.OUID{{tagEntity.ID}}
+	}
+	if keywords := strutil.ParseTo2DArray(params.Keyword, ",", "|"); len(keywords) > 0 {
+		dbQuery.Keywords = keywords
+	}
+	return dbQuery, nil
+}
+
+func (s *Service) QueryArtworksFiltered(ctx context.Context, params ArtworkQueryParams) ([]*entity.Artwork, error) {
+	dbQuery, err := s.ResolveArtworkDBQuery(ctx, params)
+	if err != nil {
+		return nil, err
+	}
+	return s.QueryArtworks(ctx, dbQuery)
+}
+
+// GetArtworksByIDs 批量加载作品实体(含媒体与标签预载)。
+func (s *Service) GetArtworksByIDs(ctx context.Context, ids []ouid.OUID) ([]*entity.Artwork, error) {
+	return s.repos.Artwork().GetArtworksByIDs(ctx, ids)
 }
 
 func (s *Service) FindSimilarArtworks(ctx context.Context, que *query.ArtworkSimilar) ([]*entity.Artwork, error) {

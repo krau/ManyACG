@@ -10,6 +10,7 @@ import (
 
 var (
 	ErrRecordNotFound         = gorm.ErrRecordNotFound
+	ErrTagNotFound            = errors.New("tag not found")
 	ErrArtworkAlreadyExist    = errors.New("artwork already exists")
 	ErrArtworkDeleted         = errors.New("artwork has been deleted")
 	ErrAliasAlreadyUsed       = errors.New("alias already used")
