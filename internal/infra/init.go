@@ -39,9 +39,26 @@ func (r *Resources) Close() error {
 	return r.closeErr
 }
 
-func Init(ctx context.Context, cfg runtimecfg.Config) (*Resources, error) {
+type InitOptions struct {
+	// InternalInterfaces builds the internal RPC gateway and agent, which only the runtime serves.
+	InternalInterfaces bool
+}
+
+type InitOption func(*InitOptions)
+
+func WithInternalInterfaces() InitOption {
+	return func(o *InitOptions) {
+		o.InternalInterfaces = true
+	}
+}
+
+func Init(ctx context.Context, cfg runtimecfg.Config, opts ...InitOption) (*Resources, error) {
 	if err := cfg.Validate(); err != nil {
 		return nil, err
+	}
+	var options InitOptions
+	for _, opt := range opts {
+		opt(&options)
 	}
 	resources := &Resources{}
 	mainNode := cfg.App.IsMain()
@@ -69,7 +86,7 @@ func Init(ctx context.Context, cfg runtimecfg.Config) (*Resources, error) {
 	}
 	hub := internalrpc.NewHub()
 	resources.Dispatcher = internalrpc.NewDispatcher(hub, localFetch, httpclient.LocalFetcher(), resources.SourceNamers, cfg)
-	if cfg.Internal.Gateway.Addr != "" {
+	if options.InternalInterfaces && cfg.Internal.Gateway.Addr != "" {
 		server, err := internalrpc.NewServer(cfg.Internal, hub)
 		if err != nil {
 			return nil, oops.Join(err, resources.Close())
@@ -77,7 +94,7 @@ func Init(ctx context.Context, cfg runtimecfg.Config) (*Resources, error) {
 		resources.InternalServer = server
 		resources.closers = append(resources.closers, server.Close)
 	}
-	if cfg.Internal.Agent.Gateway != "" {
+	if options.InternalInterfaces && cfg.Internal.Agent.Gateway != "" {
 		agent, err := internalrpc.NewAgent(cfg.Internal, cfg.App.Capabilities, localFetch)
 		if err != nil {
 			return nil, oops.Join(err, resources.Close())

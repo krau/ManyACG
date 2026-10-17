@@ -79,7 +79,7 @@ func NewRuntime(ctx context.Context, cfg runtimecfg.Config) (*Runtime, error) {
 		log.Info("removed stale temp files", "dir", cfg.Storage.CacheDir, "count", removed)
 	}
 
-	resources, err := infra.Init(ctx, cfg)
+	resources, err := infra.Init(ctx, cfg, infra.WithInternalInterfaces())
 	if err != nil {
 		return nil, err
 	}
