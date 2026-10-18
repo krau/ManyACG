@@ -83,23 +83,12 @@ func compressImageForTelegramByVIPS(input []byte) ([]byte, error) {
 		return nil, fmt.Errorf("failed to create image from buffer: %w", err)
 	}
 	defer img.Close()
-	width := img.Width()
-	height := img.Height()
-	inputLen := len(input)
-	currentTotalSideLength := width + height
-	if currentTotalSideLength <= TelegramMaxPhotoTotalSideLength &&
-		inputLen <= TelegramMaxPhotoFileSize {
+	plan := planTelegramPhoto(img.Width(), img.Height(), 0)
+	if !plan.needsTransform() && len(input) <= TelegramMaxPhotoFileSize {
 		return input, nil
 	}
-	var scale float64 = 1.0
-	if currentTotalSideLength > TelegramMaxPhotoTotalSideLength {
-		scale = float64(TelegramMaxPhotoTotalSideLength) / float64(currentTotalSideLength)
-	}
-	if scale < 1.0 {
-		err = img.Resize(scale, vips.DefaultResizeOptions())
-		if err != nil {
-			return nil, fmt.Errorf("failed to resize image: %w", err)
-		}
+	if err := applyTelegramPhotoPlan(img, plan); err != nil {
+		return nil, err
 	}
 	result, err := img.JpegsaveBuffer(vips.DefaultJpegsaveBufferOptions())
 	if err != nil {
@@ -113,34 +102,52 @@ func compressImageForTelegramByVIPSFromFile(filePath, outputPath string) error {
 	if err != nil {
 		return fmt.Errorf("failed to create image from file: %w", err)
 	}
-	if os.MkdirAll(filepath.Dir(outputPath), os.ModePerm); err != nil {
+	defer img.Close()
+	if err := os.MkdirAll(filepath.Dir(outputPath), os.ModePerm); err != nil {
 		return err
 	}
-	defer img.Close()
-	width := img.Width()
-	height := img.Height()
-	inputLen, err := os.Stat(filePath)
+	fileInfo, err := os.Stat(filePath)
 	if err != nil {
 		return fmt.Errorf("failed to get file info: %w", err)
 	}
-	currentTotalSideLength := width + height
-	if currentTotalSideLength <= TelegramMaxPhotoTotalSideLength &&
-		inputLen.Size() <= int64(TelegramMaxPhotoFileSize) {
+	plan := planTelegramPhoto(img.Width(), img.Height(), 0)
+	if !plan.needsTransform() && fileInfo.Size() <= int64(TelegramMaxPhotoFileSize) {
 		return fileutil.CopyFile(filePath, outputPath)
 	}
-	var scale float64 = 1.0
-	if currentTotalSideLength > TelegramMaxPhotoTotalSideLength {
-		scale = float64(TelegramMaxPhotoTotalSideLength) / float64(currentTotalSideLength)
+	if err := applyTelegramPhotoPlan(img, plan); err != nil {
+		return err
 	}
-	if scale < 1.0 {
-		err = img.Resize(scale, vips.DefaultResizeOptions())
-		if err != nil {
+	if err := img.Jpegsave(outputPath, vips.DefaultJpegsaveOptions()); err != nil {
+		return fmt.Errorf("failed to save image to file: %w", err)
+	}
+	return nil
+}
+
+// applyTelegramPhotoPlan 缩放图片并居中加边, 使其成为合法的 Telegram photo.
+func applyTelegramPhotoPlan(img *vips.Image, plan telegramPhotoPlan) error {
+	if !plan.needsTransform() {
+		return nil
+	}
+	if plan.scale < 1 {
+		if err := img.Resize(plan.scale, vips.DefaultResizeOptions()); err != nil {
 			return fmt.Errorf("failed to resize image: %w", err)
 		}
 	}
-	err = img.Jpegsave(outputPath, vips.DefaultJpegsaveOptions())
-	if err != nil {
-		return fmt.Errorf("failed to save image to buffer: %w", err)
+	// 缩放取整后可能比画布大 1px
+	if img.Width() > plan.canvasWidth || img.Height() > plan.canvasHeight {
+		left := (img.Width() - plan.canvasWidth) / 2
+		top := (img.Height() - plan.canvasHeight) / 2
+		if err := img.ExtractArea(left, top, plan.canvasWidth, plan.canvasHeight); err != nil {
+			return fmt.Errorf("failed to crop image: %w", err)
+		}
+	}
+	if img.Width() == plan.canvasWidth && img.Height() == plan.canvasHeight {
+		return nil
+	}
+	left := (plan.canvasWidth - img.Width()) / 2
+	top := (plan.canvasHeight - img.Height()) / 2
+	if err := img.Embed(left, top, plan.canvasWidth, plan.canvasHeight, &vips.EmbedOptions{Extend: vips.ExtendWhite}); err != nil {
+		return fmt.Errorf("failed to embed image: %w", err)
 	}
 	return nil
 }

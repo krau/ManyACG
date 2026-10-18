@@ -121,7 +121,7 @@ func compressImgToFile(inputPath, outputPath, format string, maxEdgeLength int) 
 }
 
 func CompressImgForTelegram(input []byte) ([]byte, error) {
-	if _, ok := vipsFormat["jpeg"]; ok {
+	if vipsJPEGAvailable() {
 		return compressImageForTelegramByVIPS(input)
 	}
 	cacheDir := runtimecfg.Get().Storage.CacheDir
@@ -144,19 +144,15 @@ func CompressImgForTelegram(input []byte) ([]byte, error) {
 		return nil, fmt.Errorf("failed to write temp file: %w", err)
 	}
 	if ffmpegAvailable {
-		err = compressImageByFFmpeg(tmpFile.Name(), distFile.Name(), TelegramMaxPhotoSideLength)
+		err = compressImageForTelegramByFFmpeg(tmpFile.Name(), distFile.Name())
 		if err != nil {
 			return nil, fmt.Errorf("failed to compress image by ffmpeg: %w", err)
 		}
-		result, err := os.ReadFile(distFile.Name())
+	} else {
+		err = compressImageForTelegramNative(tmpFile.Name(), distFile.Name())
 		if err != nil {
-			return nil, fmt.Errorf("failed to read temp file: %w", err)
+			return nil, fmt.Errorf("failed to compress image natively: %w", err)
 		}
-		return result, nil
-	}
-	err = compressImageNative(tmpFile.Name(), distFile.Name(), "jpeg", TelegramMaxPhotoSideLength)
-	if err != nil {
-		return nil, fmt.Errorf("failed to compress image natively: %w", err)
 	}
 	result, err := os.ReadFile(distFile.Name())
 	if err != nil {
@@ -167,29 +163,15 @@ func CompressImgForTelegram(input []byte) ([]byte, error) {
 
 func CompressImgForTelegramFromFile(filePath string) (*osutil.TempFile, error) {
 	outputPath := osutil.TempSiblingPath(filepath.Join(runtimecfg.Get().Storage.CacheDir, "compress", fmt.Sprintf("tg_%s.jpg", strutil.MD5Hash(filePath))))
-	if _, ok := vipsFormat["jpeg"]; ok {
-		err := compressImageForTelegramByVIPSFromFile(filePath, outputPath)
-		if err != nil {
-			return nil, err
-		}
-		f, err := os.Open(outputPath)
-		if err != nil {
-			return nil, err
-		}
-		return &osutil.TempFile{File: f}, nil
+	var err error
+	switch {
+	case vipsJPEGAvailable():
+		err = compressImageForTelegramByVIPSFromFile(filePath, outputPath)
+	case ffmpegAvailable:
+		err = compressImageForTelegramByFFmpeg(filePath, outputPath)
+	default:
+		err = compressImageForTelegramNative(filePath, outputPath)
 	}
-	if ffmpegAvailable {
-		err := compressImageByFFmpeg(filePath, outputPath, TelegramMaxPhotoSideLength)
-		if err != nil {
-			return nil, err
-		}
-		f, err := os.Open(outputPath)
-		if err != nil {
-			return nil, err
-		}
-		return &osutil.TempFile{File: f}, nil
-	}
-	err := compressImageNative(filePath, outputPath, "jpeg", TelegramMaxPhotoSideLength)
 	if err != nil {
 		return nil, err
 	}
@@ -198,4 +180,9 @@ func CompressImgForTelegramFromFile(filePath string) (*osutil.TempFile, error) {
 		return nil, err
 	}
 	return &osutil.TempFile{File: f}, nil
+}
+
+func vipsJPEGAvailable() bool {
+	_, ok := vipsFormat["jpeg"]
+	return ok
 }

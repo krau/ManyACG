@@ -3,6 +3,7 @@ package mediatool
 import (
 	"fmt"
 	"image"
+	"image/color"
 	"image/jpeg"
 	"image/png"
 	"os"
@@ -12,6 +13,51 @@ import (
 	"golang.org/x/image/draw"
 	_ "golang.org/x/image/webp"
 )
+
+func compressImageForTelegramNative(inputPath, outputPath string) error {
+	imgFile, err := os.Open(inputPath)
+	if err != nil {
+		return fmt.Errorf("failed to open input file: %w", err)
+	}
+	defer imgFile.Close()
+
+	srcImg, _, err := image.Decode(imgFile)
+	if err != nil {
+		return fmt.Errorf("failed to decode image: %w", err)
+	}
+	width, height, err := GetImgSize(srcImg)
+	if err != nil {
+		return err
+	}
+	plan := planTelegramPhoto(width, height, TelegramMaxPhotoSideLength)
+	dstImg := telegramPhotoImage(srcImg, plan)
+
+	outFile, err := os.Create(outputPath)
+	if err != nil {
+		return fmt.Errorf("failed to create output file: %w", err)
+	}
+	defer outFile.Close()
+
+	if err := jpeg.Encode(outFile, dstImg, &jpeg.Options{Quality: 85}); err != nil {
+		return fmt.Errorf("failed to encode JPEG: %w", err)
+	}
+	return nil
+}
+
+// telegramPhotoImage 将图片等比缩放并居中放置到加边后的画布上, 无需变换时返回原图.
+func telegramPhotoImage(src image.Image, plan telegramPhotoPlan) image.Image {
+	if !plan.needsTransform() {
+		return src
+	}
+	canvas := image.NewRGBA(image.Rect(0, 0, plan.canvasWidth, plan.canvasHeight))
+	draw.Draw(canvas, canvas.Bounds(), image.NewUniform(color.White), image.Point{}, draw.Src)
+	left := (plan.canvasWidth - plan.width) / 2
+	top := (plan.canvasHeight - plan.height) / 2
+	target := image.Rect(left, top, left+plan.width, top+plan.height)
+	// catmullrom , very slow but good quality
+	draw.CatmullRom.Scale(canvas, target, src, src.Bounds(), draw.Over, nil)
+	return canvas
+}
 
 func compressImageNative(inputPath, outputPath, format string, maxEdgeLength int) error {
 	imgFile, err := os.Open(inputPath)
