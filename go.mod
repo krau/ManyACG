@@ -1,6 +1,6 @@
 module github.com/krau/ManyACG
 
-go 1.27.0
+go 1.27.3
 
 require (
 	github.com/HugoSmits86/nativewebp v1.3.0
