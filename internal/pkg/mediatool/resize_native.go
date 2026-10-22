@@ -7,6 +7,7 @@ import (
 	"image/jpeg"
 	"image/png"
 	"os"
+	"path/filepath"
 
 	"github.com/HugoSmits86/nativewebp"
 	"github.com/gen2brain/avif"
@@ -14,7 +15,7 @@ import (
 	_ "golang.org/x/image/webp"
 )
 
-func compressImageForTelegramNative(inputPath, outputPath string) error {
+func encodeTelegramPhotoNative(inputPath, outputPath, format string, quality int, plan telegramPhotoPlan) error {
 	imgFile, err := os.Open(inputPath)
 	if err != nil {
 		return fmt.Errorf("failed to open input file: %w", err)
@@ -25,28 +26,36 @@ func compressImageForTelegramNative(inputPath, outputPath string) error {
 	if err != nil {
 		return fmt.Errorf("failed to decode image: %w", err)
 	}
-	width, height, err := GetImgSize(srcImg)
-	if err != nil {
-		return err
-	}
-	plan := planTelegramPhoto(width, height, TelegramMaxPhotoSideLength)
 	dstImg := telegramPhotoImage(srcImg, plan)
 
+	if err := os.MkdirAll(filepath.Dir(outputPath), os.ModePerm); err != nil {
+		return err
+	}
 	outFile, err := os.Create(outputPath)
 	if err != nil {
 		return fmt.Errorf("failed to create output file: %w", err)
 	}
 	defer outFile.Close()
 
-	if err := jpeg.Encode(outFile, dstImg, &jpeg.Options{Quality: 85}); err != nil {
-		return fmt.Errorf("failed to encode JPEG: %w", err)
+	switch format {
+	case "png":
+		encoder := &png.Encoder{CompressionLevel: png.DefaultCompression}
+		if err := encoder.Encode(outFile, dstImg); err != nil {
+			return fmt.Errorf("failed to encode PNG: %w", err)
+		}
+	case "jpeg":
+		if err := jpeg.Encode(outFile, dstImg, &jpeg.Options{Quality: quality}); err != nil {
+			return fmt.Errorf("failed to encode JPEG: %w", err)
+		}
+	default:
+		return fmt.Errorf("unsupported image format: %s", format)
 	}
 	return nil
 }
 
-// telegramPhotoImage 将图片等比缩放并居中放置到加边后的画布上, 无需变换时返回原图.
+// telegramPhotoImage 将图片等比缩放并居中放置到白色画布上, 透明通道压平为白色.
 func telegramPhotoImage(src image.Image, plan telegramPhotoPlan) image.Image {
-	if !plan.needsTransform() {
+	if !plan.needsTransform() && !hasAlpha(src) {
 		return src
 	}
 	canvas := image.NewRGBA(image.Rect(0, 0, plan.canvasWidth, plan.canvasHeight))
@@ -57,6 +66,14 @@ func telegramPhotoImage(src image.Image, plan telegramPhotoPlan) image.Image {
 	// catmullrom , very slow but good quality
 	draw.CatmullRom.Scale(canvas, target, src, src.Bounds(), draw.Over, nil)
 	return canvas
+}
+
+func hasAlpha(img image.Image) bool {
+	switch img.(type) {
+	case *image.RGBA, *image.RGBA64, *image.NRGBA, *image.NRGBA64, *image.Alpha, *image.Alpha16, *image.Paletted:
+		return true
+	}
+	return false
 }
 
 func compressImageNative(inputPath, outputPath, format string, maxEdgeLength int) error {

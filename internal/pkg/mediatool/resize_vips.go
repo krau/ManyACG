@@ -7,8 +7,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/cshum/vipsgen/vips817"
-	"github.com/duke-git/lancet/v2/fileutil"
+	vips "github.com/cshum/vipsgen/vips816"
 )
 
 func init() {
@@ -77,28 +76,8 @@ func compressImageVIPS(inputPath, outputPath, format string, maxEdgeLength int) 
 	return nil
 }
 
-func compressImageForTelegramByVIPS(input []byte) ([]byte, error) {
-	img, err := vips.NewImageFromBuffer(input, vips.DefaultLoadOptions())
-	if err != nil {
-		return nil, fmt.Errorf("failed to create image from buffer: %w", err)
-	}
-	defer img.Close()
-	plan := planTelegramPhoto(img.Width(), img.Height(), 0)
-	if !plan.needsTransform() && len(input) <= TelegramMaxPhotoFileSize {
-		return input, nil
-	}
-	if err := applyTelegramPhotoPlan(img, plan); err != nil {
-		return nil, err
-	}
-	result, err := img.JpegsaveBuffer(vips.DefaultJpegsaveBufferOptions())
-	if err != nil {
-		return nil, fmt.Errorf("failed to save image to buffer: %w", err)
-	}
-	return result, nil
-}
-
-func compressImageForTelegramByVIPSFromFile(filePath, outputPath string) error {
-	img, err := vips.NewImageFromFile(filePath, vips.DefaultLoadOptions())
+func encodeTelegramPhotoByVIPS(inputPath, outputPath, format string, quality int, plan telegramPhotoPlan) error {
+	img, err := vips.NewImageFromFile(inputPath, vips.DefaultLoadOptions())
 	if err != nil {
 		return fmt.Errorf("failed to create image from file: %w", err)
 	}
@@ -106,27 +85,10 @@ func compressImageForTelegramByVIPSFromFile(filePath, outputPath string) error {
 	if err := os.MkdirAll(filepath.Dir(outputPath), os.ModePerm); err != nil {
 		return err
 	}
-	fileInfo, err := os.Stat(filePath)
-	if err != nil {
-		return fmt.Errorf("failed to get file info: %w", err)
-	}
-	plan := planTelegramPhoto(img.Width(), img.Height(), 0)
-	if !plan.needsTransform() && fileInfo.Size() <= int64(TelegramMaxPhotoFileSize) {
-		return fileutil.CopyFile(filePath, outputPath)
-	}
-	if err := applyTelegramPhotoPlan(img, plan); err != nil {
-		return err
-	}
-	if err := img.Jpegsave(outputPath, vips.DefaultJpegsaveOptions()); err != nil {
-		return fmt.Errorf("failed to save image to file: %w", err)
-	}
-	return nil
-}
-
-// applyTelegramPhotoPlan 缩放图片并居中加边, 使其成为合法的 Telegram photo.
-func applyTelegramPhotoPlan(img *vips.Image, plan telegramPhotoPlan) error {
-	if !plan.needsTransform() {
-		return nil
+	if img.HasAlpha() {
+		if err := img.Flatten(&vips.FlattenOptions{Background: []float64{255, 255, 255}}); err != nil {
+			return fmt.Errorf("failed to flatten image: %w", err)
+		}
 	}
 	if plan.scale < 1 {
 		if err := img.Resize(plan.scale, vips.DefaultResizeOptions()); err != nil {
@@ -141,13 +103,36 @@ func applyTelegramPhotoPlan(img *vips.Image, plan telegramPhotoPlan) error {
 			return fmt.Errorf("failed to crop image: %w", err)
 		}
 	}
-	if img.Width() == plan.canvasWidth && img.Height() == plan.canvasHeight {
-		return nil
+	if img.Width() != plan.canvasWidth || img.Height() != plan.canvasHeight {
+		left := (plan.canvasWidth - img.Width()) / 2
+		top := (plan.canvasHeight - img.Height()) / 2
+		if err := img.Embed(left, top, plan.canvasWidth, plan.canvasHeight, &vips.EmbedOptions{Extend: vips.ExtendWhite}); err != nil {
+			return fmt.Errorf("failed to embed image: %w", err)
+		}
 	}
-	left := (plan.canvasWidth - img.Width()) / 2
-	top := (plan.canvasHeight - img.Height()) / 2
-	if err := img.Embed(left, top, plan.canvasWidth, plan.canvasHeight, &vips.EmbedOptions{Extend: vips.ExtendWhite}); err != nil {
-		return fmt.Errorf("failed to embed image: %w", err)
+	switch format {
+	case "png":
+		err = img.Pngsave(outputPath, vips.DefaultPngsaveOptions())
+	case "jpeg":
+		options := vips.DefaultJpegsaveOptions()
+		options.Q = quality
+		options.OptimizeCoding = true
+		err = img.Jpegsave(outputPath, options)
+	default:
+		return fmt.Errorf("unsupported image format: %s", format)
+	}
+	if err != nil {
+		return fmt.Errorf("failed to save image to file: %w", err)
 	}
 	return nil
+}
+
+// vipsImageSize 使用 libvips 读取图片宽高, 支持标准库无法解码的格式.
+func vipsImageSize(filePath string) (int, int, error) {
+	img, err := vips.NewImageFromFile(filePath, vips.DefaultLoadOptions())
+	if err != nil {
+		return 0, 0, err
+	}
+	defer img.Close()
+	return img.Width(), img.Height(), nil
 }

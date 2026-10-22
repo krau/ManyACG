@@ -12,7 +12,6 @@ import (
 	"github.com/krau/ManyACG/internal/infra/config/runtimecfg"
 	"github.com/krau/ManyACG/pkg/log"
 	"github.com/krau/ManyACG/pkg/osutil"
-	"github.com/krau/ManyACG/pkg/strutil"
 )
 
 var (
@@ -121,62 +120,44 @@ func compressImgToFile(inputPath, outputPath, format string, maxEdgeLength int) 
 }
 
 func CompressImgForTelegram(input []byte) ([]byte, error) {
-	if vipsJPEGAvailable() {
-		return compressImageForTelegramByVIPS(input)
-	}
-	cacheDir := runtimecfg.Get().Storage.CacheDir
-	tmpFile, err := osutil.CreateTempSibling(filepath.Join(cacheDir, "mediatool_telegram.png"))
+	srcFile, err := osutil.CreateTempSibling(filepath.Join(os.TempDir(), "mediatool_telegram"))
 	if err != nil {
 		return nil, fmt.Errorf("failed to create temp file: %w", err)
 	}
-	defer os.Remove(tmpFile.Name())
-	defer tmpFile.Close()
-
-	distFile, err := osutil.CreateTempSibling(filepath.Join(cacheDir, "mediatool_telegram.jpg"))
-	if err != nil {
-		return nil, fmt.Errorf("failed to create temp file: %w", err)
-	}
-	defer os.Remove(distFile.Name())
-	defer distFile.Close()
-
-	err = os.WriteFile(tmpFile.Name(), input, 0644)
-	if err != nil {
+	srcPath := srcFile.Name()
+	defer os.Remove(srcPath)
+	if _, err := srcFile.Write(input); err != nil {
+		srcFile.Close()
 		return nil, fmt.Errorf("failed to write temp file: %w", err)
 	}
-	if ffmpegAvailable {
-		err = compressImageForTelegramByFFmpeg(tmpFile.Name(), distFile.Name())
-		if err != nil {
-			return nil, fmt.Errorf("failed to compress image by ffmpeg: %w", err)
-		}
-	} else {
-		err = compressImageForTelegramNative(tmpFile.Name(), distFile.Name())
-		if err != nil {
-			return nil, fmt.Errorf("failed to compress image natively: %w", err)
-		}
+	if err := srcFile.Close(); err != nil {
+		return nil, fmt.Errorf("failed to write temp file: %w", err)
 	}
-	result, err := os.ReadFile(distFile.Name())
+	compressed, err := compressTelegramPhotoFile(srcPath, os.TempDir())
 	if err != nil {
-		return nil, fmt.Errorf("failed to read temp file: %w", err)
+		return nil, err
+	}
+	defer compressed.Close()
+	result, err := io.ReadAll(compressed)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read compressed image: %w", err)
 	}
 	return result, nil
 }
 
+// CompressImgForTelegramFromFile 生成可发送的 Telegram photo
 func CompressImgForTelegramFromFile(filePath string) (*osutil.TempFile, error) {
-	outputPath := osutil.TempSiblingPath(filepath.Join(runtimecfg.Get().Storage.CacheDir, "compress", fmt.Sprintf("tg_%s.jpg", strutil.MD5Hash(filePath))))
-	var err error
-	switch {
-	case vipsJPEGAvailable():
-		err = compressImageForTelegramByVIPSFromFile(filePath, outputPath)
-	case ffmpegAvailable:
-		err = compressImageForTelegramByFFmpeg(filePath, outputPath)
-	default:
-		err = compressImageForTelegramNative(filePath, outputPath)
-	}
+	return compressTelegramPhotoFile(filePath, filepath.Join(runtimecfg.Get().Storage.CacheDir, "compress"))
+}
+
+func compressTelegramPhotoFile(filePath, outputDir string) (*osutil.TempFile, error) {
+	outputPath, err := prepareTelegramPhoto(filePath, outputDir)
 	if err != nil {
 		return nil, err
 	}
 	f, err := os.Open(outputPath)
 	if err != nil {
+		os.Remove(outputPath)
 		return nil, err
 	}
 	return &osutil.TempFile{File: f}, nil

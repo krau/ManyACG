@@ -4,45 +4,59 @@ import (
 	"fmt"
 	"image"
 	"os"
-	"strings"
+	"strconv"
 
 	"github.com/krau/ffmpeg-go"
 )
 
-// 使用 ffmpeg 将图片压缩为可发送的 Telegram photo
-func compressImageForTelegramByFFmpeg(inputPath, outputPath string) error {
-	file, err := os.Open(inputPath)
-	if err != nil {
-		return err
+// encodeTelegramPhotoByFFmpeg 将 plan 应用到图片并按指定格式编码.
+// 内容叠加到白色画布上, 同时完成透明通道合成、缩放与居中加边.
+func encodeTelegramPhotoByFFmpeg(inputPath, outputPath, format string, quality int, plan telegramPhotoPlan) error {
+	background := ffmpeg.Input(
+		fmt.Sprintf("color=c=white:s=%dx%d:r=1", plan.canvasWidth, plan.canvasHeight),
+		ffmpeg.KwArgs{"f": "lavfi"},
+	)
+	content := ffmpeg.Input(inputPath)
+	if plan.scale < 1 {
+		content = content.Filter("scale", ffmpeg.Args{
+			strconv.Itoa(plan.width), strconv.Itoa(plan.height),
+		}, ffmpeg.KwArgs{"flags": "lanczos"})
 	}
-	defer file.Close()
-	img, _, err := image.DecodeConfig(file)
-	if err != nil {
-		return err
+	content = content.Filter("format", ffmpeg.Args{"rgba"})
+	left := (plan.canvasWidth - plan.width) / 2
+	top := (plan.canvasHeight - plan.height) / 2
+	composed := background.Overlay(content, "", ffmpeg.KwArgs{
+		"x":      strconv.Itoa(left),
+		"y":      strconv.Itoa(top),
+		"format": "rgb",
+	}).Filter("format", ffmpeg.Args{"rgb24"})
+	kwargs := ffmpeg.KwArgs{"frames:v": "1"}
+	switch format {
+	case "png":
+		kwargs["c:v"] = "png"
+	case "jpeg":
+		kwargs["q:v"] = strconv.Itoa(ffmpegJPEGQuality(quality))
+	default:
+		return fmt.Errorf("unsupported image format: %s", format)
 	}
-	plan := planTelegramPhoto(img.Width, img.Height, TelegramMaxPhotoSideLength)
-	var vfKwArg ffmpeg.KwArgs
-	if filter := telegramPhotoFilter(plan); filter != "" {
-		vfKwArg = ffmpeg.KwArgs{"vf": filter}
-	}
-	if err := ffmpeg.Input(inputPath).Output(outputPath, vfKwArg).OverWriteOutput().Run(); err != nil {
+	if err := composed.Output(outputPath, kwargs).OverWriteOutput().Run(); err != nil {
 		return fmt.Errorf("failed to compress image: %w", err)
 	}
 	return nil
 }
 
-// telegramPhotoFilter 返回缩放并居中加边的 ffmpeg 滤镜链, 无需变换时返回空字符串.
-func telegramPhotoFilter(plan telegramPhotoPlan) string {
-	filters := make([]string, 0, 2)
-	if plan.scale < 1 {
-		filters = append(filters, fmt.Sprintf("scale=%d:%d:flags=lanczos", plan.width, plan.height))
+// ffmpegJPEGQuality 将 JPEG 质量(1-100)映射为 ffmpeg mjpeg 的 -q:v 值.
+func ffmpegJPEGQuality(quality int) int {
+	switch {
+	case quality >= 95:
+		return 2
+	case quality >= 90:
+		return 3
+	case quality >= 85:
+		return 4
+	default:
+		return 5
 	}
-	if plan.width != plan.canvasWidth || plan.height != plan.canvasHeight {
-		left := (plan.canvasWidth - plan.width) / 2
-		top := (plan.canvasHeight - plan.height) / 2
-		filters = append(filters, fmt.Sprintf("pad=%d:%d:%d:%d:color=white", plan.canvasWidth, plan.canvasHeight, left, top))
-	}
-	return strings.Join(filters, ",")
 }
 
 // 使用 ffmpeg 压缩图片
