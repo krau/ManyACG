@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"math/rand"
 
-	"github.com/krau/ManyACG/internal/infra/config/runtimecfg"
 	"github.com/krau/ManyACG/internal/interface/telegram/handlers/utils"
 	"github.com/krau/ManyACG/internal/service"
 	"github.com/krau/ManyACG/internal/shared"
@@ -37,19 +36,18 @@ func InlineQuery(ctx *telegohandler.Context, inlineQuery telego.InlineQuery) err
 		pics := artwork.Artwork.Data().Pictures
 		results := make([]telego.InlineQueryResult, 0, min(len(pics), 48))
 		caption := utils.ArtworkHTMLCaption(artwork)
-		wsrvUrl := runtimecfg.Get().Wsrv.URL
 		for _, picture := range pics {
 			if picFileId := picture.TelegramInfo.FileID(meta.BotID(), shared.TelegramMediaTypePhoto); picFileId != "" {
 				result := telegoutil.ResultCachedPhoto(ouid.New().Hex(), picFileId).WithCaption(caption).WithParseMode(telego.ModeHTML)
 				results = append(results, result)
 				continue
 			}
-			if wsrvUrl == "" {
+			photoURL := utils.TelegramPhotoProxyURL(picture.Original, picture.Width, picture.Height)
+			if photoURL == "" {
 				continue
 			}
 			result := telegoutil.ResultPhoto(ouid.New().Hex(),
-				fmt.Sprintf("%s/?url=%s&w=2560&h=2560&we&output=jpg", wsrvUrl,
-					picture.Original), picture.Thumbnail).WithCaption(caption).WithParseMode(telego.ModeHTML)
+				photoURL, picture.Thumbnail).WithCaption(caption).WithParseMode(telego.ModeHTML)
 			results = append(results, result)
 		}
 		if err := ctx.Bot().AnswerInlineQuery(ctx, &telego.AnswerInlineQueryParams{

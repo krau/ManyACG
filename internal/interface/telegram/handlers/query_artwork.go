@@ -10,7 +10,6 @@ import (
 
 	"github.com/duke-git/lancet/v2/slice"
 	"github.com/krau/ManyACG/internal/common/restclient"
-	"github.com/krau/ManyACG/internal/infra/config/runtimecfg"
 	"github.com/krau/ManyACG/internal/interface/telegram/handlers/utils"
 	"github.com/krau/ManyACG/internal/interface/telegram/metautil"
 	"github.com/krau/ManyACG/internal/model/entity"
@@ -261,9 +260,10 @@ func handleSendResultArtworks(ctx context.Context, artworks []*entity.Artwork, m
 		var file telego.InputFile
 		if fileId := picture.TelegramInfo.Data().FileID(meta.BotID(), shared.TelegramMediaTypePhoto); fileId != "" {
 			file = telegoutil.FileFromID(fileId)
-		} else {
-			photoURL := fmt.Sprintf("%s/?url=%s&w=2560&h=2560&we&output=jpg", runtimecfg.Get().Wsrv.URL, picture.Original)
+		} else if photoURL := utils.TelegramPhotoProxyURL(picture.Original, picture.Width, picture.Height); photoURL != "" {
 			file = telegoutil.FileFromURL(photoURL)
+		} else {
+			continue
 		}
 		caption := fmt.Sprintf("<a href=\"%s\">%s</a>", artwork.SourceURL, utils.EscapeHTML(artwork.Title))
 		inputMedias = append(inputMedias, telegoutil.MediaPhoto(file).WithCaption(caption).WithParseMode(telego.ModeHTML))
