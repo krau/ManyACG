@@ -20,6 +20,7 @@ func Help(ctx *telegohandler.Context, message telego.Message) error {
 /random - 随机全年龄图片
 /search - 搜索相似图片
 /info - 发送作品图片和信息
+/submit - 投稿作品
 /files - 获取作品原图
 /hybrid - 混合搜索作品
 /similar - 搜索相似作品

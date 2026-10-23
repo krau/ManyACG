@@ -96,7 +96,7 @@ func PostArtworkCallbackQuery(ctx *telegohandler.Context, query telego.CallbackQ
 		return err
 	}
 	if meta.ChannelAvailable() {
-		if err := utils.PostAndCreateArtwork(ctx, ctx.Bot(), serv, meta, artwork, query.Message.GetChat().ChatID(), meta.ChannelChatID(), query.Message.GetMessageID()); err != nil {
+		if err := utils.PostAndCreateArtwork(ctx, ctx.Bot(), serv, meta, store, artwork, query.Message.GetChat().ChatID(), meta.ChannelChatID(), query.Message.GetMessageID()); err != nil {
 			log.Errorf("failed to post and create artwork: %s", err)
 			ctx.Bot().EditMessageCaption(ctx, &telego.EditMessageCaptionParams{
 				ChatID:    telegoutil.ID(query.Message.GetChat().ID),
@@ -126,6 +126,10 @@ func PostArtworkCallbackQuery(ctx *telegohandler.Context, query telego.CallbackQ
 
 func PostArtworkCommand(ctx *telegohandler.Context, message telego.Message) error {
 	serv, err := requireService(ctx)
+	if err != nil {
+		return err
+	}
+	store, err := requireKVStore(ctx)
 	if err != nil {
 		return err
 	}
@@ -180,7 +184,7 @@ func PostArtworkCommand(ctx *telegohandler.Context, message telego.Message) erro
 		return err
 	}
 	if meta.ChannelAvailable() {
-		if err := utils.PostAndCreateArtwork(ctx, ctx.Bot(), serv, meta, artwork, message.GetChat().ChatID(), meta.ChannelChatID(), message.MessageID); err != nil {
+		if err := utils.PostAndCreateArtwork(ctx, ctx.Bot(), serv, meta, store, artwork, message.GetChat().ChatID(), meta.ChannelChatID(), message.MessageID); err != nil {
 			utils.ReplyMessage(ctx, message, "发布失败: "+err.Error())
 			return nil
 		}

@@ -48,6 +48,17 @@ func SendArtworkMediaGroup(
 	meta *metautil.MetaData,
 	chatID telego.ChatID,
 	artwork shared.ArtworkLike) ([]MediaGroupResultMessage, error) {
+	return SendArtworkMediaGroupWithCaption(ctx, bot, serv, meta, chatID, artwork, "")
+}
+
+func SendArtworkMediaGroupWithCaption(
+	ctx context.Context,
+	bot *telego.Bot,
+	serv *service.Service,
+	meta *metautil.MetaData,
+	chatID telego.ChatID,
+	artwork shared.ArtworkLike,
+	caption string) ([]MediaGroupResultMessage, error) {
 
 	go bot.SendChatAction(ctx, telegoutil.ChatAction(chatID, telego.ChatActionUploadPhoto))
 
@@ -59,7 +70,9 @@ func SendArtworkMediaGroup(
 		return nil, oops.New("no media found in artwork")
 	}
 
-	caption := ArtworkHTMLCaption(artwork)
+	if caption == "" {
+		caption = ArtworkHTMLCaption(artwork)
+	}
 	results := make([]MediaGroupResultMessage, 0, len(items))
 
 	if len(items) <= 10 {

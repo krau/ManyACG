@@ -36,6 +36,10 @@ var (
 			Description: "获取作品图片和信息",
 		},
 		{
+			Command:     "submit",
+			Description: "投稿作品",
+		},
+		{
 			Command:     "help",
 			Description: "食用指南",
 		},

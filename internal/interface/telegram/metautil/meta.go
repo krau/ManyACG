@@ -22,6 +22,10 @@ func (m *MetaData) ChannelChatID() telego.ChatID {
 	return m.channelChatID
 }
 
+func (m *MetaData) GroupChatID() telego.ChatID {
+	return m.groupChatID
+}
+
 func (m *MetaData) BotUsername() string {
 	return m.botUsername
 }

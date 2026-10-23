@@ -8,6 +8,7 @@ import (
 	"sync"
 
 	"github.com/gabriel-vasile/mimetype"
+	"github.com/krau/ManyACG/internal/infra/kvstor"
 	"github.com/krau/ManyACG/internal/interface/telegram/metautil"
 	"github.com/krau/ManyACG/internal/model/command"
 	"github.com/krau/ManyACG/internal/model/entity"
@@ -29,6 +30,7 @@ func doPostAndCreateArtwork(
 	bot *telego.Bot,
 	serv *service.Service,
 	meta *metautil.MetaData,
+	store kvstor.KVStore,
 	artwork *entity.CachedArtworkData,
 	fromChatID telego.ChatID,
 	toChatID telego.ChatID,
@@ -251,7 +253,7 @@ func doPostAndCreateArtwork(
 
 	editReplyMarkupText("正在发布到频道...")
 
-	results, err := SendArtworkMediaGroup(ctx, bot, serv, meta, toChatID, artwork)
+	results, err := SendArtworkMediaGroupWithCaption(ctx, bot, serv, meta, toChatID, artwork, ChannelArtworkCaption(ctx, store, artwork))
 	if err != nil {
 		return oops.Wrapf(err, "failed to send artwork media group")
 	}
@@ -410,7 +412,7 @@ func doPostAndCreateArtwork(
 	if err != nil {
 		return oops.Wrapf(err, "failed to get artwork by url for recaption")
 	}
-	caption := ArtworkHTMLCaption(ent)
+	caption := ChannelArtworkCaption(ctx, store, ent)
 	_, err = bot.EditMessageCaption(ctx, telegoutil.
 		EditMessageCaption(toChatID,
 			ent.FirstMedia().GetTelegramInfo().MessageID(meta.ChannelChatID().ID),
@@ -519,6 +521,7 @@ func PostAndCreateArtwork(
 	bot *telego.Bot,
 	serv *service.Service,
 	meta *metautil.MetaData,
+	store kvstor.KVStore,
 	artwork *entity.CachedArtworkData,
 	fromChatID telego.ChatID,
 	toChatID telego.ChatID,
@@ -527,7 +530,7 @@ func PostAndCreateArtwork(
 	select {
 	case postArtworkSemaphore <- struct{}{}:
 		defer func() { <-postArtworkSemaphore }()
-		return doPostAndCreateArtwork(ctx, bot, serv, meta, artwork, fromChatID, toChatID, messageID)
+		return doPostAndCreateArtwork(ctx, bot, serv, meta, store, artwork, fromChatID, toChatID, messageID)
 	case <-ctx.Done():
 		return ctx.Err()
 	}

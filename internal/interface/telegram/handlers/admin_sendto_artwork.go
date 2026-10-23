@@ -70,7 +70,7 @@ func SendtoArtworkCallbackQuery(ctx *telegohandler.Context, query telego.Callbac
 	if err != nil {
 		return err
 	}
-	results, err := utils.SendArtworkMediaGroup(ctx, ctx.Bot(), serv, meta, telegoutil.ID(chatId), cachedArtwork)
+	results, err := utils.SendArtworkMediaGroupWithCaption(ctx, ctx.Bot(), serv, meta, telegoutil.ID(chatId), cachedArtwork, utils.ChannelArtworkCaption(ctx, store, cachedArtwork))
 	if err != nil {
 		ctx.Bot().SendMessage(ctx, telegoutil.Message(query.Message.GetChat().ChatID(),
 			fmt.Sprintf("发送作品到聊天 %d 失败: %s", chatId, err.Error()),
