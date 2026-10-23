@@ -55,7 +55,7 @@ func SubmitArtwork(ctx *telegohandler.Context, message telego.Message) error {
 	cached, err := serv.GetOrFetchCachedArtwork(ctx, sourceURL)
 	if err != nil {
 		log.Errorf("failed to get or fetch cached artwork for submission: %s", err)
-		utils.ReplyMessage(ctx, message, "获取作品信息失败: "+err.Error())
+		utils.ReplyMessage(ctx, message, "获取作品信息失败, 请检查链接或稍后重试")
 		return nil
 	}
 	sourceURL = cached.SourceURL
