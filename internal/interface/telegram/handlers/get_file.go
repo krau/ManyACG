@@ -42,7 +42,7 @@ func GetArtworkFiles(ctx *telegohandler.Context, message telego.Message) error {
 			if message.ReplyToMessage == nil {
 				return nil
 			}
-			file, err := utils.GetMessagePhotoFile(ctx, message.ReplyToMessage)
+			file, err := utils.GetMessageImageFile(ctx, message.ReplyToMessage)
 			if err != nil {
 				return nil
 			}

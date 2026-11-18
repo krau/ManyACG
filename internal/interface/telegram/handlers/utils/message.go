@@ -3,6 +3,8 @@ package utils
 import (
 	"fmt"
 	"html/template"
+	"mime"
+	"path/filepath"
 	"strings"
 
 	"github.com/duke-git/lancet/v2/strutil"
@@ -218,26 +220,35 @@ func GetPostedArtworkInlineKeyboardButton(artwork *entity.Artwork, meta *metauti
 	}
 }
 
-func GetMessagePhotoFile(ctx *telegohandler.Context, message *telego.Message) ([]byte, error) {
-	if len(message.Photo) == 0 {
+func messageImageFileID(message *telego.Message) string {
+	if message == nil {
+		return ""
+	}
+	if n := len(message.Photo); n > 0 {
+		return message.Photo[n-1].FileID
+	}
+	doc := message.Document
+	if doc == nil {
+		return ""
+	}
+	mimeType, _, _ := mime.ParseMediaType(doc.MimeType)
+	if mimeType == "" || mimeType == "application/octet-stream" {
+		mimeType = mime.TypeByExtension(filepath.Ext(doc.FileName))
+	}
+	if strings.HasPrefix(mimeType, "image/") {
+		return doc.FileID
+	}
+	return ""
+}
+
+func GetMessageImageFile(ctx *telegohandler.Context, message *telego.Message) ([]byte, error) {
+	fileID := messageImageFileID(message)
+	if fileID == "" {
 		return nil, oops.New("not a photo message")
 	}
-	size := message.Photo[len(message.Photo)-1]
-	tfile, err := ctx.Bot().GetFile(ctx, &telego.GetFileParams{FileID: size.FileID})
+	tfile, err := ctx.Bot().GetFile(ctx, &telego.GetFileParams{FileID: fileID})
 	if err != nil {
 		return nil, oops.Wrapf(err, "get file info failed")
 	}
-	dlUrl := ctx.Bot().FileDownloadURL(tfile.FilePath)
-	// file, clean, err := httpclient.DownloadWithCache(ctx, dlUrl, nil)
-	// if err != nil {
-	// 	return nil, oops.Wrapf(err, "download file failed")
-	// }
-	// defer clean()
-	// defer file.Close()
-	// data, err := io.ReadAll(file)
-	// if err != nil {
-	// 	return nil, oops.Wrapf(err, "read file failed")
-	// }
-	// return data, nil
-	return telegoutil.DownloadFile(dlUrl)
+	return telegoutil.DownloadFile(ctx.Bot().FileDownloadURL(tfile.FilePath))
 }

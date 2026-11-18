@@ -38,7 +38,7 @@ func SearchPicture(ctx *telegohandler.Context, message telego.Message) error {
 	if err != nil {
 		return oops.Wrapf(err, "reply message failed")
 	}
-	file, err := utils.GetMessagePhotoFile(ctx, message.ReplyToMessage)
+	file, err := utils.GetMessageImageFile(ctx, message.ReplyToMessage)
 	if err != nil {
 		ctx.Bot().EditMessageText(ctx, &telego.EditMessageTextParams{
 			ChatID:    msg.Chat.ChatID(),
@@ -126,7 +126,7 @@ func SearchPictureCallbackQuery(ctx *telegohandler.Context, query telego.Callbac
 	if !ok {
 		return oops.Errorf("unexpected message type: %T", query.Message)
 	}
-	file, err := utils.GetMessagePhotoFile(ctx, message)
+	file, err := utils.GetMessageImageFile(ctx, message)
 	if err != nil {
 		ctx.Bot().AnswerCallbackQuery(ctx, telegoutil.CallbackQuery(query.ID).WithText("获取图片文件失败: "+err.Error()).WithShowAlert().WithCacheTime(5))
 		return nil
@@ -234,7 +234,7 @@ func TaggingPicture(ctx *telegohandler.Context, message telego.Message) error {
 	if err != nil {
 		return oops.Wrapf(err, "reply message failed")
 	}
-	file, err := utils.GetMessagePhotoFile(ctx, message.ReplyToMessage)
+	file, err := utils.GetMessageImageFile(ctx, message.ReplyToMessage)
 	if err != nil {
 		ctx.Bot().EditMessageText(ctx, &telego.EditMessageTextParams{
 			ChatID:    msg.Chat.ChatID(),
